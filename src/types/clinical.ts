@@ -37,6 +37,14 @@ export interface DailyEntry {
   fever_temp?: number;
   reflection?: string;
   reflection_lang?: Locale;
+  protein_grams?: number;
+  meals_count?: number;
+  snacks_count?: number;
+  fluids_ml?: number;
+  walking_minutes?: number;
+  resistance_training?: boolean;
+  other_exercise_minutes?: number;
+  height_cm?: number;
   created_at: string;
   updated_at: string;
 }
@@ -260,6 +268,9 @@ export interface Settings {
   baseline_grip_nondominant_kg?: number;
   baseline_gait_speed_ms?: number;
   baseline_sit_to_stand?: number;
+  baseline_muac_cm?: number;
+  baseline_calf_cm?: number;
+  height_cm?: number;
   locale: Locale;
   managing_oncologist?: string;
   created_at: string;
