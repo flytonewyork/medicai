@@ -29,12 +29,15 @@ export default function SettingsPage() {
         profile_name: current.profile_name,
         dob: current.dob,
         diagnosis_date: current.diagnosis_date,
+        height_cm: current.height_cm,
         baseline_weight_kg: current.baseline_weight_kg,
         baseline_date: current.baseline_date,
         baseline_grip_dominant_kg: current.baseline_grip_dominant_kg,
         baseline_grip_nondominant_kg: current.baseline_grip_nondominant_kg,
         baseline_gait_speed_ms: current.baseline_gait_speed_ms,
         baseline_sit_to_stand: current.baseline_sit_to_stand,
+        baseline_muac_cm: current.baseline_muac_cm,
+        baseline_calf_cm: current.baseline_calf_cm,
         locale: current.locale,
         managing_oncologist: current.managing_oncologist,
       });
@@ -89,48 +92,74 @@ export default function SettingsPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
             {t("settings.baselines")}
           </h2>
-          <Field label={t("settings.baseline_weight_kg")}>
-            <input
-              type="number"
-              step="0.1"
-              className={inputCls}
-              {...register("baseline_weight_kg", numberOptional)}
-            />
-          </Field>
-          <Field label={t("settings.baseline_date")}>
-            <input type="date" className={inputCls} {...register("baseline_date")} />
-          </Field>
-          <Field label={t("settings.baseline_grip_dominant_kg")}>
-            <input
-              type="number"
-              step="0.1"
-              className={inputCls}
-              {...register("baseline_grip_dominant_kg", numberOptional)}
-            />
-          </Field>
-          <Field label={t("settings.baseline_grip_nondominant_kg")}>
-            <input
-              type="number"
-              step="0.1"
-              className={inputCls}
-              {...register("baseline_grip_nondominant_kg", numberOptional)}
-            />
-          </Field>
-          <Field label={t("settings.baseline_gait_speed_ms")}>
-            <input
-              type="number"
-              step="0.01"
-              className={inputCls}
-              {...register("baseline_gait_speed_ms", numberOptional)}
-            />
-          </Field>
-          <Field label={t("settings.baseline_sit_to_stand")}>
-            <input
-              type="number"
-              className={inputCls}
-              {...register("baseline_sit_to_stand", numberOptional)}
-            />
-          </Field>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label={t("settings.height_cm")}>
+              <input
+                type="number"
+                step="0.5"
+                className={inputCls}
+                {...register("height_cm", numberOptional)}
+              />
+            </Field>
+            <Field label={t("settings.baseline_weight_kg")}>
+              <input
+                type="number"
+                step="0.1"
+                className={inputCls}
+                {...register("baseline_weight_kg", numberOptional)}
+              />
+            </Field>
+            <Field label={t("settings.baseline_date")}>
+              <input type="date" className={inputCls} {...register("baseline_date")} />
+            </Field>
+            <Field label={t("settings.baseline_grip_dominant_kg")}>
+              <input
+                type="number"
+                step="0.1"
+                className={inputCls}
+                {...register("baseline_grip_dominant_kg", numberOptional)}
+              />
+            </Field>
+            <Field label={t("settings.baseline_grip_nondominant_kg")}>
+              <input
+                type="number"
+                step="0.1"
+                className={inputCls}
+                {...register("baseline_grip_nondominant_kg", numberOptional)}
+              />
+            </Field>
+            <Field label={t("settings.baseline_gait_speed_ms")}>
+              <input
+                type="number"
+                step="0.01"
+                className={inputCls}
+                {...register("baseline_gait_speed_ms", numberOptional)}
+              />
+            </Field>
+            <Field label={t("settings.baseline_sit_to_stand")}>
+              <input
+                type="number"
+                className={inputCls}
+                {...register("baseline_sit_to_stand", numberOptional)}
+              />
+            </Field>
+            <Field label={t("settings.baseline_muac_cm")}>
+              <input
+                type="number"
+                step="0.5"
+                className={inputCls}
+                {...register("baseline_muac_cm", numberOptional)}
+              />
+            </Field>
+            <Field label={t("settings.baseline_calf_cm")}>
+              <input
+                type="number"
+                step="0.5"
+                className={inputCls}
+                {...register("baseline_calf_cm", numberOptional)}
+              />
+            </Field>
+          </div>
         </section>
 
         <div className="flex items-center gap-3">

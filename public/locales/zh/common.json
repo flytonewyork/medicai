@@ -80,6 +80,22 @@
     "reflection": {
       "title": "反思",
       "placeholder": "任何想记下的，可用中文或 English"
+    },
+    "diet": {
+      "title": "今天的饮食",
+      "subtitle": "粗略估计即可。蛋白质对维持肌肉最关键。",
+      "protein": "蛋白质（克）",
+      "protein_hint": "一掌肉约 20 g，一个鸡蛋约 8 g，一勺乳清蛋白约 25 g",
+      "fluids": "饮水",
+      "meals": "正餐",
+      "snacks": "加餐"
+    },
+    "exercise": {
+      "title": "今天的运动",
+      "subtitle": "任何活动都算。阻力训练在化疗期间最能保护肌肉。",
+      "walking": "步行",
+      "other": "其他（气功、骑车…）",
+      "resistance": "阻力训练 —— 今天做过任何组数"
     }
   },
   "settings": {
@@ -95,6 +111,9 @@
     "baseline_grip_nondominant_kg": "基线握力（非惯用手，公斤）",
     "baseline_gait_speed_ms": "基线步速（米 / 秒）",
     "baseline_sit_to_stand": "基线 30 秒坐立",
+    "baseline_muac_cm": "基线上臂围（MUAC，cm）",
+    "baseline_calf_cm": "基线小腿围（cm）",
+    "height_cm": "身高（cm）",
     "locale": "语言",
     "locale_en": "English",
     "locale_zh": "中文",

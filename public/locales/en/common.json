@@ -80,6 +80,22 @@
     "reflection": {
       "title": "Reflection",
       "placeholder": "Anything worth noting, in English or 中文"
+    },
+    "diet": {
+      "title": "Food today",
+      "subtitle": "Rough estimates. Protein matters most for preserving muscle.",
+      "protein": "Protein (grams)",
+      "protein_hint": "≈ 20 g per palm of meat, 8 g per egg, 25 g per scoop whey",
+      "fluids": "Fluids",
+      "meals": "Meals",
+      "snacks": "Snacks"
+    },
+    "exercise": {
+      "title": "Movement today",
+      "subtitle": "Any minutes count. Resistance training protects muscle under chemotherapy.",
+      "walking": "Walking",
+      "other": "Other (qigong, cycling…)",
+      "resistance": "Resistance training — any sets today"
     }
   },
   "settings": {
@@ -95,6 +111,9 @@
     "baseline_grip_nondominant_kg": "Baseline grip, non-dominant (kg)",
     "baseline_gait_speed_ms": "Baseline gait speed (m/s)",
     "baseline_sit_to_stand": "Baseline 30-s sit-to-stand",
+    "baseline_muac_cm": "Baseline upper arm (MUAC, cm)",
+    "baseline_calf_cm": "Baseline calf circumference (cm)",
+    "height_cm": "Height (cm)",
     "locale": "Language",
     "locale_en": "English",
     "locale_zh": "中文",
