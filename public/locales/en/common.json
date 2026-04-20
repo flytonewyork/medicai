@@ -1,0 +1,110 @@
+{
+  "app": {
+    "name": "Anchor",
+    "tagline": "Function preservation, bridge to daraxonrasib"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "fortnightly": "Fortnightly",
+    "quarterly": "Quarterly",
+    "bridge": "Bridge",
+    "events": "Events",
+    "decisions": "Decisions",
+    "reports": "Reports",
+    "settings": "Settings"
+  },
+  "zones": {
+    "green": "Stable",
+    "yellow": "Review needed",
+    "orange": "Urgent review",
+    "red": "Immediate action",
+    "none": "Not yet evaluated"
+  },
+  "common": {
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "next": "Next",
+    "back": "Back",
+    "done": "Done",
+    "yes": "Yes",
+    "no": "No",
+    "optional": "Optional",
+    "required": "Required",
+    "today": "Today",
+    "noData": "No data yet",
+    "lastSaved": "Last saved",
+    "localOnly": "Local only — data stays on this device"
+  },
+  "daily": {
+    "title": "Daily check-in",
+    "subtitle": "Under two minutes. Skip anything that does not apply.",
+    "morning": {
+      "title": "This morning",
+      "energy": "Energy",
+      "sleep": "Sleep quality",
+      "appetite": "Appetite",
+      "pain_current": "Pain right now",
+      "pain_worst": "Worst pain in last 24h",
+      "mood": "Mental clarity",
+      "nausea": "Nausea"
+    },
+    "objective": {
+      "title": "Measured",
+      "weight": "Weight (kg)",
+      "steps": "Steps"
+    },
+    "practice": {
+      "title": "Practice",
+      "morning_completed": "Morning practice completed",
+      "evening_completed": "Evening practice completed",
+      "quality": "Quality (0–5)"
+    },
+    "symptoms": {
+      "title": "Symptom flags",
+      "cold_dysaesthesia": "Cold dysaesthesia",
+      "neuropathy_hands": "Hand neuropathy",
+      "neuropathy_feet": "Foot neuropathy",
+      "mouth_sores": "Mouth sores",
+      "diarrhoea_count": "Diarrhoea episodes today",
+      "new_bruising": "New bruising / bleeding",
+      "dyspnoea": "Breathlessness",
+      "fever": "Fever",
+      "fever_temp": "Temperature (°C)"
+    },
+    "reflection": {
+      "title": "Reflection",
+      "placeholder": "Anything worth noting, in English or 中文"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "profile_name": "Name",
+    "dob": "Date of birth",
+    "diagnosis_date": "Diagnosis date",
+    "baselines": "Baselines",
+    "baseline_weight_kg": "Baseline weight (kg)",
+    "baseline_date": "Baseline date",
+    "baseline_grip_dominant_kg": "Baseline grip, dominant (kg)",
+    "baseline_grip_nondominant_kg": "Baseline grip, non-dominant (kg)",
+    "baseline_gait_speed_ms": "Baseline gait speed (m/s)",
+    "baseline_sit_to_stand": "Baseline 30-s sit-to-stand",
+    "locale": "Language",
+    "locale_en": "English",
+    "locale_zh": "中文",
+    "managing_oncologist": "Managing oncologist"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "current_zone": "Current zone",
+    "active_alerts": "Active alerts",
+    "recent_trends": "Recent trends",
+    "quick_entry": "Start today's check-in"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "primary_trials": [
+    {
+      "trial_id": "NCT07491445",
+      "name": "RASolute 303",
+      "sponsor": "Revolution Medicines",
+      "phase": "III",
+      "line": "1L",
+      "drug": "daraxonrasib",
+      "status": "enrolling",
+      "enrollment_started": "2026-04-02",
+      "eligibility_summary": "Untreated mPDAC, ECOG 0-1, RAS status for stratification",
+      "disqualifying_events": ["any systemic therapy for mPDAC"],
+      "australian_sites": "pending verification",
+      "priority": 1
+    },
+    {
+      "trial_id": "NCT06625320",
+      "name": "RASolute 302",
+      "sponsor": "Revolution Medicines",
+      "phase": "III",
+      "line": "2L",
+      "drug": "daraxonrasib",
+      "status": "enrolling, closing June 2026",
+      "eligibility_summary": "1 prior line 5-FU or gem-based, ECOG 0-1, documented RAS status",
+      "disqualifying_events": ["ECOG 2+", "multiple prior lines"],
+      "readout_date": "2026-04-13",
+      "results": "mOS 13.2 vs 6.7 mo, HR 0.40, p<0.0001",
+      "priority": 2
+    }
+  ],
+  "secondary_trials": [
+    {
+      "trial_id": "NCT04493060",
+      "name": "CEND-1 + GnP at Epworth",
+      "sponsor": "Lisata Therapeutics",
+      "site": "Jreissati Pancreatic Centre, Epworth",
+      "priority": 3
+    }
+  ],
+  "expanded_access": [
+    {
+      "name": "Daraxonrasib expanded access",
+      "status": "pending",
+      "monitor_source": "https://revmedclinicaltrials.com/"
+    }
+  ]
+}

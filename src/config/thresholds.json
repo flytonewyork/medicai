@@ -1,0 +1,34 @@
+{
+  "function": {
+    "weight_loss_yellow_pct": 5,
+    "weight_loss_orange_pct": 10,
+    "grip_decline_yellow_pct": 10,
+    "grip_decline_orange_pct": 20,
+    "gait_yellow_ms": 0.8,
+    "gait_warning_ms": 1.0,
+    "practice_completion_yellow_days": 4,
+    "practice_completion_orange_days": 2,
+    "practice_lookback_weeks": 2
+  },
+  "psychological": {
+    "phq9_yellow_threshold": 10,
+    "phq9_orange_threshold": 15,
+    "gad7_yellow_threshold": 10,
+    "gad7_orange_threshold": 15,
+    "distress_thermometer_yellow": 4,
+    "distress_thermometer_orange": 7
+  },
+  "disease": {
+    "ca199_rising_consecutive_yellow": 3,
+    "ctdna_rising_yellow": true
+  },
+  "toxicity": {
+    "neuropathy_yellow_grade": 2,
+    "neuropathy_orange_grade": 3,
+    "fn_any_red": true
+  },
+  "nutrition": {
+    "albumin_yellow": 30,
+    "albumin_orange": 25
+  }
+}
