@@ -12,6 +12,7 @@
     "bridge": "Bridge",
     "events": "Events",
     "decisions": "Decisions",
+    "ingest": "Ingest",
     "reports": "Reports",
     "settings": "Settings"
   },

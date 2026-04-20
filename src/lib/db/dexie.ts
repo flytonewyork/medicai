@@ -15,6 +15,8 @@ import type {
   ZoneAlert,
   FamilyNote,
   Settings,
+  PendingResult,
+  IngestedDocument,
 } from "~/types/clinical";
 import type { Trial } from "~/types/bridge";
 
@@ -35,6 +37,8 @@ export class AnchorDB extends Dexie {
   zone_alerts!: Table<ZoneAlert, number>;
   family_notes!: Table<FamilyNote, number>;
   settings!: Table<Settings, number>;
+  pending_results!: Table<PendingResult, number>;
+  ingested_documents!: Table<IngestedDocument, number>;
 
   constructor() {
     super("anchor_db");
@@ -55,6 +59,10 @@ export class AnchorDB extends Dexie {
       zone_alerts: "++id, triggered_at, rule_id, zone",
       family_notes: "++id, created_at",
       settings: "++id",
+    });
+    this.version(2).stores({
+      pending_results: "++id, ordered_date, category, expected_by",
+      ingested_documents: "++id, uploaded_at, status, kind",
     });
   }
 }

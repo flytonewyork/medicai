@@ -299,6 +299,29 @@ const tugElevatedYellow: ZoneRule = {
   suggestedLevers: ["physical.exercise_phys", "physical.resistance"],
 };
 
+const pendingResultStaleYellow: ZoneRule = {
+  id: "pending_result_stale_yellow",
+  name: "Pending result / scan overdue",
+  zone: "yellow",
+  category: "disease",
+  triggersReview: true,
+  evaluator: ({ openPendingResults, now }) => {
+    return openPendingResults.some((p) => {
+      if (p.received) return false;
+      const expectedByMs = p.expected_by
+        ? Date.parse(p.expected_by)
+        : Date.parse(p.ordered_date) + 14 * 24 * 3600 * 1000;
+      if (Number.isNaN(expectedByMs)) return false;
+      return now.getTime() - expectedByMs > 0;
+    });
+  },
+  recommendation:
+    "One or more ordered tests or referrals are overdue. Chase the site or the ordering clinician to confirm results or next appointment.",
+  recommendationZh:
+    "有已预约但尚未出结果的检查 / 转诊超期。请与相关机构或医师核实进展。",
+  suggestedLevers: ["monitoring.imaging_early"],
+};
+
 const sts5xSlowYellow: ZoneRule = {
   id: "sts_5x_gt_15_yellow",
   name: "5× sit-to-stand > 15 s",
@@ -333,4 +356,5 @@ export const ZONE_RULES: ZoneRule[] = [
   sarcFPositiveYellow,
   tugElevatedYellow,
   sts5xSlowYellow,
+  pendingResultStaleYellow,
 ];

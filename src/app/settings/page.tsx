@@ -40,6 +40,8 @@ export default function SettingsPage() {
         baseline_calf_cm: current.baseline_calf_cm,
         locale: current.locale,
         managing_oncologist: current.managing_oncologist,
+        anthropic_api_key: current.anthropic_api_key,
+        default_ai_model: current.default_ai_model,
       });
     }
   }, [current, reset]);
@@ -160,6 +162,33 @@ export default function SettingsPage() {
               />
             </Field>
           </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            AI ingestion (optional)
+          </h2>
+          <p className="text-xs text-slate-500">
+            Paste your own Anthropic API key to let Claude structure uploaded
+            reports. The key is stored only in this browser and sent only to
+            api.anthropic.com. Leave blank to rely on the local heuristic parser.
+          </p>
+          <Field label="Anthropic API key">
+            <input
+              type="password"
+              autoComplete="off"
+              className={inputCls}
+              placeholder="sk-ant-…"
+              {...register("anthropic_api_key")}
+            />
+          </Field>
+          <Field label="Model (default claude-opus-4-7)">
+            <input
+              className={inputCls}
+              placeholder="claude-opus-4-7"
+              {...register("default_ai_model")}
+            />
+          </Field>
         </section>
 
         <div className="flex items-center gap-3">

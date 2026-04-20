@@ -2,6 +2,7 @@ import type {
   DailyEntry,
   FortnightlyAssessment,
   LabResult,
+  PendingResult,
   Settings,
   WeeklyAssessment,
   Zone,
@@ -15,6 +16,7 @@ export interface ClinicalSnapshot {
   recentWeeklies: WeeklyAssessment[];
   latestFortnightly: FortnightlyAssessment | null;
   recentLabs: LabResult[];
+  openPendingResults: PendingResult[];
   now: Date;
 }
 

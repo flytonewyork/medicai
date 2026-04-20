@@ -1,4 +1,5 @@
-export type EnteredBy = "hulin" | "catherine" | "thomas";
+export type EnteredBy = "hulin" | "catherine" | "thomas" | "clinician" | "jonalyn";
+export type Role = "patient" | "caregiver" | "clinician";
 export type Locale = "en" | "zh";
 export type Zone = "green" | "yellow" | "orange" | "red";
 export type RuleCategory =
@@ -282,6 +283,69 @@ export interface Settings {
   height_cm?: number;
   locale: Locale;
   managing_oncologist?: string;
+  anthropic_api_key?: string;
+  default_ai_model?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type PendingResultCategory =
+  | "imaging"
+  | "lab"
+  | "ctdna"
+  | "ngs"
+  | "referral"
+  | "other";
+
+export interface PendingResult {
+  id?: number;
+  test_name: string;
+  category: PendingResultCategory;
+  ordered_date: string;
+  expected_by?: string;
+  ordered_by?: string;
+  site?: string;
+  notes?: string;
+  received: boolean;
+  received_date?: string;
+  linked_result_table?: "labs" | "imaging" | "ctdna_results";
+  linked_result_id?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type IngestedDocumentKind =
+  | "lab_report"
+  | "imaging_report"
+  | "ctdna_report"
+  | "referral"
+  | "clinic_letter"
+  | "other";
+
+export type IngestedDocumentStatus =
+  | "ocr_pending"
+  | "ocr_complete"
+  | "extracted"
+  | "saved"
+  | "error";
+
+export interface IngestedDocument {
+  id?: number;
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+  kind: IngestedDocumentKind;
+  uploaded_at: string;
+  ocr_text?: string;
+  ocr_confidence?: number;
+  extraction_method?: "heuristic" | "claude";
+  extraction_model?: string;
+  extracted_payload?: Record<string, unknown>;
+  status: IngestedDocumentStatus;
+  error_message?: string;
+  linked_result_table?: "labs" | "imaging" | "ctdna_results";
+  linked_result_id?: number;
+  source_document_date?: string;
   created_at: string;
   updated_at: string;
 }

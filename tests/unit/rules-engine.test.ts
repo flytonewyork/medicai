@@ -70,6 +70,7 @@ function snapshot(over: Partial<ClinicalSnapshot> = {}): ClinicalSnapshot {
     recentWeeklies: [],
     latestFortnightly: null,
     recentLabs: [],
+    openPendingResults: [],
     now: new Date("2026-04-20"),
     ...over,
   };

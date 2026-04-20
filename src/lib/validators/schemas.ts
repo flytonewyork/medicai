@@ -55,6 +55,8 @@ export const settingsSchema = z.object({
   baseline_calf_cm: z.number().min(20).max(60).optional(),
   locale: z.enum(["en", "zh"]),
   managing_oncologist: z.string().optional(),
+  anthropic_api_key: z.string().optional(),
+  default_ai_model: z.string().optional(),
 });
 
 export type SettingsInput = z.infer<typeof settingsSchema>;
