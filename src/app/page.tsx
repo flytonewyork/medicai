@@ -5,6 +5,8 @@ import { ZoneStatusCard } from "~/components/dashboard/zone-status-card";
 import { AlertsList } from "~/components/dashboard/alerts-list";
 import { RecentTrends } from "~/components/dashboard/recent-trends";
 import { BodyMetricsGrid } from "~/components/dashboard/body-metrics";
+import { SarcopeniaCard } from "~/components/dashboard/sarcopenia-card";
+import { WeeklyCard } from "~/components/dashboard/weekly-card";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { PageHeader, SectionHeader } from "~/components/ui/page-header";
 import { Button } from "~/components/ui/button";
@@ -41,6 +43,11 @@ export default function DashboardPage() {
           }
         />
         <BodyMetricsGrid />
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2">
+        <SarcopeniaCard />
+        <WeeklyCard />
       </section>
 
       <section className="space-y-3">

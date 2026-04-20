@@ -119,6 +119,15 @@
     "locale_zh": "中文",
     "managing_oncologist": "主诊肿瘤科医师"
   },
+  "weekly": {
+    "title": "每周回顾",
+    "subtitle": "周日晚做最好，约 5 分钟。"
+  },
+  "reports": {
+    "pre_clinic": "就诊前小结",
+    "generate": "生成 PDF",
+    "export_backup": "导出 JSON 备份"
+  },
   "dashboard": {
     "title": "概览",
     "current_zone": "当前区间",

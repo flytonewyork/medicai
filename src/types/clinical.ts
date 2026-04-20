@@ -60,6 +60,9 @@ export interface WeeklyAssessment {
   functional_integrity: number;
   cognitive_stillness: number;
   social_practice_integrity: number;
+  energy_trend?: "improving" | "stable" | "declining";
+  concerns?: string;
+  questions_for_oncologist?: string;
   week_summary?: string;
   created_at: string;
   updated_at: string;
@@ -91,6 +94,12 @@ export interface FortnightlyAssessment {
   calf_circumference_cm?: number;
   tns_total?: number;
   neuropathy_grade?: 0 | 1 | 2 | 3 | 4;
+  sarc_f_responses?: number[];
+  sarc_f_total?: number;
+  tug_seconds?: number;
+  single_leg_stance_seconds?: number;
+  sts_5x_seconds?: number;
+  walk_6min_meters?: number;
   created_at: string;
   updated_at: string;
 }

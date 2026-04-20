@@ -15,6 +15,8 @@ import { Button } from "~/components/ui/button";
 import { EcogSelfReport } from "./ecog-self-report";
 import { MeasurementInput } from "./measurement-input";
 import { NeuropathyGradeInput } from "./neuropathy-grade-input";
+import { SarcF } from "./sarc-f";
+import { scoreSarcF } from "~/lib/calculations/sarcopenia";
 
 type EcogLevel = 0 | 1 | 2 | 3 | 4;
 
@@ -29,6 +31,11 @@ interface FormState {
   calf_circumference_cm?: number;
   neuropathy_grade?: EcogLevel;
   distress_thermometer?: number;
+  sarc_f_responses?: number[];
+  tug_seconds?: number;
+  single_leg_stance_seconds?: number;
+  sts_5x_seconds?: number;
+  walk_6min_meters?: number;
 }
 
 const EMPTY: FormState = {
@@ -66,6 +73,11 @@ export function FortnightlyForm({ entryId }: { entryId?: number }) {
         calf_circumference_cm: existing.calf_circumference_cm,
         neuropathy_grade: existing.neuropathy_grade,
         distress_thermometer: existing.distress_thermometer,
+        sarc_f_responses: existing.sarc_f_responses,
+        tug_seconds: existing.tug_seconds,
+        single_leg_stance_seconds: existing.single_leg_stance_seconds,
+        sts_5x_seconds: existing.sts_5x_seconds,
+        walk_6min_meters: existing.walk_6min_meters,
       });
     }
   }, [existing]);
@@ -78,9 +90,12 @@ export function FortnightlyForm({ entryId }: { entryId?: number }) {
     setError(null);
     setSaving(true);
     try {
+      const sarcFilled =
+        form.sarc_f_responses && form.sarc_f_responses.length === 5;
       const parsed = fortnightlyAssessmentSchema.safeParse({
         ...form,
         entered_by: enteredBy,
+        sarc_f_total: sarcFilled ? scoreSarcF(form.sarc_f_responses!) : undefined,
       });
       if (!parsed.success) {
         setError(parsed.error.issues.map((i) => i.message).join(", "));
@@ -275,6 +290,137 @@ export function FortnightlyForm({ entryId }: { entryId?: number }) {
                 <>Seated, knee at 90°, foot flat. Tape horizontally at widest part of calf.</>
               )
             }
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            {locale === "zh"
+              ? "其他功能测试（可选）"
+              : "Additional function tests (optional)"}
+          </CardTitle>
+          <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {locale === "zh"
+              ? "可在家里安全完成 —— 身边最好有人照看。"
+              : "All safe to do at home — ideally with a spotter nearby."}
+          </div>
+        </CardHeader>
+        <CardContent className="grid gap-3 sm:grid-cols-2">
+          <MeasurementInput
+            label={locale === "zh" ? "Timed Up-and-Go" : "Timed Up-and-Go"}
+            unit="s"
+            value={form.tug_seconds}
+            step={0.5}
+            min={0}
+            max={60}
+            goodDirection="lower"
+            onChange={(v) => update("tug_seconds", v)}
+            howTo={
+              locale === "zh" ? (
+                <>
+                  标准椅。从坐位开始，按平常速度站起、走 3
+                  米、转身、走回、坐下。手机秒表。正常 &lt; 12 秒；&gt; 14
+                  秒提示跌倒风险升高。
+                </>
+              ) : (
+                <>
+                  Standard chair. Stand from seated, walk 3 m at normal pace,
+                  turn, walk back, sit down. Phone stopwatch. &lt;12 s is normal;
+                  &gt;14 s suggests elevated fall risk.
+                </>
+              )
+            }
+          />
+          <MeasurementInput
+            label={locale === "zh" ? "5 次坐立" : "5× sit-to-stand"}
+            unit="s"
+            value={form.sts_5x_seconds}
+            step={0.5}
+            min={0}
+            max={60}
+            goodDirection="lower"
+            onChange={(v) => update("sts_5x_seconds", v)}
+            howTo={
+              locale === "zh" ? (
+                <>
+                  标准椅，双臂交叉胸前。计时完成 5 次完整的坐—站循环。&gt; 15
+                  秒提示肌力低下。
+                </>
+              ) : (
+                <>
+                  Standard chair, arms crossed. Time 5 complete sit-to-stand
+                  cycles. &gt;15 s suggests low muscle strength.
+                </>
+              )
+            }
+          />
+          <MeasurementInput
+            label={locale === "zh" ? "单腿站立" : "Single-leg stance"}
+            unit="s"
+            value={form.single_leg_stance_seconds}
+            step={1}
+            min={0}
+            max={60}
+            goodDirection="higher"
+            onChange={(v) => update("single_leg_stance_seconds", v)}
+            howTo={
+              locale === "zh" ? (
+                <>
+                  双手叉腰，抬起一只脚离地，睁眼计时到失衡为止。取两侧较差的一次，最大 30 秒。&lt; 10 秒提示平衡不佳。
+                </>
+              ) : (
+                <>
+                  Hands on hips, lift one foot, eyes open. Time until loss of
+                  balance. Record the worse side, cap at 30 s. &lt;10 s suggests
+                  poor balance.
+                </>
+              )
+            }
+          />
+          <MeasurementInput
+            label={locale === "zh" ? "6 分钟步行" : "6-minute walk"}
+            unit="m"
+            value={form.walk_6min_meters}
+            step={5}
+            min={0}
+            max={900}
+            goodDirection="higher"
+            onChange={(v) => update("walk_6min_meters", v)}
+            howTo={
+              locale === "zh" ? (
+                <>
+                  在平地标出 30 米往返，或用跑步机 / 走廊。按自己节奏走 6
+                  分钟，累加距离。可以停下休息但计时不停。&gt; 400
+                  米为可接受；明显下降要讨论。
+                </>
+              ) : (
+                <>
+                  Mark a 30 m course or use a treadmill / corridor. Walk at own
+                  pace for 6 minutes, summing distance. Rest allowed but timer
+                  runs. &gt;400 m is reasonable; any clear drop is a discussion
+                  point.
+                </>
+              )
+            }
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>SARC-F</CardTitle>
+          <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {locale === "zh"
+              ? "5 个问题的肌少症筛查（每题 0–2 分）。总分 ≥ 4 建议进一步评估。"
+              : "5-question sarcopenia screen (0–2 per item). Total ≥ 4 flags the need for further assessment."}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <SarcF
+            responses={form.sarc_f_responses}
+            onChange={(responses) => update("sarc_f_responses", responses)}
           />
         </CardContent>
       </Card>

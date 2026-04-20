@@ -119,6 +119,15 @@
     "locale_zh": "中文",
     "managing_oncologist": "Managing oncologist"
   },
+  "weekly": {
+    "title": "Weekly reflection",
+    "subtitle": "Best on Sunday evening. ~5 minutes."
+  },
+  "reports": {
+    "pre_clinic": "Pre-clinic summary",
+    "generate": "Generate PDF",
+    "export_backup": "Export JSON backup"
+  },
   "dashboard": {
     "title": "Dashboard",
     "current_zone": "Current zone",
