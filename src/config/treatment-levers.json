@@ -1,0 +1,132 @@
+{
+  "intensity.dose_reduce": {
+    "category": "intensity",
+    "name": "Dose reduction (20% per level)",
+    "description": "20% reduction of gemcitabine or nab-paclitaxel per level.",
+    "when": "Grade 2 toxicity, yellow zone markers"
+  },
+  "intensity.drop_d15": {
+    "category": "intensity",
+    "name": "Drop day 15 permanently (biweekly GnP)",
+    "description": "Move weekly GnP to biweekly schedule.",
+    "when": "Persistent cytopenia, function preservation priority"
+  },
+  "intensity.maintenance": {
+    "category": "intensity",
+    "name": "Gemcitabine maintenance",
+    "description": "Drop nab-paclitaxel after response plateau (cycles 4–6).",
+    "when": "Response or stable disease, accumulating toxicity"
+  },
+  "intensity.holiday": {
+    "category": "intensity",
+    "name": "Treatment holiday",
+    "description": "Planned 2–4 week break.",
+    "when": "Life events, fatigue, functional recovery need"
+  },
+  "intensity.hold": {
+    "category": "intensity",
+    "name": "Treatment hold",
+    "description": "Immediate hold pending toxicity resolution.",
+    "when": "Grade 3+ toxicity, red zone"
+  },
+  "supportive.gcsf_prophylaxis": {
+    "category": "supportive",
+    "name": "G-CSF primary prophylaxis",
+    "description": "Pegfilgrastim / lipegfilgrastim after each cycle.",
+    "when": ">20% FN risk, or after any FN event"
+  },
+  "supportive.olanzapine": {
+    "category": "supportive",
+    "name": "Olanzapine 2.5–5 mg nocte",
+    "description": "Added to ondansetron for nausea.",
+    "when": "Breakthrough nausea"
+  },
+  "supportive.duloxetine": {
+    "category": "supportive",
+    "name": "Duloxetine 30–60 mg",
+    "description": "Chemotherapy-induced peripheral neuropathy.",
+    "when": "Grade 1+ neuropathy with functional impact"
+  },
+  "supportive.vte_prophylaxis": {
+    "category": "supportive",
+    "name": "Apixaban 2.5 mg BD",
+    "description": "VTE prophylaxis.",
+    "when": "Ambulatory PDAC on active treatment"
+  },
+  "supportive.pert": {
+    "category": "supportive",
+    "name": "PERT optimisation",
+    "description": "Creon 25 000–50 000 with meals, 10 000 with snacks.",
+    "when": "Any pancreatic insufficiency signs"
+  },
+  "nutrition.dietitian": {
+    "category": "nutrition",
+    "name": "Oncology dietitian",
+    "description": "Specialist oncology dietitian referral."
+  },
+  "nutrition.supplements": {
+    "category": "nutrition",
+    "name": "Oral nutritional supplements",
+    "description": "ONS between meals (Ensure Plus, Fortisip)."
+  },
+  "nutrition.feeding_tube": {
+    "category": "nutrition",
+    "name": "Feeding tube",
+    "description": "PEG / NJ if oral intake fails."
+  },
+  "physical.exercise_phys": {
+    "category": "physical",
+    "name": "Exercise physiologist",
+    "description": "Cancer-trained exercise physiologist referral."
+  },
+  "physical.resistance": {
+    "category": "physical",
+    "name": "Progressive resistance training",
+    "description": "2–3x weekly, lower-body emphasis."
+  },
+  "psychological.psychology": {
+    "category": "psychological",
+    "name": "Clinical psychology",
+    "description": "Referral to clinical psychologist."
+  },
+  "psychological.medication": {
+    "category": "psychological",
+    "name": "Psychiatric medication",
+    "description": "SSRI / SNRI consideration."
+  },
+  "psychological.meditation_teacher": {
+    "category": "psychological",
+    "name": "Meditation practitioner support",
+    "description": "Continued practice support, adjust intensity if needed."
+  },
+  "bridge.trigger_2l": {
+    "category": "bridge",
+    "name": "Trigger 2L workup",
+    "description": "Initiate 2L planning at progression."
+  },
+  "bridge.trial_enrollment": {
+    "category": "bridge",
+    "name": "Trial enrollment",
+    "description": "Activate RASolute 302 / 303 / expanded access."
+  },
+  "bridge.accelerate": {
+    "category": "bridge",
+    "name": "Accelerate bridge",
+    "description": "If functional decline risks breaking eligibility."
+  },
+  "monitoring.imaging_early": {
+    "category": "monitoring",
+    "name": "Early imaging",
+    "description": "Advance the CT window."
+  },
+  "monitoring.ctdna": {
+    "category": "monitoring",
+    "name": "ctDNA",
+    "description": "Check ctDNA dynamics for molecular progression."
+  },
+  "emergency.hospital": {
+    "category": "emergency",
+    "name": "Hospital presentation",
+    "description": "Immediate ED presentation."
+  }
+}

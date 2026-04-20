@@ -1,0 +1,110 @@
+{
+  "app": {
+    "name": "Anchor 锚",
+    "tagline": "保留功能，过渡至 daraxonrasib"
+  },
+  "nav": {
+    "dashboard": "概览",
+    "daily": "每日",
+    "weekly": "每周",
+    "fortnightly": "两周",
+    "quarterly": "每季",
+    "bridge": "过渡策略",
+    "events": "重要日程",
+    "decisions": "决策记录",
+    "reports": "报告",
+    "settings": "设置"
+  },
+  "zones": {
+    "green": "稳定",
+    "yellow": "需要复核",
+    "orange": "紧急复核",
+    "red": "立即处理",
+    "none": "尚未评估"
+  },
+  "common": {
+    "save": "保存",
+    "saving": "保存中…",
+    "saved": "已保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "next": "下一步",
+    "back": "返回",
+    "done": "完成",
+    "yes": "是",
+    "no": "否",
+    "optional": "可选",
+    "required": "必填",
+    "today": "今天",
+    "noData": "暂无数据",
+    "lastSaved": "最后保存",
+    "localOnly": "仅本机 —— 数据不离开本设备"
+  },
+  "daily": {
+    "title": "每日记录",
+    "subtitle": "两分钟内完成。不适用的项目可跳过。",
+    "morning": {
+      "title": "今天早上",
+      "energy": "精力",
+      "sleep": "睡眠质量",
+      "appetite": "食欲",
+      "pain_current": "目前疼痛",
+      "pain_worst": "过去 24 小时最痛",
+      "mood": "头脑清明",
+      "nausea": "恶心"
+    },
+    "objective": {
+      "title": "客观指标",
+      "weight": "体重（公斤）",
+      "steps": "步数"
+    },
+    "practice": {
+      "title": "修习",
+      "morning_completed": "晨间修习完成",
+      "evening_completed": "晚间修习完成",
+      "quality": "质量（0–5）"
+    },
+    "symptoms": {
+      "title": "症状标记",
+      "cold_dysaesthesia": "遇冷异感",
+      "neuropathy_hands": "手部神经病变",
+      "neuropathy_feet": "足部神经病变",
+      "mouth_sores": "口腔溃疡",
+      "diarrhoea_count": "今日腹泻次数",
+      "new_bruising": "新淤青 / 出血",
+      "dyspnoea": "气促",
+      "fever": "发热",
+      "fever_temp": "体温（°C）"
+    },
+    "reflection": {
+      "title": "反思",
+      "placeholder": "任何想记下的，可用中文或 English"
+    }
+  },
+  "settings": {
+    "title": "设置",
+    "profile": "个人资料",
+    "profile_name": "姓名",
+    "dob": "出生日期",
+    "diagnosis_date": "诊断日期",
+    "baselines": "基线",
+    "baseline_weight_kg": "基线体重（公斤）",
+    "baseline_date": "基线日期",
+    "baseline_grip_dominant_kg": "基线握力（惯用手，公斤）",
+    "baseline_grip_nondominant_kg": "基线握力（非惯用手，公斤）",
+    "baseline_gait_speed_ms": "基线步速（米 / 秒）",
+    "baseline_sit_to_stand": "基线 30 秒坐立",
+    "locale": "语言",
+    "locale_en": "English",
+    "locale_zh": "中文",
+    "managing_oncologist": "主诊肿瘤科医师"
+  },
+  "dashboard": {
+    "title": "概览",
+    "current_zone": "当前区间",
+    "active_alerts": "活动警示",
+    "recent_trends": "近期趋势",
+    "quick_entry": "开始今日记录"
+  }
+}
