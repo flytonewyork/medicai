@@ -81,6 +81,10 @@ export type ReferenceSource =
   | "FDA_label"          // accessdata.fda.gov / dailymed.nlm.nih.gov
   | "TGA_PI"             // tga.gov.au product information
   | "EMA_SmPC"           // EMA Summary of Product Characteristics
+  | "eviQ"               // eviQ (NSW Cancer Institute) — AU clinical protocols
+  | "cancer_care_au"     // Cancer Council Australia / optimal care pathway
+  | "BC_cancer"          // BC Cancer Agency chemotherapy protocol
+  | "CCO_protocol"       // Cancer Care Ontario regimen summary
   | "guideline"          // ASCO / NCCN / ESMO / MASCC / NCI
   | "trial_protocol"     // ClinicalTrials.gov record / sponsor protocol
   | "trial_publication"  // peer-reviewed primary trial paper

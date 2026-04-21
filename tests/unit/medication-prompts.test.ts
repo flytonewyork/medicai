@@ -79,7 +79,10 @@ describe("medication prompts — gnp_d8_predose_bloods", () => {
     expect(p.cycle_day).toBe(8);
     expect(p.fired_for).toBe("cycle:7|day:8");
     expect(p.citations.length).toBeGreaterThan(0);
-    expect(p.citations[0].url).toContain("accessdata.fda.gov");
+    // Primary citation is now eviQ 1375 (AU protocol); FDA label is secondary.
+    const urls = p.citations.map((c) => c.url).join(" ");
+    expect(urls).toContain("eviq.org.au");
+    expect(urls).toContain("accessdata.fda.gov");
   });
 
   it("fires on D15 too", () => {
