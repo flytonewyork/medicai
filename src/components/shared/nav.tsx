@@ -17,6 +17,7 @@ import {
   Users,
   Menu,
   X,
+  History as HistoryIcon,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 import { useT, useLocale } from "~/hooks/use-translate";
@@ -35,7 +36,9 @@ const ITEMS = [
   { href: "/treatment", key: "nav.treatment", icon: Syringe },
   { href: "/labs", key: "nav.labs", icon: FlaskConical },
   { href: "/practices", key: "nav.practices", icon: Sparkles },
+  { href: "/care-team", key: "nav.care_team", icon: Users },
   { href: "/bridge", key: "nav.bridge", icon: Route },
+  { href: "/history", key: "nav.history", icon: HistoryIcon },
   { href: "/ingest", key: "nav.ingest", icon: ScanLine },
   { href: "/reports", key: "nav.reports", icon: FileText },
   { href: "/settings", key: "nav.settings", icon: SettingsIcon },
