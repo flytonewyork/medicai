@@ -1,5 +1,6 @@
 import Dexie, { type Table } from "dexie";
 import type {
+  CareTeamContact,
   ChangeSignalRow,
   DailyEntry,
   WeeklyAssessment,
@@ -45,6 +46,7 @@ export class AnchorDB extends Dexie {
   medication_prompt_events!: Table<MedicationPromptEvent, number>;
   change_signals!: Table<ChangeSignalRow, number>;
   signal_events!: Table<SignalEventRow, number>;
+  care_team_contacts!: Table<CareTeamContact, number>;
   life_events!: Table<LifeEvent, number>;
   decisions!: Table<Decision, number>;
   zone_alerts!: Table<ZoneAlert, number>;
@@ -121,6 +123,13 @@ export class AnchorDB extends Dexie {
     this.version(9).stores({
       signal_events:
         "++id, signal_id, kind, action_ref_id, created_at, [signal_id+created_at]",
+    });
+    // v10: care-team touchpoint log (slice 3 — external axis). Populates
+    // the clinician-gap detector and renders a care-network view. Indexed
+    // by date for fast "last contact" lookups.
+    this.version(10).stores({
+      care_team_contacts:
+        "++id, date, kind, follow_up_needed, follow_up_by",
     });
   }
 }

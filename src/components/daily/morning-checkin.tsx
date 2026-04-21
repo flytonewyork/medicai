@@ -49,6 +49,8 @@ const INITIAL = {
   walking_minutes: undefined as number | undefined,
   resistance_training: false,
   other_exercise_minutes: undefined as number | undefined,
+  meaningful_interactions: undefined as number | undefined,
+  carer_present: false,
 };
 
 const STEPS = [
@@ -136,6 +138,8 @@ export function MorningCheckin({
         walking_minutes: existing.walking_minutes,
         resistance_training: existing.resistance_training ?? false,
         other_exercise_minutes: existing.other_exercise_minutes,
+        meaningful_interactions: existing.meaningful_interactions,
+        carer_present: existing.carer_present ?? false,
       });
     }
   }, [existing]);
@@ -386,6 +390,39 @@ export function MorningCheckin({
                 label={t("daily.exercise.resistance")}
                 checked={form.resistance_training}
                 onChange={(v) => update("resistance_training", v)}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {locale === "zh" ? "联系 / 陪伴" : "Contact & company"}
+              </CardTitle>
+              <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                {locale === "zh"
+                  ? "有意义的社交接触 —— 当面、电话、视频都算。"
+                  : "Meaningful human contact — in-person, phone, or video all count."}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <NumberField
+                label={
+                  locale === "zh" ? "有意义的互动次数" : "Meaningful interactions"
+                }
+                suffix={locale === "zh" ? "次" : "today"}
+                value={form.meaningful_interactions}
+                step={1}
+                onChange={(v) => update("meaningful_interactions", v)}
+              />
+              <Toggle
+                label={
+                  locale === "zh"
+                    ? "今日有家人 / 照顾者陪伴"
+                    : "Carer or family present today"
+                }
+                checked={form.carer_present}
+                onChange={(v) => update("carer_present", v)}
               />
             </CardContent>
           </Card>

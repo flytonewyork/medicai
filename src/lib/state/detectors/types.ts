@@ -6,6 +6,7 @@
 // / clinician can take.
 import type { Axis, Observation, PatientStateSnapshot } from "../types";
 import type { LocalizedText } from "~/types/treatment";
+import type { CareTeamContact } from "~/types/clinical";
 
 export type SignalSeverity = "caution" | "warning";
 
@@ -103,6 +104,10 @@ export interface DetectorContext {
   // rather than re-deriving from dexie. Populated by the state module's
   // `extractObservationsByMetric()` helper.
   observations: Record<string, Observation[]>;
+  // External-axis data that doesn't fit the metric-trajectory shape —
+  // currently just care-team contacts for the clinician-gap detector.
+  // Optional so existing callers / tests don't need to populate it.
+  care_team_contacts?: readonly CareTeamContact[];
   now: string;                     // ISO, deterministic for tests
 }
 
