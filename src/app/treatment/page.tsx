@@ -9,7 +9,32 @@ import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { PROTOCOL_BY_ID } from "~/config/protocols";
 import { formatDate } from "~/lib/utils/date";
-import { ChevronRight, Syringe } from "lucide-react";
+import { cn } from "~/lib/utils/cn";
+import type { CycleStatus } from "~/types/treatment";
+import { ChevronRight, Pencil, Syringe } from "lucide-react";
+
+const STATUS_STYLES: Record<CycleStatus, { label: { en: string; zh: string }; cls: string }> = {
+  planned: {
+    label: { en: "Planned", zh: "已计划" },
+    cls: "bg-ink-100 text-ink-600",
+  },
+  active: {
+    label: { en: "Active", zh: "进行中" },
+    cls: "bg-[var(--ok-soft)] text-[var(--ok)]",
+  },
+  completed: {
+    label: { en: "Completed", zh: "已完成" },
+    cls: "bg-ink-100 text-ink-500",
+  },
+  delayed: {
+    label: { en: "Delayed", zh: "延迟" },
+    cls: "bg-[var(--sand)]/40 text-[oklch(45%_0.06_70)]",
+  },
+  cancelled: {
+    label: { en: "Cancelled", zh: "已取消" },
+    cls: "bg-[var(--warn-soft)] text-[var(--warn)]",
+  },
+};
 
 export default function TreatmentListPage() {
   const locale = useLocale();
@@ -34,11 +59,11 @@ export default function TreatmentListPage() {
       />
       {(!cycles || cycles.length === 0) && (
         <Card className="p-10 text-center">
-          <Syringe className="mx-auto mb-3 h-8 w-8 text-slate-400" />
+          <Syringe className="mx-auto mb-3 h-8 w-8 text-ink-400" />
           <div className="text-sm font-medium">
             {locale === "zh" ? "还没有化疗方案" : "No protocol set"}
           </div>
-          <div className="mx-auto mt-1 max-w-sm text-sm text-slate-500">
+          <div className="mx-auto mt-1 max-w-sm text-sm text-ink-500">
             {locale === "zh"
               ? "选择一个方案，Anchor 会按周期日给出饮食、卫生、运动、睡眠、情绪的贴身提示。"
               : "Pick a protocol and Anchor will surface day-specific nudges across diet, hygiene, exercise, sleep, and mental health."}
@@ -51,34 +76,58 @@ export default function TreatmentListPage() {
       <ul className="space-y-2">
         {(cycles ?? []).map((c) => {
           const proto = PROTOCOL_BY_ID[c.protocol_id];
+          const style = STATUS_STYLES[c.status];
           return (
             <li key={c.id}>
-              <Link
-                href={`/treatment/${c.id}`}
-                className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-600"
-              >
-                <div className="space-y-1">
-                  <div className="text-sm font-medium">
-                    {proto?.short_name ?? c.protocol_id} ·{" "}
-                    {locale === "zh" ? "周期 " : "Cycle "}
-                    {c.cycle_number}
-                  </div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
-                    <span>
-                      {locale === "zh" ? "开始：" : "Start "}
-                      {formatDate(c.start_date, locale)}
-                    </span>
-                    <span className="capitalize">{c.status}</span>
-                    {c.dose_level !== 0 && (
+              <div className="group flex items-center justify-between rounded-xl border border-ink-100/70 bg-paper-2 p-4 transition-colors hover:border-ink-300">
+                <Link
+                  href={`/treatment/${c.id}`}
+                  className="flex min-w-0 flex-1 items-center gap-3"
+                >
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-ink-900">
                       <span>
-                        {locale === "zh" ? "减量 " : "Dose level "}
-                        {c.dose_level}
+                        {proto?.short_name ?? c.protocol_id} ·{" "}
+                        {locale === "zh" ? "周期 " : "Cycle "}
+                        {c.cycle_number}
                       </span>
-                    )}
+                      <span
+                        className={cn(
+                          "mono rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.1em]",
+                          style.cls,
+                        )}
+                      >
+                        {style.label[locale]}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-500">
+                      <span>
+                        {locale === "zh" ? "开始：" : "Start "}
+                        {formatDate(c.start_date, locale)}
+                      </span>
+                      {c.dose_level !== 0 && (
+                        <span>
+                          {locale === "zh" ? "减量 " : "Dose level "}
+                          {c.dose_level}
+                        </span>
+                      )}
+                      {c.notes && (
+                        <span className="truncate text-ink-400">
+                          · {c.notes}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200" />
-              </Link>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-ink-400 group-hover:text-ink-700" />
+                </Link>
+                <Link
+                  href={`/treatment/${c.id}/edit`}
+                  aria-label={locale === "zh" ? "编辑" : "Edit"}
+                  className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-400 hover:bg-ink-100 hover:text-ink-900"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Link>
+              </div>
             </li>
           );
         })}
