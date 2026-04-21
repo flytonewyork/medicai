@@ -11,12 +11,12 @@ import { runEngineAndPersist } from "~/lib/rules/engine";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils/cn";
-import { Check, Pencil, Thermometer } from "lucide-react";
+import { Check, Thermometer } from "lucide-react";
 
 const SCALES = [
-  { key: "energy", min: 0, max: 10, good: "high" as const, labelEn: "Energy", labelZh: "精力" },
-  { key: "pain", min: 0, max: 10, good: "low" as const, labelEn: "Pain", labelZh: "疼痛" },
-  { key: "nausea", min: 0, max: 10, good: "low" as const, labelEn: "Nausea", labelZh: "恶心" },
+  { key: "energy", good: "high" as const, labelEn: "Energy", labelZh: "精力" },
+  { key: "pain", good: "low" as const, labelEn: "Pain", labelZh: "疼痛" },
+  { key: "nausea", good: "low" as const, labelEn: "Nausea", labelZh: "恶心" },
 ] as const;
 
 type ScaleKey = (typeof SCALES)[number]["key"];
@@ -37,7 +37,6 @@ export function QuickCheckinCard() {
   const [fever, setFever] = useState(false);
   const [feverTemp, setFeverTemp] = useState("");
   const [saving, setSaving] = useState(false);
-  const [savedAt, setSavedAt] = useState<string | null>(null);
 
   if (existing) return null;
 
@@ -72,42 +71,9 @@ export function QuickCheckinCard() {
         updated_at: ts,
       });
       await runEngineAndPersist();
-      setSavedAt(ts);
     } finally {
       setSaving(false);
     }
-  }
-
-  if (savedAt) {
-    return (
-      <Card className="p-5">
-        <div className="flex items-center gap-3">
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-full"
-            style={{ background: "var(--ok-soft)", color: "var(--ok)" }}
-          >
-            <Check className="h-4 w-4" />
-          </div>
-          <div className="flex-1">
-            <div className="text-[13.5px] font-semibold text-ink-900">
-              {locale === "zh" ? "今日记录已保存" : "Today's check-in saved"}
-            </div>
-            <div className="mt-0.5 text-xs text-ink-500">
-              {locale === "zh"
-                ? "需要补上饮食 / 运动 / 症状详情？打开完整日志。"
-                : "Want to add food, movement, symptom flags? Open the full log."}
-            </div>
-          </div>
-          <Link
-            href="/daily/new"
-            className="inline-flex items-center gap-1 rounded-md border border-ink-200 bg-paper-2 px-3 py-1.5 text-xs font-medium text-ink-700 hover:border-ink-300"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-            {locale === "zh" ? "补记" : "Add detail"}
-          </Link>
-        </div>
-      </Card>
-    );
   }
 
   return (
@@ -137,7 +103,6 @@ export function QuickCheckinCard() {
             key={s.key}
             label={locale === "zh" ? s.labelZh : s.labelEn}
             value={values[s.key]}
-            good={s.good}
             onChange={(v) =>
               setValues((prev) => ({ ...prev, [s.key]: v }))
             }
@@ -174,12 +139,10 @@ export function QuickCheckinCard() {
 function ScaleRow({
   label,
   value,
-  good,
   onChange,
 }: {
   label: string;
   value: number;
-  good: "high" | "low";
   onChange: (v: number) => void;
 }) {
   return (
@@ -196,8 +159,6 @@ function ScaleRow({
       <div className="mt-2 grid grid-cols-11 gap-1.5">
         {Array.from({ length: 11 }, (_, n) => {
           const on = n === value;
-          const goodFill = good === "high" ? n >= value - 0 && false : false;
-          void goodFill;
           return (
             <button
               key={n}

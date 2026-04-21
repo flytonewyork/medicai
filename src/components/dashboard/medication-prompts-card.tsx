@@ -217,7 +217,7 @@ function PrimaryAction({
   }
   if (prompt.primary_action.kind === "log_mood") {
     return (
-      <Link href="/daily" onClick={() => void onAck()}>
+      <Link href="/daily/new" onClick={() => void onAck()}>
         <Button variant={variant} size="sm" className="gap-1">
           {label}
           <ChevronRight className="h-3.5 w-3.5" />
@@ -226,19 +226,43 @@ function PrimaryAction({
     );
   }
   if (prompt.primary_action.kind === "call_clinic") {
-    return (
-      <Link href="/settings#emergency" onClick={() => void onAck()}>
-        <Button variant={variant} size="sm" className="gap-1">
-          {label}
-          <ChevronRight className="h-3.5 w-3.5" />
-        </Button>
-      </Link>
-    );
+    return <CallClinicAction label={label} variant={variant} onAck={onAck} />;
   }
   return (
     <Button variant={variant} size="sm" onClick={() => void onAck()}>
       {label}
     </Button>
+  );
+}
+
+function CallClinicAction({
+  label,
+  variant,
+  onAck,
+}: {
+  label: string;
+  variant: "primary" | "tide";
+  onAck: () => void | Promise<void>;
+}) {
+  const settings = useLiveQuery(() => db.settings.toArray());
+  const phone =
+    settings?.[0]?.oncall_phone ?? settings?.[0]?.managing_oncologist_phone;
+  if (phone) {
+    return (
+      <a href={`tel:${phone.replace(/\s/g, "")}`} onClick={() => void onAck()}>
+        <Button variant={variant} size="sm" className="gap-1">
+          {label}
+        </Button>
+      </a>
+    );
+  }
+  return (
+    <Link href="/settings" onClick={() => void onAck()}>
+      <Button variant={variant} size="sm" className="gap-1">
+        {label}
+        <ChevronRight className="h-3.5 w-3.5" />
+      </Button>
+    </Link>
   );
 }
 
