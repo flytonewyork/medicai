@@ -12,7 +12,7 @@ import { CameraCapture } from "~/components/ingest/camera-capture";
 import { BulkQueue } from "~/components/ingest/bulk-queue";
 import {
   parseBulkItem,
-  processBulkItemOcr,
+  processBulkItem,
   saveBulkItem,
   type BulkItem,
 } from "~/lib/ingest/bulk";
@@ -56,19 +56,22 @@ export default function IngestPage() {
     setItems((prev) => [...prev, ...newItems]);
     itemsRef.current = [...itemsRef.current, ...newItems];
 
-    // Process OCR one at a time to avoid memory pressure from tesseract
+    // Process one at a time to avoid memory pressure. When the file is an
+    // image and a Claude key is configured, processBulkItem skips OCR
+    // entirely and extracts via vision directly; PDFs still go through OCR.
     for (const item of newItems) {
-      await processBulkItemOcr(item, mutate);
-      // auto-run heuristic parser so user sees a result quickly
+      await processBulkItem(item, apiKey, mutate);
       const latest =
         itemsRef.current.find((i) => i.id === item.id) ?? item;
-      if (latest.status === "parsing") {
+      // OCR path finishes at status "parsing" with ocrText populated — auto-run
+      // the heuristic parser so the user sees a first-pass result immediately.
+      if (latest.status === "parsing" && latest.ocrText) {
         await parseBulkItem(latest, "heuristic", apiKey, mutate);
       }
     }
   }
 
-  async function reparseItem(id: string, method: "heuristic" | "claude") {
+  async function reparseItem(id: string, method: "heuristic" | "claude" | "vision") {
     const item = itemsRef.current.find((i) => i.id === id);
     if (!item) return;
     await parseBulkItem(item, method, apiKey, mutate);

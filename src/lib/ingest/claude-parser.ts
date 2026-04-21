@@ -1,6 +1,7 @@
 "use client";
 
 import { z } from "zod";
+import type { PreparedImage } from "~/lib/ingest/image";
 
 const LabsSchema = z.object({
   // Tumour markers
@@ -95,7 +96,7 @@ export const ExtractionSchema = z.object({
 
 export type ClaudeExtraction = z.infer<typeof ExtractionSchema>;
 
-const SYSTEM_PROMPT = `You are a clinical document parser. You receive text extracted by OCR from a patient's medical document (lab report, radiology report, referral, clinic letter, or ctDNA result).
+const SYSTEM_PROMPT = `You are a clinical document parser. You receive a patient's medical document (lab report, radiology report, referral, clinic letter, or ctDNA result) either as OCR-extracted text or directly as an image.
 
 Your job is to extract structured fields into the given schema. Rules:
 1. If a field is not present or unclear, omit it or set it to null. Never invent values.
@@ -107,22 +108,66 @@ Your job is to extract structured fields into the given schema. Rules:
 4. For imaging: include the IMPRESSION paragraph in findings_summary. RECIST status only if the radiologist explicitly states CR/PR/SD/PD.
 5. Classify the document by 'kind'. Default to 'other' if unclear.
 6. Write a one-sentence plain-language summary.
-7. Extract 'pending_items' only for tests or referrals the document says are PLANNED — not the results in this document.`;
+7. Extract 'pending_items' only for tests or referrals the document says are PLANNED — not the results in this document.
+8. When given an image, read numbers carefully — prefer the most recent / most visible value, and ignore reference-range columns when extracting the patient's result.`;
 
 export async function extractWithClaude({
   apiKey,
   text,
+  image,
   model = "claude-opus-4-7",
 }: {
   apiKey: string;
-  text: string;
+  /** OCR'd text. Supply either this, `image`, or both. */
+  text?: string;
+  /** Image to read directly with vision. Supply either this, `text`, or both. */
+  image?: PreparedImage;
   model?: string;
 }): Promise<ClaudeExtraction> {
+  if (!text && !image) {
+    throw new Error("extractWithClaude requires at least text or image input");
+  }
   const [{ default: Anthropic }, { zodOutputFormat }] = await Promise.all([
     import("@anthropic-ai/sdk"),
     import("@anthropic-ai/sdk/helpers/zod"),
   ]);
   const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+
+  const content: Array<
+    | { type: "text"; text: string }
+    | {
+        type: "image";
+        source: {
+          type: "base64";
+          media_type: "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+          data: string;
+        };
+      }
+  > = [];
+
+  if (image) {
+    content.push({
+      type: "image",
+      source: {
+        type: "base64",
+        media_type: image.mediaType,
+        data: image.base64,
+      },
+    });
+  }
+  if (text && text.trim().length > 0) {
+    content.push({
+      type: "text",
+      text: image
+        ? `The OCR layer also produced the following text. Use it to cross-check the image when values are unclear:\n\n---\n${text}\n---`
+        : `Extract structured fields from the following OCR text:\n\n---\n${text}\n---`,
+    });
+  } else if (image) {
+    content.push({
+      type: "text",
+      text: "Read this medical document and extract the structured fields.",
+    });
+  }
 
   const response = await client.messages.parse({
     model,
@@ -138,12 +183,7 @@ export async function extractWithClaude({
     messages: [
       {
         role: "user",
-        content: [
-          {
-            type: "text",
-            text: `Extract structured fields from the following OCR text:\n\n---\n${text}\n---`,
-          },
-        ],
+        content,
       },
     ],
   });
