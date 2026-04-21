@@ -76,6 +76,42 @@ const LAB_PATTERNS: LabPattern[] = [
     patterns: [/magnesium\s*[:\s]*([\d.]+)/im],
   },
   { key: "phosphate", patterns: [/phosphate\s*[:\s]*([\d.]+)/im] },
+  // Additional mPDAC-relevant analytes
+  { key: "cea", patterns: [/\bcea\b[^:\n]*[:\s]+([\d.]+)/im] },
+  { key: "ldh", patterns: [/\bldh\b[^:\n]*[:\s]+([\d.]+)/im] },
+  {
+    key: "prealbumin",
+    patterns: [/pre[\s-]?albumin\s*[:\s]*([\d.]+)/im],
+  },
+  {
+    key: "hematocrit",
+    patterns: [/(?:haematocrit|hematocrit|hct)\s*[:\s]*([\d.]+)/im],
+  },
+  {
+    key: "wbc",
+    patterns: [/\b(?:wbc|white\s*(?:cell|blood)\s*count)\b[^\n]*?([\d.]+)/im],
+  },
+  {
+    key: "lymphocytes",
+    patterns: [/lymphocytes?\s*[:\s]*([\d.]+)/im],
+  },
+  { key: "ggt", patterns: [/\bggt\b[^:\n]*[:\s]+([\d.]+)/im] },
+  { key: "alp", patterns: [/\b(?:alp|alkaline\s*phosphatase)\b[^:\n]*[:\s]+([\d.]+)/im] },
+  { key: "urea", patterns: [/\b(?:urea|bun)\b\s*[:\s]*([\d.]+)/im] },
+  { key: "sodium", patterns: [/\b(?:sodium|na\+?)\b\s*[:\s]*([\d.]+)/im] },
+  { key: "potassium", patterns: [/\b(?:potassium|k\+?)\b\s*[:\s]*([\d.]+)/im] },
+  { key: "calcium", patterns: [/\bcalcium\b\s*[:\s]*([\d.]+)/im] },
+  { key: "glucose", patterns: [/\b(?:glucose|fasting\s*glucose|bsl)\b\s*[:\s]*([\d.]+)/im] },
+  { key: "hba1c", patterns: [/\bhba1c\b\s*[:\s]*([\d.]+)/im] },
+  { key: "ferritin", patterns: [/\bferritin\b\s*[:\s]*([\d.]+)/im] },
+  {
+    key: "vit_d",
+    patterns: [/\b(?:vit(?:amin)?\s*d|25[\s-]oh[\s-]d)\b[^\n]*?([\d.]+)/im],
+  },
+  { key: "b12", patterns: [/\b(?:b12|cobalamin|vit(?:amin)?\s*b12)\b[^\n]*?([\d.]+)/im] },
+  { key: "folate", patterns: [/\bfolate\b\s*[:\s]*([\d.]+)/im] },
+  { key: "inr", patterns: [/\binr\b\s*[:\s]*([\d.]+)/im] },
+  { key: "tsh", patterns: [/\btsh\b\s*[:\s]*([\d.]+)/im] },
 ];
 
 export function parseHeuristic(text: string): ParsedExtraction {

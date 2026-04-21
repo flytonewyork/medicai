@@ -1,9 +1,12 @@
 "use client";
 
 import { addDays, format, parseISO } from "date-fns";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
 import type { Protocol, TreatmentCycle } from "~/types/treatment";
 import { cycleDayFor, currentPhase } from "~/lib/treatment/engine";
+import { FlaskConical } from "lucide-react";
 
 type Swatch = {
   bg: string;
@@ -77,6 +80,33 @@ export function CycleCalendar({
     return { n, date, phase, isDose };
   });
 
+  // Lab draw markers — any lab row whose date falls inside this cycle window.
+  const cycleEnd = addDays(start, protocol.cycle_length_days - 1);
+  const cycleStartStr = cycle.start_date;
+  const cycleEndStr = format(cycleEnd, "yyyy-MM-dd");
+  const labsInCycle = useLiveQuery(
+    () =>
+      db.labs
+        .where("date")
+        .between(cycleStartStr, cycleEndStr, true, true)
+        .toArray(),
+    [cycleStartStr, cycleEndStr],
+  );
+  const labDays = new Set(
+    (labsInCycle ?? []).map((l) =>
+      // Day number within this cycle
+      Math.max(
+        1,
+        Math.min(
+          protocol.cycle_length_days,
+          Math.floor(
+            (parseISO(l.date).getTime() - start.getTime()) / 86400000,
+          ) + 1,
+        ),
+      ),
+    ),
+  );
+
   return (
     <div>
       <div className="grid grid-cols-7 gap-1.5">
@@ -84,16 +114,23 @@ export function CycleCalendar({
           const isToday = n === todayDay;
           const key = isDose ? "dose_day" : phase?.key ?? "rest";
           const swatch = SWATCHES[key] ?? SWATCHES.rest!;
+          const hasLab = labDays.has(n);
           return (
             <div
               key={n}
-              className="flex aspect-square flex-col items-center justify-center rounded-[10px]"
+              className="relative flex aspect-square flex-col items-center justify-center rounded-[10px]"
               style={{
                 background: swatch.bg,
                 color: swatch.color,
                 boxShadow: isToday ? "0 0 0 2px var(--ink-900)" : undefined,
               }}
-              title={`Day ${n} · ${format(date, "d MMM")} · ${phase?.label[locale] ?? ""}`}
+              title={[
+                `Day ${n} · ${format(date, "d MMM")}`,
+                phase?.label[locale],
+                hasLab ? (locale === "zh" ? "化验" : "lab draw") : undefined,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             >
               <span className="mono text-[9px] uppercase opacity-70">
                 D{n}
@@ -101,6 +138,18 @@ export function CycleCalendar({
               <span className="num text-[15px] font-semibold leading-none">
                 {format(date, "d")}
               </span>
+              {hasLab && (
+                <span
+                  className="absolute bottom-1 right-1 flex h-3 w-3 items-center justify-center rounded-full"
+                  style={{
+                    background: "var(--ink-900)",
+                    color: "var(--paper)",
+                  }}
+                  aria-label={locale === "zh" ? "化验" : "lab"}
+                >
+                  <FlaskConical className="h-2 w-2" strokeWidth={2.5} />
+                </span>
+              )}
             </div>
           );
         })}
@@ -120,6 +169,15 @@ export function CycleCalendar({
             </div>
           );
         })}
+        <div className="flex items-center gap-1.5">
+          <span
+            className="flex h-3 w-3 items-center justify-center rounded-full"
+            style={{ background: "var(--ink-900)", color: "var(--paper)" }}
+          >
+            <FlaskConical className="h-2 w-2" strokeWidth={2.5} />
+          </span>
+          {locale === "zh" ? "化验" : "Lab draw"}
+        </div>
       </div>
     </div>
   );

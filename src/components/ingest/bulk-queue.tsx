@@ -13,6 +13,7 @@ import {
   Trash2,
   Sparkles,
   ScanText,
+  Eye,
 } from "lucide-react";
 
 const STATUS_META: Record<
@@ -23,6 +24,11 @@ const STATUS_META: Record<
     label: { en: "Queued", zh: "排队" },
     tone: "text-ink-400",
     icon: FileText,
+  },
+  vision: {
+    label: { en: "Claude reading image", zh: "Claude 正在读图" },
+    tone: "text-[var(--tide-2)]",
+    icon: Eye,
   },
   ocr: {
     label: { en: "OCR running", zh: "识别中" },
@@ -151,6 +157,7 @@ function BulkRow({
   const Icon = meta.icon;
   const isBusy =
     item.status === "ocr" ||
+    item.status === "vision" ||
     item.status === "parsing" ||
     item.status === "saving";
 
@@ -170,7 +177,8 @@ function BulkRow({
               className={cn(
                 "h-3 w-3",
                 meta.tone,
-                isBusy && "animate-spin",
+                // Only spin the loader icon; vision uses an eye that shouldn't spin.
+                isBusy && Icon === Loader2 && "animate-spin",
               )}
             />
             <span className={meta.tone}>{meta.label[locale]}</span>
