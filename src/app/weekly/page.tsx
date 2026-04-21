@@ -37,11 +37,11 @@ export default function WeeklyListPage() {
 
       {(!assessments || assessments.length === 0) && (
         <Card className="p-10 text-center">
-          <CalendarRange className="mx-auto mb-3 h-8 w-8 text-slate-400" />
+          <CalendarRange className="mx-auto mb-3 h-8 w-8 text-ink-400" />
           <div className="text-sm font-medium">
             {locale === "zh" ? "还没有每周记录" : "No weekly entries yet"}
           </div>
-          <div className="mx-auto mt-1 max-w-sm text-sm text-slate-500">
+          <div className="mx-auto mt-1 max-w-sm text-sm text-ink-500">
             {locale === "zh"
               ? "每周日晚做一次，五分钟。"
               : "Best done Sunday evening. Takes ~5 minutes."}
@@ -57,13 +57,13 @@ export default function WeeklyListPage() {
           <li key={a.id}>
             <Link
               href={`/weekly/${a.id}`}
-              className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-600"
+              className="group flex items-center justify-between rounded-xl border border-ink-100/70 bg-paper-2 p-4 transition-colors hover:border-ink-300"
             >
               <div className="space-y-1">
-                <div className="text-sm font-medium">
+                <div className="text-sm font-medium text-ink-900">
                   {formatWeekRange(a.week_start, locale)}
                 </div>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-500">
                   <span>
                     {locale === "zh" ? "修习" : "practice"}{" "}
                     {a.practice_full_days + a.practice_reduced_days} / 7
@@ -85,12 +85,12 @@ export default function WeeklyListPage() {
                   )}
                 </div>
                 {a.concerns && (
-                  <div className="text-xs text-slate-600 dark:text-slate-400 line-clamp-1">
+                  <div className="text-xs text-ink-600 line-clamp-1">
                     {a.concerns}
                   </div>
                 )}
               </div>
-              <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200" />
+              <ChevronRight className="h-4 w-4 text-ink-400 group-hover:text-ink-700" />
             </Link>
           </li>
         ))}

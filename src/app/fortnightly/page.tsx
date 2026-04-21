@@ -41,11 +41,11 @@ export default function FortnightlyListPage() {
 
       {(!assessments || assessments.length === 0) && (
         <Card className="p-10 text-center">
-          <Stethoscope className="mx-auto mb-3 h-8 w-8 text-slate-400" />
+          <Stethoscope className="mx-auto mb-3 h-8 w-8 text-ink-400" />
           <div className="text-sm font-medium">
             {locale === "zh" ? "还没有评估记录" : "No assessments yet"}
           </div>
-          <div className="mx-auto mt-1 max-w-sm text-sm text-slate-500">
+          <div className="mx-auto mt-1 max-w-sm text-sm text-ink-500">
             {locale === "zh"
               ? "第一次测试将作为之后对比的基线。"
               : "Your first measurements establish the baseline that later values compare against."}
@@ -61,13 +61,13 @@ export default function FortnightlyListPage() {
           <li key={a.id}>
             <Link
               href={`/fortnightly/${a.id}`}
-              className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-600"
+              className="group flex items-center justify-between rounded-xl border border-ink-100/70 bg-paper-2 p-4 transition-colors hover:border-ink-300"
             >
               <div className="space-y-1">
-                <div className="text-sm font-medium">
+                <div className="text-sm font-medium text-ink-900">
                   {formatDate(a.assessment_date, locale)}
                 </div>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-500">
                   <span>ECOG {a.ecog_self}</span>
                   {typeof a.grip_dominant_kg === "number" && (
                     <span>grip {a.grip_dominant_kg} kg</span>
@@ -83,7 +83,7 @@ export default function FortnightlyListPage() {
                   )}
                 </div>
               </div>
-              <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200" />
+              <ChevronRight className="h-4 w-4 text-ink-400 group-hover:text-ink-700" />
             </Link>
           </li>
         ))}
