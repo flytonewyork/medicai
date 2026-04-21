@@ -21,6 +21,7 @@ const ITEMS = [
   { href: "/", key: "nav.dashboard", icon: LayoutDashboard },
   { href: "/assessment", key: "nav.assessment", icon: Compass },
   { href: "/treatment", key: "nav.treatment", icon: Syringe },
+  { href: "/medications", key: "nav.medications", icon: FlaskConical },
   { href: "/labs", key: "nav.labs", icon: FlaskConical },
   { href: "/tasks", key: "nav.tasks", icon: ListTodo },
   { href: "/bridge", key: "nav.bridge", icon: Route },
