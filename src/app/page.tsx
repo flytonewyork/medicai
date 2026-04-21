@@ -13,7 +13,6 @@ import { QuickCheckinCard } from "~/components/dashboard/quick-checkin-card";
 import { TodayFeed } from "~/components/dashboard/today-feed";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { PageHeader, SectionHeader } from "~/components/ui/page-header";
-import { Bell } from "lucide-react";
 
 export default function DashboardPage() {
   const t = useT();
@@ -68,15 +67,6 @@ export default function DashboardPage() {
               </>
             )}
           </>
-        }
-        action={
-          <button
-            type="button"
-            aria-label="notifications"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-paper-2 text-ink-700 shadow-sm hover:bg-ink-100"
-          >
-            <Bell className="h-4 w-4" />
-          </button>
         }
       />
 
