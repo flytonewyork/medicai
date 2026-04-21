@@ -21,7 +21,11 @@ import type {
 import type { Trial } from "~/types/bridge";
 import type { TreatmentCycle } from "~/types/treatment";
 import type { PatientTask } from "~/types/task";
-import type { Medication, MedicationEvent } from "~/types/medication";
+import type {
+  Medication,
+  MedicationEvent,
+  MedicationPromptEvent,
+} from "~/types/medication";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -36,6 +40,7 @@ export class AnchorDB extends Dexie {
   treatments!: Table<Treatment, number>;
   medications!: Table<Medication, number>;
   medication_events!: Table<MedicationEvent, number>;
+  medication_prompt_events!: Table<MedicationPromptEvent, number>;
   life_events!: Table<LifeEvent, number>;
   decisions!: Table<Decision, number>;
   zone_alerts!: Table<ZoneAlert, number>;
@@ -90,6 +95,13 @@ export class AnchorDB extends Dexie {
         "++id, drug_id, category, active, cycle_id, source, started_on",
       medication_events:
         "++id, medication_id, drug_id, event_type, logged_at, [drug_id+logged_at]",
+    });
+    // v7: context-aware medication prompts (2b.1). The compound
+    // [rule_id+fired_for] index dedupes a prompt within its trigger window so
+    // the dashboard card never re-shows an acknowledged or dismissed prompt.
+    this.version(7).stores({
+      medication_prompt_events:
+        "++id, rule_id, status, shown_at, drug_id, cycle_id, [rule_id+fired_for]",
     });
   }
 }
