@@ -20,6 +20,7 @@ import type {
   ComprehensiveAssessment,
 } from "~/types/clinical";
 import type { Trial } from "~/types/bridge";
+import type { TreatmentCycle } from "~/types/treatment";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -41,6 +42,7 @@ export class AnchorDB extends Dexie {
   pending_results!: Table<PendingResult, number>;
   ingested_documents!: Table<IngestedDocument, number>;
   comprehensive_assessments!: Table<ComprehensiveAssessment, number>;
+  treatment_cycles!: Table<TreatmentCycle, number>;
 
   constructor() {
     super("anchor_db");
@@ -69,6 +71,10 @@ export class AnchorDB extends Dexie {
     this.version(3).stores({
       comprehensive_assessments:
         "++id, assessment_date, status, trigger, started_at",
+    });
+    this.version(4).stores({
+      treatment_cycles:
+        "++id, start_date, status, protocol_id, cycle_number",
     });
   }
 }

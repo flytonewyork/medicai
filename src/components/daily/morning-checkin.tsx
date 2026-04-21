@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { SectionHeader } from "~/components/ui/page-header";
 import { ScaleInput } from "./scale-input";
 import { Toggle } from "./toggle";
+import { CycleBanner } from "./cycle-banner";
 
 const INITIAL = {
   date: todayISO(),
@@ -180,6 +181,7 @@ export function MorningCheckin({
 
   return (
     <div className="mx-auto max-w-xl space-y-6 p-4 md:p-8">
+      <CycleBanner />
       <header className="space-y-2">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold tracking-tight">
