@@ -9,7 +9,6 @@ import type {
   CtdnaResult,
   MolecularProfile,
   Treatment,
-  Medication,
   LifeEvent,
   Decision,
   ZoneAlert,
@@ -22,6 +21,7 @@ import type {
 import type { Trial } from "~/types/bridge";
 import type { TreatmentCycle } from "~/types/treatment";
 import type { PatientTask } from "~/types/task";
+import type { Medication, MedicationEvent } from "~/types/medication";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -35,6 +35,7 @@ export class AnchorDB extends Dexie {
   trials!: Table<Trial, number>;
   treatments!: Table<Treatment, number>;
   medications!: Table<Medication, number>;
+  medication_events!: Table<MedicationEvent, number>;
   life_events!: Table<LifeEvent, number>;
   decisions!: Table<Decision, number>;
   zone_alerts!: Table<ZoneAlert, number>;
@@ -81,6 +82,14 @@ export class AnchorDB extends Dexie {
     this.version(5).stores({
       patient_tasks:
         "++id, due_date, active, category, schedule_kind, preset_id",
+    });
+    // v6: reshape medications table for logging-integrated module + add events.
+    // The v1 medications table was unused; safe to redefine indexes.
+    this.version(6).stores({
+      medications:
+        "++id, drug_id, category, active, cycle_id, source, started_on",
+      medication_events:
+        "++id, medication_id, drug_id, event_type, logged_at, [drug_id+logged_at]",
     });
   }
 }

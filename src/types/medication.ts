@@ -109,31 +109,60 @@ export interface DrugInteraction {
   management: LocalizedText;
 }
 
-// ---- Runtime persistence shapes (step 2 will write these) ------------------
+// ---- Runtime persistence shapes --------------------------------------------
 
-export interface MedicationRecord {
+// Source of the medication in the patient's active list.
+// - "protocol_agent"  — chemo agent auto-derived from the active cycle's protocol
+// - "protocol_supportive" — typical_supportive from the protocol (auto-derived)
+// - "user_added"     — patient or carer added manually (e.g. PRN symptomatic)
+export type MedicationSource =
+  | "protocol_agent"
+  | "protocol_supportive"
+  | "user_added";
+
+export interface Medication {
   id?: number;
-  drug_id: string;
-  display_name?: string;
+  drug_id: string;            // joins to DRUG_REGISTRY; "custom:<slug>" for freeform
+  display_name?: string;      // override when drug_id is custom or user wants a tag
   category: MedicationCategory;
-  dose: string;
+  dose: string;               // e.g. "400 mg", "1000 mg/m²"
   route: MedicationRoute;
   schedule: DoseSchedule;
+  source: MedicationSource;
+  cycle_id?: number;          // for protocol-derived meds, link to TreatmentCycle.id
   active: boolean;
   notes?: string;
-  started_on: string;
+  started_on: string;         // ISO date
   stopped_on?: string;
   created_at: string;
   updated_at: string;
 }
 
-export interface DoseLogEntry {
+// A single logged dose (taken, skipped, or side-effect observation).
+export interface MedicationEvent {
   id?: number;
   medication_id: number;
-  scheduled_at?: string;
-  logged_at: string;
-  taken: boolean;
-  dose_taken?: string;
+  drug_id: string;            // denormalized for queries without joins
+  event_type: "taken" | "missed" | "side_effect_only";
+  logged_at: string;          // ISO timestamp
+  scheduled_at?: string;      // if the med had a scheduled time
+  dose_taken?: string;        // override of schedule dose
+  // Side-effect flags observed at or near this log
+  side_effects?: string[];    // e.g. ["nausea", "fatigue", "diarrhea"]
+  side_effect_severity?: 1 | 2 | 3 | 4 | 5; // 1=mild, 5=severe (patient self-report)
   note?: string;
-  source: "check_in" | "quick_log" | "backfill";
+  source: "daily_checkin" | "quick_log" | "fab" | "backfill";
+  created_at: string;
+}
+
+// Convenience: "what's due / what was logged today" for a single medication.
+export interface MedicationTodayStatus {
+  medication: Medication;
+  drug_name_en: string;
+  drug_name_zh: string;
+  due_count: number;          // expected doses today from schedule
+  logged_count: number;       // actual dose events today
+  last_logged_at?: string;
+  is_due_now: boolean;        // within the next scheduled-time window
+  next_due_at?: string;       // ISO timestamp of the next scheduled dose today
 }

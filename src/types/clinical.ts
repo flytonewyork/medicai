@@ -226,18 +226,9 @@ export interface Treatment {
   updated_at: string;
 }
 
-export interface Medication {
-  id?: number;
-  name: string;
-  dose?: string;
-  frequency?: string;
-  start_date: string;
-  stop_date?: string;
-  active: boolean;
-  notes?: string;
-  created_at: string;
-  updated_at: string;
-}
+// NOTE: Medication and MedicationEvent moved to ~/types/medication for the
+// logging-integrated module. This re-export keeps existing consumers working.
+export type { Medication, MedicationEvent } from "./medication";
 
 export interface LifeEvent {
   id?: number;
