@@ -1,10 +1,11 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
+import { useState } from "react";
 import { db } from "~/lib/db/dexie";
 import { useZoneStatus } from "~/hooks/use-zone-status";
 import { useLocale } from "~/hooks/use-translate";
-import { Phone, AlertOctagon, MapPin } from "lucide-react";
+import { Phone, AlertOctagon, MapPin, ChevronDown, ChevronUp } from "lucide-react";
 
 export function EmergencyCard() {
   const locale = useLocale();
@@ -17,33 +18,41 @@ export function EmergencyCard() {
     s?.managing_oncologist_phone ||
     s?.hospital_phone;
 
-  if (!hasAnyContact) return null;
+  // Default open whenever zone is warn/urgent; otherwise collapsed but
+  // still always reachable via the chevron.
+  const alertActive = zone === "red" || zone === "orange";
+  const [open, setOpen] = useState(alertActive);
 
-  const showExpanded = zone === "red" || zone === "orange";
+  if (!hasAnyContact) return null;
 
   return (
     <section
       className="rounded-[var(--r-md)] border"
       style={{
-        background: showExpanded ? "var(--warn-soft)" : "var(--paper-2)",
-        borderColor: showExpanded
+        background: alertActive ? "var(--warn-soft)" : "var(--paper-2)",
+        borderColor: alertActive
           ? "var(--warn)"
           : "color-mix(in oklch, var(--ink-900), transparent 92%)",
       }}
     >
-      <div className="flex items-center gap-3 px-4 py-3">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-3 px-4 py-3 text-left"
+        aria-expanded={open}
+      >
         <div
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
           style={{
-            background: showExpanded ? "var(--warn)" : "var(--tide-soft)",
-            color: showExpanded ? "white" : "var(--tide-2)",
+            background: alertActive ? "var(--warn)" : "var(--tide-soft)",
+            color: alertActive ? "white" : "var(--tide-2)",
           }}
         >
           <AlertOctagon className="h-4 w-4" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-[12.5px] font-semibold text-ink-900">
-            {showExpanded
+            {alertActive
               ? locale === "zh"
                 ? "警示激活 — 必要时拨打"
                 : "Alert active — call if needed"
@@ -57,9 +66,14 @@ export function EmergencyCard() {
               : "Temp ≥ 38 °C → hospital now"}
           </div>
         </div>
-      </div>
+        {open ? (
+          <ChevronUp className="h-4 w-4 shrink-0 text-ink-400" />
+        ) : (
+          <ChevronDown className="h-4 w-4 shrink-0 text-ink-400" />
+        )}
+      </button>
 
-      {showExpanded && (
+      {open && (
         <div className="border-t border-ink-100/70 px-4 py-3 space-y-1.5">
           {s?.oncall_phone && (
             <ContactLink
