@@ -74,7 +74,7 @@ export function MobileBottomNav() {
   const t = useT();
   const pathname = usePathname();
   const mobileItems = ITEMS.filter((i) =>
-    ["/", "/treatment", "/labs", "/tasks", "/assessment"].includes(i.href),
+    ["/", "/treatment", "/medications", "/labs", "/tasks", "/assessment"].includes(i.href),
   );
   return (
     <nav className="a-glass fixed inset-x-3 bottom-3 z-40 flex justify-around rounded-[22px] px-2 py-2.5 shadow-lg md:hidden">
