@@ -1,0 +1,857 @@
+import type { DrugInfo, DoseSchedule, LocalizedText } from "~/types/medication";
+
+// Common schedule templates to reduce duplication
+const SCHED_BID_MEALS: DoseSchedule = {
+  kind: "with_meals",
+  times_per_day: 2,
+  label: { en: "Twice daily with meals", zh: "每日两次，与餐同服" },
+};
+
+const SCHED_TID_MEALS: DoseSchedule = {
+  kind: "with_meals",
+  times_per_day: 3,
+  label: { en: "Three times daily with meals", zh: "每日三次，与餐同服" },
+};
+
+const SCHED_DAILY: DoseSchedule = {
+  kind: "fixed",
+  times_per_day: 1,
+  clock_times: ["08:00"],
+  label: { en: "Once daily morning", zh: "每日一次，早上" },
+};
+
+const SCHED_NIGHTLY: DoseSchedule = {
+  kind: "fixed",
+  times_per_day: 1,
+  clock_times: ["20:00"],
+  label: { en: "Once daily evening", zh: "每日一次，晚上" },
+};
+
+const SCHED_PRN: DoseSchedule = {
+  kind: "prn",
+  label: { en: "As needed", zh: "按需" },
+};
+
+// ============================================================================
+// CHEMOTHERAPY & TARGETED AGENTS
+// ============================================================================
+
+const GEMCITABINE: DrugInfo = {
+  id: "gemcitabine",
+  name: { en: "Gemcitabine", zh: "吉西他滨" },
+  aliases: ["Gemzar"],
+  category: "chemo",
+  default_route: "IV",
+  mpdac_relevant: true,
+  drug_class: {
+    en: "Nucleoside analogue — antimetabolite",
+    zh: "核苷类似物 —— 抗代谢药",
+  },
+  mechanism: {
+    en: "Inhibits DNA synthesis by mimicking deoxyribose. Activates apoptosis in rapidly dividing cells. First-line backbone for mPDAC.",
+    zh: "模拟脱氧核糖抑制 DNA 合成，激发快速分裂细胞凋亡。转移性胰腺癌一线骨干药物。",
+  },
+  typical_doses: [
+    { en: "1000 mg/m² IV", zh: "1000 mg/m² 静脉注射" },
+  ],
+  default_schedules: [
+    {
+      kind: "cycle_linked",
+      cycle_days: [1, 8, 15],
+      label: { en: "D1/D8/D15 of 28-day cycle", zh: "28 天周期的 D1/D8/D15" },
+    },
+  ],
+  side_effects: {
+    common: [
+      {
+        en: "Myelosuppression (neutrophils, platelets, RBC) — nadir D10–14",
+        zh: "骨髓抑制（中性粒细胞、血小板、红细胞）—— D10–14 低谷",
+      },
+      { en: "Nausea, vomiting, loss of appetite", zh: "恶心、呕吐、食欲不振" },
+      { en: "Fatigue, malaise", zh: "疲劳、不适感" },
+      { en: "Flu-like syndrome (myalgia, fever)", zh: "流感样症状（肌肉痛、发热）" },
+      {
+        en: "Rash, mild alopecia, nail changes",
+        zh: "皮疹、轻度脱发、指甲改变",
+      },
+    ],
+    serious: [
+      {
+        en: "Febrile neutropenia — fever + ANC <500 is oncologic emergency",
+        zh: "发热性中性粒细胞减少 —— 发热 + ANC <500 是肿瘤学急症",
+      },
+      { en: "Hemolytic-uremic syndrome (rare, <1%)", zh: "溶血尿毒综合征（罕见，<1%）" },
+      {
+        en: "Hepatotoxicity, elevated transaminases",
+        zh: "肝毒性、转氨酶升高",
+      },
+    ],
+  },
+  monitoring: [
+    {
+      en: "FBC (CBC) before each dose; ANC <1000 → hold or delay",
+      zh: "每次用药前查血常规；ANC <1000 → 暂停或延期",
+    },
+    {
+      en: "LFTs (ALT, AST, ALP, bilirubin) — baseline and D22",
+      zh: "肝功（ALT、AST、ALP、胆红素）—— 基线和 D22",
+    },
+    { en: "U&Es, creatinine", zh: "电解质、肌酐" },
+  ],
+  diet_interactions: [],
+  protocol_ids: ["gnp_weekly", "gnp_biweekly", "gem_maintenance"],
+  supportive_id: undefined,
+  clinical_note: {
+    en: "Hu Lin tolerates weekly GnP well. Monitor for cumulative neuropathy and declining counts.",
+    zh: "胡林对每周 GnP 耐受良好。监测累积性神经病变和血象下降。",
+  },
+};
+
+const NAB_PACLITAXEL: DrugInfo = {
+  id: "nab_paclitaxel",
+  name: { en: "nab-Paclitaxel", zh: "白蛋白紫杉醇" },
+  aliases: ["Abraxane", "albumin-bound paclitaxel"],
+  category: "chemo",
+  default_route: "IV",
+  mpdac_relevant: true,
+  drug_class: {
+    en: "Taxane — microtubule stabilizer",
+    zh: "紫杉烷类 —— 微管稳定剂",
+  },
+  mechanism: {
+    en: "Binds to β-tubulin; stabilizes microtubules and inhibits mitosis. Albumin-bound formulation reduces hypersensitivity; nanoparticle delivers drug to tumor stroma.",
+    zh: "结合 β-微管蛋白，稳定微管并抑制有丝分裂。白蛋白结合制剂减少过敏反应；纳米粒递送药物至肿瘤基质。",
+  },
+  typical_doses: [{ en: "125 mg/m² IV", zh: "125 mg/m² 静脉注射" }],
+  default_schedules: [
+    {
+      kind: "cycle_linked",
+      cycle_days: [1, 8, 15],
+      label: { en: "D1/D8/D15 of 28-day cycle", zh: "28 天周期的 D1/D8/D15" },
+    },
+  ],
+  side_effects: {
+    common: [
+      {
+        en: "Peripheral neuropathy (cumulative, dose-dependent) — paresthesia, numbness",
+        zh: "周围神经病变（累积的、剂量相关的）—— 感觉异常、麻木",
+      },
+      { en: "Myalgia, arthralgia (joint/muscle pain)", zh: "肌痛、关节痛" },
+      { en: "Fatigue", zh: "疲劳" },
+      { en: "Alopecia (hair loss)", zh: "脱发" },
+      {
+        en: "Mild nausea, vomiting (less than gemcitabine alone)",
+        zh: "轻度恶心、呕吐（轻于单用吉西他滨）",
+      },
+    ],
+    serious: [
+      {
+        en: "Severe peripheral neuropathy — may be irreversible, dose-limiting",
+        zh: "严重周围神经病变 —— 可能不可逆，剂量限制性",
+      },
+      {
+        en: "Myelosuppression (less common than gemcitabine)",
+        zh: "骨髓抑制（不如吉西他滨常见）",
+      },
+    ],
+  },
+  monitoring: [
+    {
+      en: "Neuropathy grade at each visit (CTCAE v5). Dose hold or reduce if Grade 2+.",
+      zh: "每次就诊评估神经病变分级（CTCAE v5）。分级 2+ 时暂停或减量。",
+    },
+    { en: "FBC before each dose", zh: "每次用药前查血常规" },
+  ],
+  diet_interactions: [],
+  protocol_ids: ["gnp_weekly", "gnp_biweekly"],
+  clinical_note: {
+    en: "Cumulative neuropathy is the main toxicity. Early flagging of tingling/numbness is critical to preserve function.",
+    zh: "累积性神经病变是主要毒性。早期标记刺痛 / 麻木对保留功能至关重要。",
+  },
+};
+
+const NARMAFOTINIB: DrugInfo = {
+  id: "narmafotinib",
+  name: { en: "Narmafotinib", zh: "纳马非替尼" },
+  aliases: ["AMP945"],
+  category: "targeted",
+  default_route: "PO",
+  mpdac_relevant: true,
+  drug_class: {
+    en: "FAK (focal adhesion kinase) inhibitor",
+    zh: "FAK（黏着斑激酶）抑制剂",
+  },
+  mechanism: {
+    en: "Inhibits focal adhesion kinase, reducing stromal fibrosis and remodeling. Hypothesized to improve gemcitabine delivery in mPDAC. Under investigation in ACCENT trial.",
+    zh: "抑制黏着斑激酶，减少基质纤维化和重建。假设改善吉西他滨在 mPDAC 中的递送。在 ACCENT 研究中调查。",
+  },
+  typical_doses: [{ en: "400 mg BID (twice daily)", zh: "400 mg，每日两次" }],
+  default_schedules: [
+    {
+      kind: "with_meals",
+      times_per_day: 2,
+      label: {
+        en: "400 mg BID with food, continuous throughout cycle",
+        zh: "400 mg 每日两次，与食物同服，周期全程连续",
+      },
+    },
+  ],
+  side_effects: {
+    common: [
+      { en: "Nausea, vomiting (early onset)", zh: "恶心、呕吐（早期发生）" },
+      { en: "Diarrhea or loose stools", zh: "腹泻或稀便" },
+      { en: "Fatigue", zh: "疲劳" },
+      {
+        en: "Elevated liver enzymes (ALT, AST) — reversible with dose reduction",
+        zh: "肝酶升高（ALT、AST）—— 减量后可逆",
+      },
+      { en: "Rash, pruritus (itching)", zh: "皮疹、瘙痒" },
+    ],
+    serious: [
+      {
+        en: "Hepatotoxicity — Grade 3+ transaminase elevation (ALT/AST >5× ULN)",
+        zh: "肝毒性 —— 转氨酶升高 >5× 正常上限（Grade 3+）",
+      },
+      {
+        en: "Diarrhea Grade 2+ — requires anti-diarrheal (loperamide)",
+        zh: "腹泻 Grade 2+ —— 需要止泻药（洛哌丁胺）",
+      },
+    ],
+  },
+  monitoring: [
+    {
+      en: "LFTs (ALT, AST, ALP, bilirubin) before each cycle — dose-limiting signal",
+      zh: "LFTs（ALT、AST、ALP、胆红素）每周期前 —— 剂量限制信号",
+    },
+    { en: "U&Es", zh: "电解质" },
+    { en: "Rash monitoring — photo any new lesions", zh: "皮疹监测 —— 拍照记录任何新皮损" },
+  ],
+  diet_interactions: [
+    {
+      food: { en: "High-fat meals", zh: "高脂肪餐" },
+      effect: {
+        en: "May increase narmafotinib absorption — consistent food intake advisable",
+        zh: "可能增加纳马非替尼吸收 —— 建议食物摄入一致",
+      },
+      severity: "info",
+    },
+  ],
+  protocol_ids: ["gnp_narmafotinib"],
+  clinical_note: {
+    en: "Investigational agent in ACCENT trial. Hepatotoxicity and GI tolerance most important to monitor. Oral adherence is critical — missed doses reduce efficacy.",
+    zh: "ACCENT 试验中的试验性药物。肝毒性和胃肠耐受最重要。口服依从性至关重要 —— 漏服降低疗效。",
+  },
+};
+
+const OXALIPLATIN: DrugInfo = {
+  id: "oxaliplatin",
+  name: { en: "Oxaliplatin", zh: "奥沙利铂" },
+  aliases: ["Eloxatin"],
+  category: "chemo",
+  default_route: "IV",
+  mpdac_relevant: true,
+  drug_class: {
+    en: "Platinum compound — DNA-crosslinking agent",
+    zh: "铂化合物 —— DNA 交联剂",
+  },
+  mechanism: {
+    en: "Forms platinum-DNA adducts causing interstrand crosslinks. Used in mFFX for mPDAC.",
+    zh: "形成铂-DNA 加合体导致链间交联。用于 mPDAC 的 mFFX。",
+  },
+  typical_doses: [{ en: "85 mg/m² IV", zh: "85 mg/m² 静脉注射" }],
+  default_schedules: [
+    {
+      kind: "cycle_linked",
+      cycle_days: [1],
+      label: { en: "Day 1 of 14-day mFFX cycle", zh: "14 天 mFFX 周期的第 1 天" },
+    },
+  ],
+  side_effects: {
+    common: [
+      {
+        en: "Acute cold dysaesthesia (triggered by cold exposure) — 3–5 days post-dose",
+        zh: "急性遇冷异感（遇冷触发）—— 用药后 3–5 天",
+      },
+      {
+        en: "Chronic cold sensitivity (paresthesia in hands/feet)",
+        zh: "慢性遇冷敏感（手脚感觉异常）",
+      },
+      { en: "Nausea, vomiting", zh: "恶心、呕吐" },
+      { en: "Fatigue", zh: "疲劳" },
+      {
+        en: "Myelosuppression (mild compared to gemcitabine)",
+        zh: "骨髓抑制（轻于吉西他滨）",
+      },
+    ],
+    serious: [
+      {
+        en: "Anaphylaxis / hypersensitivity (especially after multiple cycles)",
+        zh: "过敏反应 / 过敏性反应（尤其在多个周期后）",
+      },
+      {
+        en: "Sensory neuropathy (cumulative) — can be severe and irreversible",
+        zh: "感觉神经病变（累积）—— 可能严重且不可逆",
+      },
+      {
+        en: "Acute kidney injury (rare, usually reversible with hydration)",
+        zh: "急性肾损伤（罕见，通常通过补液可逆）",
+      },
+    ],
+  },
+  monitoring: [
+    {
+      en: "Neuropathy grade (CTCAE) — critical for mFFX continuation",
+      zh: "神经病变分级（CTCAE）—— 对 mFFX 继续至关重要",
+    },
+    {
+      en: "Premedication with dexamethasone + 5-HT3 blocker + H2 blocker for first dose",
+      zh: "首次用药前给药：地塞米松 + 5-HT3 拮抗剂 + H2 受体阻滞剂",
+    },
+    { en: "FBC, U&Es, LFTs", zh: "血常规、电解质、肝功" },
+  ],
+  diet_interactions: [
+    {
+      food: { en: "Cold foods, cold drinks, cold air on skin", zh: "冷食、冷饮、冷空气接触皮肤" },
+      effect: {
+        en: "Triggers acute dysaesthesia — throat spasm, jaw pain, dysphagia (swallowing difficulty)",
+        zh: "触发急性异感 —— 喉痉挛、下颌痛、吞咽困难",
+      },
+      severity: "warning",
+    },
+  ],
+  protocol_ids: ["mffx"],
+  clinical_note: {
+    en: "Oxaliplatin's cold sensitivity is the most distinctive toxicity. Patients must avoid cold exposure for 3–5 days post-dose.",
+    zh: "奥沙利铂的遇冷敏感性是最独特的毒性。患者用药后 3–5 天必须避免冷接触。",
+  },
+};
+
+const IRINOTECAN: DrugInfo = {
+  id: "irinotecan",
+  name: { en: "Irinotecan", zh: "伊立替康" },
+  aliases: ["Camptosar"],
+  category: "chemo",
+  default_route: "IV",
+  mpdac_relevant: true,
+  drug_class: {
+    en: "Topoisomerase I inhibitor",
+    zh: "拓扑异构酶 I 抑制剂",
+  },
+  mechanism: {
+    en: "Inhibits topoisomerase I, preventing DNA religation. Used in mFFX.",
+    zh: "抑制拓扑异构酶 I，阻止 DNA 重链接。用于 mFFX。",
+  },
+  typical_doses: [{ en: "150 mg/m² IV", zh: "150 mg/m² 静脉注射" }],
+  default_schedules: [
+    {
+      kind: "cycle_linked",
+      cycle_days: [1],
+      label: { en: "Day 1 of 14-day mFFX cycle", zh: "14 天 mFFX 周期的第 1 天" },
+    },
+  ],
+  side_effects: {
+    common: [
+      {
+        en: "Acute cholinergic syndrome (0–24h post-dose): salivation, lacrimation, sweating, cramping, diarrhea",
+        zh: "急性胆碱能综合征（用药后 0–24 小时）：流涎、泪液、出汗、腹部痉挛、腹泻",
+      },
+      {
+        en: "Delayed diarrhea (D3–7) — can be severe, requiring loperamide",
+        zh: "迟发腹泻（D3–7）—— 可能严重，需要洛哌丁胺",
+      },
+      { en: "Nausea, vomiting", zh: "恶心、呕吐" },
+      { en: "Fatigue, weakness", zh: "疲劳、虚弱" },
+      { en: "Alopecia", zh: "脱发" },
+    ],
+    serious: [
+      {
+        en: "Severe delayed diarrhea Grade 3+ (≥7 stools/day) — dehydration risk",
+        zh: "严重迟发腹泻 Grade 3+（≥7 次 / 天）—— 脱水风险",
+      },
+      {
+        en: "Neutropenic enterocolitis (febrile neutropenia + diarrhea) — medical emergency",
+        zh: "中性粒细胞减少症肠结肠炎（发热性中性粒细胞减少 + 腹泻）—— 医学急症",
+      },
+    ],
+  },
+  monitoring: [
+    {
+      en: "Atropine IM at first sign of acute cholinergic symptoms (within 24h of dose)",
+      zh: "首次出现急性胆碱能症状迹象时肌内注射阿托品（用药后 24 小时内）",
+    },
+    {
+      en: "Loperamide at onset of loose stool; escalate if ≥4 stools/day",
+      zh: "稀便开始时用洛哌丁胺；若 ≥4 次 / 天则增加剂量",
+    },
+    { en: "FBC, U&Es, LFTs", zh: "血常规、电解质、肝功" },
+  ],
+  diet_interactions: [
+    {
+      food: { en: "Alcohol", zh: "酒精" },
+      effect: {
+        en: "Increases risk of diarrhea and GI upset",
+        zh: "增加腹泻和胃肠不适的风险",
+      },
+      severity: "caution",
+    },
+  ],
+  protocol_ids: ["mffx"],
+  clinical_note: {
+    en: "Irinotecan's cholinergic and diarrheal toxicity requires close GI monitoring. Patients must have rescue loperamide on hand.",
+    zh: "伊立替康的胆碱能和腹泻毒性需要密切胃肠监测。患者必须备好救援洛哌丁胺。",
+  },
+};
+
+// ============================================================================
+// ANTIEMETICS
+// ============================================================================
+
+const ONDANSETRON: DrugInfo = {
+  id: "ondansetron",
+  name: { en: "Ondansetron", zh: "昂丹司琼" },
+  aliases: ["Zofran", "Ondansetrona"],
+  category: "antiemetic",
+  default_route: "PO",
+  mpdac_relevant: true,
+  drug_class: { en: "5-HT3 antagonist", zh: "5-HT3 拮抗剂" },
+  mechanism: {
+    en: "Blocks serotonin (5-HT3) receptors in the chemoreceptor trigger zone. Prevents both acute and delayed nausea/vomiting.",
+    zh: "阻断化学感受器触发区的血清素（5-HT3）受体。预防急性和迟发恶心 / 呕吐。",
+  },
+  typical_doses: [
+    { en: "4–8 mg PO BD–TID", zh: "4–8 mg 口服，每日两到三次" },
+    { en: "8 mg IV on chemo day", zh: "化疗日 8 mg 静脉注射" },
+  ],
+  default_schedules: [
+    {
+      kind: "cycle_linked",
+      cycle_days: [1, 2, 3],
+      label: { en: "D1–D3 of chemo cycle (scheduled, not PRN)", zh: "化疗周期 D1–D3（按时，非按需）" },
+    },
+  ],
+  side_effects: {
+    common: [
+      { en: "Headache", zh: "头痛" },
+      { en: "Constipation (opioid-like effect on bowel)", zh: "便秘（类鸦片对肠道的影响）" },
+      { en: "Dizziness, lightheadedness", zh: "头晕、晕眩" },
+    ],
+    serious: [
+      { en: "QT prolongation (rare, usually benign)", zh: "QT 间期延长（罕见，通常无害）" },
+    ],
+  },
+  monitoring: [],
+  diet_interactions: [],
+  supportive_id: undefined,
+  clinical_note: {
+    en: "Backbone antiemetic for chemo. Give on schedule (not as-needed) for best efficacy. Add olanzapine or aprepitant for breakthrough nausea.",
+    zh: "化疗的骨干止吐药。按时给药（非按需）以获得最佳疗效。突破性恶心时添加奥氮平或阿瑞匹坦。",
+  },
+};
+
+const OLANZAPINE: DrugInfo = {
+  id: "olanzapine",
+  name: { en: "Olanzapine", zh: "奥氮平" },
+  aliases: ["Zyprexa"],
+  category: "antiemetic",
+  default_route: "PO",
+  mpdac_relevant: true,
+  drug_class: { en: "Atypical antipsychotic (anti-nausea mechanism unclear)", zh: "非典型抗精神病药（抗恶心机制不清楚）" },
+  mechanism: {
+    en: "Dopamine antagonist; extremely effective for chemotherapy-induced nausea refractory to standard antiemetics.",
+    zh: "多巴胺拮抗剂；对难治性化疗诱发恶心极其有效。",
+  },
+  typical_doses: [{ en: "2.5–5 mg PO nocte", zh: "2.5–5 mg 口服，晚上一次" }],
+  default_schedules: [
+    {
+      kind: "cycle_linked",
+      cycle_days: [1, 2, 3],
+      label: { en: "D1–D3 evening (nocte) for nausea prevention", zh: "D1–D3 晚上（晚上一次）用于恶心预防" },
+    },
+  ],
+  side_effects: {
+    common: [
+      { en: "Sedation, somnolence", zh: "镇静、嗜睡" },
+      { en: "Weight gain, increased appetite", zh: "体重增加、食欲增加" },
+      { en: "Dizziness", zh: "头晕" },
+    ],
+    serious: [
+      { en: "Metabolic syndrome risk (hyperglycemia, dyslipidemia)", zh: "代谢综合征风险（高血糖、血脂异常）" },
+    ],
+  },
+  monitoring: [
+    { en: "Blood glucose, lipid panel if on long-term olanzapine", zh: "长期用奥氮平时血糖、血脂检查" },
+  ],
+  diet_interactions: [],
+  supportive_id: "supportive.olanzapine",
+  clinical_note: {
+    en: "Gold standard for breakthrough chemo nausea. Sedate effect is useful for sleep. Weight gain is manageable with dietitian support.",
+    zh: "突破性化疗恶心的金标准。镇静作用有助于睡眠。体重增加可通过营养师支持管理。",
+  },
+};
+
+const DEXAMETHASONE: DrugInfo = {
+  id: "dexamethasone",
+  name: { en: "Dexamethasone", zh: "地塞米松" },
+  aliases: ["Decadron", "Dex"],
+  category: "steroid",
+  default_route: "PO",
+  mpdac_relevant: true,
+  drug_class: { en: "Glucocorticoid", zh: "糖皮质激素" },
+  mechanism: {
+    en: "Potent anti-inflammatory and anti-emetic. Used as premedication before chemo to reduce infusion reactions and nausea.",
+    zh: "强效抗炎和止吐。用作化疗前预用药以减少输注反应和恶心。",
+  },
+  typical_doses: [
+    { en: "8 mg on chemo day (BD)", zh: "化疗日 8 mg（一日两次）" },
+    { en: "4 mg BD D1–D3", zh: "D1–D3 4 mg，一日两次" },
+  ],
+  default_schedules: [
+    {
+      kind: "cycle_linked",
+      cycle_days: [1, 2],
+      label: { en: "D1–D2 of cycle (tapered by D3)", zh: "周期 D1–D2（D3 开始减量）" },
+    },
+  ],
+  side_effects: {
+    common: [
+      { en: "Insomnia (if given in evening)", zh: "失眠（如晚上给药）" },
+      { en: "Increased appetite, mood elevation", zh: "食欲增加、情绪提升" },
+      { en: "Hyperglycemia (especially in diabetics)", zh: "高血糖（尤其在糖尿病患者中）" },
+      { en: "Mild gastric upset", zh: "轻度胃部不适" },
+    ],
+    serious: [
+      { en: "Steroid crash (D3–D5): depression, tearfulness, irritability", zh: "类固醇撤药反应（D3–D5）：抑郁、流泪、烦躁" },
+      { en: "Long-term use: osteoporosis, immunosuppression, muscle wasting", zh: "长期使用：骨质疏松、免疫抑制、肌肉萎缩" },
+    ],
+  },
+  monitoring: [
+    { en: "Give in morning (08:00) to avoid evening insomnia", zh: "早上给药（08:00）以避免晚间失眠" },
+    { en: "Taper rather than stop abruptly (adrenal suppression risk)", zh: "逐渐减量而非突然停用（肾上腺抑制风险）" },
+  ],
+  diet_interactions: [],
+  clinical_note: {
+    en: "Prophylactic dex is standard on chemo days. Steroid crash D3–D5 is universal — normalize it, reassure patient it lifts by D6.",
+    zh: "化疗日预防性地塞米松是标准。类固醇撤药反应 D3–D5 是普遍的 —— 标准化它，向患者保证到 D6 缓解。",
+  },
+};
+
+const DULOXETINE: DrugInfo = {
+  id: "duloxetine",
+  name: { en: "Duloxetine", zh: "度洛西汀" },
+  aliases: ["Cymbalta"],
+  category: "neuropathy",
+  default_route: "PO",
+  mpdac_relevant: true,
+  drug_class: {
+    en: "SNRI (serotonin-norepinephrine reuptake inhibitor)",
+    zh: "SNRI（血清素去甲肾上腺素再摄取抑制剂）",
+  },
+  mechanism: {
+    en: "Inhibits reuptake of serotonin and norepinephrine. First-line for chemotherapy-induced peripheral neuropathy (CIPN).",
+    zh: "抑制血清素和去甲肾上腺素再摄取。化疗诱发周围神经病变（CIPN）的一线治疗。",
+  },
+  typical_doses: [
+    { en: "30–60 mg PO daily", zh: "30–60 mg 口服，每日一次" },
+  ],
+  default_schedules: [SCHED_DAILY],
+  side_effects: {
+    common: [
+      { en: "Nausea (usually resolves in 1–2 weeks)", zh: "恶心（通常 1–2 周内缓解）" },
+      { en: "Dry mouth, sweating", zh: "口干、出汗" },
+      { en: "Dizziness, drowsiness", zh: "头晕、困倦" },
+    ],
+    serious: [
+      { en: "Serotonin syndrome (with SSRIs or other serotonergic agents)", zh: "血清素综合征（与 SSRI 或其他血清素能药物合用时）" },
+    ],
+  },
+  monitoring: [
+    { en: "Neuropathy grade monthly — efficacy takes 2–4 weeks", zh: "每月评估神经病变分级 —— 疗效需 2–4 周" },
+  ],
+  diet_interactions: [],
+  supportive_id: "supportive.duloxetine",
+  clinical_note: {
+    en: "Start early (before Grade 2 neuropathy develops). Best evidence-base for CIPN among non-opioid options.",
+    zh: "早期开始（在 Grade 2 神经病变发展前）。非阿片类中对 CIPN 证据最充分。",
+  },
+};
+
+const PANCRELIPASE: DrugInfo = {
+  id: "pancrelipase",
+  name: { en: "Pancrelipase (PERT)", zh: "胰酶替代疗法（PERT）" },
+  aliases: ["Creon", "Zenpep", "Pancreaze"],
+  category: "supplement",
+  default_route: "PO",
+  mpdac_relevant: true,
+  drug_class: { en: "Pancreatic enzyme replacement", zh: "胰酶替代品" },
+  mechanism: {
+    en: "Replaces pancreatic lipase, amylase, and protease. Essential for nutrient absorption in PDAC (pancreatic insufficiency).",
+    zh: "替代胰脂肪酶、淀粉酶和蛋白酶。对 PDAC（胰腺功能不全）患者营养吸收必需。",
+  },
+  typical_doses: [
+    { en: "Creon 25 000–50 000 units with meals", zh: "Creon 25 000–50 000 单位，与正餐同服" },
+    { en: "Creon 10 000 units with snacks", zh: "Creon 10 000 单位，与加餐同服" },
+  ],
+  default_schedules: [
+    {
+      kind: "with_meals",
+      times_per_day: 3,
+      label: { en: "With every meal and snack", zh: "每餐和加餐时服用" },
+    },
+  ],
+  side_effects: {
+    common: [],
+    serious: [
+      {
+        en: "Fibrosing colonopathy (rare, with very high doses >25 000 units/kg/day)",
+        zh: "纤维化肠病（罕见，用于极高剂量 >25 000 单位 / 千克 / 天）",
+      },
+    ],
+  },
+  monitoring: [
+    { en: "Stool consistency, bloating, gas — signs of under-replacement", zh: "大便性状、腹胀、胀气 —— 替代不足的迹象" },
+    { en: "Weight trends — malabsorption if failing to maintain weight", zh: "体重趋势 —— 若无法维持体重则提示吸收不良" },
+  ],
+  diet_interactions: [],
+  supportive_id: "supportive.pert",
+  clinical_note: {
+    en: "Hu Lin's PERT adherence is excellent. This is foundational for maintaining weight and function. Emphasize: EVERY meal and snack.",
+    zh: "胡林的 PERT 依从性极好。这是维持体重和功能的基础。强调：每一餐和加餐。",
+  },
+};
+
+const APIXABAN: DrugInfo = {
+  id: "apixaban",
+  name: { en: "Apixaban", zh: "阿比班" },
+  aliases: ["Eliquat"],
+  category: "anticoagulant",
+  default_route: "PO",
+  mpdac_relevant: true,
+  drug_class: { en: "DOAC (direct oral anticoagulant) — Factor Xa inhibitor", zh: "直接口服抗凝药 —— X 因子抑制剂" },
+  mechanism: {
+    en: "Inhibits Factor Xa in the intrinsic and extrinsic pathways. Standard VTE prophylaxis in ambulatory mPDAC.",
+    zh: "抑制内源和外源途径中的 X 因子。门诊 mPDAC 中标准静脉血栓栓塞预防。",
+  },
+  typical_doses: [
+    { en: "2.5 mg PO BD", zh: "2.5 mg 口服，每日两次" },
+  ],
+  default_schedules: [
+    {
+      kind: "fixed",
+      times_per_day: 2,
+      clock_times: ["08:00", "20:00"],
+      label: { en: "Twice daily morning and evening", zh: "早晚各一次" },
+    },
+  ],
+  side_effects: {
+    common: [
+      { en: "Bleeding (minor: bruising, epistaxis, GI bleed)", zh: "出血（轻微：淤青、鼻衄、胃肠道出血）" },
+      { en: "Anemia from occult bleeding", zh: "隐性出血导致贫血" },
+    ],
+    serious: [
+      {
+        en: "Major bleeding (ICH, GI bleed >500 mL, retroperitoneal bleed)",
+        zh: "大出血（颅内出血、胃肠道出血 >500 mL、腹膜后出血）",
+      },
+    ],
+  },
+  monitoring: [
+    { en: "CBC monthly (watch for Hb drop)", zh: "每月血常规（注意血红蛋白下降）" },
+    { en: "Avoid NSAIDs; use paracetamol for pain", zh: "避免 NSAIDs；疼痛用扑热息痛" },
+    { en: "Counsel on signs of bleeding", zh: "告知出血迹象" },
+  ],
+  diet_interactions: [
+    {
+      food: { en: "Cranberry juice", zh: "蔓越莓汁" },
+      effect: {
+        en: "May increase anticoagulant effect — avoid excessive intake",
+        zh: "可能增加抗凝效果 —— 避免过量摄入",
+      },
+      severity: "info",
+    },
+  ],
+  supportive_id: "supportive.vte_prophylaxis",
+  clinical_note: {
+    en: "Prophylactic anticoagulation for active mPDAC. Standard dose is 2.5 mg BD. Patient must report any unusual bruising or bleeding.",
+    zh: "活跃性 mPDAC 的预防性抗凝。标准剂量 2.5 mg，每日两次。患者必须报告任何异常淤青或出血。",
+  },
+};
+
+const PEGFILGRASTIM: DrugInfo = {
+  id: "pegfilgrastim",
+  name: { en: "Pegfilgrastim", zh: "培非格司亭" },
+  aliases: ["Neulasta", "G-CSF"],
+  category: "gcsf",
+  default_route: "SC",
+  mpdac_relevant: true,
+  drug_class: { en: "Granulocyte colony-stimulating factor (pegylated)", zh: "粒细胞集落刺激因子（聚乙二醇化）" },
+  mechanism: {
+    en: "Stimulates neutrophil production. Given prophylactically after high-risk chemo (GnP, mFFX) to reduce febrile neutropenia.",
+    zh: "刺激中性粒细胞产生。在高风险化疗（GnP、mFFX）后预防性给药以减少发热性中性粒细胞减少。",
+  },
+  typical_doses: [
+    { en: "6 mg SC once per cycle (24–72h after chemo)", zh: "6 mg 皮下注射，每周期一次（化疗后 24–72 小时）" },
+  ],
+  default_schedules: [
+    {
+      kind: "cycle_linked",
+      cycle_days: [2],
+      label: { en: "D2 of cycle (day after last chemo dose)", zh: "周期 D2（最后化疗后一天）" },
+    },
+  ],
+  side_effects: {
+    common: [
+      { en: "Bone pain (myalgia, lower back), usually D3–D5", zh: "骨痛（肌肉痛、下背痛），通常 D3–D5" },
+      { en: "Injection site reaction (soreness, erythema)", zh: "注射部位反应（酸痛、红斑）" },
+    ],
+    serious: [
+      { en: "Splenic rupture (extremely rare)", zh: "脾脏破裂（极其罕见）" },
+      { en: "ARDS (acute respiratory distress syndrome, very rare)", zh: "ARDS（成人呼吸窘迫综合征，极其罕见）" },
+    ],
+  },
+  monitoring: [
+    { en: "Counsel on bone pain — usually resolves with acetaminophen", zh: "告知骨痛 —— 通常用对乙酰氨基酚可缓解" },
+    { en: "FBC at D10–14 to confirm neutrophil recovery", zh: "D10–14 血常规以确认中性粒细胞恢复" },
+  ],
+  diet_interactions: [],
+  supportive_id: "supportive.gcsf_prophylaxis",
+  clinical_note: {
+    en: "Standard for GnP and mFFX. Bone pain is the main side effect — normalize and treat symptomatically.",
+    zh: "GnP 和 mFFX 的标准用药。骨痛是主要副作用 —— 标准化并对症治疗。",
+  },
+};
+
+const PARACETAMOL: DrugInfo = {
+  id: "paracetamol",
+  name: { en: "Paracetamol (Acetaminophen)", zh: "对乙酰氨基酚" },
+  aliases: ["Tylenol", "APAP"],
+  category: "analgesic",
+  default_route: "PO",
+  mpdac_relevant: true,
+  drug_class: { en: "Analgesic / antipyretic", zh: "止痛 / 退热药" },
+  mechanism: {
+    en: "Exact mechanism unknown; hypothesized to inhibit COX in CNS. Weak anti-inflammatory; safe in cancer.",
+    zh: "确切机制未知；假设抑制 CNS 中的 COX。弱抗炎；在癌症中安全。",
+  },
+  typical_doses: [
+    { en: "500–1000 mg PO Q6H (max 4 g/day)", zh: "500–1000 mg 口服，每 6 小时一次（最大 4 g / 天）" },
+  ],
+  default_schedules: [SCHED_PRN],
+  side_effects: {
+    common: [],
+    serious: [
+      {
+        en: "Hepatotoxicity (overdose >4 g/day or chronic use in liver disease)",
+        zh: "肝毒性（过量 >4 g / 天或肝病患者长期使用）",
+      },
+    ],
+  },
+  monitoring: [],
+  diet_interactions: [],
+  clinical_note: {
+    en: "Safe, gentle analgesic. Preferred over NSAIDs in cancer (risk of bleeding, renal complications). Max 4 g/day.",
+    zh: "安全、温和的止痛药。在癌症中优于 NSAIDs（出血、肾脏并发症风险）。最大 4 g / 天。",
+  },
+};
+
+// ============================================================================
+// BEHAVIOURAL INTERVENTIONS
+// ============================================================================
+
+const QIGONG: DrugInfo = {
+  id: "qigong",
+  name: { en: "Qigong practice", zh: "气功修习" },
+  aliases: ["Tai Chi", "mind-body"],
+  category: "behavioural",
+  default_route: "practice",
+  mpdac_relevant: true,
+  drug_class: { en: "Mind-body medicine", zh: "身心医学" },
+  mechanism: {
+    en: "Ancient Chinese mind-body cultivation. Gentle movement + breathing + meditation. Improves ECOG PS, reduces fatigue, stabilizes mood, lowers stress hormones.",
+    zh: "古代中国身心修养。温和运动 + 呼吸 + 冥想。改善 ECOG PS，减少疲劳，稳定情绪，降低压力激素。",
+  },
+  typical_doses: [
+    { en: "15–30 min session", zh: "15–30 分钟课程" },
+  ],
+  default_schedules: [
+    {
+      kind: "custom",
+      rrule: "FREQ=DAILY;INTERVAL=1",
+      label: { en: "Daily, ideally morning", zh: "每日，最好早上" },
+    },
+  ],
+  side_effects: {
+    common: [],
+    serious: [],
+  },
+  monitoring: [],
+  diet_interactions: [],
+  clinical_note: {
+    en: "Central to Hu Lin's functional preservation strategy. Practice rhythm (even 10 min) matters more than intensity. Spiritual practice aligned with his values.",
+    zh: "胡林功能保留策略的核心。修习节奏（即使 10 分钟）比强度更重要。与他的价值观相符的精神修习。",
+  },
+};
+
+const RESISTANCE_TRAINING: DrugInfo = {
+  id: "resistance_training",
+  name: { en: "Resistance training", zh: "阻力训练" },
+  aliases: ["strength training", "weight training"],
+  category: "behavioural",
+  default_route: "practice",
+  mpdac_relevant: true,
+  drug_class: { en: "Functional exercise", zh: "功能性锻炼" },
+  mechanism: {
+    en: "Structured bodyweight, band, or light weights. Preserves muscle mass, grip strength, gait speed — the true measures of ECOG PS.",
+    zh: "结构化的体重、弹力带或轻哑铃训练。保留肌肉质量、握力、步速 —— ECOG PS 的真正衡量指标。",
+  },
+  typical_doses: [
+    { en: "2–3 sessions per week, 20–30 min", zh: "每周 2–3 次，20–30 分钟" },
+  ],
+  default_schedules: [
+    {
+      kind: "custom",
+      rrule: "FREQ=WEEKLY;BYDAY=MO,WE,FR",
+      label: { en: "MWF during recovery window (D4–D7, D22–D28)", zh: "恢复窗口期间周一、三、五（D4–D7、D22–D28）" },
+    },
+  ],
+  side_effects: {
+    common: [],
+    serious: [],
+  },
+  monitoring: [
+    { en: "Grip strength monthly", zh: "每月握力检查" },
+    { en: "10m walk test every 2 weeks", zh: "每两周 10 米步行测试" },
+  ],
+  diet_interactions: [],
+  clinical_note: {
+    en: "THE intervention for ECOG PS preservation. Timing: Days 4–7 (early recovery) and D22–28 (late recovery) are optimal. Avoid nadir (D16–21).",
+    zh: "ECOG PS 保留的最重要干预。时间：D4–7（早期恢复）和 D22–28（晚期恢复）最佳。避开低谷（D16–21）。",
+  },
+};
+
+export const DRUG_REGISTRY: readonly DrugInfo[] = [
+  GEMCITABINE,
+  NAB_PACLITAXEL,
+  NARMAFOTINIB,
+  OXALIPLATIN,
+  IRINOTECAN,
+  ONDANSETRON,
+  OLANZAPINE,
+  DEXAMETHASONE,
+  DULOXETINE,
+  PANCRELIPASE,
+  APIXABAN,
+  PEGFILGRASTIM,
+  PARACETAMOL,
+  QIGONG,
+  RESISTANCE_TRAINING,
+];
+
+export const DRUGS_BY_ID: Record<string, DrugInfo> = Object.fromEntries(
+  DRUG_REGISTRY.map((d) => [d.id, d]),
+);
+
+export function getDrugsByCategory(
+  category: string,
+): DrugInfo[] {
+  return DRUG_REGISTRY.filter((d) => d.category === category);
+}
