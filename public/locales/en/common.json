@@ -18,8 +18,7 @@
     "decisions": "Decisions",
     "ingest": "Ingest",
     "reports": "Reports",
-    "settings": "Settings",
-    "medications": "Medications"
+    "settings": "Settings"
   },
   "zones": {
     "green": "Stable",

@@ -17,11 +17,12 @@ import { cn } from "~/lib/utils/cn";
 import { useT } from "~/hooks/use-translate";
 
 // Stub routes (decisions, events, quarterly) are hidden until those modules ship.
+// Medications is accessed contextually (from treatment detail, daily check-in,
+// logging FAB) rather than via top-level nav — it's a cross-cutting concept.
 const ITEMS = [
   { href: "/", key: "nav.dashboard", icon: LayoutDashboard },
   { href: "/assessment", key: "nav.assessment", icon: Compass },
   { href: "/treatment", key: "nav.treatment", icon: Syringe },
-  { href: "/medications", key: "nav.medications", icon: FlaskConical },
   { href: "/labs", key: "nav.labs", icon: FlaskConical },
   { href: "/tasks", key: "nav.tasks", icon: ListTodo },
   { href: "/bridge", key: "nav.bridge", icon: Route },
@@ -74,7 +75,7 @@ export function MobileBottomNav() {
   const t = useT();
   const pathname = usePathname();
   const mobileItems = ITEMS.filter((i) =>
-    ["/", "/treatment", "/medications", "/labs", "/tasks", "/assessment"].includes(i.href),
+    ["/", "/treatment", "/labs", "/tasks", "/assessment"].includes(i.href),
   );
   return (
     <nav className="a-glass fixed inset-x-3 bottom-3 z-40 flex justify-around rounded-[22px] px-2 py-2.5 shadow-lg md:hidden">
