@@ -70,6 +70,7 @@ function snapshot(over: Partial<ClinicalSnapshot> = {}): ClinicalSnapshot {
     recentWeeklies: [],
     latestFortnightly: null,
     recentLabs: [],
+    openPendingResults: [],
     now: new Date("2026-04-20"),
     ...over,
   };
@@ -139,6 +140,33 @@ describe("zone engine", () => {
     expect(triggered.map((r) => r.id)).toContain(
       "ca199_rising_3_consecutive_yellow",
     );
+  });
+
+  it("SARC-F total ≥4 triggers yellow", () => {
+    const triggered = evaluateRules(
+      snapshot({
+        latestFortnightly: fortnightly({ sarc_f_total: 5 }),
+      }),
+    );
+    expect(triggered.map((r) => r.id)).toContain("sarc_f_positive_yellow");
+  });
+
+  it("TUG > 14 s triggers yellow", () => {
+    const triggered = evaluateRules(
+      snapshot({
+        latestFortnightly: fortnightly({ tug_seconds: 18 }),
+      }),
+    );
+    expect(triggered.map((r) => r.id)).toContain("tug_gt_14_yellow");
+  });
+
+  it("5× STS > 15 s triggers yellow", () => {
+    const triggered = evaluateRules(
+      snapshot({
+        latestFortnightly: fortnightly({ sts_5x_seconds: 18 }),
+      }),
+    );
+    expect(triggered.map((r) => r.id)).toContain("sts_5x_gt_15_yellow");
   });
 
   it("PHQ-9 ≥15 yields orange, not yellow", () => {

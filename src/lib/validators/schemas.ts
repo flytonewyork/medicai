@@ -55,6 +55,8 @@ export const settingsSchema = z.object({
   baseline_calf_cm: z.number().min(20).max(60).optional(),
   locale: z.enum(["en", "zh"]),
   managing_oncologist: z.string().optional(),
+  anthropic_api_key: z.string().optional(),
+  default_ai_model: z.string().optional(),
 });
 
 export type SettingsInput = z.infer<typeof settingsSchema>;
@@ -94,8 +96,31 @@ export const fortnightlyAssessmentSchema = z.object({
   distress_thermometer: z.number().min(0).max(10).optional(),
   phq9_total: z.number().min(0).max(27).optional(),
   gad7_total: z.number().min(0).max(21).optional(),
+  sarc_f_responses: z.array(z.number().int().min(0).max(2)).length(5).optional(),
+  sarc_f_total: z.number().int().min(0).max(10).optional(),
+  tug_seconds: z.number().min(0).max(120).optional(),
+  single_leg_stance_seconds: z.number().min(0).max(120).optional(),
+  sts_5x_seconds: z.number().min(0).max(120).optional(),
+  walk_6min_meters: z.number().min(0).max(1000).optional(),
 });
 
 export type FortnightlyAssessmentInput = z.infer<
   typeof fortnightlyAssessmentSchema
 >;
+
+export const weeklyAssessmentSchema = z.object({
+  week_start: z.string(),
+  entered_by: z.enum(["hulin", "catherine", "thomas"]),
+  practice_full_days: z.number().int().min(0).max(7),
+  practice_reduced_days: z.number().int().min(0).max(7),
+  practice_skipped_days: z.number().int().min(0).max(7),
+  functional_integrity: z.number().min(1).max(5),
+  cognitive_stillness: z.number().min(1).max(5),
+  social_practice_integrity: z.number().min(1).max(5),
+  energy_trend: z.enum(["improving", "stable", "declining"]).optional(),
+  concerns: z.string().max(4000).optional(),
+  questions_for_oncologist: z.string().max(4000).optional(),
+  week_summary: z.string().max(4000).optional(),
+});
+
+export type WeeklyAssessmentInput = z.infer<typeof weeklyAssessmentSchema>;

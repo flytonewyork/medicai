@@ -10,15 +10,18 @@ export async function buildSnapshot(): Promise<ClinicalSnapshot> {
     weeklies,
     fortnightlies,
     labs,
+    pending,
   ] = await Promise.all([
     db.settings.toArray(),
     db.daily_entries.orderBy("date").reverse().limit(30).toArray(),
     db.weekly_assessments.orderBy("week_start").reverse().limit(8).toArray(),
     db.fortnightly_assessments.orderBy("assessment_date").reverse().limit(4).toArray(),
     db.labs.orderBy("date").limit(12).toArray(),
+    db.pending_results.toArray(),
   ]);
 
   const orderedDailies = dailies.slice().reverse();
+  const openPending = pending.filter((p) => !p.received);
 
   return {
     settings: settings[0] ?? null,
@@ -27,6 +30,7 @@ export async function buildSnapshot(): Promise<ClinicalSnapshot> {
     recentWeeklies: weeklies.slice().reverse(),
     latestFortnightly: fortnightlies[0] ?? null,
     recentLabs: labs,
+    openPendingResults: openPending,
     now: new Date(),
   };
 }

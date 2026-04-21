@@ -1,4 +1,5 @@
-export type EnteredBy = "hulin" | "catherine" | "thomas";
+export type EnteredBy = "hulin" | "catherine" | "thomas" | "clinician" | "jonalyn";
+export type Role = "patient" | "caregiver" | "clinician";
 export type Locale = "en" | "zh";
 export type Zone = "green" | "yellow" | "orange" | "red";
 export type RuleCategory =
@@ -60,6 +61,9 @@ export interface WeeklyAssessment {
   functional_integrity: number;
   cognitive_stillness: number;
   social_practice_integrity: number;
+  energy_trend?: "improving" | "stable" | "declining";
+  concerns?: string;
+  questions_for_oncologist?: string;
   week_summary?: string;
   created_at: string;
   updated_at: string;
@@ -91,6 +95,12 @@ export interface FortnightlyAssessment {
   calf_circumference_cm?: number;
   tns_total?: number;
   neuropathy_grade?: 0 | 1 | 2 | 3 | 4;
+  sarc_f_responses?: number[];
+  sarc_f_total?: number;
+  tug_seconds?: number;
+  single_leg_stance_seconds?: number;
+  sts_5x_seconds?: number;
+  walk_6min_meters?: number;
   created_at: string;
   updated_at: string;
 }
@@ -273,6 +283,194 @@ export interface Settings {
   height_cm?: number;
   locale: Locale;
   managing_oncologist?: string;
+  anthropic_api_key?: string;
+  default_ai_model?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type PendingResultCategory =
+  | "imaging"
+  | "lab"
+  | "ctdna"
+  | "ngs"
+  | "referral"
+  | "other";
+
+export interface PendingResult {
+  id?: number;
+  test_name: string;
+  category: PendingResultCategory;
+  ordered_date: string;
+  expected_by?: string;
+  ordered_by?: string;
+  site?: string;
+  notes?: string;
+  received: boolean;
+  received_date?: string;
+  linked_result_table?: "labs" | "imaging" | "ctdna_results";
+  linked_result_id?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ComprehensiveAssessmentStatus = "draft" | "complete";
+
+export type ComprehensiveAssessmentTrigger =
+  | "baseline"
+  | "quarterly"
+  | "pre_imaging"
+  | "ad_hoc";
+
+export interface PillarScores {
+  functional_score: number;
+  symptom_score: number;
+  toxicity_score: number;
+  mental_score: number;
+  spiritual_score: number;
+  anchor_index: number;
+}
+
+export interface ComprehensiveAssessment {
+  id?: number;
+  assessment_date: string;
+  started_at: string;
+  completed_at?: string;
+  status: ComprehensiveAssessmentStatus;
+  trigger: ComprehensiveAssessmentTrigger;
+  entered_by: EnteredBy;
+
+  // Anthropometrics
+  weight_kg?: number;
+  height_cm?: number;
+  muac_cm?: number;
+  calf_cm?: number;
+  waist_cm?: number;
+
+  // Vitals (optional)
+  resting_hr?: number;
+  systolic_bp?: number;
+  diastolic_bp?: number;
+  spo2?: number;
+
+  // Functional
+  ecog_self?: 0 | 1 | 2 | 3 | 4;
+  grip_dominant_kg?: number;
+  grip_nondominant_kg?: number;
+  gait_speed_ms?: number;
+  sit_to_stand_30s?: number;
+  sts_5x_seconds?: number;
+  tug_seconds?: number;
+  single_leg_stance_seconds?: number;
+  walk_6min_meters?: number;
+  sarc_f_responses?: number[];
+  sarc_f_total?: number;
+
+  // Symptoms
+  pain_worst?: number;
+  pain_current?: number;
+  pain_interference?: number;
+  pain_location?: string;
+  pain_character?: string;
+  fatigue_severity?: number;
+  fatigue_interference?: number;
+  appetite_rating?: number;
+  nausea_severity?: number;
+  vomiting_frequency?: number;
+  diarrhoea_frequency?: number;
+  constipation_severity?: number;
+  jaundice?: boolean;
+  pruritus_severity?: number;
+  dyspnoea_severity?: number;
+  cough_severity?: number;
+  fever_recent?: boolean;
+  night_sweats?: boolean;
+  weight_loss_unintentional?: boolean;
+
+  // Toxicity
+  neuropathy_grade_overall?: 0 | 1 | 2 | 3 | 4;
+  neuropathy_hands_grade?: 0 | 1 | 2 | 3 | 4;
+  neuropathy_feet_grade?: 0 | 1 | 2 | 3 | 4;
+  cold_dysaesthesia_severity?: number;
+  mucositis_severity?: number;
+  skin_changes?: boolean;
+  nail_changes?: boolean;
+  easy_bruising?: boolean;
+  cognitive_concern?: number;
+
+  // Mental
+  phq9_responses?: number[];
+  phq9_total?: number;
+  gad7_responses?: number[];
+  gad7_total?: number;
+  distress_thermometer?: number;
+  sleep_quality?: number;
+  sleep_hours_average?: number;
+
+  // Spiritual (FACIT-Sp-12 shortened)
+  facitsp_responses?: number[];
+  facitsp_meaning_peace?: number;
+  facitsp_faith?: number;
+  facitsp_total?: number;
+  values_statement?: string;
+  practice_days_past_week?: number;
+
+  // Free-text reflection
+  overall_reflection?: string;
+
+  // Computed scores
+  functional_score?: number;
+  symptom_score?: number;
+  toxicity_score?: number;
+  mental_score?: number;
+  spiritual_score?: number;
+  anchor_index?: number;
+
+  // AI summary
+  ai_summary_patient?: string;
+  ai_summary_clinician?: string;
+  ai_summary_model?: string;
+
+  tests_included?: string[];
+  tests_completed?: string[];
+  tests_skipped?: string[];
+
+  created_at: string;
+  updated_at: string;
+}
+
+export type IngestedDocumentKind =
+  | "lab_report"
+  | "imaging_report"
+  | "ctdna_report"
+  | "referral"
+  | "clinic_letter"
+  | "other";
+
+export type IngestedDocumentStatus =
+  | "ocr_pending"
+  | "ocr_complete"
+  | "extracted"
+  | "saved"
+  | "error";
+
+export interface IngestedDocument {
+  id?: number;
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+  kind: IngestedDocumentKind;
+  uploaded_at: string;
+  ocr_text?: string;
+  ocr_confidence?: number;
+  extraction_method?: "heuristic" | "claude";
+  extraction_model?: string;
+  extracted_payload?: Record<string, unknown>;
+  status: IngestedDocumentStatus;
+  error_message?: string;
+  linked_result_table?: "labs" | "imaging" | "ctdna_results";
+  linked_result_id?: number;
+  source_document_date?: string;
   created_at: string;
   updated_at: string;
 }

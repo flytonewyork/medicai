@@ -1,11 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { ZoneStatusCard } from "~/components/dashboard/zone-status-card";
 import { AlertsList } from "~/components/dashboard/alerts-list";
 import { RecentTrends } from "~/components/dashboard/recent-trends";
 import { BodyMetricsGrid } from "~/components/dashboard/body-metrics";
+import { SarcopeniaCard } from "~/components/dashboard/sarcopenia-card";
+import { WeeklyCard } from "~/components/dashboard/weekly-card";
+import { PillarsCard } from "~/components/dashboard/pillars-card";
 import { useLocale, useT } from "~/hooks/use-translate";
+import { useUIStore } from "~/stores/ui-store";
 import { PageHeader, SectionHeader } from "~/components/ui/page-header";
 import { Button } from "~/components/ui/button";
 import { ChevronRight, Stethoscope } from "lucide-react";
@@ -13,6 +19,11 @@ import { ChevronRight, Stethoscope } from "lucide-react";
 export default function DashboardPage() {
   const t = useT();
   const locale = useLocale();
+  const role = useUIStore((s) => s.role);
+  const router = useRouter();
+  useEffect(() => {
+    if (role === "clinician") router.replace("/clinician");
+  }, [role, router]);
   return (
     <div className="mx-auto max-w-5xl space-y-8 p-4 md:p-8">
       <PageHeader
@@ -31,6 +42,8 @@ export default function DashboardPage() {
 
       <ZoneStatusCard />
 
+      <PillarsCard />
+
       <section className="space-y-3">
         <SectionHeader
           title={locale === "zh" ? "今天的身体" : "Body today"}
@@ -41,6 +54,11 @@ export default function DashboardPage() {
           }
         />
         <BodyMetricsGrid />
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2">
+        <SarcopeniaCard />
+        <WeeklyCard />
       </section>
 
       <section className="space-y-3">

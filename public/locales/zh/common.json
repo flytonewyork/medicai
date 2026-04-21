@@ -5,6 +5,7 @@
   },
   "nav": {
     "dashboard": "概览",
+    "assessment": "综合评估",
     "daily": "每日",
     "weekly": "每周",
     "fortnightly": "两周",
@@ -12,6 +13,7 @@
     "bridge": "过渡策略",
     "events": "重要日程",
     "decisions": "决策记录",
+    "ingest": "导入",
     "reports": "报告",
     "settings": "设置"
   },
@@ -118,6 +120,15 @@
     "locale_en": "English",
     "locale_zh": "中文",
     "managing_oncologist": "主诊肿瘤科医师"
+  },
+  "weekly": {
+    "title": "每周回顾",
+    "subtitle": "周日晚做最好，约 5 分钟。"
+  },
+  "reports": {
+    "pre_clinic": "就诊前小结",
+    "generate": "生成 PDF",
+    "export_backup": "导出 JSON 备份"
   },
   "dashboard": {
     "title": "概览",

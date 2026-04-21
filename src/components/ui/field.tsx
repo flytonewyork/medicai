@@ -3,6 +3,7 @@ import type {
   InputHTMLAttributes,
   LabelHTMLAttributes,
   ReactNode,
+  TextareaHTMLAttributes,
 } from "react";
 import { forwardRef } from "react";
 
@@ -62,16 +63,14 @@ TextInput.displayName = "TextInput";
 export function Textarea({
   className,
   ...props
-}: InputHTMLAttributes<HTMLTextAreaElement> & {
-  className?: string;
-}) {
+}: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
       className={cn(
         "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:border-slate-700 dark:bg-slate-900 dark:focus:border-slate-100 dark:focus:ring-slate-100/10",
         className,
       )}
-      {...(props as InputHTMLAttributes<HTMLTextAreaElement>)}
+      {...props}
     />
   );
 }

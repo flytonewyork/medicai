@@ -13,12 +13,15 @@ import {
   ScrollText,
   FileText,
   Settings as SettingsIcon,
+  ScanLine,
+  Compass,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 import { useT } from "~/hooks/use-translate";
 
 const ITEMS = [
   { href: "/", key: "nav.dashboard", icon: LayoutDashboard },
+  { href: "/assessment", key: "nav.assessment", icon: Compass },
   { href: "/daily", key: "nav.daily", icon: CalendarDays },
   { href: "/weekly", key: "nav.weekly", icon: CalendarRange },
   { href: "/fortnightly", key: "nav.fortnightly", icon: Stethoscope },
@@ -26,6 +29,7 @@ const ITEMS = [
   { href: "/bridge", key: "nav.bridge", icon: Route },
   { href: "/events", key: "nav.events", icon: CalendarClock },
   { href: "/decisions", key: "nav.decisions", icon: ScrollText },
+  { href: "/ingest", key: "nav.ingest", icon: ScanLine },
   { href: "/reports", key: "nav.reports", icon: FileText },
   { href: "/settings", key: "nav.settings", icon: SettingsIcon },
 ] as const;
