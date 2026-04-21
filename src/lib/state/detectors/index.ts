@@ -8,6 +8,21 @@ import { stepsDeclineDetector } from "./steps-decline";
 
 export { stepsDeclineDetector } from "./steps-decline";
 export { gripDeclineDetector } from "./grip-decline";
+export {
+  attributeSignal,
+  eventsBySignalId,
+  type AttributedAction,
+  type AttributionConfidence,
+  type SignalAttribution,
+} from "./attribution";
+export {
+  logSignalEvent,
+  getEventsForSignal,
+  getAllSignalEvents,
+  computeLoopSummary,
+  type LogSignalEventInput,
+  type SignalLoopSummary,
+} from "./events";
 export type {
   ChangeSignal,
   Detector,
