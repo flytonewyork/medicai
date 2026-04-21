@@ -1,41 +1,33 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { format } from "date-fns";
 import { db } from "~/lib/db/dexie";
 import { PillarTiles } from "~/components/dashboard/pillar-tiles";
-import { QuickActions } from "~/components/dashboard/quick-actions";
 import { PillarsCard } from "~/components/dashboard/pillars-card";
 import { RecentTrends } from "~/components/dashboard/recent-trends";
 import { EmergencyCard } from "~/components/dashboard/emergency-card";
 import { QuickCheckinCard } from "~/components/dashboard/quick-checkin-card";
 import { TodayFeed } from "~/components/dashboard/today-feed";
 import { useLocale, useT } from "~/hooks/use-translate";
-import { useUIStore } from "~/stores/ui-store";
 import { PageHeader, SectionHeader } from "~/components/ui/page-header";
 import { Bell } from "lucide-react";
 
 export default function DashboardPage() {
   const t = useT();
   const locale = useLocale();
-  const role = useUIStore((s) => s.role);
   const router = useRouter();
   const settings = useLiveQuery(() => db.settings.toArray());
   const profileName = settings?.[0]?.profile_name;
 
   useEffect(() => {
-    if (role === "clinician") {
-      router.replace("/clinician");
-      return;
-    }
     // First-run gate: no settings row (or no onboarded_at) → onboarding.
     if (settings && !settings[0]?.onboarded_at) {
       router.replace("/onboarding");
     }
-  }, [role, router, settings]);
+  }, [router, settings]);
 
   const { greeting, eyebrow } = useMemo(() => {
     const now = new Date();
@@ -94,13 +86,7 @@ export default function DashboardPage() {
 
       <TodayFeed excludeIds={["checkin_today"]} />
 
-      <div className="a-horizon" />
-
       <PillarTiles />
-
-      <QuickActions />
-
-      <div className="a-horizon" />
 
       <PillarsCard />
 

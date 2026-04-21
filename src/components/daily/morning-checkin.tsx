@@ -165,7 +165,20 @@ export function MorningCheckin({
       if (entryId) {
         await db.daily_entries.update(entryId, payload);
       } else {
-        await db.daily_entries.add(payload);
+        // Upsert by date so QuickCheckinCard + full log don't create
+        // duplicate rows — the dashboard tiles key off `date`.
+        const existingForDate = await db.daily_entries
+          .where("date")
+          .equals(payload.date)
+          .first();
+        if (existingForDate?.id) {
+          await db.daily_entries.update(existingForDate.id, {
+            ...payload,
+            created_at: existingForDate.created_at,
+          });
+        } else {
+          await db.daily_entries.add(payload);
+        }
       }
       await runEngineAndPersist();
       router.push("/daily");

@@ -24,31 +24,9 @@ export function PillarsCard() {
   );
 
   if (anyAssessment === undefined) return null;
-
-  if (!latest) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {locale === "zh" ? "建立基线" : "Establish your baseline"}
-          </CardTitle>
-          <div className="mt-1 text-sm text-slate-500">
-            {locale === "zh"
-              ? "综合评估会给出三支柱评分（功能 / 症状 / 毒性）和 Anchor 指数。以后每一轮都会和第一次对比。"
-              : "A comprehensive assessment produces three pillar scores (function / symptoms / toxicity) and an Anchor Index that later assessments compare against."}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Link href="/assessment/new">
-            <Button size="lg">
-              <Compass className="h-4 w-4" />
-              {locale === "zh" ? "开始综合评估" : "Start comprehensive assessment"}
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Hide the card entirely until the user has at least one complete
+  // assessment. The onboarding flow and nudge feed already prompt this.
+  if (!latest) return null;
 
   return (
     <Card>
