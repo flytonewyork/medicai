@@ -2,15 +2,9 @@ import { db, now } from "./dexie";
 import trialWatchlist from "~/config/trial-watchlist.json";
 
 export async function ensureSeeded(): Promise<void> {
-  const settingsCount = await db.settings.count();
-  if (settingsCount === 0) {
-    await db.settings.add({
-      profile_name: "Hu Lin",
-      locale: "en",
-      created_at: now(),
-      updated_at: now(),
-    });
-  }
+  // Settings row is created by the onboarding wizard on first run.
+  // We don't auto-seed a placeholder — "no settings row (or onboarded_at
+  // missing)" is what triggers the onboarding gate on the dashboard.
 
   const trialsCount = await db.trials.count();
   if (trialsCount === 0) {

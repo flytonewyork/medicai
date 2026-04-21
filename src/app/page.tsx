@@ -13,6 +13,7 @@ import { QuickActions } from "~/components/dashboard/quick-actions";
 import { TasksCard } from "~/components/dashboard/tasks-card";
 import { PillarsCard } from "~/components/dashboard/pillars-card";
 import { RecentTrends } from "~/components/dashboard/recent-trends";
+import { EmergencyCard } from "~/components/dashboard/emergency-card";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
 import { PageHeader, SectionHeader } from "~/components/ui/page-header";
@@ -27,8 +28,15 @@ export default function DashboardPage() {
   const profileName = settings?.[0]?.profile_name;
 
   useEffect(() => {
-    if (role === "clinician") router.replace("/clinician");
-  }, [role, router]);
+    if (role === "clinician") {
+      router.replace("/clinician");
+      return;
+    }
+    // First-run gate: no settings row (or no onboarded_at) → onboarding.
+    if (settings && !settings[0]?.onboarded_at) {
+      router.replace("/onboarding");
+    }
+  }, [role, router, settings]);
 
   const { greeting, eyebrow } = useMemo(() => {
     const now = new Date();
@@ -80,6 +88,8 @@ export default function DashboardPage() {
           </button>
         }
       />
+
+      <EmergencyCard />
 
       <TodayPlanCard />
 
