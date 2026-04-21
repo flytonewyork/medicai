@@ -7,14 +7,41 @@ import { RoleSwitcher } from "~/components/shared/role-switcher";
 import { AddFab } from "~/components/shared/add-fab";
 
 export const metadata: Metadata = {
-  title: "Anchor",
-  description: "Function preservation and bridge strategy tracking.",
+  title: {
+    default: "Anchor",
+    template: "%s · Anchor",
+  },
+  description: "Function preservation and bridge-strategy tracking for metastatic pancreatic cancer.",
+  applicationName: "Anchor",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: [
+      { url: "/anchor-mark.svg", type: "image/svg+xml" },
+    ],
+    shortcut: ["/favicon.svg"],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Anchor",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f172a",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f1e8" },
+    { media: "(prefers-color-scheme: dark)", color: "#19212f" },
+  ],
   width: "device-width",
   initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
