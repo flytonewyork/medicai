@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { buildCycleContext } from "~/lib/treatment/engine";
@@ -15,7 +15,7 @@ import { NudgeCard } from "~/components/treatment/nudge-card";
 import { formatDate } from "~/lib/utils/date";
 import { addDays, parseISO } from "date-fns";
 import type { NudgeCategory } from "~/types/treatment";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Pencil, Trash2 } from "lucide-react";
 
 const CATEGORY_ORDER: NudgeCategory[] = [
   "safety",
@@ -31,6 +31,7 @@ const CATEGORY_ORDER: NudgeCategory[] = [
 
 export default function CycleDetailPage() {
   const locale = useLocale();
+  const router = useRouter();
   const params = useParams<{ id: string }>();
   const id = Number(params?.id);
   const cycle = useLiveQuery(
@@ -40,6 +41,8 @@ export default function CycleDetailPage() {
   const latestDaily = useLiveQuery(() =>
     db.daily_entries.orderBy("date").reverse().limit(1).toArray(),
   );
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const ctx = useMemo(() => {
     if (!cycle) return null;
@@ -94,6 +97,17 @@ export default function CycleDetailPage() {
       snoozed_nudge_ids: next,
       updated_at: now(),
     });
+  }
+
+  async function deleteCycle() {
+    if (!cycle?.id) return;
+    setDeleting(true);
+    try {
+      await db.treatment_cycles.delete(cycle.id);
+      router.push("/treatment");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   const byCategory = new Map<NudgeCategory, typeof ctx.applicable_nudges>();
@@ -241,14 +255,59 @@ export default function CycleDetailPage() {
         </CardContent>
       </Card>
 
-      {cycle.status !== "completed" && (
-        <div className="flex justify-end">
-          <Button variant="secondary" onClick={markCompleted}>
-            <CheckCircle2 className="h-4 w-4" />
-            {locale === "zh" ? "标记为完成" : "Mark cycle complete"}
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+        <Link href={`/treatment/${cycle.id}/edit`}>
+          <Button variant="secondary">
+            <Pencil className="h-4 w-4" />
+            {locale === "zh" ? "编辑" : "Edit cycle"}
           </Button>
+        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {cycle.status !== "completed" && (
+            <Button variant="secondary" onClick={markCompleted}>
+              <CheckCircle2 className="h-4 w-4" />
+              {locale === "zh" ? "标记为完成" : "Mark cycle complete"}
+            </Button>
+          )}
+          {!confirmDelete ? (
+            <Button
+              variant="secondary"
+              onClick={() => setConfirmDelete(true)}
+              className="text-[var(--warn)]"
+            >
+              <Trash2 className="h-4 w-4" />
+              {locale === "zh" ? "删除" : "Delete"}
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2 rounded-lg border border-[var(--warn)]/40 bg-[var(--warn-soft)] px-3 py-2 text-xs">
+              <span className="text-ink-900">
+                {locale === "zh" ? "确认删除此周期？" : "Delete this cycle?"}
+              </span>
+              <Button
+                variant="secondary"
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
+              >
+                {locale === "zh" ? "取消" : "Cancel"}
+              </Button>
+              <button
+                type="button"
+                onClick={deleteCycle}
+                disabled={deleting}
+                className="rounded-md bg-[var(--warn)] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-95 disabled:opacity-60"
+              >
+                {deleting
+                  ? locale === "zh"
+                    ? "删除中…"
+                    : "Deleting…"
+                  : locale === "zh"
+                    ? "确认删除"
+                    : "Confirm delete"}
+              </button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
