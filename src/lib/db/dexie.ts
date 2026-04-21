@@ -18,6 +18,7 @@ import type {
   PendingResult,
   IngestedDocument,
   ComprehensiveAssessment,
+  SignalEventRow,
 } from "~/types/clinical";
 import type { Trial } from "~/types/bridge";
 import type { TreatmentCycle } from "~/types/treatment";
@@ -43,6 +44,7 @@ export class AnchorDB extends Dexie {
   medication_events!: Table<MedicationEvent, number>;
   medication_prompt_events!: Table<MedicationPromptEvent, number>;
   change_signals!: Table<ChangeSignalRow, number>;
+  signal_events!: Table<SignalEventRow, number>;
   life_events!: Table<LifeEvent, number>;
   decisions!: Table<Decision, number>;
   zone_alerts!: Table<ZoneAlert, number>;
@@ -112,6 +114,13 @@ export class AnchorDB extends Dexie {
     this.version(8).stores({
       change_signals:
         "++id, detector, fired_for, metric_id, axis, severity, status, detected_at, [detector+fired_for]",
+    });
+    // v9: per-signal event log for outcome attribution (slice 4). One row
+    // per lifecycle transition or user-logged action. Index on signal_id so
+    // the attribution helper can walk events for a given signal cheaply.
+    this.version(9).stores({
+      signal_events:
+        "++id, signal_id, kind, action_ref_id, created_at, [signal_id+created_at]",
     });
   }
 }
