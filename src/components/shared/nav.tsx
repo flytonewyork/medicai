@@ -17,6 +17,8 @@ import { cn } from "~/lib/utils/cn";
 import { useT } from "~/hooks/use-translate";
 
 // Stub routes (decisions, events, quarterly) are hidden until those modules ship.
+// Medications is accessed contextually (from treatment detail, daily check-in,
+// logging FAB) rather than via top-level nav — it's a cross-cutting concept.
 const ITEMS = [
   { href: "/", key: "nav.dashboard", icon: LayoutDashboard },
   { href: "/assessment", key: "nav.assessment", icon: Compass },
