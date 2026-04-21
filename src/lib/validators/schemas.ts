@@ -66,6 +66,7 @@ export const settingsSchema = z.object({
   home_lon: z.number().optional(),
   home_timezone: z.string().optional(),
   onboarded_at: z.string().optional(),
+  last_exported_at: z.string().optional(),
   anthropic_api_key: z.string().optional(),
   default_ai_model: z.string().optional(),
 });

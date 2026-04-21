@@ -82,6 +82,14 @@ export default function ReportsPage() {
       a.download = `anchor-backup-${todayISO()}.json`;
       a.click();
       URL.revokeObjectURL(url);
+      // Mark the export so the backup-nudge stops firing.
+      const existing = settingsRows[0];
+      if (existing?.id) {
+        await db.settings.update(existing.id, {
+          last_exported_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      }
     } finally {
       setExporting(false);
     }

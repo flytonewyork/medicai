@@ -72,10 +72,18 @@ const TONE_STYLES: Record<FeedItem["tone"], { bg: string; dot: string; border?: 
 
 const CACHE_KEY = "anchor_narrative";
 
-export function TodayFeed() {
+export function TodayFeed({
+  excludeIds = [],
+}: {
+  excludeIds?: string[];
+} = {}) {
   const locale = useLocale();
   const weather = useWeather();
-  const feed = useTodayFeed({ weather });
+  const rawFeed = useTodayFeed({ weather });
+  const feed =
+    excludeIds.length === 0
+      ? rawFeed
+      : rawFeed.filter((f) => !excludeIds.includes(f.id));
   const settings = useLiveQuery(() => db.settings.toArray());
   const apiKey = settings?.[0]?.anthropic_api_key;
   const model = settings?.[0]?.default_ai_model ?? "claude-opus-4-7";

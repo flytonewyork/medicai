@@ -11,6 +11,7 @@ import { QuickActions } from "~/components/dashboard/quick-actions";
 import { PillarsCard } from "~/components/dashboard/pillars-card";
 import { RecentTrends } from "~/components/dashboard/recent-trends";
 import { EmergencyCard } from "~/components/dashboard/emergency-card";
+import { QuickCheckinCard } from "~/components/dashboard/quick-checkin-card";
 import { TodayFeed } from "~/components/dashboard/today-feed";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
@@ -89,7 +90,9 @@ export default function DashboardPage() {
 
       <EmergencyCard />
 
-      <TodayFeed />
+      <QuickCheckinCard />
+
+      <TodayFeed excludeIds={["checkin_today"]} />
 
       <div className="a-horizon" />
 

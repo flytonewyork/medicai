@@ -222,4 +222,53 @@ describe("computeTrendNudges", () => {
     });
     expect(nudges.find((n) => n.id === "trend_streak_7")).toBeTruthy();
   });
+
+  it("backup nudge fires when never exported + 3 dailies logged", () => {
+    const dailies: DailyEntry[] = Array.from({ length: 3 }, (_, i) =>
+      d({ date: `2026-04-${18 + i}` }),
+    );
+    const nudges = computeTrendNudges({
+      settings: { ...settings, last_exported_at: undefined },
+      recentDailies: dailies,
+      recentLabs: [],
+      todayISO: "2026-04-21",
+    });
+    expect(nudges.find((n) => n.id === "trend_backup_due")).toBeTruthy();
+  });
+
+  it("backup nudge fires when last export > 7 days ago", () => {
+    const dailies: DailyEntry[] = Array.from({ length: 3 }, (_, i) =>
+      d({ date: `2026-04-${18 + i}` }),
+    );
+    const nudges = computeTrendNudges({
+      settings: { ...settings, last_exported_at: "2026-04-10T00:00:00Z" },
+      recentDailies: dailies,
+      recentLabs: [],
+      todayISO: "2026-04-21",
+    });
+    expect(nudges.find((n) => n.id === "trend_backup_due")).toBeTruthy();
+  });
+
+  it("backup nudge suppressed when recently exported", () => {
+    const dailies: DailyEntry[] = Array.from({ length: 3 }, (_, i) =>
+      d({ date: `2026-04-${18 + i}` }),
+    );
+    const nudges = computeTrendNudges({
+      settings: { ...settings, last_exported_at: "2026-04-20T00:00:00Z" },
+      recentDailies: dailies,
+      recentLabs: [],
+      todayISO: "2026-04-21",
+    });
+    expect(nudges.find((n) => n.id === "trend_backup_due")).toBeFalsy();
+  });
+
+  it("backup nudge suppressed on fresh installs (<3 dailies)", () => {
+    const nudges = computeTrendNudges({
+      settings: { ...settings, last_exported_at: undefined },
+      recentDailies: [d({ date: "2026-04-21" })],
+      recentLabs: [],
+      todayISO: "2026-04-21",
+    });
+    expect(nudges.find((n) => n.id === "trend_backup_due")).toBeFalsy();
+  });
 });
