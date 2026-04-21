@@ -40,6 +40,12 @@ export default function SettingsPage() {
         baseline_calf_cm: current.baseline_calf_cm,
         locale: current.locale,
         managing_oncologist: current.managing_oncologist,
+        managing_oncologist_phone: current.managing_oncologist_phone,
+        hospital_name: current.hospital_name,
+        hospital_phone: current.hospital_phone,
+        hospital_address: current.hospital_address,
+        oncall_phone: current.oncall_phone,
+        emergency_instructions: current.emergency_instructions,
         anthropic_api_key: current.anthropic_api_key,
         default_ai_model: current.default_ai_model,
       });
@@ -79,15 +85,59 @@ export default function SettingsPage() {
           <Field label={t("settings.diagnosis_date")}>
             <input type="date" className={inputCls} {...register("diagnosis_date")} />
           </Field>
-          <Field label={t("settings.managing_oncologist")}>
-            <input className={inputCls} {...register("managing_oncologist")} />
-          </Field>
           <Field label={t("settings.locale")}>
             <select className={inputCls} {...register("locale")}>
               <option value="en">{t("settings.locale_en")}</option>
               <option value="zh">{t("settings.locale_zh")}</option>
             </select>
           </Field>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Clinical team & emergency
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label={t("settings.managing_oncologist")}>
+              <input className={inputCls} {...register("managing_oncologist")} />
+            </Field>
+            <Field label="Oncologist phone">
+              <input
+                type="tel"
+                className={inputCls}
+                {...register("managing_oncologist_phone")}
+              />
+            </Field>
+            <Field label="Hospital / centre">
+              <input className={inputCls} {...register("hospital_name")} />
+            </Field>
+            <Field label="Hospital phone">
+              <input
+                type="tel"
+                className={inputCls}
+                {...register("hospital_phone")}
+              />
+            </Field>
+            <Field label="24/7 on-call">
+              <input
+                type="tel"
+                className={inputCls}
+                {...register("oncall_phone")}
+              />
+            </Field>
+            <Field label="Hospital address">
+              <input className={inputCls} {...register("hospital_address")} />
+            </Field>
+            <div className="sm:col-span-2">
+              <Field label="When to go straight to hospital">
+                <textarea
+                  rows={3}
+                  className={inputCls}
+                  {...register("emergency_instructions")}
+                />
+              </Field>
+            </div>
+          </div>
         </section>
 
         <section className="space-y-3">
