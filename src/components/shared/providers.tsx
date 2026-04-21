@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ensureSeeded } from "~/lib/db/seed";
+import { initSync } from "~/lib/sync/init";
 import { useUIStore } from "~/stores/ui-store";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -12,6 +13,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     ensureSeeded().catch(() => {
       // seeding failures are non-fatal
+    });
+    initSync().catch((err) => {
+      // eslint-disable-next-line no-console
+      console.warn("[sync] init failed", err);
     });
   }, []);
 
