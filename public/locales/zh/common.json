@@ -5,6 +5,7 @@
   },
   "nav": {
     "dashboard": "概览",
+    "assessment": "综合评估",
     "daily": "每日",
     "weekly": "每周",
     "fortnightly": "两周",

@@ -314,6 +314,131 @@ export interface PendingResult {
   updated_at: string;
 }
 
+export type ComprehensiveAssessmentStatus = "draft" | "complete";
+
+export type ComprehensiveAssessmentTrigger =
+  | "baseline"
+  | "quarterly"
+  | "pre_imaging"
+  | "ad_hoc";
+
+export interface PillarScores {
+  functional_score: number;
+  symptom_score: number;
+  toxicity_score: number;
+  mental_score: number;
+  spiritual_score: number;
+  anchor_index: number;
+}
+
+export interface ComprehensiveAssessment {
+  id?: number;
+  assessment_date: string;
+  started_at: string;
+  completed_at?: string;
+  status: ComprehensiveAssessmentStatus;
+  trigger: ComprehensiveAssessmentTrigger;
+  entered_by: EnteredBy;
+
+  // Anthropometrics
+  weight_kg?: number;
+  height_cm?: number;
+  muac_cm?: number;
+  calf_cm?: number;
+  waist_cm?: number;
+
+  // Vitals (optional)
+  resting_hr?: number;
+  systolic_bp?: number;
+  diastolic_bp?: number;
+  spo2?: number;
+
+  // Functional
+  ecog_self?: 0 | 1 | 2 | 3 | 4;
+  grip_dominant_kg?: number;
+  grip_nondominant_kg?: number;
+  gait_speed_ms?: number;
+  sit_to_stand_30s?: number;
+  sts_5x_seconds?: number;
+  tug_seconds?: number;
+  single_leg_stance_seconds?: number;
+  walk_6min_meters?: number;
+  sarc_f_responses?: number[];
+  sarc_f_total?: number;
+
+  // Symptoms
+  pain_worst?: number;
+  pain_current?: number;
+  pain_interference?: number;
+  pain_location?: string;
+  pain_character?: string;
+  fatigue_severity?: number;
+  fatigue_interference?: number;
+  appetite_rating?: number;
+  nausea_severity?: number;
+  vomiting_frequency?: number;
+  diarrhoea_frequency?: number;
+  constipation_severity?: number;
+  jaundice?: boolean;
+  pruritus_severity?: number;
+  dyspnoea_severity?: number;
+  cough_severity?: number;
+  fever_recent?: boolean;
+  night_sweats?: boolean;
+  weight_loss_unintentional?: boolean;
+
+  // Toxicity
+  neuropathy_grade_overall?: 0 | 1 | 2 | 3 | 4;
+  neuropathy_hands_grade?: 0 | 1 | 2 | 3 | 4;
+  neuropathy_feet_grade?: 0 | 1 | 2 | 3 | 4;
+  cold_dysaesthesia_severity?: number;
+  mucositis_severity?: number;
+  skin_changes?: boolean;
+  nail_changes?: boolean;
+  easy_bruising?: boolean;
+  cognitive_concern?: number;
+
+  // Mental
+  phq9_responses?: number[];
+  phq9_total?: number;
+  gad7_responses?: number[];
+  gad7_total?: number;
+  distress_thermometer?: number;
+  sleep_quality?: number;
+  sleep_hours_average?: number;
+
+  // Spiritual (FACIT-Sp-12 shortened)
+  facitsp_responses?: number[];
+  facitsp_meaning_peace?: number;
+  facitsp_faith?: number;
+  facitsp_total?: number;
+  values_statement?: string;
+  practice_days_past_week?: number;
+
+  // Free-text reflection
+  overall_reflection?: string;
+
+  // Computed scores
+  functional_score?: number;
+  symptom_score?: number;
+  toxicity_score?: number;
+  mental_score?: number;
+  spiritual_score?: number;
+  anchor_index?: number;
+
+  // AI summary
+  ai_summary_patient?: string;
+  ai_summary_clinician?: string;
+  ai_summary_model?: string;
+
+  tests_included?: string[];
+  tests_completed?: string[];
+  tests_skipped?: string[];
+
+  created_at: string;
+  updated_at: string;
+}
+
 export type IngestedDocumentKind =
   | "lab_report"
   | "imaging_report"

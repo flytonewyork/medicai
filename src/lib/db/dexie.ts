@@ -17,6 +17,7 @@ import type {
   Settings,
   PendingResult,
   IngestedDocument,
+  ComprehensiveAssessment,
 } from "~/types/clinical";
 import type { Trial } from "~/types/bridge";
 
@@ -39,6 +40,7 @@ export class AnchorDB extends Dexie {
   settings!: Table<Settings, number>;
   pending_results!: Table<PendingResult, number>;
   ingested_documents!: Table<IngestedDocument, number>;
+  comprehensive_assessments!: Table<ComprehensiveAssessment, number>;
 
   constructor() {
     super("anchor_db");
@@ -63,6 +65,10 @@ export class AnchorDB extends Dexie {
     this.version(2).stores({
       pending_results: "++id, ordered_date, category, expected_by",
       ingested_documents: "++id, uploaded_at, status, kind",
+    });
+    this.version(3).stores({
+      comprehensive_assessments:
+        "++id, assessment_date, status, trigger, started_at",
     });
   }
 }

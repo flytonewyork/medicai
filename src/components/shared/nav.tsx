@@ -14,12 +14,14 @@ import {
   FileText,
   Settings as SettingsIcon,
   ScanLine,
+  Compass,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 import { useT } from "~/hooks/use-translate";
 
 const ITEMS = [
   { href: "/", key: "nav.dashboard", icon: LayoutDashboard },
+  { href: "/assessment", key: "nav.assessment", icon: Compass },
   { href: "/daily", key: "nav.daily", icon: CalendarDays },
   { href: "/weekly", key: "nav.weekly", icon: CalendarRange },
   { href: "/fortnightly", key: "nav.fortnightly", icon: Stethoscope },
