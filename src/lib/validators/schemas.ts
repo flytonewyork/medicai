@@ -50,6 +50,8 @@ export const dailyEntrySchema = z.object({
   walking_minutes: z.number().min(0).max(720).optional(),
   resistance_training: z.boolean().optional(),
   other_exercise_minutes: z.number().min(0).max(720).optional(),
+  meaningful_interactions: z.number().int().min(0).max(50).optional(),
+  carer_present: z.boolean().optional(),
 });
 
 export type DailyEntryInput = z.infer<typeof dailyEntrySchema>;

@@ -403,10 +403,29 @@ const DRUG: RegisteredMetric[] = [
 ];
 
 // ─── External axis ─────────────────────────────────────────────────────────
-// Slice 1 scope: placeholder axis with no registered metrics yet.
-// Slice 2+ adds weather + social + care-team signals.
+// Slice 3 populates this with patient-reported social-connectedness signals.
+// Weather and care-team-contact metrics are derived at detector-time rather
+// than captured per day, so they don't appear here.
 
-const EXTERNAL: RegisteredMetric[] = [];
+const EXTERNAL: RegisteredMetric[] = [
+  {
+    id: "meaningful_interactions",
+    axis: "external",
+    polarity: "higher_better",
+    cadence_days: 1,
+    label: "Meaningful interactions",
+    unit: "count/day",
+    ...daily("meaningful_interactions", "meaningful_interactions"),
+  },
+  {
+    id: "carer_present_flag",
+    axis: "external",
+    polarity: "higher_better",
+    cadence_days: 1,
+    label: "Carer presence (daily flag)",
+    ...dailyBool("carer_present_flag", "carer_present"),
+  },
+];
 
 export const METRIC_REGISTRY: readonly RegisteredMetric[] = [
   ...INDIVIDUAL,

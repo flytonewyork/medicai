@@ -68,6 +68,10 @@ export function ChangeSignalsCard() {
   );
   const labs = useLiveQuery(() => db.labs.orderBy("date").toArray(), []);
   const cycles = useLiveQuery(() => db.treatment_cycles.toArray(), []);
+  const careTeamContacts = useLiveQuery(
+    () => db.care_team_contacts.toArray(),
+    [],
+  );
   const openSignalRows = useLiveQuery(
     () => db.change_signals.where("status").equals("open").toArray(),
     [],
@@ -77,7 +81,9 @@ export function ChangeSignalsCard() {
   // Re-evaluate detectors whenever the underlying data changes. The
   // persistence layer dedupes, so repeated evaluations are safe.
   useEffect(() => {
-    if (!dailies || !fortnightlies || !labs || !cycles) return;
+    if (!dailies || !fortnightlies || !labs || !cycles || !careTeamContacts) {
+      return;
+    }
     const asOf = new Date().toISOString();
     const inputs = {
       as_of: asOf,
@@ -89,8 +95,13 @@ export function ChangeSignalsCard() {
     };
     const state = buildPatientState(inputs);
     const observations = extractObservationsByMetric(inputs);
-    void evaluateAndPersistSignals({ state, observations, now: asOf });
-  }, [settings, dailies, fortnightlies, labs, cycles]);
+    void evaluateAndPersistSignals({
+      state,
+      observations,
+      care_team_contacts: careTeamContacts,
+      now: asOf,
+    });
+  }, [settings, dailies, fortnightlies, labs, cycles, careTeamContacts]);
 
   const eventsBySignalId = useMemo(() => {
     const out = new Map<number, SignalEventRow[]>();
