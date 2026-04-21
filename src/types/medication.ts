@@ -1,7 +1,7 @@
 import type { LocalizedText } from "./treatment";
 
 // Re-export so the medication module is self-contained for consumers.
-export type { LocalizedText } from "./treatment";
+export type { LocalizedText };
 
 export type MedicationRoute =
   | "PO"

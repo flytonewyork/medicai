@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { useLocale, useT } from "~/hooks/use-translate";
+import { useLocale } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent } from "~/components/ui/card";
 import { DRUG_REGISTRY } from "~/config/drug-registry";
 import { ChevronRight } from "lucide-react";
-import { cn } from "~/lib/utils/cn";
-import type { MedicationCategory } from "~/types/medication";
+import type { MedicationCategory, DrugInfo } from "~/types/medication";
 
 const CATEGORY_LABELS: Record<MedicationCategory, { en: string; zh: string }> = {
   chemo: { en: "Chemotherapy", zh: "化疗" },
@@ -50,11 +49,10 @@ const CATEGORY_ORDER: MedicationCategory[] = [
 ];
 
 export default function MedicationsPage() {
-  const t = useT();
   const locale = useLocale();
 
   const grouped = useMemo(() => {
-    const groups: Record<MedicationCategory, typeof DRUG_REGISTRY> = {
+    const groups: Record<MedicationCategory, DrugInfo[]> = {
       chemo: [],
       targeted: [],
       immunotherapy: [],
@@ -74,7 +72,7 @@ export default function MedicationsPage() {
       other: [],
     };
     for (const drug of DRUG_REGISTRY) {
-      (groups[drug.category] ??= []).push(drug);
+      groups[drug.category].push(drug);
     }
     return groups;
   }, []);

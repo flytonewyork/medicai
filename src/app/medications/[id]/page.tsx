@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useLocale, useT } from "~/hooks/use-translate";
+import { useLocale } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Disclosure } from "~/components/ui/disclosure";
@@ -12,7 +12,6 @@ import { Button } from "~/components/ui/button";
 
 export default function MedicationDetailPage() {
   const locale = useLocale();
-  const t = useT();
   const params = useParams<{ id: string }>();
   const drugId = params?.id as string;
 
@@ -139,7 +138,7 @@ export default function MedicationDetailPage() {
         <CardContent className="space-y-4">
           {drug.side_effects.common.length > 0 && (
             <Disclosure
-              title="Common (usually mild or manageable)"
+              label="Common (usually mild or manageable)"
               defaultOpen={true}
             >
               <ul className="space-y-2 text-sm">
@@ -157,7 +156,7 @@ export default function MedicationDetailPage() {
 
           {drug.side_effects.serious.length > 0 && (
             <Disclosure
-              title="Serious (require immediate attention)"
+              label="Serious (require immediate attention)"
               defaultOpen={true}
             >
               <ul className="space-y-2 text-sm">
