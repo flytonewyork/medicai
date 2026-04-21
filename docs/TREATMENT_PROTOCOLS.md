@@ -24,6 +24,7 @@ hygiene, exercise, sleep, mental, safety, activity, meds, and intimacy.
 | `gnp_biweekly` | 28 d | D1, D15 | Function-preserving schedule |
 | `gem_maintenance` | 28 d | D1, D8, D15 | Gem-only after response plateau |
 | `mffx` | 14 d | D1 (+ 46 h pump → D2) | Modified FOLFIRINOX |
+| `gnp_narmafotinib` | 28 d | D1, D8, D15 | GnP backbone + continuous oral narmafotinib (AMP945, FAK inhibitor — ACCENT trial). Inherits GnP weekly nudges; adds oral adherence, LFT monitoring, rash watch. |
 
 ## Phase windows (GnP weekly)
 
