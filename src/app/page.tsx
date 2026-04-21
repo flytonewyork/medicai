@@ -10,6 +10,7 @@ import { PillarsCard } from "~/components/dashboard/pillars-card";
 import { RecentTrends } from "~/components/dashboard/recent-trends";
 import { EmergencyCard } from "~/components/dashboard/emergency-card";
 import { QuickCheckinCard } from "~/components/dashboard/quick-checkin-card";
+import { ChangeSignalsCard } from "~/components/dashboard/change-signals-card";
 import { MedicationPromptsCard } from "~/components/dashboard/medication-prompts-card";
 import { PracticesCard } from "~/components/dashboard/practices-card";
 import { TodayFeed } from "~/components/dashboard/today-feed";
@@ -75,6 +76,8 @@ export default function DashboardPage() {
       <EmergencyCard />
 
       <QuickCheckinCard />
+
+      <ChangeSignalsCard />
 
       <MedicationPromptsCard />
 
