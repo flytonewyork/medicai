@@ -16,6 +16,7 @@ import {
   ScanLine,
   Compass,
   Syringe,
+  ListTodo,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 import { useT } from "~/hooks/use-translate";
@@ -30,6 +31,7 @@ const ITEMS = [
   { href: "/quarterly", key: "nav.quarterly", icon: ClipboardList },
   { href: "/bridge", key: "nav.bridge", icon: Route },
   { href: "/events", key: "nav.events", icon: CalendarClock },
+  { href: "/tasks", key: "nav.tasks", icon: ListTodo },
   { href: "/decisions", key: "nav.decisions", icon: ScrollText },
   { href: "/ingest", key: "nav.ingest", icon: ScanLine },
   { href: "/reports", key: "nav.reports", icon: FileText },

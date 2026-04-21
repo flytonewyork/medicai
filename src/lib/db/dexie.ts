@@ -21,6 +21,7 @@ import type {
 } from "~/types/clinical";
 import type { Trial } from "~/types/bridge";
 import type { TreatmentCycle } from "~/types/treatment";
+import type { PatientTask } from "~/types/task";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -43,6 +44,7 @@ export class AnchorDB extends Dexie {
   ingested_documents!: Table<IngestedDocument, number>;
   comprehensive_assessments!: Table<ComprehensiveAssessment, number>;
   treatment_cycles!: Table<TreatmentCycle, number>;
+  patient_tasks!: Table<PatientTask, number>;
 
   constructor() {
     super("anchor_db");
@@ -75,6 +77,10 @@ export class AnchorDB extends Dexie {
     this.version(4).stores({
       treatment_cycles:
         "++id, start_date, status, protocol_id, cycle_number",
+    });
+    this.version(5).stores({
+      patient_tasks:
+        "++id, due_date, active, category, schedule_kind, preset_id",
     });
   }
 }
