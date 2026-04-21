@@ -8,6 +8,7 @@ import type {
   Zone,
   RuleCategory,
 } from "~/types/clinical";
+import type { PatientStateSnapshot } from "~/lib/state";
 
 export interface ClinicalSnapshot {
   settings: Settings | null;
@@ -18,6 +19,10 @@ export interface ClinicalSnapshot {
   recentLabs: LabResult[];
   openPendingResults: PendingResult[];
   now: Date;
+  // Four-axis patient state, computed alongside the snapshot. Slice 1 adds it
+  // to the contract without consuming it in any rule; later slices migrate
+  // rule evaluators onto this field.
+  patient_state: PatientStateSnapshot;
 }
 
 export interface ZoneRule {

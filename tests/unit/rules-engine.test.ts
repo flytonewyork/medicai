@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { ZONE_RULES } from "~/lib/rules/zone-rules";
 import { evaluateRules, highestZone } from "~/lib/rules/engine";
 import type { ClinicalSnapshot } from "~/lib/rules/types";
+import { buildPatientState } from "~/lib/state";
 import type {
   DailyEntry,
   FortnightlyAssessment,
@@ -63,15 +64,27 @@ function fortnightly(
 }
 
 function snapshot(over: Partial<ClinicalSnapshot> = {}): ClinicalSnapshot {
+  const latestDaily = over.latestDaily ?? daily();
+  const recentDailies = over.recentDailies ?? [latestDaily];
+  const recentLabs = over.recentLabs ?? [];
+  const asOf = over.now ?? new Date("2026-04-20");
   return {
     settings: baseSettings,
-    latestDaily: daily(),
-    recentDailies: [daily()],
+    latestDaily,
+    recentDailies,
     recentWeeklies: [],
     latestFortnightly: null,
-    recentLabs: [],
+    recentLabs,
     openPendingResults: [],
-    now: new Date("2026-04-20"),
+    now: asOf,
+    patient_state: buildPatientState({
+      as_of: asOf.toISOString(),
+      settings: baseSettings,
+      dailies: recentDailies,
+      fortnightlies: over.latestFortnightly ? [over.latestFortnightly] : [],
+      labs: recentLabs,
+      cycles: [],
+    }),
     ...over,
   };
 }

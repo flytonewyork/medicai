@@ -1,6 +1,7 @@
 import { db, now } from "~/lib/db/dexie";
 import type { ClinicalSnapshot, ZoneRule } from "./types";
 import { ZONE_RULES } from "./zone-rules";
+import { buildPatientState } from "~/lib/state";
 import type { Zone } from "~/types/clinical";
 
 export async function buildSnapshot(): Promise<ClinicalSnapshot> {
@@ -11,27 +12,45 @@ export async function buildSnapshot(): Promise<ClinicalSnapshot> {
     fortnightlies,
     labs,
     pending,
+    cycles,
   ] = await Promise.all([
     db.settings.toArray(),
-    db.daily_entries.orderBy("date").reverse().limit(30).toArray(),
+    // Wider windows than the rules strictly need so the patient_state module
+    // has enough history to build rolling_28d baselines and 28d slopes.
+    db.daily_entries.orderBy("date").reverse().limit(60).toArray(),
     db.weekly_assessments.orderBy("week_start").reverse().limit(8).toArray(),
-    db.fortnightly_assessments.orderBy("assessment_date").reverse().limit(4).toArray(),
-    db.labs.orderBy("date").limit(12).toArray(),
+    db.fortnightly_assessments.orderBy("assessment_date").reverse().limit(6).toArray(),
+    db.labs.orderBy("date").reverse().limit(30).toArray(),
     db.pending_results.toArray(),
+    db.treatment_cycles.toArray(),
   ]);
 
   const orderedDailies = dailies.slice().reverse();
+  const orderedLabs = labs.slice().reverse();
+  const orderedFortnightlies = fortnightlies.slice().reverse();
   const openPending = pending.filter((p) => !p.received);
+  const asOf = new Date();
+  const settingsRow = settings[0] ?? null;
+
+  const patient_state = buildPatientState({
+    as_of: asOf.toISOString(),
+    settings: settingsRow,
+    dailies: orderedDailies,
+    fortnightlies: orderedFortnightlies,
+    labs: orderedLabs,
+    cycles,
+  });
 
   return {
-    settings: settings[0] ?? null,
+    settings: settingsRow,
     latestDaily: orderedDailies[orderedDailies.length - 1] ?? null,
     recentDailies: orderedDailies,
     recentWeeklies: weeklies.slice().reverse(),
     latestFortnightly: fortnightlies[0] ?? null,
-    recentLabs: labs,
+    recentLabs: orderedLabs,
     openPendingResults: openPending,
-    now: new Date(),
+    now: asOf,
+    patient_state,
   };
 }
 
