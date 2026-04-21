@@ -1,0 +1,20 @@
+{
+  "name": "Anchor",
+  "short_name": "Anchor",
+  "description": "Function preservation + bridge-strategy tracker",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f5f1e8",
+  "theme_color": "#19212f",
+  "icons": [
+    {
+      "src": "/anchor-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "medical", "lifestyle"]
+}
