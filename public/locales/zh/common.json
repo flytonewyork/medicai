@@ -18,7 +18,9 @@
     "decisions": "决策记录",
     "ingest": "导入",
     "reports": "报告",
-    "settings": "设置"
+    "settings": "设置",
+    "history": "历史记录",
+    "care_team": "医疗团队"
   },
   "zones": {
     "green": "稳定",

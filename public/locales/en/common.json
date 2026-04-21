@@ -18,7 +18,9 @@
     "decisions": "Decisions",
     "ingest": "Ingest",
     "reports": "Reports",
-    "settings": "Settings"
+    "settings": "Settings",
+    "history": "History",
+    "care_team": "Care team"
   },
   "zones": {
     "green": "Stable",

@@ -12,6 +12,8 @@ import {
   Compass,
   Syringe,
   ListTodo,
+  Users,
+  History as HistoryIcon,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 import { useT } from "~/hooks/use-translate";
@@ -25,7 +27,9 @@ const ITEMS = [
   { href: "/treatment", key: "nav.treatment", icon: Syringe },
   { href: "/labs", key: "nav.labs", icon: FlaskConical },
   { href: "/tasks", key: "nav.tasks", icon: ListTodo },
+  { href: "/care-team", key: "nav.care_team", icon: Users },
   { href: "/bridge", key: "nav.bridge", icon: Route },
+  { href: "/history", key: "nav.history", icon: HistoryIcon },
   { href: "/ingest", key: "nav.ingest", icon: ScanLine },
   { href: "/reports", key: "nav.reports", icon: FileText },
   { href: "/settings", key: "nav.settings", icon: SettingsIcon },
