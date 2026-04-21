@@ -105,7 +105,7 @@ export default function PendingResultsPage() {
               onChange={(e) =>
                 setCategory(e.target.value as PendingResultCategory)
               }
-              className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm focus:border-slate-900 focus:outline-none dark:border-slate-700 dark:bg-slate-900"
+              className="h-11 w-full rounded-lg border border-ink-200 bg-paper-2 px-3 text-sm focus:border-ink-900 focus:outline-none focus:ring-2 focus:ring-ink-900/10"
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
@@ -143,11 +143,11 @@ export default function PendingResultsPage() {
       </Card>
 
       <section className="space-y-3">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-ink-500">
           {locale === "zh" ? "未收到" : "Open"} ({open.length})
         </h2>
         {open.length === 0 && (
-          <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-700">
+          <div className="rounded-lg border border-dashed border-ink-200 p-6 text-center text-sm text-ink-500">
             {locale === "zh" ? "没有待出结果。" : "Nothing pending."}
           </div>
         )}
@@ -158,15 +158,15 @@ export default function PendingResultsPage() {
               <li
                 key={r.id}
                 className={cn(
-                  "flex items-center justify-between rounded-xl border bg-white p-4 dark:bg-slate-900",
+                  "flex items-center justify-between rounded-xl border bg-paper-2 p-4",
                   overdue
-                    ? "border-amber-400 dark:border-amber-800"
-                    : "border-slate-200 dark:border-slate-800",
+                    ? "border-[oklch(75%_0.13_70)]"
+                    : "border-ink-100/70",
                 )}
               >
                 <div className="space-y-1">
                   <div className="text-sm font-medium">{r.test_name}</div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-500">
                     <span>{r.category}</span>
                     <span>
                       {locale === "zh" ? "下单" : "ordered"}{" "}
@@ -213,14 +213,14 @@ export default function PendingResultsPage() {
 
       {done.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-ink-500">
             {locale === "zh" ? "已收到" : "Received"} ({done.length})
           </h2>
           <ul className="space-y-2">
             {done.map((r) => (
               <li
                 key={r.id}
-                className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-800 dark:bg-slate-900/60"
+                className="flex items-center justify-between rounded-xl border border-ink-100/70 bg-paper p-3 text-xs"
               >
                 <span>
                   {r.test_name} ·{" "}
