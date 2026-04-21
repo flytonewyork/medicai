@@ -1,7 +1,7 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { db } from "~/lib/db/dexie";
 import { useZoneStatus } from "~/hooks/use-zone-status";
 import { useLocale } from "~/hooks/use-translate";
@@ -18,10 +18,13 @@ export function EmergencyCard() {
     s?.managing_oncologist_phone ||
     s?.hospital_phone;
 
-  // Default open whenever zone is warn/urgent; otherwise collapsed but
-  // still always reachable via the chevron.
   const alertActive = zone === "red" || zone === "orange";
-  const [open, setOpen] = useState(alertActive);
+  const [open, setOpen] = useState(false);
+  // Zone loads async from Dexie; auto-open once an alert fires, but let the
+  // user close it without flipping back open on every re-render.
+  useEffect(() => {
+    if (alertActive) setOpen(true);
+  }, [alertActive]);
 
   if (!hasAnyContact) return null;
 

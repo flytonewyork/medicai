@@ -1,7 +1,11 @@
 import "~/styles/globals.css";
 import type { Metadata, Viewport } from "next";
 import { Providers } from "~/components/shared/providers";
-import { DesktopSidebar, MobileBottomNav } from "~/components/shared/nav";
+import {
+  DesktopSidebar,
+  MobileBottomNav,
+  MobileMoreMenu,
+} from "~/components/shared/nav";
 import { AddFab } from "~/components/shared/add-fab";
 
 export const metadata: Metadata = {
@@ -54,7 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div className="serif text-[17px] tracking-tight text-ink-900">
                   Anchor
                 </div>
-                <div className="flex-1" />
+                <MobileMoreMenu />
               </header>
               <main className="flex-1 overflow-y-auto pb-28 md:pb-6">
                 {children}

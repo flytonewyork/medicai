@@ -11,7 +11,6 @@ import { useUIStore } from "~/stores/ui-store";
 import { runEngineAndPersist } from "~/lib/rules/engine";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { SectionHeader } from "~/components/ui/page-header";
 import { ScaleInput } from "./scale-input";
 import { Toggle } from "./toggle";
 import { CycleBanner } from "./cycle-banner";
@@ -185,7 +184,7 @@ export function MorningCheckin({
         }
       }
       await runEngineAndPersist();
-      router.push("/daily");
+      router.push("/");
     } finally {
       setSaving(false);
     }
@@ -491,15 +490,6 @@ export function MorningCheckin({
           </Button>
         )}
       </div>
-
-      <SectionHeader
-        title={locale === "zh" ? "提示" : "Tips"}
-        description={
-          locale === "zh"
-            ? "可以跳过任何不适用的项目。每项都会自动保存。"
-            : "Skip anything that doesn't apply. Every field auto-saves."
-        }
-      />
     </div>
   );
 }
