@@ -1,4 +1,4 @@
-import type { DrugInfo, DoseSchedule, LocalizedText } from "~/types/medication";
+import type { DrugInfo, DoseSchedule } from "~/types/medication";
 
 // Common schedule templates to reduce duplication
 const SCHED_BID_MEALS: DoseSchedule = {

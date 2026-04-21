@@ -21,7 +21,9 @@ export default function MedicationDetailPage() {
     return (
       <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-8">
         <PageHeader title="Drug not found" />
-        <p className="text-ink-500">No medication with ID "{drugId}" in registry.</p>
+        <p className="text-ink-500">
+          No medication with ID <code>{drugId}</code> in registry.
+        </p>
         <Link href="/medications">
           <Button variant="ghost" className="gap-2">
             <ArrowLeft className="h-4 w-4" />
