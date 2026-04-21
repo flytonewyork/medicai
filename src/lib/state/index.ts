@@ -26,4 +26,9 @@ export {
   rollingBaseline,
 } from "./baselines";
 export { accelOver, olsSlopePerDay, slopeOver } from "./slope";
-export { buildPatientState, type BuildStateInputs } from "./build";
+export {
+  buildPatientState,
+  extractObservationsByMetric,
+  type BuildStateInputs,
+} from "./build";
+export { patientSD, rollingMean, type VarianceEstimate } from "./variance";

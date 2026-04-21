@@ -230,6 +230,25 @@ export interface Treatment {
 // logging-integrated module. This re-export keeps existing consumers working.
 export type { Medication, MedicationEvent } from "./medication";
 
+// Persisted change-signal row — a ChangeSignal (from ~/lib/state/detectors)
+// that was surfaced and recorded for dedup, status tracking, and later
+// outcome attribution. The signal payload lives serialised so the detector
+// output is immutable for audit; consumers JSON-parse on read.
+export interface ChangeSignalRow {
+  id?: number;
+  detector: string;
+  fired_for: string;
+  metric_id: string;
+  axis: "individual" | "external" | "tumour" | "drug";
+  severity: "caution" | "warning";
+  shape: string;
+  status: "open" | "acknowledged" | "dismissed" | "resolved";
+  payload_json: string;
+  detected_at: string;
+  resolved_at?: string;
+  note?: string;
+}
+
 export interface LifeEvent {
   id?: number;
   title: string;

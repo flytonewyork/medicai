@@ -130,6 +130,21 @@ function extractObservations(
   return out;
 }
 
+/**
+ * Extract the raw observation series for every registered metric. Detectors
+ * (slice 2+) consume this alongside the PatientStateSnapshot so they can
+ * compute rolling means / patient-SDs without re-reading Dexie.
+ */
+export function extractObservationsByMetric(
+  inputs: BuildStateInputs,
+): Record<string, Observation[]> {
+  const out: Record<string, Observation[]> = {};
+  for (const m of METRIC_REGISTRY) {
+    out[m.id] = extractObservations(m, inputs);
+  }
+  return out;
+}
+
 function computeTrajectory(
   metric: RegisteredMetric,
   inputs: BuildStateInputs,

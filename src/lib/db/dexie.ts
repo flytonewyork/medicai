@@ -1,5 +1,6 @@
 import Dexie, { type Table } from "dexie";
 import type {
+  ChangeSignalRow,
   DailyEntry,
   WeeklyAssessment,
   FortnightlyAssessment,
@@ -41,6 +42,7 @@ export class AnchorDB extends Dexie {
   medications!: Table<Medication, number>;
   medication_events!: Table<MedicationEvent, number>;
   medication_prompt_events!: Table<MedicationPromptEvent, number>;
+  change_signals!: Table<ChangeSignalRow, number>;
   life_events!: Table<LifeEvent, number>;
   decisions!: Table<Decision, number>;
   zone_alerts!: Table<ZoneAlert, number>;
@@ -102,6 +104,14 @@ export class AnchorDB extends Dexie {
     this.version(7).stores({
       medication_prompt_events:
         "++id, rule_id, status, shown_at, drug_id, cycle_id, [rule_id+fired_for]",
+    });
+    // v8: change-signal detector outputs (slice 2). `fired_for` is the dedup
+    // key per detector occurrence; `status` drives lifecycle (open →
+    // acknowledged / dismissed / resolved). The compound [detector+fired_for]
+    // index enforces uniqueness per occurrence.
+    this.version(8).stores({
+      change_signals:
+        "++id, detector, fired_for, metric_id, axis, severity, status, detected_at, [detector+fired_for]",
     });
   }
 }
