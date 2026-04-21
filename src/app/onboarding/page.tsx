@@ -75,6 +75,7 @@ interface FormState {
   protocol_id: ProtocolId;
   cycle_start_date: string;
   locale: Locale;
+  home_city: string;
   anthropic_api_key: string;
 }
 
@@ -99,6 +100,7 @@ const EMPTY: FormState = {
   protocol_id: "gnp_weekly",
   cycle_start_date: todayISO(),
   locale: "en",
+  home_city: "",
   anthropic_api_key: "",
 };
 
@@ -151,6 +153,7 @@ export default function OnboardingPage() {
         baseline_muac_cm: s.baseline_muac_cm ? String(s.baseline_muac_cm) : "",
         baseline_calf_cm: s.baseline_calf_cm ? String(s.baseline_calf_cm) : "",
         locale: s.locale,
+        home_city: s.home_city ?? "",
         anthropic_api_key: s.anthropic_api_key ?? "",
       }));
     }
@@ -188,6 +191,23 @@ export default function OnboardingPage() {
     setSaving(true);
     try {
       const ts = now();
+      // Optional geocode for weather
+      let home_lat: number | undefined;
+      let home_lon: number | undefined;
+      let home_timezone: string | undefined;
+      if (form.home_city.trim()) {
+        try {
+          const { geocodeCity } = await import("~/lib/weather/open-meteo");
+          const geo = await geocodeCity(form.home_city);
+          if (geo) {
+            home_lat = geo.latitude;
+            home_lon = geo.longitude;
+            home_timezone = geo.timezone;
+          }
+        } catch {
+          // geocode failure is non-fatal
+        }
+      }
       const payload: Settings = {
         profile_name: form.profile_name.trim() || "Patient",
         dob: form.dob || undefined,
@@ -209,6 +229,10 @@ export default function OnboardingPage() {
         oncall_phone: form.oncall_phone.trim() || undefined,
         emergency_instructions:
           form.emergency_instructions.trim() || undefined,
+        home_city: form.home_city.trim() || undefined,
+        home_lat,
+        home_lon,
+        home_timezone,
         anthropic_api_key: form.anthropic_api_key.trim() || undefined,
         onboarded_at: ts,
         created_at: existingSettings?.[0]?.created_at ?? ts,
@@ -701,6 +725,21 @@ function PreferencesStep({
             );
           })}
         </div>
+      </Field>
+
+      <Field
+        label={locale === "zh" ? "所在城市（可选 — 用于天气建议）" : "Home city (optional — used for weather-aware nudges)"}
+        hint={
+          locale === "zh"
+            ? "例如：Melbourne。我们只把城市名发给 open-meteo 的天气 API。"
+            : "e.g. Melbourne. We only send the city name to open-meteo's public weather API."
+        }
+      >
+        <TextInput
+          value={form.home_city}
+          onChange={(e) => update("home_city", e.target.value)}
+          placeholder="Melbourne"
+        />
       </Field>
 
       <Field

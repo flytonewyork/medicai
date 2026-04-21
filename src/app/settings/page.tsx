@@ -46,6 +46,10 @@ export default function SettingsPage() {
         hospital_address: current.hospital_address,
         oncall_phone: current.oncall_phone,
         emergency_instructions: current.emergency_instructions,
+        home_city: current.home_city,
+        home_lat: current.home_lat,
+        home_lon: current.home_lon,
+        home_timezone: current.home_timezone,
         anthropic_api_key: current.anthropic_api_key,
         default_ai_model: current.default_ai_model,
       });
@@ -53,6 +57,25 @@ export default function SettingsPage() {
   }, [current, reset]);
 
   async function onSubmit(values: SettingsInput) {
+    // If home_city changed or lat/lon missing, re-geocode.
+    const needsGeocode =
+      values.home_city &&
+      (values.home_city !== current?.home_city ||
+        typeof values.home_lat !== "number" ||
+        typeof values.home_lon !== "number");
+    if (needsGeocode && values.home_city) {
+      try {
+        const { geocodeCity } = await import("~/lib/weather/open-meteo");
+        const geo = await geocodeCity(values.home_city);
+        if (geo) {
+          values.home_lat = geo.latitude;
+          values.home_lon = geo.longitude;
+          values.home_timezone = geo.timezone;
+        }
+      } catch {
+        // non-fatal
+      }
+    }
     if (current?.id) {
       await db.settings.update(current.id, { ...values, updated_at: now() });
     } else {
@@ -137,6 +160,13 @@ export default function SettingsPage() {
                 />
               </Field>
             </div>
+            <Field label="Home city (weather nudges)">
+              <input
+                className={inputCls}
+                placeholder="Melbourne"
+                {...register("home_city")}
+              />
+            </Field>
           </div>
         </section>
 
