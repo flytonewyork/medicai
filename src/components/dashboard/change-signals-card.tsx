@@ -14,6 +14,7 @@ import {
 import {
   deserializeSignal,
   evaluateAndPersistSignals,
+  markActionTaken,
   setSignalStatus,
 } from "~/lib/state/detectors/persistence";
 import type {
@@ -21,10 +22,15 @@ import type {
   SignalSeverity,
   SuggestedAction,
 } from "~/lib/state/detectors";
-import type { ChangeSignalRow, Locale } from "~/types/clinical";
+import type {
+  ChangeSignalRow,
+  Locale,
+  SignalEventRow,
+} from "~/types/clinical";
 import {
   AlertTriangle,
   Bell,
+  Check,
   ChevronDown,
   ChevronUp,
   Sparkles,
@@ -64,6 +70,7 @@ export function ChangeSignalsCard() {
     () => db.change_signals.where("status").equals("open").toArray(),
     [],
   );
+  const eventRows = useLiveQuery(() => db.signal_events.toArray(), []);
 
   // Re-evaluate detectors whenever the underlying data changes. The
   // persistence layer dedupes, so repeated evaluations are safe.
@@ -82,6 +89,16 @@ export function ChangeSignalsCard() {
     const observations = extractObservationsByMetric(inputs);
     void evaluateAndPersistSignals({ state, observations, now: asOf });
   }, [settings, dailies, fortnightlies, labs, cycles]);
+
+  const eventsBySignalId = useMemo(() => {
+    const out = new Map<number, SignalEventRow[]>();
+    for (const e of eventRows ?? []) {
+      const arr = out.get(e.signal_id) ?? [];
+      arr.push(e);
+      out.set(e.signal_id, arr);
+    }
+    return out;
+  }, [eventRows]);
 
   const signals = useMemo(() => {
     if (!openSignalRows) return [];
@@ -107,7 +124,13 @@ export function ChangeSignalsCard() {
       </div>
       <div className="space-y-2">
         {signals.map(({ row, signal }) => (
-          <SignalRow key={row.id} row={row} signal={signal} locale={locale} />
+          <SignalRow
+            key={row.id}
+            row={row}
+            signal={signal}
+            locale={locale}
+            events={row.id ? (eventsBySignalId.get(row.id) ?? []) : []}
+          />
         ))}
       </div>
     </section>
@@ -118,10 +141,12 @@ function SignalRow({
   row,
   signal,
   locale,
+  events,
 }: {
   row: ChangeSignalRow;
   signal: ChangeSignal;
   locale: Locale;
+  events: SignalEventRow[];
 }) {
   const [expanded, setExpanded] = useState(false);
   const tone = TONE_BY_SEVERITY[signal.severity];
@@ -130,6 +155,11 @@ function SignalRow({
     (d) => d.confidence !== "unlikely",
   );
   const actionsToShow = signal.actions.slice(0, 2);
+  const actionsTaken = new Set(
+    events
+      .filter((e) => e.kind === "action_taken" && e.action_ref_id)
+      .map((e) => e.action_ref_id!),
+  );
 
   return (
     <Card className={cn("px-4 py-4", tone.wrap)}>
@@ -170,7 +200,13 @@ function SignalRow({
           {actionsToShow.length > 0 && (
             <ul className="mt-3 space-y-1.5">
               {actionsToShow.map((a) => (
-                <ActionRow key={`${a.kind}:${a.ref_id}`} action={a} locale={locale} />
+                <ActionRow
+                  key={`${a.kind}:${a.ref_id}`}
+                  action={a}
+                  locale={locale}
+                  signalId={row.id}
+                  done={actionsTaken.has(a.ref_id)}
+                />
               ))}
             </ul>
           )}
@@ -299,14 +335,54 @@ function SignalRow({
 function ActionRow({
   action,
   locale,
+  signalId,
+  done,
 }: {
   action: SuggestedAction;
   locale: Locale;
+  signalId?: number;
+  done: boolean;
 }) {
+  const onMarkDone = () => {
+    if (!signalId || done) return;
+    void markActionTaken({
+      signal_id: signalId,
+      action_ref_id: action.ref_id,
+      action_kind: action.kind,
+    });
+  };
   return (
     <li className="flex items-center gap-2 text-[12px] text-ink-700">
-      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--tide-2)]" />
-      <span className="flex-1">{action.label[locale]}</span>
+      <button
+        type="button"
+        onClick={onMarkDone}
+        disabled={done || !signalId}
+        aria-label={
+          done
+            ? locale === "zh"
+              ? "已完成"
+              : "Done"
+            : locale === "zh"
+              ? "标记为已完成"
+              : "Mark as done"
+        }
+        className={cn(
+          "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
+          done
+            ? "border-[var(--ok)] bg-[var(--ok)] text-white"
+            : "border-ink-300 bg-paper hover:border-ink-500",
+        )}
+      >
+        {done && <Check className="h-3 w-3" strokeWidth={3} />}
+      </button>
+      <span
+        className={cn(
+          "flex-1",
+          done && "text-ink-400 line-through decoration-[1px]",
+        )}
+      >
+        {action.label[locale]}
+      </span>
       <span className="mono text-[9.5px] uppercase tracking-[0.12em] text-ink-400">
         {action.urgency === "now"
           ? locale === "zh"

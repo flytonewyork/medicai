@@ -249,6 +249,30 @@ export interface ChangeSignalRow {
   note?: string;
 }
 
+// Every lifecycle transition of a signal + every action the user takes in
+// response is written here. The table exists so slice 4's attribution layer
+// can reason about "was this signal's resolution preceded by any of the
+// suggested actions?" — the loop the app is ultimately built around.
+export type SignalEventKind =
+  | "emitted"           // detector first fired, ChangeSignalRow created
+  | "acknowledged"      // user tapped "Got it"
+  | "dismissed"         // user tapped "Dismiss"
+  | "action_taken"      // user marked a suggested action done
+  | "resolved_auto"     // detector.hasResolved returned true
+  | "resolved_manual"   // user marked the signal resolved
+  | "reopened";         // detector re-fired after a prior resolution
+
+export interface SignalEventRow {
+  id?: number;
+  signal_id: number;                // fk → change_signals.id
+  kind: SignalEventKind;
+  // For kind=action_taken — which SuggestedAction was marked done.
+  action_ref_id?: string;
+  action_kind?: string;             // "lever" | "task" | "question" | ...
+  note?: string;
+  created_at: string;
+}
+
 export interface LifeEvent {
   id?: number;
   title: string;

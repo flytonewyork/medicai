@@ -11,6 +11,7 @@ import { RecentTrends } from "~/components/dashboard/recent-trends";
 import { EmergencyCard } from "~/components/dashboard/emergency-card";
 import { QuickCheckinCard } from "~/components/dashboard/quick-checkin-card";
 import { ChangeSignalsCard } from "~/components/dashboard/change-signals-card";
+import { SignalLoopSummaryCard } from "~/components/dashboard/signal-loop-summary-card";
 import { MedicationPromptsCard } from "~/components/dashboard/medication-prompts-card";
 import { TodayFeed } from "~/components/dashboard/today-feed";
 import { useLocale, useT } from "~/hooks/use-translate";
@@ -77,6 +78,8 @@ export default function DashboardPage() {
       <QuickCheckinCard />
 
       <ChangeSignalsCard />
+
+      <SignalLoopSummaryCard />
 
       <MedicationPromptsCard />
 
