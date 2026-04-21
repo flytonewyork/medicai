@@ -55,6 +55,13 @@ export const settingsSchema = z.object({
   baseline_calf_cm: z.number().min(20).max(60).optional(),
   locale: z.enum(["en", "zh"]),
   managing_oncologist: z.string().optional(),
+  managing_oncologist_phone: z.string().optional(),
+  hospital_name: z.string().optional(),
+  hospital_phone: z.string().optional(),
+  hospital_address: z.string().optional(),
+  oncall_phone: z.string().optional(),
+  emergency_instructions: z.string().optional(),
+  onboarded_at: z.string().optional(),
   anthropic_api_key: z.string().optional(),
   default_ai_model: z.string().optional(),
 });

@@ -283,6 +283,13 @@ export interface Settings {
   height_cm?: number;
   locale: Locale;
   managing_oncologist?: string;
+  managing_oncologist_phone?: string;
+  hospital_name?: string;
+  hospital_phone?: string;
+  hospital_address?: string;
+  oncall_phone?: string;
+  emergency_instructions?: string;
+  onboarded_at?: string;
   anthropic_api_key?: string;
   default_ai_model?: string;
   created_at: string;
