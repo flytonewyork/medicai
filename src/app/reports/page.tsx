@@ -111,7 +111,7 @@ export default function ReportsPage() {
           <CardTitle>
             {locale === "zh" ? "就诊前小结" : "Pre-clinic summary"}
           </CardTitle>
-          <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <div className="mt-1 text-sm text-ink-500">
             {locale === "zh"
               ? "包含当前区间、活动警示、功能轨迹、两周日均值、本周反思、近期化验、以及自动生成的提问清单。"
               : "Includes current zone, active alerts, functional trajectory, 14-day averages, latest weekly, recent labs, and auto-generated questions for the oncologist."}
@@ -143,7 +143,7 @@ export default function ReportsPage() {
                 : "Generate PDF"}
           </Button>
           {settings && settings.length === 0 && (
-            <div className="mt-3 text-xs text-amber-700 dark:text-amber-300">
+            <div className="mt-3 text-xs text-[oklch(45%_0.09_70)]">
               {locale === "zh"
                 ? "先在设置里填写基本信息，生成的小结会更完整。"
                 : "Fill in Settings first — the summary uses those to compute baselines and deltas."}
@@ -157,7 +157,7 @@ export default function ReportsPage() {
           <CardTitle>
             {locale === "zh" ? "数据备份" : "Data backup"}
           </CardTitle>
-          <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <div className="mt-1 text-sm text-ink-500">
             {locale === "zh"
               ? "全部数据导出为 JSON。保存到加密 U 盘或密码保护的云盘。清除浏览器数据前务必先导出。"
               : "Export everything as JSON. Save to encrypted storage. Always export before clearing site data or changing browser."}
@@ -174,14 +174,14 @@ export default function ReportsPage() {
                 ? "导出 JSON 备份"
                 : "Export JSON backup"}
           </Button>
-          <div className="mt-2 text-xs text-slate-500">
+          <div className="mt-2 text-xs text-ink-500">
             {locale === "zh" ? "今天：" : "Today: "}
             {formatDate(todayISO(), locale)}
           </div>
         </CardContent>
       </Card>
 
-      <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex items-center gap-2 rounded-lg border border-ink-100/70 bg-paper-2 p-3 text-xs text-ink-500">
         <Database className="h-4 w-4" />
         <span>
           {locale === "zh"
@@ -195,8 +195,8 @@ export default function ReportsPage() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2 text-center dark:border-slate-800 dark:bg-slate-900/40">
-      <div className="text-xs text-slate-500">{label}</div>
+    <div className="rounded-lg border border-ink-100/70 bg-paper-2 p-2 text-center">
+      <div className="text-xs text-ink-500">{label}</div>
       <div className="mt-1 text-lg font-semibold tabular-nums">{value}</div>
     </div>
   );
