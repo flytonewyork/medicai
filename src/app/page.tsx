@@ -11,6 +11,7 @@ import { SarcopeniaCard } from "~/components/dashboard/sarcopenia-card";
 import { WeeklyCard } from "~/components/dashboard/weekly-card";
 import { PillarsCard } from "~/components/dashboard/pillars-card";
 import { CycleDayCard } from "~/components/dashboard/cycle-day-card";
+import { TasksCard } from "~/components/dashboard/tasks-card";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
 import { PageHeader, SectionHeader } from "~/components/ui/page-header";
@@ -44,6 +45,8 @@ export default function DashboardPage() {
       <ZoneStatusCard />
 
       <CycleDayCard />
+
+      <TasksCard />
 
       <PillarsCard />
 
