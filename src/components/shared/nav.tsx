@@ -42,12 +42,12 @@ export function DesktopSidebar() {
   const t = useT();
   const pathname = usePathname();
   return (
-    <aside className="hidden md:flex md:w-60 flex-col border-r border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-800">
+    <aside className="hidden md:flex md:w-60 flex-col border-r border-ink-100/60 bg-paper-2/60">
       <div className="px-5 py-6">
-        <div className="text-lg font-semibold">{t("app.name")}</div>
-        <div className="text-xs text-slate-500 mt-1">{t("app.tagline")}</div>
+        <div className="serif text-xl text-ink-900">{t("app.name")}</div>
+        <div className="mt-1 text-[11px] text-ink-400">{t("app.tagline")}</div>
       </div>
-      <nav className="flex-1 px-2 pb-4 space-y-1">
+      <nav className="flex-1 space-y-0.5 px-2 pb-4">
         {ITEMS.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href;
@@ -56,13 +56,19 @@ export function DesktopSidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm",
+                "flex items-center gap-3 rounded-md px-3 py-2 text-[13px] transition-colors",
                 active
-                  ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100"
-                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800",
+                  ? "bg-ink-100/80 text-ink-900"
+                  : "text-ink-500 hover:bg-ink-100/40 hover:text-ink-700",
               )}
             >
-              <Icon className="h-4 w-4" aria-hidden />
+              <Icon
+                className={cn(
+                  "h-4 w-4",
+                  active ? "text-[var(--tide-2)]" : "",
+                )}
+                aria-hidden
+              />
               <span>{t(item.key)}</span>
             </Link>
           );
@@ -76,10 +82,10 @@ export function MobileBottomNav() {
   const t = useT();
   const pathname = usePathname();
   const mobileItems = ITEMS.filter((i) =>
-    ["/", "/daily", "/weekly", "/reports", "/settings"].includes(i.href),
+    ["/", "/daily", "/assessment", "/tasks", "/settings"].includes(i.href),
   );
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-around py-2 z-40">
+    <nav className="a-glass fixed inset-x-3 bottom-3 z-40 flex justify-around rounded-[22px] px-2 py-2.5 shadow-lg md:hidden">
       {mobileItems.map((item) => {
         const Icon = item.icon;
         const active = pathname === item.href;
@@ -88,12 +94,18 @@ export function MobileBottomNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex flex-col items-center gap-1 text-[11px] px-3 py-1 rounded-md",
-              active ? "text-slate-900 dark:text-slate-100" : "text-slate-500",
+              "flex flex-col items-center gap-1 rounded-md px-3 py-1 transition-colors",
+              active ? "text-ink-900" : "text-ink-400",
             )}
           >
-            <Icon className="h-5 w-5" aria-hidden />
-            <span>{t(item.key)}</span>
+            <Icon
+              className={cn("h-5 w-5", active ? "text-[var(--tide-2)]" : "")}
+              strokeWidth={active ? 1.9 : 1.5}
+              aria-hidden
+            />
+            <span className="mono text-[10px] uppercase tracking-wider">
+              {t(item.key)}
+            </span>
           </Link>
         );
       })}
