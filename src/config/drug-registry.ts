@@ -103,6 +103,15 @@ const GEMCITABINE: DrugInfo = {
   supportive_id: undefined,
   references: [
     {
+      source: "eviQ",
+      title:
+        "eviQ Protocol 1375 — Pancreas metastatic: gemcitabine and nab-PACLitaxel (NSW Cancer Institute)",
+      publisher: "NSW Cancer Institute — eviQ",
+      url: "https://www.eviq.org.au/medical-oncology/upper-gastrointestinal/pancreas-and-biliary/1375-pancreas-metastatic-gemcitabine-and-nab-pacli",
+      accessed: "2026-04-21",
+      section: "Dose / schedule / pre-treatment assessments",
+    },
+    {
       source: "FDA_label",
       title:
         "GEMCITABINE for Injection — Highlights of Prescribing Information",
@@ -123,16 +132,16 @@ const GEMCITABINE: DrugInfo = {
         end_day: 15,
         counts: ["ANC", "platelets"],
         rationale: {
-          en: "Myelosuppression is the dose-limiting toxicity. Pre-dose CBC on D8 and D15 drives dose modification.",
-          zh: "骨髓抑制为剂量限制毒性。D8 与 D15 化疗前血常规决定剂量调整。",
+          en: "Myelosuppression is the dose-limiting toxicity. eviQ 1375 and FDA labels require pre-dose CBC on D1/D8/D15 of the 28-day cycle; dose modifications key off Day 8 ANC and platelet counts.",
+          zh: "骨髓抑制为剂量限制毒性。eviQ 1375 与 FDA 标签要求 28 天周期 D1/D8/D15 化疗前查血常规；D8 的 ANC 与血小板决定剂量调整。",
         },
       },
-      source_refs: [0],
+      source_refs: [0, 1],
     },
   },
   clinical_note: {
-    en: "Hu Lin tolerates weekly GnP well. Monitor for cumulative neuropathy and declining counts.",
-    zh: "胡林对每周 GnP 耐受良好。监测累积性神经病变和血象下降。",
+    en: "Hu Lin tolerates weekly GnP well. Monitor for cumulative neuropathy and declining counts. Australian protocol: eviQ 1375.",
+    zh: "胡林对每周 GnP 耐受良好。监测累积性神经病变和血象下降。澳洲方案：eviQ 1375。",
   },
 };
 
@@ -195,11 +204,20 @@ const NAB_PACLITAXEL: DrugInfo = {
   protocol_ids: ["gnp_weekly", "gnp_biweekly"],
   references: [
     {
+      source: "eviQ",
+      title:
+        "eviQ Protocol 1375 — Pancreas metastatic: gemcitabine and nab-PACLitaxel",
+      publisher: "NSW Cancer Institute — eviQ",
+      url: "https://www.eviq.org.au/medical-oncology/upper-gastrointestinal/pancreas-and-biliary/1375-pancreas-metastatic-gemcitabine-and-nab-pacli",
+      accessed: "2026-04-21",
+      section: "Nab-paclitaxel 125 mg/m² D1/D8/D15; pre-treatment CBC; ANC ≥ 1.5 × 10⁹/L, platelets ≥ 100 × 10⁹/L",
+    },
+    {
       source: "FDA_label",
       title:
         "ABRAXANE (paclitaxel protein-bound particles) — Highlights of Prescribing Information",
       publisher: "FDA",
-      url: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2018/021660s045lbl.pdf",
+      url: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2020/021660s047lbl.pdf",
       accessed: "2026-04-21",
       section:
         "2.4 Dose Modifications, Pancreatic Cancer / 5.1 Hematologic effects",
@@ -212,11 +230,11 @@ const NAB_PACLITAXEL: DrugInfo = {
         end_day: 15,
         counts: ["ANC", "platelets"],
         rationale: {
-          en: "Per Abraxane label: pre-dose CBC required on D1, D8, and D15 of each 28-day cycle in pancreatic cancer; counts dip across this window.",
-          zh: "据 Abraxane 说明书：胰腺癌每 28 天周期 D1、D8、D15 化疗前需查血常规；该窗口内血象下降。",
+          en: "eviQ 1375 and the Abraxane FDA label require pre-dose CBC on D1, D8, and D15 of each 28-day cycle. ANC ≥ 1.5 × 10⁹/L and platelets ≥ 100 × 10⁹/L are the eviQ pre-treatment thresholds.",
+          zh: "eviQ 1375 与 Abraxane FDA 标签要求每 28 天周期 D1、D8、D15 化疗前查血常规。eviQ 治疗前阈值：ANC ≥ 1.5 × 10⁹/L，血小板 ≥ 100 × 10⁹/L。",
         },
       },
-      source_refs: [0],
+      source_refs: [0, 1],
     },
   },
   clinical_note: {
@@ -390,9 +408,20 @@ const OXALIPLATIN: DrugInfo = {
     },
   ],
   protocol_ids: ["mffx"],
+  references: [
+    {
+      source: "eviQ",
+      title:
+        "eviQ Protocol 1512 — Pancreas metastatic: modified FOLFIRINOX (fluorouracil, oxaliplatin, irinotecan, leucovorin)",
+      publisher: "NSW Cancer Institute — eviQ",
+      url: "https://www.eviq.org.au/medical-oncology/upper-gastrointestinal/pancreas-and-biliary/1512-pancreas-metastatic-folfirinox-modified-fl",
+      accessed: "2026-04-21",
+      section: "Oxaliplatin 85 mg/m² D1 q14d; cumulative-dose neurotoxicity monitoring",
+    },
+  ],
   clinical_note: {
-    en: "Oxaliplatin's cold sensitivity is the most distinctive toxicity. Patients must avoid cold exposure for 3–5 days post-dose.",
-    zh: "奥沙利铂的遇冷敏感性是最独特的毒性。患者用药后 3–5 天必须避免冷接触。",
+    en: "Oxaliplatin's cold sensitivity is the most distinctive toxicity. Patients must avoid cold exposure for 3–5 days post-dose. Dose-limiting sensory neurotoxicity typically emerges at cumulative 780–850 mg/m² (~9–10 cycles); symptoms between cycles persist beyond ~1000 mg/m² cumulative. Stop-and-go strategy per eviQ 1512.",
+    zh: "奥沙利铂的遇冷敏感性是最独特的毒性。用药后 3–5 天必须避免冷接触。剂量限制性感觉神经毒性通常在累积剂量 780–850 mg/m²（约 9–10 周期）出现；累积 > 1000 mg/m² 后周期间症状持续。eviQ 1512 建议 stop-and-go 策略。",
   },
 };
 
@@ -466,9 +495,29 @@ const IRINOTECAN: DrugInfo = {
     },
   ],
   protocol_ids: ["mffx"],
+  references: [
+    {
+      source: "eviQ",
+      title:
+        "eviQ Protocol 1512 — Pancreas metastatic: modified FOLFIRINOX (fluorouracil, oxaliplatin, irinotecan, leucovorin)",
+      publisher: "NSW Cancer Institute — eviQ",
+      url: "https://www.eviq.org.au/medical-oncology/upper-gastrointestinal/pancreas-and-biliary/1512-pancreas-metastatic-folfirinox-modified-fl",
+      accessed: "2026-04-21",
+      section: "Irinotecan 150 mg/m² D1 q14d (mFFX); UGT1A1 genotype + diarrhoea management",
+    },
+    {
+      source: "BC_cancer",
+      title:
+        "BC Cancer — Guidelines for the Management of Cancer / Chemotherapy-induced Diarrhea",
+      publisher: "BC Cancer Agency",
+      url: "https://www.bccancer.bc.ca/nursing-site/documents/guidelinesformanagementofcid.pdf",
+      accessed: "2026-04-21",
+      section: "High-dose loperamide titration + octreotide escalation",
+    },
+  ],
   clinical_note: {
-    en: "Irinotecan's cholinergic and diarrheal toxicity requires close GI monitoring. Patients must have rescue loperamide on hand.",
-    zh: "伊立替康的胆碱能和腹泻毒性需要密切胃肠监测。患者必须备好救援洛哌丁胺。",
+    en: "Irinotecan's cholinergic and diarrheal toxicity requires close GI monitoring. Patients must have rescue loperamide on hand. UGT1A1*28 homozygotes need dose reduction from the outset.",
+    zh: "伊立替康的胆碱能和腹泻毒性需要密切胃肠监测。患者必须备好救援洛哌丁胺。UGT1A1*28 纯合型需一开始即减量。",
   },
 };
 
@@ -512,9 +561,20 @@ const ONDANSETRON: DrugInfo = {
   monitoring: [],
   diet_interactions: [],
   supportive_id: undefined,
+  references: [
+    {
+      source: "CCO_protocol",
+      title:
+        "Cancer Care Ontario — Antiemetic Recommendations for Chemotherapy-Induced Nausea and Vomiting (2019)",
+      publisher: "Cancer Care Ontario",
+      url: "https://www.cancercareontario.ca/sites/ccocancercare/files/guidelines/full/2019AntiemeticRecommendationsChemotherapyInducedNauseaVomiting.pdf",
+      accessed: "2026-04-21",
+      section: "5-HT3 antagonist dosing and combination regimens for HEC",
+    },
+  ],
   clinical_note: {
-    en: "Backbone antiemetic for chemo. Give on schedule (not as-needed) for best efficacy. Add olanzapine or aprepitant for breakthrough nausea.",
-    zh: "化疗的骨干止吐药。按时给药（非按需）以获得最佳疗效。突破性恶心时添加奥氮平或阿瑞匹坦。",
+    en: "Backbone antiemetic for chemo. Give on schedule (not as-needed) for best efficacy. Max 8 mg per dose (QT risk at > 16 mg/day). Add olanzapine or aprepitant for breakthrough nausea per MASCC/ESMO 2023.",
+    zh: "化疗的骨干止吐药。按时给药以获得最佳疗效。单次最大 8 mg（> 16 mg / 天有 QT 风险）。MASCC/ESMO 2023 建议突破性恶心时添加奥氮平或阿瑞匹坦。",
   },
 };
 
@@ -553,9 +613,20 @@ const OLANZAPINE: DrugInfo = {
   ],
   diet_interactions: [],
   supportive_id: "supportive.olanzapine",
+  references: [
+    {
+      source: "guideline",
+      title:
+        "MASCC/ESMO 2023 Antiemetic Guideline Update — olanzapine 5–10 mg for HEC prophylaxis and breakthrough CINV",
+      publisher: "MASCC / ESMO",
+      url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC10937211/",
+      accessed: "2026-04-21",
+      section: "Olanzapine in HEC",
+    },
+  ],
   clinical_note: {
-    en: "Gold standard for breakthrough chemo nausea. Sedate effect is useful for sleep. Weight gain is manageable with dietitian support.",
-    zh: "突破性化疗恶心的金标准。镇静作用有助于睡眠。体重增加可通过营养师支持管理。",
+    en: "Gold standard for breakthrough chemo nausea (MASCC/ESMO 2023 & ASCO 2020). 5–10 mg for 3 days in HEC; consider 2.5 mg in older / sedation-sensitive patients. Sedate effect useful for sleep. Weight gain manageable with dietitian support.",
+    zh: "突破性化疗恶心的金标准（MASCC/ESMO 2023 与 ASCO 2020）。高致吐方案：5–10 mg 连用 3 天；年长或易镇静者可考虑 2.5 mg。镇静作用有助睡眠，体重增加可由营养师协助管理。",
   },
 };
 
@@ -608,6 +679,15 @@ const DEXAMETHASONE: DrugInfo = {
       url: "https://www.nature.com/articles/6603048",
       accessed: "2026-04-21",
       section: "Results: symptom incidence in the week post-chemotherapy",
+    },
+    {
+      source: "eviQ",
+      title:
+        "eviQ 1375 GnP protocol — dexamethasone premedication for nab-paclitaxel",
+      publisher: "NSW Cancer Institute — eviQ",
+      url: "https://www.eviq.org.au/medical-oncology/upper-gastrointestinal/pancreas-and-biliary/1375-pancreas-metastatic-gemcitabine-and-nab-pacli",
+      accessed: "2026-04-21",
+      section: "Premedication regimen",
     },
   ],
   prompt_facts: {
@@ -667,9 +747,20 @@ const DULOXETINE: DrugInfo = {
   ],
   diet_interactions: [],
   supportive_id: "supportive.duloxetine",
+  references: [
+    {
+      source: "guideline",
+      title:
+        "ASCO 2020 Guideline Update — Prevention and Management of Chemotherapy-Induced Peripheral Neuropathy",
+      publisher: "Journal of Clinical Oncology",
+      url: "https://ascopubs.org/doi/10.1200/JCO.20.01399",
+      accessed: "2026-04-21",
+      section: "Duloxetine — recommendation for established painful CIPN",
+    },
+  ],
   clinical_note: {
-    en: "Start early (before Grade 2 neuropathy develops). Best evidence-base for CIPN among non-opioid options.",
-    zh: "早期开始（在 Grade 2 神经病变发展前）。非阿片类中对 CIPN 证据最充分。",
+    en: "ASCO 2020 recommends duloxetine for established painful CIPN (Level 2 evidence) — NOT for prophylaxis. Start 30 mg daily, titrate to 60 mg over 1–2 weeks. Reduce to 30 mg/day if eGFR 30–50; avoid if eGFR < 30.",
+    zh: "ASCO 2020 推荐度洛西汀用于已建立的疼痛性 CIPN（二级证据）—— 不用于预防。起始 30 mg 每日，1–2 周内上调至 60 mg。eGFR 30–50 时减至 30 mg / 天；eGFR < 30 避免使用。",
   },
 };
 
@@ -711,9 +802,27 @@ const PANCRELIPASE: DrugInfo = {
   ],
   diet_interactions: [],
   supportive_id: "supportive.pert",
+  references: [
+    {
+      source: "TGA_PI",
+      title: "TGA Australian Public Assessment Report — CREON (pancrelipase)",
+      publisher: "Therapeutic Goods Administration (Australia)",
+      url: "https://www.tga.gov.au/sites/default/files/auspar-creon.pdf",
+      accessed: "2026-04-21",
+      section: "Indications / dosing",
+    },
+    {
+      source: "FDA_label",
+      title: "CREON (pancrelipase) — Highlights of Prescribing Information",
+      publisher: "FDA",
+      url: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2024/020725s031lbl.pdf",
+      accessed: "2026-04-21",
+      section: "Dosage and Administration — titration",
+    },
+  ],
   clinical_note: {
-    en: "Hu Lin's PERT adherence is excellent. This is foundational for maintaining weight and function. Emphasize: EVERY meal and snack.",
-    zh: "胡林的 PERT 依从性极好。这是维持体重和功能的基础。强调：每一餐和加餐。",
+    en: "Hu Lin's PERT adherence is excellent. Foundational for weight + function. TGA/FDA dose: start ~500 lipase units/kg/meal, titrate to response; max 2 500 units/kg/meal or 10 000 units/kg/day. Emphasise: EVERY meal and snack.",
+    zh: "胡林的 PERT 依从性极好，是维持体重与功能的基础。TGA/FDA 剂量：起始约 500 脂肪酶单位 / 千克 / 餐，按反应调整；最大 2 500 单位 / 千克 / 餐或 10 000 单位 / 千克 / 天。强调：每一餐与加餐。",
   },
 };
 
@@ -768,9 +877,20 @@ const APIXABAN: DrugInfo = {
     },
   ],
   supportive_id: "supportive.vte_prophylaxis",
+  references: [
+    {
+      source: "trial_publication",
+      title:
+        "Carrier M et al. Apixaban to prevent venous thromboembolism in patients with cancer (AVERT). N Engl J Med. 2019;380:711–719.",
+      publisher: "NEJM",
+      url: "https://www.nejm.org/doi/full/10.1056/NEJMoa1814468",
+      accessed: "2026-04-21",
+      section: "Primary analysis — apixaban 2.5 mg BD × 6 months in Khorana ≥ 2",
+    },
+  ],
   clinical_note: {
-    en: "Prophylactic anticoagulation for active mPDAC. Standard dose is 2.5 mg BD. Patient must report any unusual bruising or bleeding.",
-    zh: "活跃性 mPDAC 的预防性抗凝。标准剂量 2.5 mg，每日两次。患者必须报告任何异常淤青或出血。",
+    en: "AVERT trial (NEJM 2019) supports apixaban 2.5 mg BD for primary VTE prophylaxis in ambulatory cancer patients with Khorana score ≥ 2 — pancreatic cancer qualifies. Major bleeding HR 2.00 vs placebo — weigh bleeding risk (GI involvement, low platelets) carefully. Fixed dose; no adjustment for renal function until eGFR < 15.",
+    zh: "AVERT 研究（NEJM 2019）支持阿哌沙班 2.5 mg 每日两次用于 Khorana ≥ 2 的门诊癌症患者一级 VTE 预防 —— 胰腺癌符合标准。大出血相对风险是安慰剂的 2 倍 —— 需权衡出血风险（胃肠受累、血小板低）。eGFR < 15 前无需调整剂量。",
   },
 };
 
@@ -812,9 +932,20 @@ const PEGFILGRASTIM: DrugInfo = {
   ],
   diet_interactions: [],
   supportive_id: "supportive.gcsf_prophylaxis",
+  references: [
+    {
+      source: "guideline",
+      title:
+        "ASCO / NCCN — Recommendations for Myeloid Growth Factors (primary prophylaxis when FN risk ≥ 20%)",
+      publisher: "ASCO / NCCN",
+      url: "https://pubmed.ncbi.nlm.nih.gov/30422488/",
+      accessed: "2026-04-21",
+      section: "Primary prophylaxis criteria for high-FN-risk regimens",
+    },
+  ],
   clinical_note: {
-    en: "Standard for GnP and mFFX. Bone pain is the main side effect — normalize and treat symptomatically.",
-    zh: "GnP 和 mFFX 的标准用药。骨痛是主要副作用 —— 标准化并对症治疗。",
+    en: "Fixed dose 6 mg SC ≥ 24 h after chemo. Both mFFX and GnP carry > 20% FN risk and qualify for ASCO/NCCN primary prophylaxis. Bone pain typically D3–D5 — normalise and treat symptomatically with paracetamol.",
+    zh: "固定剂量 6 mg 皮下注射，化疗结束至少 24 小时后。mFFX 与 GnP 均属 FN 风险 > 20% 的方案，符合 ASCO/NCCN 一级预防指征。骨痛常见于 D3–D5 —— 说明并以扑热息痛对症处理。",
   },
 };
 
@@ -845,9 +976,19 @@ const PARACETAMOL: DrugInfo = {
   },
   monitoring: [],
   diet_interactions: [],
+  references: [
+    {
+      source: "FDA_label",
+      title: "Acetaminophen — Highlights of Prescribing Information",
+      publisher: "FDA",
+      url: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2015/204767s000lbl.pdf",
+      accessed: "2026-04-21",
+      section: "Dosage and Administration; Hepatotoxicity warning",
+    },
+  ],
   clinical_note: {
-    en: "Safe, gentle analgesic. Preferred over NSAIDs in cancer (risk of bleeding, renal complications). Max 4 g/day.",
-    zh: "安全、温和的止痛药。在癌症中优于 NSAIDs（出血、肾脏并发症风险）。最大 4 g / 天。",
+    en: "Safe, gentle analgesic. Preferred over NSAIDs in cancer (bleeding + renal risk). Max 4 g/day — reduce to 2–3 g/day in hepatic impairment, chronic alcohol use, or concurrent hepatotoxic chemotherapy (gemcitabine, 5-FU). Check total daily intake including OTC combination products.",
+    zh: "安全、温和的止痛药。在癌症中优于 NSAIDs（出血与肾脏风险）。最大 4 g / 天 —— 肝功能损害、慢性饮酒或与肝毒性化疗药（吉西他滨、5-FU）合用时减至 2–3 g / 天。核对每日总摄入量（含非处方复方制剂）。",
   },
 };
 
