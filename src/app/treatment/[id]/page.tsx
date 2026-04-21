@@ -13,9 +13,17 @@ import { Button } from "~/components/ui/button";
 import { CycleCalendar } from "~/components/treatment/cycle-calendar";
 import { NudgeCard } from "~/components/treatment/nudge-card";
 import { formatDate } from "~/lib/utils/date";
-import { addDays, parseISO } from "date-fns";
+import { addDays, format, parseISO } from "date-fns";
 import type { NudgeCategory } from "~/types/treatment";
+import type { LabResult } from "~/types/clinical";
 import { CheckCircle2, Pencil, Trash2 } from "lucide-react";
+import { cn } from "~/lib/utils/cn";
+import {
+  ANALYTES,
+  flagStatus,
+  formatAnalyte,
+  type AnalyteKey,
+} from "~/config/lab-reference-ranges";
 
 const CATEGORY_ORDER: NudgeCategory[] = [
   "safety",
@@ -55,6 +63,27 @@ export default function CycleDetailPage() {
     if ((d?.appetite ?? 10) <= 3) flags.push("low_appetite");
     return buildCycleContext(cycle, new Date(), flags);
   }, [cycle, latestDaily]);
+
+  const cycleStartStr = cycle?.start_date;
+  const cycleEndStr = useMemo(() => {
+    if (!cycle || !ctx) return undefined;
+    return addDays(
+      parseISO(cycle.start_date),
+      ctx.protocol.cycle_length_days - 1,
+    )
+      .toISOString()
+      .slice(0, 10);
+  }, [cycle, ctx]);
+  const cycleLabs = useLiveQuery(
+    () => {
+      if (!cycleStartStr || !cycleEndStr) return [];
+      return db.labs
+        .where("date")
+        .between(cycleStartStr, cycleEndStr, true, true)
+        .toArray();
+    },
+    [cycleStartStr, cycleEndStr],
+  );
 
   if (!cycle || !ctx) {
     return <div className="p-6 text-sm text-ink-500">Loading…</div>;
@@ -152,6 +181,8 @@ export default function CycleDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      <CycleLabsCard labs={cycleLabs ?? []} locale={locale} />
 
       <Card>
         <CardHeader>
@@ -309,5 +340,101 @@ export default function CycleDetailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function CycleLabsCard({
+  labs,
+  locale,
+}: {
+  labs: LabResult[];
+  locale: "en" | "zh";
+}) {
+  if (labs.length === 0) return null;
+  // Collect distinct analytes actually populated in this cycle's draws
+  const keys = new Set<AnalyteKey>();
+  for (const l of labs) {
+    for (const a of ANALYTES) {
+      if (typeof l[a.key] === "number") keys.add(a.key);
+    }
+  }
+  if (keys.size === 0) return null;
+
+  const ordered = labs
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          {locale === "zh" ? "本周期化验" : "Labs drawn this cycle"}
+        </CardTitle>
+        <div className="mt-1 text-xs text-ink-500">
+          {ordered.length}{" "}
+          {locale === "zh"
+            ? ordered.length === 1
+              ? "次采样"
+              : "次采样"
+            : ordered.length === 1
+              ? "draw"
+              : "draws"}{" "}
+          ·{" "}
+          {keys.size}{" "}
+          {locale === "zh" ? "项" : "analytes"}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {ordered.map((row) => (
+          <div
+            key={row.id ?? row.date}
+            className="rounded-[var(--r-md)] border border-ink-100/70 bg-paper-2 p-3"
+          >
+            <div className="flex items-center justify-between">
+              <div className="text-[13px] font-semibold text-ink-900">
+                {format(parseISO(row.date), "EEE · d MMM")}
+              </div>
+              <span className="mono text-[10px] uppercase tracking-wider text-ink-400">
+                {row.source}
+              </span>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {ANALYTES.filter((a) => typeof row[a.key] === "number").map((a) => {
+                const v = row[a.key] as number;
+                const status = flagStatus(a.key, v);
+                return (
+                  <Link
+                    key={a.key}
+                    href={`/labs/${a.key}`}
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[11px] hover:opacity-80 transition-opacity",
+                      status === "normal"
+                        ? "bg-ink-100 text-ink-700"
+                        : "",
+                    )}
+                    style={
+                      status !== "normal"
+                        ? {
+                            background: "var(--warn-soft)",
+                            color: "var(--warn)",
+                          }
+                        : undefined
+                    }
+                    title={`${a.label[locale]} ${formatAnalyte(a.key, v)} ${a.unit}`}
+                  >
+                    <span className="mono text-[9px] uppercase tracking-wider mr-1">
+                      {a.short}
+                    </span>
+                    <span className="num font-semibold">
+                      {formatAnalyte(a.key, v)}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }

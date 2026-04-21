@@ -3,18 +3,46 @@
 import { z } from "zod";
 
 const LabsSchema = z.object({
+  // Tumour markers
   ca199: z.number().nullable().optional(),
+  cea: z.number().nullable().optional(),
+  ldh: z.number().nullable().optional(),
+  // Nutrition / inflammation
   albumin: z.number().nullable().optional(),
+  prealbumin: z.number().nullable().optional(),
+  crp: z.number().nullable().optional(),
+  // Haematology
   hemoglobin: z.number().nullable().optional(),
+  hematocrit: z.number().nullable().optional(),
+  wbc: z.number().nullable().optional(),
   neutrophils: z.number().nullable().optional(),
+  lymphocytes: z.number().nullable().optional(),
   platelets: z.number().nullable().optional(),
-  creatinine: z.number().nullable().optional(),
-  bilirubin: z.number().nullable().optional(),
+  // Liver panel
   alt: z.number().nullable().optional(),
   ast: z.number().nullable().optional(),
-  crp: z.number().nullable().optional(),
+  ggt: z.number().nullable().optional(),
+  alp: z.number().nullable().optional(),
+  bilirubin: z.number().nullable().optional(),
+  // Renal / electrolytes
+  creatinine: z.number().nullable().optional(),
+  urea: z.number().nullable().optional(),
+  sodium: z.number().nullable().optional(),
+  potassium: z.number().nullable().optional(),
+  calcium: z.number().nullable().optional(),
   magnesium: z.number().nullable().optional(),
   phosphate: z.number().nullable().optional(),
+  // Metabolic
+  glucose: z.number().nullable().optional(),
+  hba1c: z.number().nullable().optional(),
+  // Micronutrients
+  ferritin: z.number().nullable().optional(),
+  vit_d: z.number().nullable().optional(),
+  b12: z.number().nullable().optional(),
+  folate: z.number().nullable().optional(),
+  // Coag / endocrine
+  inr: z.number().nullable().optional(),
+  tsh: z.number().nullable().optional(),
 });
 
 const ImagingSchema = z.object({

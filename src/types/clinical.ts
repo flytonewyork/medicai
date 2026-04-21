@@ -119,23 +119,46 @@ export interface QuarterlyReview {
 export interface LabResult {
   id?: number;
   date: string;
+  // Tumour marker
   ca199?: number;
+  cea?: number;
+  ldh?: number;
+  // Nutrition / inflammation
   albumin?: number;
   prealbumin?: number;
+  crp?: number;
+  // Haematology
   hemoglobin?: number;
+  hematocrit?: number;
+  wbc?: number;
   neutrophils?: number;
+  lymphocytes?: number;
   platelets?: number;
-  creatinine?: number;
-  bilirubin?: number;
+  // Liver panel (LFTs)
   alt?: number;
   ast?: number;
-  crp?: number;
-  ferritin?: number;
+  ggt?: number;
+  alp?: number;
+  bilirubin?: number;
+  // Renal / electrolytes
+  creatinine?: number;
+  urea?: number;
+  sodium?: number;
+  potassium?: number;
+  calcium?: number;
   magnesium?: number;
   phosphate?: number;
+  // Metabolic
+  glucose?: number;
+  hba1c?: number;
+  // Micronutrients
+  ferritin?: number;
   vit_d?: number;
   b12?: number;
   folate?: number;
+  // Coag / endocrine
+  inr?: number;
+  tsh?: number;
   source: "epworth" | "external";
   notes?: string;
   created_at: string;
