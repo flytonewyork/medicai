@@ -289,6 +289,10 @@ export interface Settings {
   hospital_address?: string;
   oncall_phone?: string;
   emergency_instructions?: string;
+  home_city?: string;
+  home_lat?: number;
+  home_lon?: number;
+  home_timezone?: string;
   onboarded_at?: string;
   anthropic_api_key?: string;
   default_ai_model?: string;

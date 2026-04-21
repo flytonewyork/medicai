@@ -6,14 +6,12 @@ import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { format } from "date-fns";
 import { db } from "~/lib/db/dexie";
-import { TodayPlanCard } from "~/components/dashboard/today-plan-card";
 import { PillarTiles } from "~/components/dashboard/pillar-tiles";
-import { FlaggedCard } from "~/components/dashboard/flagged-card";
 import { QuickActions } from "~/components/dashboard/quick-actions";
-import { TasksCard } from "~/components/dashboard/tasks-card";
 import { PillarsCard } from "~/components/dashboard/pillars-card";
 import { RecentTrends } from "~/components/dashboard/recent-trends";
 import { EmergencyCard } from "~/components/dashboard/emergency-card";
+import { TodayFeed } from "~/components/dashboard/today-feed";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
 import { PageHeader, SectionHeader } from "~/components/ui/page-header";
@@ -91,13 +89,11 @@ export default function DashboardPage() {
 
       <EmergencyCard />
 
-      <TodayPlanCard />
+      <TodayFeed />
+
+      <div className="a-horizon" />
 
       <PillarTiles />
-
-      <FlaggedCard />
-
-      <TasksCard />
 
       <QuickActions />
 
