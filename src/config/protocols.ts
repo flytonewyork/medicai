@@ -411,6 +411,68 @@ export const PROTOCOL_LIBRARY: readonly Protocol[] = [
       "supportive.duloxetine",
     ],
   },
+  {
+    id: "gnp_narmafotinib",
+    short_name: "GnP + narmafotinib",
+    name: {
+      en: "Gemcitabine + nab-paclitaxel + narmafotinib",
+      zh: "吉西他滨 + 白蛋白紫杉醇 + 纳马非替尼",
+    },
+    description: {
+      en: "28-day GnP backbone (D1/D8/D15 infusions) plus continuous oral narmafotinib (AMP945) — an investigational FAK inhibitor studied in the ACCENT trial in mPDAC. Hypothesis: disrupting stromal fibrosis improves chemo delivery. Watch LFTs and oral adherence.",
+      zh: "28 天 GnP 框架（D1/D8/D15 输注）+ 每日连续口服纳马非替尼（AMP945）—— ACCENT 研究中用于转移性胰腺癌的试验性 FAK 抑制剂。设想：通过破坏肿瘤基质纤维化来提升化疗药物递送。需密切监测肝功能与口服依从性。",
+    },
+    cycle_length_days: 28,
+    dose_days: [1, 8, 15],
+    agents: [
+      {
+        id: "gemcitabine",
+        name: "Gemcitabine",
+        display: { en: "Gemcitabine", zh: "吉西他滨" },
+        typical_dose: "1000 mg/m²",
+        infusion_time_min: 30,
+        dose_days: [1, 8, 15],
+        route: "IV",
+      },
+      {
+        id: "nab_paclitaxel",
+        name: "nab-Paclitaxel",
+        display: { en: "nab-Paclitaxel (Abraxane)", zh: "白蛋白紫杉醇（Abraxane）" },
+        typical_dose: "125 mg/m²",
+        infusion_time_min: 30,
+        dose_days: [1, 8, 15],
+        route: "IV",
+      },
+      {
+        id: "narmafotinib",
+        name: "Narmafotinib",
+        display: { en: "Narmafotinib (AMP945)", zh: "纳马非替尼（AMP945）" },
+        typical_dose: "400 mg BID (continuous PO)",
+        dose_days: [1],
+        route: "PO",
+        notes: {
+          en: "Oral FAK (focal adhesion kinase) inhibitor. Continuous twice-daily dosing throughout the cycle, taken with food. Confirm hold-on-infusion-day policy with Dr Lee. Monitor ALT/AST each cycle; hepatic toxicity is the dose-limiting signal in ACCENT.",
+          zh: "口服 FAK（黏着斑激酶）抑制剂。周期内每日两次连续服用，与餐同服。输液日是否暂停请与 Dr Lee 确认。每周期监测 ALT/AST —— ACCENT 研究中肝毒性是剂量限制性信号。",
+        },
+      },
+    ],
+    premeds: {
+      en: "GnP premeds as usual on infusion days (dex + ondansetron). Narmafotinib itself: take with food; antiemetic cover for the first week is reasonable.",
+      zh: "输液日 GnP 常规预用药（地塞米松 + 昂丹司琼）。纳马非替尼本身：与餐同服；第一周常规止吐覆盖合理。",
+    },
+    phase_windows: PHASE_GNP_WEEKLY,
+    side_effect_profile: {
+      en: "GnP toxicities (myelosuppression esp. D16–21, peripheral neuropathy, fatigue, cold dysaesthesia, alopecia) plus narmafotinib-specific signals: transaminase elevation (ALT/AST), nausea, diarrhoea, rash, fatigue. Oral adherence burden on top of IV cycle.",
+      zh: "GnP 毒性（D16–21 骨髓抑制、周围神经病变、疲劳、遇冷异感、脱发）叠加纳马非替尼特有信号：肝酶升高（ALT/AST）、恶心、腹泻、皮疹、疲劳。在输注方案之外还有口服依从负担。",
+    },
+    typical_supportive: [
+      "supportive.gcsf_prophylaxis",
+      "supportive.olanzapine",
+      "supportive.duloxetine",
+      "supportive.pert",
+      "supportive.vte_prophylaxis",
+    ],
+  },
 ];
 
 export const PROTOCOL_BY_ID: Record<string, Protocol> = Object.fromEntries(

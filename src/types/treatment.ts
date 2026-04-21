@@ -6,6 +6,7 @@ export type ProtocolId =
   | "gem_maintenance"
   | "mffx"
   | "nalirifox"
+  | "gnp_narmafotinib"
   | "custom";
 
 export type NudgeCategory =

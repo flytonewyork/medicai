@@ -9,7 +9,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   // ======================================================================
   {
     id: "gnp_dose_day_hydration",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "gem_maintenance"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "gem_maintenance"],
     day_range: [1, 1],
     category: "diet",
     severity: "info",
@@ -24,7 +24,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   },
   {
     id: "gnp_dose_day_cold_warning",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly"],
     day_range: [1, 3],
     category: "diet",
     severity: "warning",
@@ -39,7 +39,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   },
   {
     id: "gnp_dose_day_activity",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "mffx"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "mffx"],
     day_range: [1, 2],
     category: "activity",
     severity: "caution",
@@ -54,7 +54,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   },
   {
     id: "gnp_dex_sleep",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "mffx"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "mffx"],
     day_range: [1, 2],
     category: "sleep",
     severity: "caution",
@@ -69,7 +69,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   },
   {
     id: "gnp_dose_day_nausea",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "mffx"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "mffx"],
     day_range: [1, 3],
     category: "meds",
     severity: "info",
@@ -84,7 +84,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   },
   {
     id: "gnp_d1_bowels",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly"],
     day_range: [1, 5],
     category: "diet",
     severity: "info",
@@ -103,7 +103,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   // ======================================================================
   {
     id: "gnp_post_dose_protein",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "gem_maintenance"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "gem_maintenance"],
     day_range: [4, 13],
     category: "diet",
     severity: "info",
@@ -118,7 +118,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   },
   {
     id: "gnp_resistance_window",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "gem_maintenance"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "gem_maintenance"],
     day_range: [4, 7],
     category: "exercise",
     severity: "info",
@@ -133,7 +133,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   },
   {
     id: "gnp_pert_reminder",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "gem_maintenance", "mffx"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "gem_maintenance", "mffx"],
     day_range: [1, 28],
     category: "meds",
     severity: "info",
@@ -152,7 +152,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   // ======================================================================
   {
     id: "gnp_nadir_hygiene",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "mffx", "gem_maintenance"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "mffx", "gem_maintenance"],
     day_range: [14, 21],
     category: "hygiene",
     severity: "warning",
@@ -167,7 +167,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   },
   {
     id: "gnp_nadir_crowds",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "mffx"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "mffx"],
     day_range: [14, 21],
     category: "safety",
     severity: "warning",
@@ -182,7 +182,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   },
   {
     id: "gnp_nadir_food_safety",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "mffx"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "mffx"],
     day_range: [14, 21],
     category: "diet",
     severity: "warning",
@@ -197,7 +197,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   },
   {
     id: "gnp_nadir_temp",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "mffx"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "mffx"],
     day_range: [14, 21],
     category: "safety",
     severity: "warning",
@@ -212,7 +212,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   },
   {
     id: "gnp_nadir_pets",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "mffx"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "mffx"],
     day_range: [14, 21],
     category: "hygiene",
     severity: "caution",
@@ -227,7 +227,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   },
   {
     id: "gnp_nadir_dental",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "mffx"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "mffx"],
     day_range: [14, 21],
     category: "safety",
     severity: "caution",
@@ -242,7 +242,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   },
   {
     id: "gnp_nadir_sleep",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly"],
     day_range: [14, 21],
     category: "sleep",
     severity: "info",
@@ -257,7 +257,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   },
   {
     id: "gnp_nadir_mental",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "mffx"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "mffx"],
     day_range: [14, 21],
     category: "mental",
     severity: "info",
@@ -272,7 +272,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   },
   {
     id: "gnp_nadir_bleeding",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "mffx"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "mffx"],
     day_range: [14, 21],
     category: "safety",
     severity: "caution",
@@ -291,7 +291,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   // ======================================================================
   {
     id: "gnp_recovery_activity",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly"],
     day_range: [22, 28],
     category: "exercise",
     severity: "info",
@@ -306,7 +306,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   },
   {
     id: "gnp_recovery_meaning",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "mffx"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "mffx"],
     day_range: [22, 28],
     category: "mental",
     severity: "info",
@@ -321,7 +321,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   },
   {
     id: "gnp_recovery_labs",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly"],
     day_range: [26, 28],
     category: "meds",
     severity: "info",
@@ -340,7 +340,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   // ======================================================================
   {
     id: "gnp_pre_nadir_stock",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly"],
     day_range: [12, 14],
     category: "diet",
     severity: "info",
@@ -359,7 +359,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   // ======================================================================
   {
     id: "cipn_watch",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "mffx"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "mffx"],
     day_range: [1, 28],
     category: "safety",
     severity: "info",
@@ -374,7 +374,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   },
   {
     id: "cipn_safety",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "mffx"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "mffx"],
     day_range: [1, 28],
     category: "safety",
     severity: "caution",
@@ -446,7 +446,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   // ======================================================================
   {
     id: "intimacy_general",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "gem_maintenance", "mffx"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "gem_maintenance", "mffx"],
     day_range: [1, 28],
     category: "intimacy",
     severity: "info",
@@ -465,7 +465,7 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
   // ======================================================================
   {
     id: "dex_crash_day3",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "mffx"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "mffx"],
     day_range: [3, 5],
     category: "mental",
     severity: "info",
@@ -478,9 +478,88 @@ export const NUDGE_LIBRARY: readonly NudgeTemplate[] = [
       zh: "地塞米松停后 2–3 天，很多人感到低落、爱哭、烦躁。到第 5 天自然缓解。温和修习、吃热的、跟人聊聊。",
     },
   },
+  // ======================================================================
+  // Narmafotinib (AMP945) — oral FAK inhibitor, continuous daily
+  // ======================================================================
+  {
+    id: "narmafotinib_daily_adherence",
+    protocol_ids: ["gnp_narmafotinib"],
+    day_range: [1, 28],
+    category: "meds",
+    severity: "info",
+    title: {
+      en: "Narmafotinib: twice daily, with food",
+      zh: "纳马非替尼：每日两次，与餐同服",
+    },
+    body: {
+      en: "Take morning and evening at roughly 12 h apart, with a meal to reduce nausea. If a dose is missed by <6 h, take it. If >6 h, skip — do not double up. Log each dose in the daily check-in.",
+      zh: "早晚约 12 小时间隔服用，与餐同服以减少恶心。漏服 <6 小时可补服；>6 小时跳过 —— 不要加倍。每次服药在每日打卡中记录。",
+    },
+  },
+  {
+    id: "narmafotinib_lft_monitor",
+    protocol_ids: ["gnp_narmafotinib"],
+    day_range: [22, 28],
+    category: "meds",
+    severity: "caution",
+    title: {
+      en: "Pre-cycle bloods: confirm LFTs",
+      zh: "下周期前化验：务必查肝功",
+    },
+    body: {
+      en: "Narmafotinib can elevate ALT/AST. Make sure LFTs are on the panel before the next cycle. If transaminases rise >3× ULN, Dr Lee may hold or dose-reduce narmafotinib.",
+      zh: "纳马非替尼可引起 ALT/AST 升高。下次周期前确保化验单包含肝功。若转氨酶 >3× 正常上限，Dr Lee 可能暂停或减量。",
+    },
+  },
+  {
+    id: "narmafotinib_gi_first_week",
+    protocol_ids: ["gnp_narmafotinib"],
+    day_range: [1, 7],
+    category: "diet",
+    severity: "info",
+    title: {
+      en: "First week: watch narmafotinib GI tolerance",
+      zh: "第一周：留意纳马非替尼的胃肠反应",
+    },
+    body: {
+      en: "Nausea and loose stools are most common in the first 5–7 days as the body adjusts. Take with a real meal, not just a snack. Ginger, small frequent meals, scheduled ondansetron all help.",
+      zh: "最初 5–7 天恶心和稀便最常见，身体需要适应。与正餐同服，不要只配小点心。姜茶、少量多餐、按时昂丹司琼都有帮助。",
+    },
+  },
+  {
+    id: "narmafotinib_hold_infusion_day",
+    protocol_ids: ["gnp_narmafotinib"],
+    day_range: [1, 28],
+    category: "meds",
+    severity: "caution",
+    title: {
+      en: "Check with Dr Lee: hold on infusion days?",
+      zh: "与 Dr Lee 确认：输液日是否暂停？",
+    },
+    body: {
+      en: "Some narmafotinib + GnP schedules hold the oral drug on D1/D8/D15 to reduce stacked toxicity. Confirm the specific rule for this regimen and document it in cycle notes.",
+      zh: "部分纳马非替尼 + GnP 方案在 D1/D8/D15 输液日暂停口服药以减少毒性叠加。请与 Dr Lee 确认本方案的具体规则，并写入周期备注。",
+    },
+  },
+  {
+    id: "narmafotinib_rash_watch",
+    protocol_ids: ["gnp_narmafotinib"],
+    day_range: [1, 28],
+    category: "safety",
+    severity: "info",
+    title: {
+      en: "Flag any new rash early",
+      zh: "新发皮疹尽早告知",
+    },
+    body: {
+      en: "FAK inhibitors can cause rash or itch. Photo it, note the day, message Dr Lee. Early topical steroid / antihistamine is usually enough; ignoring it risks dose hold.",
+      zh: "FAK 抑制剂可致皮疹或瘙痒。拍照留存、记录日期、告知 Dr Lee。早期外用激素 / 抗组胺通常足够；忽视可能导致暂停用药。",
+    },
+  },
+
   {
     id: "practice_rhythm",
-    protocol_ids: ["gnp_weekly", "gnp_biweekly", "gem_maintenance", "mffx"],
+    protocol_ids: ["gnp_weekly", "gnp_narmafotinib", "gnp_biweekly", "gem_maintenance", "mffx"],
     day_range: [4, 28],
     category: "mental",
     severity: "info",
