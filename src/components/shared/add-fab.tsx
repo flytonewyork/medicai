@@ -10,7 +10,6 @@ import {
   CalendarDays,
   CalendarRange,
   Stethoscope,
-  ClipboardList,
   Utensils,
   NotebookPen,
   FileText,
@@ -70,12 +69,6 @@ const ITEMS: FabItem[] = [
       zh: "握力、步速、SARC-F",
     },
     icon: Stethoscope,
-  },
-  {
-    href: "/quarterly",
-    label: { en: "Quarterly review", zh: "每季复查" },
-    hint: { en: "Imaging, CA 19-9, CGA", zh: "影像、CA 19-9、CGA" },
-    icon: ClipboardList,
   },
   {
     href: "/tasks/new",
