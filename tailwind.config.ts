@@ -2,29 +2,50 @@ import { type Config } from "tailwindcss";
 
 export default {
   content: ["./src/**/*.{js,ts,jsx,tsx}"],
-  darkMode: "class",
+  darkMode: "media",
   theme: {
     extend: {
       colors: {
-        zone: {
-          green: "#64748b",
-          yellow: "#f59e0b",
-          orange: "#ea580c",
-          red: "#b91c1c",
+        paper: "var(--paper)",
+        "paper-2": "var(--paper-2)",
+        ink: {
+          100: "var(--ink-100)",
+          200: "var(--ink-200)",
+          300: "var(--ink-300)",
+          400: "var(--ink-400)",
+          500: "var(--ink-500)",
+          700: "var(--ink-700)",
+          900: "var(--ink-900)",
+        },
+        tide: {
+          DEFAULT: "var(--tide)",
+          2: "var(--tide-2)",
+          soft: "var(--tide-soft)",
+        },
+        sand: {
+          DEFAULT: "var(--sand)",
+          2: "var(--sand-2)",
+          shell: "var(--shell)",
+        },
+        warn: {
+          DEFAULT: "var(--warn)",
+          soft: "var(--warn-soft)",
+        },
+        ok: {
+          DEFAULT: "var(--ok)",
+          soft: "var(--ok-soft)",
         },
       },
+      borderRadius: {
+        sm: "var(--r-sm)",
+        md: "var(--r-md)",
+        lg: "var(--r-lg)",
+        xl: "var(--r-xl)",
+      },
       fontFamily: {
-        sans: [
-          "system-ui",
-          "-apple-system",
-          "BlinkMacSystemFont",
-          "Segoe UI",
-          "PingFang SC",
-          "Hiragino Sans GB",
-          "Microsoft YaHei",
-          "Noto Sans SC",
-          "sans-serif",
-        ],
+        sans: ["Inter", "system-ui", "-apple-system", "BlinkMacSystemFont", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "sans-serif"],
+        serif: ["Fraunces", "Cormorant Garamond", "Georgia", "serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "SF Mono", "Menlo", "monospace"],
       },
     },
   },

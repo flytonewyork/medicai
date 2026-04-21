@@ -2,27 +2,37 @@ import { cn } from "~/lib/utils/cn";
 import type { ReactNode } from "react";
 
 export function PageHeader({
+  eyebrow,
   title,
   subtitle,
   action,
   className,
 }: {
-  title: string;
+  eyebrow?: ReactNode;
+  title: ReactNode;
   subtitle?: ReactNode;
   action?: ReactNode;
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between", className)}>
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
+    <div
+      className={cn(
+        "flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between",
+        className,
+      )}
+    >
+      <div className="space-y-1.5 min-w-0 flex-1">
+        {eyebrow && <div className="eyebrow">{eyebrow}</div>}
+        <h1 className="serif text-[28px] leading-[1.15] tracking-tight text-ink-900">
           {title}
         </h1>
         {subtitle && (
-          <p className="text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
+          <p className="text-sm text-ink-500">{subtitle}</p>
         )}
       </div>
-      {action && <div className="flex items-center gap-2">{action}</div>}
+      {action && (
+        <div className="flex items-center gap-2 shrink-0">{action}</div>
+      )}
     </div>
   );
 }
@@ -38,11 +48,9 @@ export function SectionHeader({
 }) {
   return (
     <div className={cn("space-y-1", className)}>
-      <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
-        {title}
-      </h2>
+      <h2 className="eyebrow">{title}</h2>
       {description && (
-        <p className="text-sm text-slate-600 dark:text-slate-400">{description}</p>
+        <p className="text-sm text-ink-500">{description}</p>
       )}
     </div>
   );

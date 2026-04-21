@@ -21,16 +21,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <Providers>
-          <div className="flex min-h-screen">
+          <div className="flex min-h-screen bg-paper">
             <DesktopSidebar />
-            <div className="flex-1 flex flex-col min-w-0">
-              <header className="flex items-center justify-between gap-3 px-4 md:px-6 h-12 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-                <div className="md:hidden text-sm font-semibold">Anchor</div>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-ink-100/60 bg-paper-2/70 px-4 backdrop-blur-md md:px-6">
+                <div className="serif text-[17px] tracking-tight text-ink-900 md:hidden">
+                  Anchor
+                </div>
                 <div className="flex-1" />
                 <RoleSwitcher />
                 <LanguageSwitcher />
               </header>
-              <main className="flex-1 pb-24 md:pb-0 overflow-y-auto">
+              <main className="flex-1 overflow-y-auto pb-28 md:pb-6">
                 {children}
               </main>
             </div>
