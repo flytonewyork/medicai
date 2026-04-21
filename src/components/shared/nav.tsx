@@ -4,10 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  CalendarDays,
-  CalendarRange,
-  Stethoscope,
-  ClipboardList,
   Route,
   CalendarClock,
   ScrollText,
@@ -26,10 +22,6 @@ const ITEMS = [
   { href: "/", key: "nav.dashboard", icon: LayoutDashboard },
   { href: "/assessment", key: "nav.assessment", icon: Compass },
   { href: "/treatment", key: "nav.treatment", icon: Syringe },
-  { href: "/daily", key: "nav.daily", icon: CalendarDays },
-  { href: "/weekly", key: "nav.weekly", icon: CalendarRange },
-  { href: "/fortnightly", key: "nav.fortnightly", icon: Stethoscope },
-  { href: "/quarterly", key: "nav.quarterly", icon: ClipboardList },
   { href: "/labs", key: "nav.labs", icon: FlaskConical },
   { href: "/bridge", key: "nav.bridge", icon: Route },
   { href: "/events", key: "nav.events", icon: CalendarClock },
@@ -84,7 +76,7 @@ export function MobileBottomNav() {
   const t = useT();
   const pathname = usePathname();
   const mobileItems = ITEMS.filter((i) =>
-    ["/", "/daily", "/treatment", "/labs", "/tasks"].includes(i.href),
+    ["/", "/treatment", "/labs", "/tasks", "/assessment"].includes(i.href),
   );
   return (
     <nav className="a-glass fixed inset-x-3 bottom-3 z-40 flex justify-around rounded-[22px] px-2 py-2.5 shadow-lg md:hidden">

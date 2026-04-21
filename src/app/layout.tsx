@@ -4,6 +4,7 @@ import { Providers } from "~/components/shared/providers";
 import { DesktopSidebar, MobileBottomNav } from "~/components/shared/nav";
 import { LanguageSwitcher } from "~/components/shared/language-switcher";
 import { RoleSwitcher } from "~/components/shared/role-switcher";
+import { AddFab } from "~/components/shared/add-fab";
 
 export const metadata: Metadata = {
   title: "Anchor",
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
           <MobileBottomNav />
+          <AddFab />
         </Providers>
       </body>
     </html>
