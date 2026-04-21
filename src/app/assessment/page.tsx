@@ -50,11 +50,11 @@ export default function AssessmentListPage() {
 
       {(!assessments || assessments.length === 0) && (
         <Card className="p-10 text-center">
-          <Stethoscope className="mx-auto mb-3 h-8 w-8 text-slate-400" />
+          <Stethoscope className="mx-auto mb-3 h-8 w-8 text-ink-400" />
           <div className="text-sm font-medium">
             {locale === "zh" ? "尚未做过综合评估" : "No comprehensive assessment yet"}
           </div>
-          <div className="mx-auto mt-1 max-w-sm text-sm text-slate-500">
+          <div className="mx-auto mt-1 max-w-sm text-sm text-ink-500">
             {locale === "zh"
               ? "第一次评估会建立基线，后续的变化都以此为参照。"
               : "Your first assessment becomes the baseline. Everything after compares against it."}
@@ -70,21 +70,21 @@ export default function AssessmentListPage() {
           <li key={a.id}>
             <Link
               href={a.status === "draft" ? `/assessment/run/${a.id}` : `/assessment/${a.id}`}
-              className="group flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-600"
+              className="group flex items-center gap-4 rounded-xl border border-ink-100/70 bg-paper-2 p-4 transition-colors hover:border-ink-300"
             >
               {typeof a.anchor_index === "number" ? (
                 <PillarRing score={a.anchor_index} size={56} />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-full border border-dashed border-slate-300 dark:border-slate-700">
-                  <Clock className="h-5 w-5 text-slate-400" />
+                <div className="flex h-14 w-14 items-center justify-center rounded-full border border-dashed border-ink-200">
+                  <Clock className="h-5 w-5 text-ink-400" />
                 </div>
               )}
               <div className="flex-1 space-y-1">
-                <div className="text-sm font-semibold">
+                <div className="text-sm font-semibold text-ink-900">
                   {formatDate(a.assessment_date, locale)} ·{" "}
                   {a.trigger === "baseline" ? (locale === "zh" ? "基线" : "Baseline") : a.trigger}
                 </div>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-500">
                   <span>
                     {(a.tests_completed?.length ?? 0)} /{" "}
                     {(a.tests_included?.length ?? 0)}{" "}
@@ -102,8 +102,8 @@ export default function AssessmentListPage() {
                   <span
                     className={
                       a.status === "complete"
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-amber-600 dark:text-amber-400"
+                        ? "text-[var(--ok)]"
+                        : "text-[oklch(55%_0.1_70)]"
                     }
                   >
                     {a.status === "complete"
@@ -116,7 +116,7 @@ export default function AssessmentListPage() {
                   </span>
                 </div>
               </div>
-              <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200" />
+              <ChevronRight className="h-4 w-4 text-ink-400 group-hover:text-ink-700" />
             </Link>
           </li>
         ))}
