@@ -419,8 +419,8 @@ export const PROTOCOL_LIBRARY: readonly Protocol[] = [
       zh: "吉西他滨 + 白蛋白紫杉醇 + 纳马非替尼",
     },
     description: {
-      en: "28-day GnP backbone (D1/D8/D15 infusions) plus continuous oral narmafotinib (AMP945) — an investigational FAK inhibitor studied in the ACCENT trial in mPDAC. Hypothesis: disrupting stromal fibrosis improves chemo delivery. Watch LFTs and oral adherence.",
-      zh: "28 天 GnP 框架（D1/D8/D15 输注）+ 每日连续口服纳马非替尼（AMP945）—— ACCENT 研究中用于转移性胰腺癌的试验性 FAK 抑制剂。设想：通过破坏肿瘤基质纤维化来提升化疗药物递送。需密切监测肝功能与口服依从性。",
+      en: "28-day GnP backbone (D1/D8/D15 infusions) plus continuous oral narmafotinib (AMP945) — an investigational FAK inhibitor studied in the ACCENT trial in mPDAC (NCT05355298). Hypothesis: disrupting stromal fibrosis improves chemo delivery. Standard GnP backbone monitoring (FBC, LFTs, U&Es D1/D8/D15) applies; oral adherence is critical.",
+      zh: "28 天 GnP 框架（D1/D8/D15 输注）+ 每日连续口服纳马非替尼（AMP945）—— ACCENT 研究（NCT05355298）中用于转移性胰腺癌的试验性 FAK 抑制剂。设想：通过破坏肿瘤基质纤维化来提升化疗药物递送。沿用 GnP 骨干监测（D1/D8/D15 血常规、肝功、电解质）；口服依从性至关重要。",
     },
     cycle_length_days: 28,
     dose_days: [1, 8, 15],
@@ -447,12 +447,12 @@ export const PROTOCOL_LIBRARY: readonly Protocol[] = [
         id: "narmafotinib",
         name: "Narmafotinib",
         display: { en: "Narmafotinib (AMP945)", zh: "纳马非替尼（AMP945）" },
-        typical_dose: "400 mg BID (continuous PO)",
+        typical_dose: "400 mg PO once daily (continuous, ACCENT RP2D)",
         dose_days: [1],
         route: "PO",
         notes: {
-          en: "Oral FAK (focal adhesion kinase) inhibitor. Continuous twice-daily dosing throughout the cycle, taken with food. Confirm hold-on-infusion-day policy with Dr Lee. Monitor ALT/AST each cycle; hepatic toxicity is the dose-limiting signal in ACCENT.",
-          zh: "口服 FAK（黏着斑激酶）抑制剂。周期内每日两次连续服用，与餐同服。输液日是否暂停请与 Dr Lee 确认。每周期监测 ALT/AST —— ACCENT 研究中肝毒性是剂量限制性信号。",
+          en: "Oral FAK (focal adhesion kinase) inhibitor. ACCENT trial RP2D is 400 mg once daily with food, continuous through the 28-day cycle. The reported DLT in the 400 mg cohort was Grade 3 nausea. Confirm hold-on-infusion-day policy with Dr Lee.",
+          zh: "口服 FAK（黏着斑激酶）抑制剂。ACCENT 研究 RP2D 为 400 mg 每日一次与食物同服，28 天周期连续服用。400 mg 队列报告的 DLT 为 Grade 3 恶心。输液日是否暂停请与 Dr Lee 确认。",
         },
       },
     ],
@@ -462,8 +462,8 @@ export const PROTOCOL_LIBRARY: readonly Protocol[] = [
     },
     phase_windows: PHASE_GNP_WEEKLY,
     side_effect_profile: {
-      en: "GnP toxicities (myelosuppression esp. D16–21, peripheral neuropathy, fatigue, cold dysaesthesia, alopecia) plus narmafotinib-specific signals: transaminase elevation (ALT/AST), nausea, diarrhoea, rash, fatigue. Oral adherence burden on top of IV cycle.",
-      zh: "GnP 毒性（D16–21 骨髓抑制、周围神经病变、疲劳、遇冷异感、脱发）叠加纳马非替尼特有信号：肝酶升高（ALT/AST）、恶心、腹泻、皮疹、疲劳。在输注方案之外还有口服依从负担。",
+      en: "GnP toxicities (myelosuppression esp. D16–21, peripheral neuropathy, fatigue, cold dysaesthesia, alopecia) plus narmafotinib-specific signals: nausea (Grade 3 nausea was the reported DLT in the ACCENT 400 mg cohort), diarrhoea, fatigue. Oral adherence burden on top of IV cycle.",
+      zh: "GnP 毒性（D16–21 骨髓抑制、周围神经病变、疲劳、遇冷异感、脱发）叠加纳马非替尼特有信号：恶心（ACCENT 400 mg 队列报告的 DLT 为 Grade 3 恶心）、腹泻、疲劳。在输注方案之外还有口服依从负担。",
     },
     typical_supportive: [
       "supportive.gcsf_prophylaxis",

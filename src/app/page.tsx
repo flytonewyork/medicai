@@ -10,6 +10,7 @@ import { PillarsCard } from "~/components/dashboard/pillars-card";
 import { RecentTrends } from "~/components/dashboard/recent-trends";
 import { EmergencyCard } from "~/components/dashboard/emergency-card";
 import { QuickCheckinCard } from "~/components/dashboard/quick-checkin-card";
+import { MedicationPromptsCard } from "~/components/dashboard/medication-prompts-card";
 import { TodayFeed } from "~/components/dashboard/today-feed";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { PageHeader, SectionHeader } from "~/components/ui/page-header";
@@ -73,6 +74,8 @@ export default function DashboardPage() {
       <EmergencyCard />
 
       <QuickCheckinCard />
+
+      <MedicationPromptsCard />
 
       <TodayFeed excludeIds={["checkin_today"]} />
 

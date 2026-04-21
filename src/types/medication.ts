@@ -76,9 +76,59 @@ export interface DrugSideEffects {
   serious: LocalizedText[];
 }
 
+// Provenance levels, ordered roughly from most to least authoritative.
+export type ReferenceSource =
+  | "FDA_label"          // accessdata.fda.gov / dailymed.nlm.nih.gov
+  | "TGA_PI"             // tga.gov.au product information
+  | "EMA_SmPC"           // EMA Summary of Product Characteristics
+  | "guideline"          // ASCO / NCCN / ESMO / MASCC / NCI
+  | "trial_protocol"     // ClinicalTrials.gov record / sponsor protocol
+  | "trial_publication"  // peer-reviewed primary trial paper
+  | "company_disclosure" // sponsor investor or pipeline material
+  | "review";            // narrative or systematic review
+
 export interface DrugReference {
+  source: ReferenceSource;
   title: string;
   url: string;
+  accessed: string;        // ISO date the URL was fetched
+  publisher?: string;      // e.g. "FDA", "TGA", "Amplia Therapeutics"
+  section?: string;        // e.g. "Section 2.2 Recommended Dose"
+}
+
+// A value paired with its citations. `source_refs` are indices into
+// DrugInfo.references — keep them sorted ascending for stable diffs.
+export interface CitedValue<T> {
+  value: T;
+  source_refs: number[];
+}
+
+export interface LftCheckFact {
+  baseline: boolean;       // check at baseline before first dose
+  cycle_days: number[];    // monitoring days within each cycle
+  rationale: LocalizedText;
+}
+
+export interface SteroidCrashFact {
+  start_day_post_dose: number; // typically 3
+  end_day_post_dose: number;   // typically 5
+  rationale: LocalizedText;
+}
+
+export interface NadirFact {
+  start_day: number;       // cycle day window starts
+  end_day: number;         // cycle day window ends
+  counts: ("ANC" | "platelets" | "Hb")[];
+  rationale: LocalizedText;
+}
+
+// Structured, citation-backed clinical facts the prompt rule engine reads.
+// All fields optional — only populate facts that have been verified against
+// a real reference. Never invent values here.
+export interface PromptFacts {
+  lft_check?: CitedValue<LftCheckFact>;
+  steroid_crash?: CitedValue<SteroidCrashFact>;
+  nadir?: CitedValue<NadirFact>;
 }
 
 export interface DrugInfo {
@@ -98,6 +148,9 @@ export interface DrugInfo {
   protocol_ids?: string[]; // optional join to Protocol.id
   supportive_id?: string;  // optional join to treatment-levers
   references?: DrugReference[];
+  // Structured facts for the prompt rule engine. Only populated for drugs
+  // whose facts have been cited against entries in `references`.
+  prompt_facts?: PromptFacts;
   // Notes for the profile page, free-form bilingual paragraph.
   clinical_note?: LocalizedText;
 }
@@ -153,6 +206,22 @@ export interface MedicationEvent {
   note?: string;
   source: "daily_checkin" | "quick_log" | "fab" | "backfill";
   created_at: string;
+}
+
+// Persisted record of a context-aware medication prompt the engine has
+// surfaced to the patient. One row per (rule, fired_for) pair so we can
+// dedupe across renders and correlate later (2b.2+).
+export interface MedicationPromptEvent {
+  id?: number;
+  rule_id: string;            // e.g. "narmafotinib_d22_lft"
+  fired_for: string;          // dedupe key, e.g. "cycle:7|day:22"
+  drug_id?: string;           // primary drug the prompt is about
+  cycle_id?: number;
+  cycle_day?: number;
+  status: "shown" | "acknowledged" | "dismissed";
+  shown_at: string;           // ISO
+  resolved_at?: string;       // ISO when status moved off "shown"
+  note?: string;              // patient-entered free text on ack
 }
 
 // Convenience: "what's due / what was logged today" for a single medication.

@@ -101,6 +101,35 @@ const GEMCITABINE: DrugInfo = {
   diet_interactions: [],
   protocol_ids: ["gnp_weekly", "gnp_biweekly", "gem_maintenance"],
   supportive_id: undefined,
+  references: [
+    {
+      source: "FDA_label",
+      title:
+        "GEMCITABINE for Injection — Highlights of Prescribing Information",
+      publisher: "FDA",
+      url: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2014/020509s077lbl.pdf",
+      accessed: "2026-04-21",
+      section: "5.1 Schedule-dependent toxicity / 6.1 Myelosuppression",
+    },
+  ],
+  prompt_facts: {
+    nadir: {
+      value: {
+        // FDA label requires CBC before each dose; combination GnP literature
+        // and the Abraxane label specify D8 + D15 pre-dose CBC. The post-D1
+        // counts trough across this window — keep the watch window broad and
+        // safety-oriented rather than asserting a single nadir day.
+        start_day: 8,
+        end_day: 15,
+        counts: ["ANC", "platelets"],
+        rationale: {
+          en: "Myelosuppression is the dose-limiting toxicity. Pre-dose CBC on D8 and D15 drives dose modification.",
+          zh: "骨髓抑制为剂量限制毒性。D8 与 D15 化疗前血常规决定剂量调整。",
+        },
+      },
+      source_refs: [0],
+    },
+  },
   clinical_note: {
     en: "Hu Lin tolerates weekly GnP well. Monitor for cumulative neuropathy and declining counts.",
     zh: "胡林对每周 GnP 耐受良好。监测累积性神经病变和血象下降。",
@@ -164,6 +193,32 @@ const NAB_PACLITAXEL: DrugInfo = {
   ],
   diet_interactions: [],
   protocol_ids: ["gnp_weekly", "gnp_biweekly"],
+  references: [
+    {
+      source: "FDA_label",
+      title:
+        "ABRAXANE (paclitaxel protein-bound particles) — Highlights of Prescribing Information",
+      publisher: "FDA",
+      url: "https://www.accessdata.fda.gov/drugsatfda_docs/label/2018/021660s045lbl.pdf",
+      accessed: "2026-04-21",
+      section:
+        "2.4 Dose Modifications, Pancreatic Cancer / 5.1 Hematologic effects",
+    },
+  ],
+  prompt_facts: {
+    nadir: {
+      value: {
+        start_day: 8,
+        end_day: 15,
+        counts: ["ANC", "platelets"],
+        rationale: {
+          en: "Per Abraxane label: pre-dose CBC required on D1, D8, and D15 of each 28-day cycle in pancreatic cancer; counts dip across this window.",
+          zh: "据 Abraxane 说明书：胰腺癌每 28 天周期 D1、D8、D15 化疗前需查血常规；该窗口内血象下降。",
+        },
+      },
+      source_refs: [0],
+    },
+  },
   clinical_note: {
     en: "Cumulative neuropathy is the main toxicity. Early flagging of tingling/numbness is critical to preserve function.",
     zh: "累积性神经病变是主要毒性。早期标记刺痛 / 麻木对保留功能至关重要。",
@@ -185,61 +240,76 @@ const NARMAFOTINIB: DrugInfo = {
     en: "Inhibits focal adhesion kinase, reducing stromal fibrosis and remodeling. Hypothesized to improve gemcitabine delivery in mPDAC. Under investigation in ACCENT trial.",
     zh: "抑制黏着斑激酶，减少基质纤维化和重建。假设改善吉西他滨在 mPDAC 中的递送。在 ACCENT 研究中调查。",
   },
-  typical_doses: [{ en: "400 mg BID (twice daily)", zh: "400 mg，每日两次" }],
+  typical_doses: [
+    { en: "400 mg PO once daily (RP2D, ACCENT trial)", zh: "400 mg 口服，每日一次（RP2D，ACCENT 试验）" },
+  ],
   default_schedules: [
     {
       kind: "with_meals",
-      times_per_day: 2,
+      times_per_day: 1,
       label: {
-        en: "400 mg BID with food, continuous throughout cycle",
-        zh: "400 mg 每日两次，与食物同服，周期全程连续",
+        en: "400 mg once daily with food, continuous throughout 28-day cycle",
+        zh: "400 mg 每日一次，与食物同服，28 天周期全程连续",
       },
     },
   ],
   side_effects: {
     common: [
-      { en: "Nausea, vomiting (early onset)", zh: "恶心、呕吐（早期发生）" },
-      { en: "Diarrhea or loose stools", zh: "腹泻或稀便" },
+      { en: "Nausea, vomiting", zh: "恶心、呕吐" },
       { en: "Fatigue", zh: "疲劳" },
-      {
-        en: "Elevated liver enzymes (ALT, AST) — reversible with dose reduction",
-        zh: "肝酶升高（ALT、AST）—— 减量后可逆",
-      },
-      { en: "Rash, pruritus (itching)", zh: "皮疹、瘙痒" },
+      { en: "Diarrhea or loose stools", zh: "腹泻或稀便" },
     ],
     serious: [
       {
-        en: "Hepatotoxicity — Grade 3+ transaminase elevation (ALT/AST >5× ULN)",
-        zh: "肝毒性 —— 转氨酶升高 >5× 正常上限（Grade 3+）",
-      },
-      {
-        en: "Diarrhea Grade 2+ — requires anti-diarrheal (loperamide)",
-        zh: "腹泻 Grade 2+ —— 需要止泻药（洛哌丁胺）",
+        en: "Grade 3 nausea was the dose-limiting toxicity reported at 400 mg in the ACCENT phase 1b cohort",
+        zh: "在 ACCENT 1b 期 400 mg 队列中，Grade 3 恶心为剂量限制毒性",
       },
     ],
   },
   monitoring: [
     {
-      en: "LFTs (ALT, AST, ALP, bilirubin) before each cycle — dose-limiting signal",
-      zh: "LFTs（ALT、AST、ALP、胆红素）每周期前 —— 剂量限制信号",
+      en: "Adherence to once-daily dosing with food — investigational oral agent",
+      zh: "与食物同服每日一次依从性 —— 试验性口服药物",
     },
-    { en: "U&Es", zh: "电解质" },
-    { en: "Rash monitoring — photo any new lesions", zh: "皮疹监测 —— 拍照记录任何新皮损" },
+    {
+      en: "Standard chemotherapy laboratory monitoring per the GnP backbone (FBC, LFTs, U&Es D1/D8/D15)",
+      zh: "依 GnP 骨干方案进行标准化疗实验室监测（D1/D8/D15 查血常规、肝功、电解质）",
+    },
   ],
   diet_interactions: [
     {
-      food: { en: "High-fat meals", zh: "高脂肪餐" },
+      food: { en: "Food (any meal)", zh: "食物（任意一餐）" },
       effect: {
-        en: "May increase narmafotinib absorption — consistent food intake advisable",
-        zh: "可能增加纳马非替尼吸收 —— 建议食物摄入一致",
+        en: "ACCENT protocol specifies dosing with food. Maintain consistent food intake at the dosing time.",
+        zh: "ACCENT 方案规定与食物同服。在服药时间保持一致的食物摄入。",
       },
       severity: "info",
     },
   ],
   protocol_ids: ["gnp_narmafotinib"],
+  references: [
+    {
+      source: "trial_publication",
+      title:
+        "Phase 1b/2a of narmafotinib (AMP945) in combination with gemcitabine and nab-paclitaxel in first-line patients with advanced pancreatic cancer (ACCENT trial): Interim analysis (JCO 2024)",
+      publisher: "ASCO Publications",
+      url: "https://ascopubs.org/doi/10.1200/JCO.2024.42.16_suppl.e16337",
+      accessed: "2026-04-21",
+      section: "Methods (RP2D, dosing); Results (DLT)",
+    },
+    {
+      source: "trial_protocol",
+      title:
+        "ACCENT: AMP945 in Combination with Nab-paclitaxel and Gemcitabine in Pancreatic Cancer Patients (NCT05355298)",
+      publisher: "ClinicalTrials.gov",
+      url: "https://clinicaltrials.gov/study/NCT05355298",
+      accessed: "2026-04-21",
+      section: "Study design, dosing, eligibility",
+    },
+  ],
   clinical_note: {
-    en: "Investigational agent in ACCENT trial. Hepatotoxicity and GI tolerance most important to monitor. Oral adherence is critical — missed doses reduce efficacy.",
-    zh: "ACCENT 试验中的试验性药物。肝毒性和胃肠耐受最重要。口服依从性至关重要 —— 漏服降低疗效。",
+    en: "Investigational FAK inhibitor. RP2D is 400 mg PO once daily with food in a 28-day cycle alongside D1/D8/D15 GnP. The reported DLT in the 400 mg cohort was Grade 3 nausea. No prompt-engine claim is made about narmafotinib-specific LFT monitoring beyond the standard GnP backbone.",
+    zh: "试验性 FAK 抑制剂。RP2D 为 400 mg 口服每日一次与食物同服，与 D1/D8/D15 GnP 同步进行 28 天周期。400 mg 队列报告的 DLT 为 Grade 3 恶心。提示引擎对纳马非替尼的肝功监测除 GnP 骨干外不作额外声明。",
   },
 };
 
@@ -529,9 +599,37 @@ const DEXAMETHASONE: DrugInfo = {
     { en: "Taper rather than stop abruptly (adrenal suppression risk)", zh: "逐渐减量而非突然停用（肾上腺抑制风险）" },
   ],
   diet_interactions: [],
+  references: [
+    {
+      source: "trial_publication",
+      title:
+        "Vardy J, Chiew KS, Galica J, Pond GR, Tannock IF. Side effects associated with the use of dexamethasone for prophylaxis of delayed emesis after moderately emetogenic chemotherapy. Br J Cancer. 2006;94(7):1011–1015.",
+      publisher: "British Journal of Cancer (Nature)",
+      url: "https://www.nature.com/articles/6603048",
+      accessed: "2026-04-21",
+      section: "Results: symptom incidence in the week post-chemotherapy",
+    },
+  ],
+  prompt_facts: {
+    steroid_crash: {
+      value: {
+        // Vardy 2006 reports moderate-severe symptoms (insomnia 45%, agitation
+        // 27%, indigestion 27%) in the week after chemo. The crash itself is
+        // most commonly described in the post-pulse window once dex is stopped
+        // — surface a check-in across days 3-5 post-pulse.
+        start_day_post_dose: 3,
+        end_day_post_dose: 5,
+        rationale: {
+          en: "Vardy et al (BJC 2006) documented moderate-severe insomnia (45%), agitation (27%), and dyspepsia (27%) in the week after chemo dex. Patients commonly report a mood/energy drop in the post-pulse D3–D5 window.",
+          zh: "Vardy 等（BJC 2006）记录化疗后地塞米松一周内中-重度失眠（45%）、激越（27%）、消化不良（27%）。患者常在 D3–D5 后撤药期反映情绪/精力下降。",
+        },
+      },
+      source_refs: [0],
+    },
+  },
   clinical_note: {
-    en: "Prophylactic dex is standard on chemo days. Steroid crash D3–D5 is universal — normalize it, reassure patient it lifts by D6.",
-    zh: "化疗日预防性地塞米松是标准。类固醇撤药反应 D3–D5 是普遍的 —— 标准化它，向患者保证到 D6 缓解。",
+    en: "Prophylactic dex is standard on chemo days. The post-pulse symptom window — most commonly D3-D5 — is well documented (Vardy 2006: 45% insomnia, 27% agitation, 27% dyspepsia). Normalize it; surface a mood check-in.",
+    zh: "化疗日预防性地塞米松是标准。撤药后症状窗口（最常见 D3-D5）有充分记录（Vardy 2006：失眠 45%、激越 27%、消化不良 27%）。标准化它；浮现情绪自查。",
   },
 };
 
