@@ -1,386 +1,289 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db, now } from "~/lib/db/dexie";
+import { db } from "~/lib/db/dexie";
+import { useLocale, useT } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
-import { UploadZone } from "~/components/ingest/upload-zone";
-import { useLocale, useT } from "~/hooks/use-translate";
-import { ocrFile } from "~/lib/ingest/ocr";
-import { parseHeuristic } from "~/lib/ingest/heuristic-parser";
-import { extractWithClaude } from "~/lib/ingest/claude-parser";
+import { CameraCapture } from "~/components/ingest/camera-capture";
+import { BulkQueue } from "~/components/ingest/bulk-queue";
 import {
-  fromClaude,
-  fromHeuristic,
-  saveExtraction,
-  type UnifiedExtraction,
-} from "~/lib/ingest/save";
-import type { IngestedDocument } from "~/types/clinical";
-import { Sparkles, ScanText, Loader2, Check } from "lucide-react";
-import Link from "next/link";
+  parseBulkItem,
+  processBulkItemOcr,
+  saveBulkItem,
+  type BulkItem,
+} from "~/lib/ingest/bulk";
+import { Upload, Utensils, NotebookPen, ChevronRight } from "lucide-react";
 
-type Phase =
-  | "idle"
-  | "ocr"
-  | "ocr_done"
-  | "structuring"
-  | "structured"
-  | "saving"
-  | "saved"
-  | "error";
+function newId(): string {
+  return Math.random().toString(36).slice(2, 10);
+}
 
 export default function IngestPage() {
   const t = useT();
   const locale = useLocale();
   const settings = useLiveQuery(() => db.settings.toArray());
   const apiKey = settings?.[0]?.anthropic_api_key;
-  const docs = useLiveQuery(() =>
-    db.ingested_documents.orderBy("uploaded_at").reverse().limit(15).toArray(),
+  const apiKeyConfigured = !!apiKey;
+
+  const [items, setItems] = useState<BulkItem[]>([]);
+  const itemsRef = useRef<BulkItem[]>([]);
+  itemsRef.current = items;
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const mutate = useCallback((id: string, patch: Partial<BulkItem>) => {
+    setItems((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, ...patch } : i)),
+    );
+    itemsRef.current = itemsRef.current.map((i) =>
+      i.id === id ? { ...i, ...patch } : i,
+    );
+  }, []);
+
+  async function enqueueFiles(files: FileList | File[] | null) {
+    if (!files) return;
+    const arr = Array.from(files);
+    if (arr.length === 0) return;
+    const newItems: BulkItem[] = arr.map((f) => ({
+      id: newId(),
+      file: f,
+      status: "queued",
+    }));
+    setItems((prev) => [...prev, ...newItems]);
+    itemsRef.current = [...itemsRef.current, ...newItems];
+
+    // Process OCR one at a time to avoid memory pressure from tesseract
+    for (const item of newItems) {
+      await processBulkItemOcr(item, mutate);
+      // auto-run heuristic parser so user sees a result quickly
+      const latest =
+        itemsRef.current.find((i) => i.id === item.id) ?? item;
+      if (latest.status === "parsing") {
+        await parseBulkItem(latest, "heuristic", apiKey, mutate);
+      }
+    }
+  }
+
+  async function reparseItem(id: string, method: "heuristic" | "claude") {
+    const item = itemsRef.current.find((i) => i.id === id);
+    if (!item) return;
+    await parseBulkItem(item, method, apiKey, mutate);
+  }
+
+  async function saveItem(id: string) {
+    const item = itemsRef.current.find((i) => i.id === id);
+    if (!item) return;
+    await saveBulkItem(item, mutate);
+  }
+
+  async function saveAll() {
+    const ready = itemsRef.current.filter((i) => i.status === "ready");
+    for (const item of ready) {
+      await saveBulkItem(item, mutate);
+    }
+  }
+
+  function discardItem(id: string) {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+    itemsRef.current = itemsRef.current.filter((i) => i.id !== id);
+  }
+
+  function clearAll() {
+    setItems([]);
+    itemsRef.current = [];
+  }
+
+  const recent = useLiveQuery(() =>
+    db.ingested_documents.orderBy("uploaded_at").reverse().limit(8).toArray(),
   );
 
-  const [file, setFile] = useState<File | null>(null);
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [progress, setProgress] = useState<string>("");
-  const [ocrText, setOcrText] = useState<string>("");
-  const [ocrConfidence, setOcrConfidence] = useState<number | null>(null);
-  const [docId, setDocId] = useState<number | null>(null);
-  const [extraction, setExtraction] = useState<UnifiedExtraction | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  function reset() {
-    setFile(null);
-    setPhase("idle");
-    setProgress("");
-    setOcrText("");
-    setOcrConfidence(null);
-    setDocId(null);
-    setExtraction(null);
-    setError(null);
-  }
-
-  async function handleFile(f: File) {
-    reset();
-    setFile(f);
-    setPhase("ocr");
-    setError(null);
-
-    const newDoc: IngestedDocument = {
-      filename: f.name,
-      mime_type: f.type || "application/octet-stream",
-      size_bytes: f.size,
-      kind: "other",
-      uploaded_at: now(),
-      status: "ocr_pending",
-      created_at: now(),
-      updated_at: now(),
-    };
-    const newId = (await db.ingested_documents.add(newDoc)) as number;
-    setDocId(newId);
-
-    try {
-      const r = await ocrFile(f, (phase, p) => {
-        setProgress(`${phase} — ${Math.round((p ?? 0) * 100)}%`);
-      });
-      setOcrText(r.text);
-      setOcrConfidence(r.confidence);
-      await db.ingested_documents.update(newId, {
-        ocr_text: r.text,
-        ocr_confidence: r.confidence,
-        status: "ocr_complete",
-        updated_at: now(),
-      });
-      setPhase("ocr_done");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(msg);
-      setPhase("error");
-      await db.ingested_documents.update(newId, {
-        status: "error",
-        error_message: msg,
-        updated_at: now(),
-      });
-    }
-  }
-
-  async function runHeuristic() {
-    if (!ocrText) return;
-    setPhase("structuring");
-    const parsed = parseHeuristic(ocrText);
-    const unified = fromHeuristic(parsed);
-    setExtraction(unified);
-    if (docId) {
-      await db.ingested_documents.update(docId, {
-        extraction_method: "heuristic",
-        kind: unified.kind,
-        status: "extracted",
-        updated_at: now(),
-      });
-    }
-    setPhase("structured");
-  }
-
-  async function runClaude() {
-    if (!ocrText || !apiKey) return;
-    setPhase("structuring");
-    setError(null);
-    try {
-      const model = settings?.[0]?.default_ai_model ?? "claude-opus-4-7";
-      const claude = await extractWithClaude({ apiKey, text: ocrText, model });
-      const unified = fromClaude(claude);
-      setExtraction(unified);
-      if (docId) {
-        await db.ingested_documents.update(docId, {
-          extraction_method: "claude",
-          extraction_model: model,
-          kind: unified.kind,
-          status: "extracted",
-          updated_at: now(),
-        });
-      }
-      setPhase("structured");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(msg);
-      setPhase("ocr_done");
-    }
-  }
-
-  async function confirmSave() {
-    if (!extraction || !docId) return;
-    setPhase("saving");
-    const doc = await db.ingested_documents.get(docId);
-    if (!doc) return;
-    await saveExtraction(doc, extraction);
-    setPhase("saved");
-  }
-
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-8">
+    <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-8">
       <PageHeader
-        title={locale === "zh" ? "报告导入" : "Ingest reports"}
+        eyebrow={locale === "zh" ? "导入" : "Ingest"}
+        title={locale === "zh" ? "报告、照片、手写笔记" : "Reports, photos, handwritten notes"}
         subtitle={
           locale === "zh"
-            ? "OCR 在本机进行。结构化可选择本地规则或你的 Claude API Key。"
-            : "OCR runs on your device. Structuring uses local rules or your own Claude API key — never our servers."
+            ? "本机 OCR，可选 Claude 结构化。一次拖入多个文件。"
+            : "On-device OCR. Optional Claude structuring. Drop several files at once."
         }
         action={
           <Link href="/ingest/pending">
-            <Button variant="secondary">
+            <Button variant="secondary" size="sm">
               {locale === "zh" ? "待出结果" : "Pending results"}
             </Button>
           </Link>
         }
       />
 
-      {phase === "idle" && <UploadZone onFile={handleFile} />}
-
-      {phase !== "idle" && file && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{file.name}</CardTitle>
-            <div className="mt-1 text-xs text-slate-500">
-              {formatBytes(file.size)} · {file.type || "unknown"}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {(phase === "ocr") && (
-              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {locale === "zh" ? "本机 OCR 中" : "Running OCR on device"} — {progress}
-              </div>
-            )}
-
-            {phase === "error" && error && (
-              <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-                {error}
-              </div>
-            )}
-
-            {ocrText && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    {locale === "zh" ? "OCR 输出（可编辑）" : "OCR output (editable)"}
-                    {ocrConfidence != null && (
-                      <span className="ml-2 text-slate-400">
-                        · {Math.round(ocrConfidence)}%
-                      </span>
-                    )}
-                  </span>
-                </div>
-                <textarea
-                  className="h-48 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-xs focus:border-slate-900 focus:outline-none dark:border-slate-700 dark:bg-slate-900"
-                  value={ocrText}
-                  onChange={(e) => setOcrText(e.target.value)}
-                />
-              </div>
-            )}
-
-            {(phase === "ocr_done" || phase === "structured" || phase === "structuring") && (
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  onClick={runHeuristic}
-                  disabled={phase === "structuring"}
-                  variant="secondary"
-                >
-                  <ScanText className="h-4 w-4" />
-                  {locale === "zh" ? "本地规则解析" : "Parse with local rules"}
-                </Button>
-                <Button
-                  onClick={runClaude}
-                  disabled={!apiKey || phase === "structuring"}
-                >
-                  <Sparkles className="h-4 w-4" />
-                  {locale === "zh" ? "用 Claude 解析" : "Parse with Claude"}
-                </Button>
-                {!apiKey && (
-                  <Link
-                    href="/settings"
-                    className="text-xs text-slate-500 underline"
-                  >
-                    {locale === "zh"
-                      ? "在设置里填 API Key 解锁"
-                      : "Add your API key in Settings to enable"}
-                  </Link>
-                )}
-              </div>
-            )}
-
-            {phase === "structuring" && (
-              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {locale === "zh" ? "结构化中" : "Structuring"}
-              </div>
-            )}
-
-            {extraction && (
-              <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900/60">
-                <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                  {locale === "zh" ? "即将保存" : "Ready to save"}
-                </div>
-                <ExtractionPreview extraction={extraction} />
-                {phase === "structured" && (
-                  <div className="flex items-center gap-2 pt-1">
-                    <Button onClick={confirmSave}>
-                      <Check className="h-4 w-4" />
-                      {locale === "zh" ? "确认并保存" : "Save to Anchor"}
-                    </Button>
-                    <Button variant="ghost" onClick={reset}>
-                      {locale === "zh" ? "丢弃" : "Discard"}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {phase === "saved" && (
-              <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
+      <Card>
+        <CardContent className="space-y-4 pt-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <CameraCapture
+              onPhoto={(f) => void enqueueFiles([f])}
+              label={
+                locale === "zh" ? "拍一张报告照片" : "Snap a report photo"
+              }
+            />
+            <Button
+              variant="secondary"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-4 w-4" />
+              {locale === "zh" ? "选择多份文件" : "Choose files"}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              multiple
+              accept="image/*,application/pdf"
+              onChange={(e) => {
+                void enqueueFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
+            {!apiKeyConfigured && (
+              <span className="mono text-[10px] uppercase tracking-wider text-ink-400">
                 {locale === "zh"
-                  ? "已保存到 Anchor。新值会进入趋势和规则引擎。"
-                  : "Saved to Anchor. New values flow into trends and the rule engine."}
-                <div className="mt-2">
-                  <Button onClick={reset} size="sm">
-                    {locale === "zh" ? "继续" : "Ingest another"}
-                  </Button>
-                </div>
-              </div>
+                  ? "· 未配置 Claude 密钥，使用本地规则解析"
+                  : "· No Claude key — local rules only"}
+              </span>
             )}
-          </CardContent>
-        </Card>
-      )}
+          </div>
 
-      {docs && docs.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {locale === "zh" ? "最近导入" : "Recent ingestions"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="divide-y divide-slate-200 dark:divide-slate-800">
-              {docs.map((d) => (
-                <li
-                  key={d.id}
-                  className="flex items-center justify-between py-2.5"
-                >
-                  <div>
-                    <div className="text-sm font-medium">{d.filename}</div>
-                    <div className="text-xs text-slate-500">
-                      {d.kind.replace("_", " ")} · {d.status} ·{" "}
-                      {d.extraction_method ?? "—"}
-                    </div>
+          <DropZone onFiles={(fs) => void enqueueFiles(fs)} locale={locale} />
+
+          {items.length === 0 && (
+            <p className="text-xs text-ink-500">
+              {locale === "zh"
+                ? "一次可导入多份报告 — 每份都会出现在下方队列。"
+                : "Queue as many reports as you like — each one appears in the list below."}
+            </p>
+          )}
+
+          {items.length > 0 && (
+            <BulkQueue
+              items={items}
+              apiKeyConfigured={apiKeyConfigured}
+              onParseHeuristic={(id) => void reparseItem(id, "heuristic")}
+              onParseClaude={(id) => void reparseItem(id, "claude")}
+              onSave={(id) => void saveItem(id)}
+              onSaveAll={() => void saveAll()}
+              onDiscard={discardItem}
+              onReset={clearAll}
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      <section className="grid gap-3 sm:grid-cols-2">
+        <Link
+          href="/ingest/meal"
+          className="a-card flex items-start gap-3 p-4 transition-colors hover:border-ink-300"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--tide-soft)] text-[var(--tide-2)]">
+            <Utensils className="h-5 w-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[13.5px] font-semibold text-ink-900">
+              {locale === "zh" ? "餐食照片 → 蛋白与热量" : "Meal photo → protein + calories"}
+            </div>
+            <div className="mt-0.5 text-xs text-ink-500">
+              {locale === "zh"
+                ? "拍一张盘中餐，Claude 估算宏量并建议胰酶剂量。"
+                : "Snap the plate; Claude estimates macros and a PERT suggestion."}
+            </div>
+          </div>
+          <ChevronRight className="mt-1.5 h-4 w-4 text-ink-300" />
+        </Link>
+
+        <Link
+          href="/ingest/notes"
+          className="a-card flex items-start gap-3 p-4 transition-colors hover:border-ink-300"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--tide-soft)] text-[var(--tide-2)]">
+            <NotebookPen className="h-5 w-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[13.5px] font-semibold text-ink-900">
+              {locale === "zh"
+                ? "手写笔记 → 今日日志"
+                : "Handwritten notes → daily log"}
+            </div>
+            <div className="mt-0.5 text-xs text-ink-500">
+              {locale === "zh"
+                ? "拍一张手写日记，结构化成今日条目。"
+                : "Photograph a paper note; it's transcribed and structured into today's entry."}
+            </div>
+          </div>
+          <ChevronRight className="mt-1.5 h-4 w-4 text-ink-300" />
+        </Link>
+      </section>
+
+      {recent && recent.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="eyebrow">
+            {locale === "zh" ? "最近导入" : "Recent"}
+          </h2>
+          <ul className="divide-y divide-ink-100/80 rounded-[var(--r-md)] border border-ink-100/80 bg-paper-2">
+            {recent.map((d) => (
+              <li key={d.id} className="flex items-center justify-between p-3">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[13px] font-medium text-ink-900">
+                    {d.filename}
                   </div>
-                  <span className="text-xs text-slate-400">
-                    {new Date(d.uploaded_at).toLocaleDateString()}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+                  <div className="mono text-[10.5px] uppercase tracking-wider text-ink-400">
+                    {d.kind} · {d.status}
+                    {d.extraction_method ? ` · ${d.extraction_method}` : ""}
+                  </div>
+                </div>
+                <div className="mono text-[10.5px] text-ink-400">
+                  {new Date(d.uploaded_at).toLocaleDateString()}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </div>
   );
 }
 
-function ExtractionPreview({ extraction }: { extraction: UnifiedExtraction }) {
+function DropZone({
+  onFiles,
+  locale,
+}: {
+  onFiles: (files: File[]) => void;
+  locale: "en" | "zh";
+}) {
+  const [over, setOver] = useState(false);
   return (
-    <div className="space-y-2 text-xs">
-      <div>
-        <span className="font-medium">Kind:</span> {extraction.kind}
-      </div>
-      {extraction.document_date && (
-        <div>
-          <span className="font-medium">Date:</span> {extraction.document_date}
-        </div>
-      )}
-      {extraction.summary && (
-        <div>
-          <span className="font-medium">Summary:</span> {extraction.summary}
-        </div>
-      )}
-      {extraction.labs && Object.keys(extraction.labs).length > 0 && (
-        <div>
-          <span className="font-medium">Labs:</span>{" "}
-          {Object.entries(extraction.labs)
-            .map(([k, v]) => `${k}=${v}`)
-            .join(", ")}
-        </div>
-      )}
-      {extraction.imaging?.modality && (
-        <div>
-          <span className="font-medium">Imaging:</span>{" "}
-          {extraction.imaging.modality}
-          {extraction.imaging.recist_status
-            ? ` · ${extraction.imaging.recist_status}`
-            : ""}
-          {extraction.imaging.findings_summary
-            ? ` — ${extraction.imaging.findings_summary.slice(0, 140)}`
-            : ""}
-        </div>
-      )}
-      {extraction.ctdna && (
-        <div>
-          <span className="font-medium">ctDNA:</span>{" "}
-          {extraction.ctdna.platform} ·{" "}
-          {extraction.ctdna.detected ? "detected" : "not detected"}
-          {extraction.ctdna.value ? ` · ${extraction.ctdna.value}` : ""}
-        </div>
-      )}
-      {extraction.pending_items && extraction.pending_items.length > 0 && (
-        <div>
-          <span className="font-medium">Pending:</span>{" "}
-          {extraction.pending_items.map((p) => p.test_name).join(", ")}
-        </div>
-      )}
+    <div
+      onDragOver={(e) => {
+        e.preventDefault();
+        setOver(true);
+      }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setOver(false);
+        const files = Array.from(e.dataTransfer.files ?? []);
+        if (files.length > 0) onFiles(files);
+      }}
+      className={
+        over
+          ? "rounded-[var(--r-md)] border-2 border-dashed border-ink-700 bg-ink-100/40 px-4 py-5 text-center text-xs text-ink-700"
+          : "rounded-[var(--r-md)] border-2 border-dashed border-ink-200 bg-paper px-4 py-5 text-center text-xs text-ink-500"
+      }
+    >
+      {locale === "zh"
+        ? "拖放任意数量的文件到这里（PDF / JPG / PNG）"
+        : "Drop any number of files here (PDF · JPG · PNG)"}
     </div>
   );
-}
-
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
