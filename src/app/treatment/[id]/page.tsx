@@ -57,7 +57,7 @@ export default function CycleDetailPage() {
   }, [cycle, latestDaily]);
 
   if (!cycle || !ctx) {
-    return <div className="p-6 text-sm text-slate-500">Loading…</div>;
+    return <div className="p-6 text-sm text-ink-500">Loading…</div>;
   }
 
   const { protocol } = ctx;
@@ -136,7 +136,7 @@ export default function CycleDetailPage() {
           <CardTitle>
             {locale === "zh" ? "今天在周期中" : "Where you are in the cycle"}
           </CardTitle>
-          <div className="mt-1 text-sm text-slate-500">
+          <div className="mt-1 text-sm text-ink-500">
             {locale === "zh" ? "第 " : "Day "}
             {ctx.cycle_day}
             {locale === "zh" ? " 天 · " : " · "}
@@ -146,7 +146,7 @@ export default function CycleDetailPage() {
         <CardContent className="space-y-3">
           <CycleCalendar cycle={cycle} protocol={protocol} />
           {ctx.phase?.description[locale] && (
-            <div className="text-xs text-slate-600 dark:text-slate-400">
+            <div className="text-xs text-ink-600">
               {ctx.phase.description[locale]}
             </div>
           )}
@@ -160,18 +160,18 @@ export default function CycleDetailPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
-          <p className="text-slate-600 dark:text-slate-400">
+          <p className="text-ink-600">
             {protocol.description[locale]}
           </p>
           <div className="space-y-1">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <div className="text-xs font-semibold uppercase tracking-wide text-ink-500">
               {locale === "zh" ? "药物" : "Agents"}
             </div>
             <ul className="space-y-1">
               {protocol.agents.map((a) => (
                 <li key={a.id}>
                   <span className="font-medium">{a.display[locale]}</span>
-                  <span className="ml-2 text-xs text-slate-500">
+                  <span className="ml-2 text-xs text-ink-500">
                     {a.typical_dose} · D{a.dose_days.join(", D")}
                   </span>
                 </li>
@@ -179,18 +179,18 @@ export default function CycleDetailPage() {
             </ul>
           </div>
           <div className="space-y-1">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <div className="text-xs font-semibold uppercase tracking-wide text-ink-500">
               {locale === "zh" ? "预用药" : "Premeds"}
             </div>
-            <p className="text-xs text-slate-600 dark:text-slate-400">
+            <p className="text-xs text-ink-600">
               {protocol.premeds?.[locale] ?? "—"}
             </p>
           </div>
           <div className="space-y-1">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <div className="text-xs font-semibold uppercase tracking-wide text-ink-500">
               {locale === "zh" ? "典型副作用谱" : "Side effect profile"}
             </div>
-            <p className="text-xs text-slate-600 dark:text-slate-400">
+            <p className="text-xs text-ink-600">
               {protocol.side_effect_profile[locale]}
             </p>
           </div>
@@ -202,7 +202,7 @@ export default function CycleDetailPage() {
           <CardTitle>
             {locale === "zh" ? "今日提示" : "Today's nudges"}
           </CardTitle>
-          <div className="mt-1 text-xs text-slate-500">
+          <div className="mt-1 text-xs text-ink-500">
             {ctx.applicable_nudges.length}{" "}
             {locale === "zh" ? "条" : "items"}
             {(cycle.snoozed_nudge_ids?.length ?? 0) > 0 &&
@@ -215,7 +215,7 @@ export default function CycleDetailPage() {
             if (!items || items.length === 0) return null;
             return (
               <div key={cat}>
-                <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-500">
                   {cat}
                 </div>
                 <div className="space-y-1.5">
@@ -227,7 +227,7 @@ export default function CycleDetailPage() {
             );
           })}
           {ctx.applicable_nudges.length === 0 && (
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-ink-500">
               {locale === "zh"
                 ? "今天没有特别提示。"
                 : "No contextual nudges for today."}
@@ -235,7 +235,7 @@ export default function CycleDetailPage() {
           )}
           {(cycle.snoozed_nudge_ids?.length ?? 0) > 0 && (
             <div className="pt-2">
-              <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-500">
                 {locale === "zh" ? "已暂隐" : "Snoozed"}
               </div>
               <div className="flex flex-wrap gap-1.5 text-xs">
@@ -244,7 +244,7 @@ export default function CycleDetailPage() {
                     key={id}
                     type="button"
                     onClick={() => restoreNudge(id)}
-                    className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-slate-600 hover:border-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+                    className="rounded-full border border-ink-200 bg-paper-2 px-2.5 py-1 text-ink-600 hover:border-ink-400"
                   >
                     ↺ {id}
                   </button>
