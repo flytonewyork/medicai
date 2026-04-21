@@ -15,6 +15,7 @@ import { SectionHeader } from "~/components/ui/page-header";
 import { ScaleInput } from "./scale-input";
 import { Toggle } from "./toggle";
 import { CycleBanner } from "./cycle-banner";
+import { MedicationsStep } from "./medications-step";
 
 const INITIAL = {
   date: todayISO(),
@@ -55,6 +56,7 @@ const STEPS = [
   "objective",
   "body",
   "symptoms",
+  "medications",
   "reflection",
 ] as const;
 
@@ -66,6 +68,7 @@ const STEP_LABELS: Record<"en" | "zh", Record<StepKey, string>> = {
     objective: "Weight & practice",
     body: "Food & movement",
     symptoms: "Symptom flags",
+    medications: "Today's medications",
     reflection: "Reflection",
   },
   zh: {
@@ -73,6 +76,7 @@ const STEP_LABELS: Record<"en" | "zh", Record<StepKey, string>> = {
     objective: "体重与修习",
     body: "饮食与运动",
     symptoms: "症状",
+    medications: "今日用药",
     reflection: "反思",
   },
 };
@@ -443,6 +447,8 @@ export function MorningCheckin({
           </CardContent>
         </Card>
       )}
+
+      {currentStep === "medications" && <MedicationsStep />}
 
       {currentStep === "reflection" && (
         <Card>

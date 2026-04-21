@@ -15,6 +15,7 @@ import {
   FileText,
   ListTodo,
   Camera,
+  Pill,
 } from "lucide-react";
 
 interface FabItem {
@@ -31,6 +32,16 @@ const ITEMS: FabItem[] = [
     label: { en: "Today's check-in", zh: "今日记录" },
     hint: { en: "Symptoms, weight, practice", zh: "症状、体重、修习" },
     icon: CalendarDays,
+    tone: "tide",
+  },
+  {
+    href: "/medications/log",
+    label: { en: "Log medication", zh: "记录服药" },
+    hint: {
+      en: "Taken, missed, side effects",
+      zh: "已服、漏服、副作用",
+    },
+    icon: Pill,
     tone: "tide",
   },
   {
