@@ -4,6 +4,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { useLocale } from "~/hooks/use-translate";
+import { useSettings } from "~/hooks/use-settings";
 import {
   assessSarcopenia,
   sarcopeniaLevelLabel,
@@ -31,11 +32,11 @@ export function SarcopeniaCard() {
       .limit(1)
       .toArray(),
   );
-  const settings = useLiveQuery(() => db.settings.toArray());
+  const settings = useSettings();
 
   const assessment = assessSarcopenia(
     latest?.[0] ?? null,
-    settings?.[0] ?? null,
+    settings ?? null,
   );
 
   const noData =

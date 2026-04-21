@@ -1,14 +1,6 @@
 // Slope / acceleration primitives — pure functions, no Dexie, no Date.now.
+import { isoFromEpochDay, toEpochDays } from "~/lib/utils/date";
 import type { Observation } from "./types";
-
-function toEpochDays(iso: string): number {
-  // Always reduce the observation's date to midnight UTC so observations
-  // logged at different times of day don't produce artificial sub-day slope
-  // noise. Accepts both YYYY-MM-DD and full ISO datetimes.
-  const t = Date.parse(iso);
-  if (Number.isNaN(t)) return Number.NaN;
-  return Math.floor(t / 86_400_000);
-}
 
 /**
  * Returns observations whose `date` falls within the closed interval
@@ -87,9 +79,7 @@ export function accelOver(
   if (Number.isNaN(asOfDay)) return null;
   const recent = observationsInWindow(observations, asOfISO, halfWindow);
   const priorEndDay = asOfDay - halfWindow;
-  const priorEndISO = new Date(priorEndDay * 86_400_000)
-    .toISOString()
-    .slice(0, 10);
+  const priorEndISO = isoFromEpochDay(priorEndDay);
   const prior = observationsInWindow(observations, priorEndISO, halfWindow);
   const sRecent = olsSlopePerDay(recent);
   const sPrior = olsSlopePerDay(prior);

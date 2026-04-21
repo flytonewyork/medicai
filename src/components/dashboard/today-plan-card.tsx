@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { format, parseISO, differenceInCalendarDays } from "date-fns";
+import { format } from "date-fns";
 import { db } from "~/lib/db/dexie";
 import { Card } from "~/components/ui/card";
 import { useLocale } from "~/hooks/use-translate";
 import { PROTOCOL_BY_ID } from "~/config/protocols";
+import { cycleDayFor } from "~/lib/treatment/engine";
 import type { TreatmentCycle } from "~/types/treatment";
 import type { PatientTask } from "~/types/task";
 import {
@@ -64,8 +65,7 @@ export function TodayPlanCard() {
     if (!active) return base;
     const protocol = PROTOCOL_BY_ID[active.protocol_id];
     if (!protocol) return base;
-    const cycleDay =
-      differenceInCalendarDays(new Date(), parseISO(active.start_date)) + 1;
+    const cycleDay = cycleDayFor(active.start_date);
     const phase = protocol.phase_windows.find(
       (p) => cycleDay >= p.day_start && cycleDay <= p.day_end,
     );

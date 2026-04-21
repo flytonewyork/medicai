@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
 import { useLocale, useT } from "~/hooks/use-translate";
+import { useSettings } from "~/hooks/use-settings";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -25,8 +26,8 @@ function newId(): string {
 export default function IngestPage() {
   const t = useT();
   const locale = useLocale();
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const apiKey = settings?.[0]?.anthropic_api_key;
+  const settings = useSettings();
+  const apiKey = settings?.anthropic_api_key;
   const apiKeyConfigured = !!apiKey;
 
   const [items, setItems] = useState<BulkItem[]>([]);

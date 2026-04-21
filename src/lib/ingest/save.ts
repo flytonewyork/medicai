@@ -1,5 +1,6 @@
 import { db, now } from "~/lib/db/dexie";
 import { runEngineAndPersist } from "~/lib/rules/engine";
+import { todayISO } from "~/lib/utils/date";
 import type {
   IngestedDocument,
   IngestedDocumentKind,
@@ -72,7 +73,7 @@ export async function saveExtraction(
 
   if (extraction.labs && Object.keys(extraction.labs).length > 0) {
     const labRow: LabResult = {
-      date: extraction.document_date ?? todayDate(),
+      date: extraction.document_date ?? todayISO(),
       source: "external",
       notes: extraction.summary,
       ...extraction.labs,
@@ -84,7 +85,7 @@ export async function saveExtraction(
 
   if (extraction.imaging && extraction.imaging.modality) {
     const imgId = await db.imaging.add({
-      date: extraction.imaging.date ?? extraction.document_date ?? todayDate(),
+      date: extraction.imaging.date ?? extraction.document_date ?? todayISO(),
       modality: extraction.imaging.modality,
       findings_summary:
         extraction.imaging.findings_summary ?? extraction.summary ?? "",
@@ -97,7 +98,7 @@ export async function saveExtraction(
 
   if (extraction.ctdna) {
     const ctId = await db.ctdna_results.add({
-      date: extraction.ctdna.date ?? extraction.document_date ?? todayDate(),
+      date: extraction.ctdna.date ?? extraction.document_date ?? todayISO(),
       platform: extraction.ctdna.platform ?? "other",
       detected: extraction.ctdna.detected ?? false,
       value: extraction.ctdna.value,
@@ -112,7 +113,7 @@ export async function saveExtraction(
     const pid = await db.pending_results.add({
       test_name: item.test_name,
       category: item.category,
-      ordered_date: todayDate(),
+      ordered_date: todayISO(),
       received: false,
       created_at: ts,
       updated_at: ts,
@@ -143,12 +144,4 @@ export async function saveExtraction(
 
   await runEngineAndPersist();
   return result;
-}
-
-function todayDate(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${dd}`;
 }

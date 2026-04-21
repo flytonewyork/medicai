@@ -11,6 +11,7 @@ import type {
 } from "~/types/clinical";
 import type { TreatmentCycle } from "~/types/treatment";
 import { PROTOCOL_BY_ID } from "~/config/protocols";
+import { MS_PER_DAY, toEpochDays } from "~/lib/utils/date";
 import { METRIC_REGISTRY } from "./metrics";
 import {
   cycleMatchedBaseline,
@@ -82,7 +83,7 @@ function resolveActiveCycle(
       : PROTOCOL_BY_ID[candidate.protocol_id];
   const startMs = Date.parse(candidate.start_date);
   if (Number.isNaN(startMs)) return null;
-  const cycleDay = Math.floor((asOf - startMs) / 86_400_000) + 1;
+  const cycleDay = Math.floor((asOf - startMs) / MS_PER_DAY) + 1;
   return {
     cycle_id: candidate.id,
     cycle_number: candidate.cycle_number,
@@ -181,8 +182,8 @@ function computeTrajectory(
 
   const fresh = (() => {
     if (!latest) return false;
-    const asOfDay = Math.floor(Date.parse(inputs.as_of) / 86_400_000);
-    const latestDay = Math.floor(Date.parse(latest.date) / 86_400_000);
+    const asOfDay = toEpochDays(inputs.as_of);
+    const latestDay = toEpochDays(latest.date);
     if (Number.isNaN(asOfDay) || Number.isNaN(latestDay)) return false;
     return asOfDay - latestDay <= metric.cadence_days * 2;
   })();

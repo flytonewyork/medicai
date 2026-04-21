@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
+import { useSettings } from "~/hooks/use-settings";
 import type { DailyEntry, Settings } from "~/types/clinical";
 
 export interface BodyMetrics {
@@ -30,8 +31,7 @@ export function useBodyMetrics(): BodyMetrics {
   const entries = useLiveQuery(() =>
     db.daily_entries.orderBy("date").reverse().limit(28).toArray(),
   );
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const baseline = settings?.[0];
+  const baseline = useSettings();
 
   return useMemo(
     () => computeMetrics(entries ?? [], baseline),

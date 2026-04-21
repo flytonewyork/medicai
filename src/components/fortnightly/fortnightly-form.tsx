@@ -6,9 +6,11 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { useUIStore } from "~/stores/ui-store";
 import { useLocale, useT } from "~/hooks/use-translate";
+import { useSettings } from "~/hooks/use-settings";
 import { runEngineAndPersist } from "~/lib/rules/engine";
 import { fortnightlyAssessmentSchema } from "~/lib/validators/schemas";
 import { todayISO } from "~/lib/utils/date";
+import { formatZodIssues } from "~/lib/utils/validation";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { SectionHeader } from "~/components/ui/page-header";
 import { Button } from "~/components/ui/button";
@@ -48,8 +50,7 @@ export function FortnightlyForm({ entryId }: { entryId?: number }) {
   const locale = useLocale();
   const router = useRouter();
   const enteredBy = useUIStore((s) => s.enteredBy);
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const baseline = settings?.[0];
+  const baseline = useSettings();
 
   const existing = useLiveQuery(
     () => (entryId ? db.fortnightly_assessments.get(entryId) : undefined),
@@ -98,7 +99,7 @@ export function FortnightlyForm({ entryId }: { entryId?: number }) {
         sarc_f_total: sarcFilled ? scoreSarcF(form.sarc_f_responses!) : undefined,
       });
       if (!parsed.success) {
-        setError(parsed.error.issues.map((i) => i.message).join(", "));
+        setError(formatZodIssues(parsed.error));
         return;
       }
       const payload = {

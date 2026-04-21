@@ -6,6 +6,7 @@ import { db } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
 import type { Protocol, TreatmentCycle } from "~/types/treatment";
 import { cycleDayFor, currentPhase } from "~/lib/treatment/engine";
+import { MS_PER_DAY } from "~/lib/utils/date";
 import { FlaskConical } from "lucide-react";
 
 type Swatch = {
@@ -100,7 +101,7 @@ export function CycleCalendar({
         Math.min(
           protocol.cycle_length_days,
           Math.floor(
-            (parseISO(l.date).getTime() - start.getTime()) / 86400000,
+            (parseISO(l.date).getTime() - start.getTime()) / MS_PER_DAY,
           ) + 1,
         ),
       ),

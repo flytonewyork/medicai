@@ -6,6 +6,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { dailyEntrySchema } from "~/lib/validators/schemas";
 import { todayISO } from "~/lib/utils/date";
+import { formatZodIssues } from "~/lib/utils/validation";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
 import { runEngineAndPersist } from "~/lib/rules/engine";
@@ -157,7 +158,7 @@ export function MorningCheckin({
         reflection_lang: locale,
       });
       if (!parsed.success) {
-        setError(parsed.error.issues.map((i) => i.message).join(", "));
+        setError(formatZodIssues(parsed.error));
         return;
       }
       const payload = {

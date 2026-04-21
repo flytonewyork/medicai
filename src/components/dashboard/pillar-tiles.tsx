@@ -3,16 +3,15 @@
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useMemo } from "react";
-import {
-  differenceInCalendarDays,
-  format,
-  parseISO,
-} from "date-fns";
+import { format, parseISO } from "date-fns";
 import { db } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
 import { useWeather } from "~/hooks/use-weather";
+import { useSettings } from "~/hooks/use-settings";
 import { Sparkline } from "~/components/ui/sparkline";
 import { PROTOCOL_BY_ID } from "~/config/protocols";
+import { cycleDayFor } from "~/lib/treatment/engine";
+import { todayISO as todayISOString } from "~/lib/utils/date";
 import { cn } from "~/lib/utils/cn";
 import {
   ArrowDown,
@@ -60,14 +59,14 @@ export function PillarTiles() {
   const cycles = useLiveQuery(() =>
     db.treatment_cycles.orderBy("start_date").reverse().limit(1).toArray(),
   );
-  const settings = useLiveQuery(() => db.settings.toArray());
+  const settings = useSettings();
 
   const ordered = (dailies ?? []).slice().reverse();
-  const todayISO = format(new Date(), "yyyy-MM-dd");
+  const todayISO = todayISOString();
   const todayEntry = ordered.find((d) => d.date === todayISO);
   const recentCycle = (cycles ?? [])[0];
   const latestLab = (labs ?? [])[0];
-  const baselineWeight = settings?.[0]?.baseline_weight_kg;
+  const baselineWeight = settings?.baseline_weight_kg;
 
   // -- Symptoms 7d -------------------------------------------------------
   const symptomSeries = useMemo(
@@ -89,8 +88,7 @@ export function PillarTiles() {
     if (!recentCycle || recentCycle.status !== "active") return null;
     const protocol = PROTOCOL_BY_ID[recentCycle.protocol_id];
     if (!protocol) return null;
-    const cycleDay =
-      differenceInCalendarDays(new Date(), parseISO(recentCycle.start_date)) + 1;
+    const cycleDay = cycleDayFor(recentCycle.start_date);
     const doseDays = protocol.dose_days;
     const next = doseDays.find((d) => d >= cycleDay);
     if (next === undefined) return null;

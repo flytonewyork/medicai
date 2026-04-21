@@ -10,17 +10,8 @@
 // - cycle_matched: same cycle day of the previous cycle — the right reference
 //   for "is this cycle worse than the last one".
 // - fixed: a hard clinical constant.
+import { isoFromEpochDay, toEpochDays } from "~/lib/utils/date";
 import type { Baseline, Observation } from "./types";
-
-function toEpochDays(iso: string): number {
-  const t = Date.parse(iso);
-  if (Number.isNaN(t)) return Number.NaN;
-  return Math.floor(t / 86_400_000);
-}
-
-function isoFromEpochDay(day: number): string {
-  return new Date(day * 86_400_000).toISOString().slice(0, 10);
-}
 
 function meanOf(observations: readonly Observation[]): number | null {
   const valid = observations

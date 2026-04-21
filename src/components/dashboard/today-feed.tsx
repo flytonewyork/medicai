@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
 import { useTodayFeed } from "~/hooks/use-today-feed";
 import { useWeather } from "~/hooks/use-weather";
 import { useLocale } from "~/hooks/use-translate";
+import { useSettings } from "~/hooks/use-settings";
 import { generateNarrative } from "~/lib/nudges/ai-narrative";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -84,9 +83,9 @@ export function TodayFeed({
     excludeIds.length === 0
       ? rawFeed
       : rawFeed.filter((f) => !excludeIds.includes(f.id));
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const apiKey = settings?.[0]?.anthropic_api_key;
-  const model = settings?.[0]?.default_ai_model ?? "claude-opus-4-7";
+  const settings = useSettings();
+  const apiKey = settings?.anthropic_api_key;
+  const model = settings?.default_ai_model ?? "claude-opus-4-7";
 
   const [expanded, setExpanded] = useState(false);
   const [narrative, setNarrative] = useState<string | null>(null);

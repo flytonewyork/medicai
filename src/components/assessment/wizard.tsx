@@ -12,6 +12,8 @@ import {
   type TestId,
 } from "~/lib/assessment/catalog";
 import { todayISO } from "~/lib/utils/date";
+import { getErrorMessage } from "~/lib/utils/error";
+import { useSettings } from "~/hooks/use-settings";
 import type { ComprehensiveAssessment } from "~/types/clinical";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -79,8 +81,7 @@ export function AssessmentWizard({ assessmentId }: WizardProps) {
     () => db.comprehensive_assessments.get(assessmentId),
     [assessmentId],
   );
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const baseline = settings?.[0] ?? null;
+  const baseline = useSettings() ?? null;
 
   const [draft, setDraft] = useState<AssessmentDraft>({});
   const [tests, setTests] = useState<TestId[]>([]);
@@ -441,7 +442,7 @@ function ReviewView({
         updated_at: now(),
       });
     } catch (e) {
-      setAiError(e instanceof Error ? e.message : String(e));
+      setAiError(getErrorMessage(e));
     } finally {
       setAiBusy(false);
     }

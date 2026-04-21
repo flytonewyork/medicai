@@ -1,19 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils/cn";
 import { useLocale } from "~/hooks/use-translate";
+import { useSettings } from "~/hooks/use-settings";
 import { askCoach, type CoachContext, type CoachMessage } from "~/lib/ai/coach";
+import { getErrorMessage } from "~/lib/utils/error";
 import { Sparkles, X, Send, Loader2 } from "lucide-react";
 
 export function CoachDrawer({ context }: { context: CoachContext }) {
   const locale = useLocale();
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const apiKey = settings?.[0]?.anthropic_api_key;
-  const model = settings?.[0]?.default_ai_model ?? "claude-opus-4-7";
+  const settings = useSettings();
+  const apiKey = settings?.anthropic_api_key;
+  const model = settings?.default_ai_model ?? "claude-opus-4-7";
 
   const [open, setOpen] = useState(false);
   const [history, setHistory] = useState<CoachMessage[]>([]);
@@ -42,7 +42,7 @@ export function CoachDrawer({ context }: { context: CoachContext }) {
       });
       setHistory((h) => [...h, { role: "assistant", content: reply }]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(getErrorMessage(e));
     } finally {
       setBusy(false);
     }

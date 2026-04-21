@@ -6,17 +6,10 @@ import { useLocale } from "~/hooks/use-translate";
 import { addDays, parseISO } from "date-fns";
 import { TASK_PRESETS } from "~/config/task-presets";
 import type { PatientTask, TaskPreset } from "~/types/task";
-import { todayISO } from "~/lib/utils/date";
+import { toISODate, todayISO } from "~/lib/utils/date";
 import { cn } from "~/lib/utils/cn";
 import { Card, CardContent } from "~/components/ui/card";
 import { Plus, Check } from "lucide-react";
-
-function toISODate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${dd}`;
-}
 
 export function PresetPicker() {
   const locale = useLocale();

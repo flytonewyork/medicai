@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
+import { useSettings } from "~/hooks/use-settings";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -18,15 +18,16 @@ import {
   type NotesStructure,
 } from "~/lib/ingest/notes-vision";
 import { todayISO } from "~/lib/utils/date";
+import { getErrorMessage } from "~/lib/utils/error";
 import { Sparkles, Check, Loader2, AlertCircle } from "lucide-react";
 
 type DailyPatch = NonNullable<NotesStructure["daily_patch"]>;
 
 export default function NotesIngestPage() {
   const locale = useLocale();
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const apiKey = settings?.[0]?.anthropic_api_key;
-  const model = settings?.[0]?.default_ai_model ?? "claude-opus-4-7";
+  const settings = useSettings();
+  const apiKey = settings?.anthropic_api_key;
+  const model = settings?.default_ai_model ?? "claude-opus-4-7";
 
   const [prepared, setPrepared] = useState<PreparedImage | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -45,7 +46,7 @@ export default function NotesIngestPage() {
       const blob = new Blob([Uint8Array.from(atob(p.base64), (c) => c.charCodeAt(0))]);
       setPreview(URL.createObjectURL(blob));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(getErrorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -59,7 +60,7 @@ export default function NotesIngestPage() {
       const result = await structureNotes({ apiKey, model, image: prepared });
       setStructured(result);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(getErrorMessage(e));
     } finally {
       setBusy(null);
     }

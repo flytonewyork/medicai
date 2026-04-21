@@ -8,6 +8,7 @@ import { useUIStore } from "~/stores/ui-store";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { weekStartISO, weekDates, formatWeekRange } from "~/lib/utils/week";
 import { weeklyAssessmentSchema } from "~/lib/validators/schemas";
+import { formatZodIssues } from "~/lib/utils/validation";
 import { runEngineAndPersist } from "~/lib/rules/engine";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -145,7 +146,7 @@ export function WeeklyForm({ entryId }: { entryId?: number }) {
         week_summary: form.week_summary || undefined,
       });
       if (!parsed.success) {
-        setError(parsed.error.issues.map((i) => i.message).join(", "));
+        setError(formatZodIssues(parsed.error));
         return;
       }
       const payload = {

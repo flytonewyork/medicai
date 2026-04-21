@@ -2,12 +2,13 @@
 
 import { useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { differenceInCalendarDays, parseISO } from "date-fns";
 import { db } from "~/lib/db/dexie";
 import { composeTodayFeed } from "~/lib/nudges/compose";
 import { PROTOCOL_BY_ID } from "~/config/protocols";
 import { NUDGE_LIBRARY } from "~/config/treatment-nudges";
 import { todayISO } from "~/lib/utils/date";
+import { cycleDayFor } from "~/lib/treatment/engine";
+import { useSettings } from "~/hooks/use-settings";
 import type { FeedItem } from "~/types/feed";
 import type { CycleContext, NudgeTemplate } from "~/types/treatment";
 import type { CurrentWeather } from "~/lib/weather/open-meteo";
@@ -17,7 +18,7 @@ export function useTodayFeed({
 }: {
   weather: CurrentWeather | null;
 }): FeedItem[] {
-  const settings = useLiveQuery(() => db.settings.toArray());
+  const settings = useSettings();
   const dailies = useLiveQuery(() =>
     db.daily_entries.orderBy("date").reverse().limit(28).toArray(),
   );
@@ -31,7 +32,7 @@ export function useTodayFeed({
   );
 
   return useMemo(() => {
-    const s = settings?.[0] ?? null;
+    const s = settings ?? null;
     const orderedDailies = (dailies ?? []).slice().reverse();
     const orderedLabs = (labs ?? []).slice().reverse();
     const openAlerts = (alerts ?? []).filter((a) => !a.resolved);
@@ -41,8 +42,7 @@ export function useTodayFeed({
     if (active) {
       const protocol = PROTOCOL_BY_ID[active.protocol_id];
       if (protocol) {
-        const cycleDay =
-          differenceInCalendarDays(new Date(), parseISO(active.start_date)) + 1;
+        const cycleDay = cycleDayFor(active.start_date);
         const phase = protocol.phase_windows.find(
           (p) => cycleDay >= p.day_start && cycleDay <= p.day_end,
         );

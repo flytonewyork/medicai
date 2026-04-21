@@ -1,16 +1,14 @@
 "use client";
 
-import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
-import { db } from "~/lib/db/dexie";
 import { useZoneStatus } from "~/hooks/use-zone-status";
 import { useLocale } from "~/hooks/use-translate";
+import { useSettings } from "~/hooks/use-settings";
 import { Phone, AlertOctagon, MapPin, ChevronDown, ChevronUp } from "lucide-react";
 
 export function EmergencyCard() {
   const locale = useLocale();
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const s = settings?.[0];
+  const s = useSettings();
   const { zone } = useZoneStatus();
 
   const hasAnyContact =
