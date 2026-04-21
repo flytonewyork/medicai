@@ -2,9 +2,60 @@
 
 import { addDays, format, parseISO } from "date-fns";
 import { useLocale } from "~/hooks/use-translate";
-import { cn } from "~/lib/utils/cn";
 import type { Protocol, TreatmentCycle } from "~/types/treatment";
 import { cycleDayFor, currentPhase } from "~/lib/treatment/engine";
+
+type Swatch = {
+  bg: string;
+  color: string;
+  label: { en: string; zh: string };
+};
+
+const SWATCHES: Record<string, Swatch> = {
+  dose_day: {
+    bg: "var(--tide-2)",
+    color: "#fff",
+    label: { en: "Dose", zh: "用药" },
+  },
+  post_dose: {
+    bg: "var(--tide-soft)",
+    color: "var(--tide-2)",
+    label: { en: "Post-dose", zh: "用药后" },
+  },
+  nadir: {
+    bg: "var(--sand)",
+    color: "oklch(35% 0.04 70)",
+    label: { en: "Nadir", zh: "低谷" },
+  },
+  recovery_early: {
+    bg: "var(--tide-soft)",
+    color: "var(--tide-2)",
+    label: { en: "Recovery", zh: "恢复" },
+  },
+  recovery_late: {
+    bg: "oklch(88% 0.03 150)",
+    color: "oklch(38% 0.05 150)",
+    label: { en: "Recovery", zh: "恢复" },
+  },
+  pre_dose: {
+    bg: "var(--ink-100)",
+    color: "var(--ink-500)",
+    label: { en: "Pre-dose", zh: "用药前" },
+  },
+  rest: {
+    bg: "var(--ink-100)",
+    color: "var(--ink-400)",
+    label: { en: "Rest", zh: "休息" },
+  },
+};
+
+const LEGEND_KEYS = [
+  "dose_day",
+  "post_dose",
+  "nadir",
+  "recovery_late",
+  "rest",
+];
 
 export function CycleCalendar({
   cycle,
@@ -28,48 +79,48 @@ export function CycleCalendar({
 
   return (
     <div>
-      <div className="mb-2 flex items-center gap-2 text-[10px]">
-        <Legend colour="bg-slate-900 dark:bg-slate-100" label={locale === "zh" ? "用药日" : "Dose"} />
-        <Legend colour="bg-amber-300 dark:bg-amber-700" label={locale === "zh" ? "低谷" : "Nadir"} />
-        <Legend colour="bg-emerald-300 dark:bg-emerald-700" label={locale === "zh" ? "恢复" : "Recovery"} />
-        <Legend colour="ring-2 ring-slate-900 dark:ring-slate-100" label={locale === "zh" ? "今天" : "Today"} />
-      </div>
-      <div className="grid grid-cols-7 gap-1 sm:grid-cols-14">
+      <div className="grid grid-cols-7 gap-1.5">
         {days.map(({ n, date, phase, isDose }) => {
           const isToday = n === todayDay;
-          const nadir = phase?.key === "nadir";
-          const recovery = phase?.key === "recovery_late";
+          const key = isDose ? "dose_day" : phase?.key ?? "rest";
+          const swatch = SWATCHES[key] ?? SWATCHES.rest!;
           return (
             <div
               key={n}
-              className={cn(
-                "flex aspect-square flex-col items-center justify-center rounded-md border p-1 text-[10px]",
-                isDose
-                  ? "border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900"
-                  : nadir
-                    ? "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
-                    : recovery
-                      ? "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200"
-                      : "border-slate-200 bg-white text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400",
-                isToday && "ring-2 ring-offset-1 ring-slate-900 dark:ring-slate-100 dark:ring-offset-slate-950",
-              )}
+              className="flex aspect-square flex-col items-center justify-center rounded-[10px]"
+              style={{
+                background: swatch.bg,
+                color: swatch.color,
+                boxShadow: isToday ? "0 0 0 2px var(--ink-900)" : undefined,
+              }}
               title={`Day ${n} · ${format(date, "d MMM")} · ${phase?.label[locale] ?? ""}`}
             >
-              <span className="font-semibold tabular-nums">{n}</span>
-              <span className="text-[9px] opacity-80">{format(date, "d/M")}</span>
+              <span className="mono text-[9px] uppercase opacity-70">
+                D{n}
+              </span>
+              <span className="num text-[15px] font-semibold leading-none">
+                {format(date, "d")}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-3.5 flex flex-wrap gap-3.5 border-t border-ink-100/70 pt-3.5 text-[11px] text-ink-500">
+        {LEGEND_KEYS.map((k) => {
+          const s = SWATCHES[k];
+          if (!s) return null;
+          return (
+            <div key={k} className="flex items-center gap-1.5">
+              <span
+                className="inline-block h-2.5 w-2.5 rounded-[3px]"
+                style={{ background: s.bg }}
+              />
+              {s.label[locale]}
             </div>
           );
         })}
       </div>
     </div>
-  );
-}
-
-function Legend({ colour, label }: { colour: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1 text-slate-500">
-      <span className={cn("h-2.5 w-2.5 rounded-sm", colour)} />
-      {label}
-    </span>
   );
 }

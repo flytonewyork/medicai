@@ -14,6 +14,7 @@ import {
   FileText,
   Settings as SettingsIcon,
   ScanLine,
+  FlaskConical,
   Compass,
   Syringe,
   ListTodo,
@@ -29,6 +30,7 @@ const ITEMS = [
   { href: "/weekly", key: "nav.weekly", icon: CalendarRange },
   { href: "/fortnightly", key: "nav.fortnightly", icon: Stethoscope },
   { href: "/quarterly", key: "nav.quarterly", icon: ClipboardList },
+  { href: "/labs", key: "nav.labs", icon: FlaskConical },
   { href: "/bridge", key: "nav.bridge", icon: Route },
   { href: "/events", key: "nav.events", icon: CalendarClock },
   { href: "/tasks", key: "nav.tasks", icon: ListTodo },
@@ -82,7 +84,7 @@ export function MobileBottomNav() {
   const t = useT();
   const pathname = usePathname();
   const mobileItems = ITEMS.filter((i) =>
-    ["/", "/daily", "/assessment", "/tasks", "/settings"].includes(i.href),
+    ["/", "/daily", "/treatment", "/labs", "/tasks"].includes(i.href),
   );
   return (
     <nav className="a-glass fixed inset-x-3 bottom-3 z-40 flex justify-around rounded-[22px] px-2 py-2.5 shadow-lg md:hidden">
