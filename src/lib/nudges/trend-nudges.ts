@@ -272,5 +272,46 @@ export function computeTrendNudges({
     }
   }
 
+  // ── Backup nudge — fire when data sits on the device with no export ──
+  // Suppress until there are at least 3 logged dailies of real data so we
+  // don't nag fresh installs.
+  if (settings && recentDailies.length >= 3) {
+    const lastExport = settings.last_exported_at
+      ? new Date(settings.last_exported_at).getTime()
+      : null;
+    const daysSince =
+      lastExport !== null
+        ? Math.floor((Date.parse(todayISO) - lastExport) / (24 * 3600 * 1000))
+        : null;
+    if (lastExport === null || (daysSince !== null && daysSince >= 7)) {
+      out.push({
+        id: "trend_backup_due",
+        priority: 76,
+        category: "trend",
+        tone: "info",
+        title: {
+          en: "Back up your data",
+          zh: "备份你的数据",
+        },
+        body: {
+          en:
+            lastExport === null
+              ? "You haven't exported a backup yet. Everything lives on this device — one export keeps it safe."
+              : `Last backup ${daysSince ?? "?"} days ago. Save a JSON bundle to encrypted storage so a lost device can't take the history with it.`,
+          zh:
+            lastExport === null
+              ? "还没有导出过备份。所有数据都在本机 —— 导出一次就能存一份副本。"
+              : `上次备份已过 ${daysSince ?? "?"} 天。建议导出 JSON 备份并存到加密位置，避免设备丢失带走全部记录。`,
+        },
+        cta: {
+          href: "/reports",
+          label: { en: "Export now", zh: "现在备份" },
+        },
+        icon: "anchor",
+        source: "trend",
+      });
+    }
+  }
+
   return out;
 }

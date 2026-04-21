@@ -294,6 +294,7 @@ export interface Settings {
   home_lon?: number;
   home_timezone?: string;
   onboarded_at?: string;
+  last_exported_at?: string;
   anthropic_api_key?: string;
   default_ai_model?: string;
   created_at: string;
