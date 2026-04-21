@@ -69,6 +69,9 @@ interface FormState {
   baseline_weight_kg: string;
   baseline_grip_dominant_kg: string;
   baseline_gait_speed_ms: string;
+  baseline_sit_to_stand: string;       // 30-second count
+  baseline_sts_5x_seconds: string;     // 5× STS time
+  baseline_tug_seconds: string;        // Timed Up-and-Go seconds
   baseline_muac_cm: string;
   baseline_calf_cm: string;
   start_cycle: boolean;
@@ -94,6 +97,9 @@ const EMPTY: FormState = {
   baseline_weight_kg: "",
   baseline_grip_dominant_kg: "",
   baseline_gait_speed_ms: "",
+  baseline_sit_to_stand: "",
+  baseline_sts_5x_seconds: "",
+  baseline_tug_seconds: "",
   baseline_muac_cm: "",
   baseline_calf_cm: "",
   start_cycle: false,
@@ -149,6 +155,15 @@ export default function OnboardingPage() {
           : "",
         baseline_gait_speed_ms: s.baseline_gait_speed_ms
           ? String(s.baseline_gait_speed_ms)
+          : "",
+        baseline_sit_to_stand: s.baseline_sit_to_stand
+          ? String(s.baseline_sit_to_stand)
+          : "",
+        baseline_sts_5x_seconds: s.baseline_sts_5x_seconds
+          ? String(s.baseline_sts_5x_seconds)
+          : "",
+        baseline_tug_seconds: s.baseline_tug_seconds
+          ? String(s.baseline_tug_seconds)
           : "",
         baseline_muac_cm: s.baseline_muac_cm ? String(s.baseline_muac_cm) : "",
         baseline_calf_cm: s.baseline_calf_cm ? String(s.baseline_calf_cm) : "",
@@ -217,6 +232,9 @@ export default function OnboardingPage() {
         baseline_date: form.baseline_weight_kg ? todayISO() : undefined,
         baseline_grip_dominant_kg: toNum(form.baseline_grip_dominant_kg),
         baseline_gait_speed_ms: toNum(form.baseline_gait_speed_ms),
+        baseline_sit_to_stand: toNum(form.baseline_sit_to_stand),
+        baseline_sts_5x_seconds: toNum(form.baseline_sts_5x_seconds),
+        baseline_tug_seconds: toNum(form.baseline_tug_seconds),
         baseline_muac_cm: toNum(form.baseline_muac_cm),
         baseline_calf_cm: toNum(form.baseline_calf_cm),
         locale: form.locale,
@@ -584,6 +602,46 @@ function BaselinesStep({
             step="0.05"
             value={form.baseline_gait_speed_ms}
             onChange={(e) => update("baseline_gait_speed_ms", e.target.value)}
+          />
+        </Field>
+        <Field
+          label={
+            locale === "zh"
+              ? "30 秒坐立次数"
+              : "30 s sit-to-stand (count)"
+          }
+        >
+          <TextInput
+            type="number"
+            step="1"
+            value={form.baseline_sit_to_stand}
+            onChange={(e) => update("baseline_sit_to_stand", e.target.value)}
+          />
+        </Field>
+        <Field
+          label={
+            locale === "zh" ? "5 次坐立 (秒)" : "5× sit-to-stand (s)"
+          }
+        >
+          <TextInput
+            type="number"
+            step="0.1"
+            value={form.baseline_sts_5x_seconds}
+            onChange={(e) =>
+              update("baseline_sts_5x_seconds", e.target.value)
+            }
+          />
+        </Field>
+        <Field
+          label={
+            locale === "zh" ? "起立行走 TUG (秒)" : "Timed Up-and-Go (s)"
+          }
+        >
+          <TextInput
+            type="number"
+            step="0.1"
+            value={form.baseline_tug_seconds}
+            onChange={(e) => update("baseline_tug_seconds", e.target.value)}
           />
         </Field>
         <Field

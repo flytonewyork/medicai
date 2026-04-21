@@ -291,7 +291,9 @@ export interface Settings {
   baseline_grip_dominant_kg?: number;
   baseline_grip_nondominant_kg?: number;
   baseline_gait_speed_ms?: number;
-  baseline_sit_to_stand?: number;
+  baseline_sit_to_stand?: number;     // 30-second sit-to-stand count
+  baseline_sts_5x_seconds?: number;   // 5× sit-to-stand time (seconds)
+  baseline_tug_seconds?: number;      // Timed Up-and-Go (seconds)
   baseline_muac_cm?: number;
   baseline_calf_cm?: number;
   height_cm?: number;

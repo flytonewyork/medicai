@@ -51,6 +51,8 @@ export const settingsSchema = z.object({
   baseline_grip_nondominant_kg: z.number().min(0).max(100).optional(),
   baseline_gait_speed_ms: z.number().min(0).max(3).optional(),
   baseline_sit_to_stand: z.number().int().min(0).max(50).optional(),
+  baseline_sts_5x_seconds: z.number().min(0).max(120).optional(),
+  baseline_tug_seconds: z.number().min(0).max(120).optional(),
   baseline_muac_cm: z.number().min(15).max(50).optional(),
   baseline_calf_cm: z.number().min(20).max(60).optional(),
   locale: z.enum(["en", "zh"]),

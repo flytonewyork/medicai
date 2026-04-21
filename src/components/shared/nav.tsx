@@ -12,6 +12,7 @@ import {
   Compass,
   Syringe,
   ListTodo,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 import { useT } from "~/hooks/use-translate";
@@ -25,6 +26,7 @@ const ITEMS = [
   { href: "/treatment", key: "nav.treatment", icon: Syringe },
   { href: "/labs", key: "nav.labs", icon: FlaskConical },
   { href: "/tasks", key: "nav.tasks", icon: ListTodo },
+  { href: "/practices", key: "nav.practices", icon: Sparkles },
   { href: "/bridge", key: "nav.bridge", icon: Route },
   { href: "/ingest", key: "nav.ingest", icon: ScanLine },
   { href: "/reports", key: "nav.reports", icon: FileText },
