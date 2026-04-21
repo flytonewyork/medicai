@@ -85,7 +85,7 @@ export default function TasksPage() {
       {showPresets && (
         <Card>
           <CardContent className="pt-5">
-            <div className="mb-3 text-sm text-slate-500">
+            <div className="mb-3 text-sm text-ink-500">
               {locale === "zh"
                 ? "从常见的照护任务中挑选 —— 一点即添加。"
                 : "Add common care tasks in one click. You can edit any after adding."}
@@ -97,11 +97,11 @@ export default function TasksPage() {
 
       {instances.length === 0 && !showPresets && (
         <Card className="p-10 text-center">
-          <ListTodo className="mx-auto mb-3 h-8 w-8 text-slate-400" />
+          <ListTodo className="mx-auto mb-3 h-8 w-8 text-ink-400" />
           <div className="text-sm font-medium">
             {locale === "zh" ? "还没有任务" : "No tasks yet"}
           </div>
-          <div className="mx-auto mt-1 max-w-sm text-sm text-slate-500">
+          <div className="mx-auto mt-1 max-w-sm text-sm text-ink-500">
             {locale === "zh"
               ? "从建议列表添加，或自己写一个。"
               : "Start from a suggestion or write your own."}
@@ -126,7 +126,7 @@ export default function TasksPage() {
         if (items.length === 0) return null;
         return (
           <section key={key} className="space-y-2">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-ink-500">
               {label[locale]} · {items.length}
             </h2>
             <ul className="space-y-2">
