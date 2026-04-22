@@ -5,6 +5,7 @@
   },
   "nav": {
     "dashboard": "概览",
+    "schedule": "日程",
     "assessment": "综合评估",
     "treatment": "化疗方案",
     "daily": "每日",
@@ -116,6 +117,65 @@
     "back": "返回",
     "saveAndContinue": "保存并继续",
     "saving": "保存中…"
+  },
+  "schedule": {
+    "eyebrow": "日程",
+    "title": "日历",
+    "back": "返回日历",
+    "edit": "编辑预约",
+    "addManual": "新建预约",
+    "addFromPhoto": "从照片",
+    "addFromEmail": "从邮件",
+    "upcoming": "即将到来",
+    "noneUpcoming": "暂无即将到来的预约。",
+    "prepDue": "准备事项即将到期",
+    "notFound": "未找到该预约。",
+    "confirmDelete": "删除此预约及其关联？",
+    "links": "关联预约",
+    "linkPrepForOutgoing": "为准备：",
+    "linkPrepForIncoming": "准备项：",
+    "linkFollowUp": "复诊源：",
+    "new": {
+      "manual": "新建预约",
+      "fromPhoto": "从照片添加",
+      "fromEmail": "从邮件添加",
+      "photoCta": "拍照或上传",
+      "photoHint": "预约函、门诊卡或检查申请单",
+      "emailCta": "粘贴邮件内容",
+      "emailLabel": "邮件文本",
+      "emailPlaceholder": "把整封邮件粘贴在这里——包括主题、日期、时间、任何准备说明。",
+      "parseCta": "解析",
+      "parsing": "正在识别…",
+      "parsed": "已解析 —— 请核对并保存",
+      "parsedHint": "识别中不确定的地方已记录在备注末尾。"
+    },
+    "kind": {
+      "clinic": "门诊",
+      "chemo": "化疗",
+      "scan": "影像检查",
+      "blood_test": "化验",
+      "procedure": "操作",
+      "other": "其他"
+    },
+    "status": {
+      "scheduled": "已预约",
+      "attended": "已就诊",
+      "missed": "未到",
+      "cancelled": "已取消",
+      "rescheduled": "已改期"
+    },
+    "form": {
+      "kind": "类型",
+      "title": "标题",
+      "startsAt": "开始时间",
+      "endsAt": "结束时间",
+      "allDay": "全天",
+      "location": "地点",
+      "doctor": "医师",
+      "phone": "电话",
+      "notes": "备注",
+      "status": "状态"
+    }
   },
   "daily": {
     "title": "每日记录",
