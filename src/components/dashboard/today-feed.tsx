@@ -88,7 +88,6 @@ export function TodayFeed({
       ? rawFeed
       : rawFeed.filter((f) => !excludeIds.includes(f.id));
   const settings = useLiveQuery(() => db.settings.toArray());
-  const apiKey = settings?.[0]?.anthropic_api_key;
   const model = settings?.[0]?.default_ai_model ?? "claude-opus-4-7";
 
   const [expanded, setExpanded] = useState(false);
@@ -97,9 +96,10 @@ export function TodayFeed({
 
   const visible = expanded ? feed : feed.slice(0, 6);
 
-  // Narrative fetch — cached daily per locale
+  // Narrative fetch — cached daily per locale. Uses the server-side
+  // ANTHROPIC_API_KEY via /api/ai/feed-narrative; no per-user key needed.
   useEffect(() => {
-    if (!apiKey || feed.length === 0) return;
+    if (feed.length === 0) return;
     const today = new Date().toISOString().slice(0, 10);
     const cacheTag = `${today}_${locale}`;
     try {
@@ -118,7 +118,6 @@ export function TodayFeed({
     void (async () => {
       try {
         const text = await generateNarrative({
-          apiKey,
           model,
           locale,
           items: feed,
@@ -138,7 +137,7 @@ export function TodayFeed({
         setNarrativeLoading(false);
       }
     })();
-  }, [apiKey, model, locale, feed]);
+  }, [model, locale, feed]);
 
   if (feed.length === 0) {
     return (

@@ -1,5 +1,3 @@
-"use client";
-
 import { z } from "zod";
 import type { PreparedImage } from "./image";
 
@@ -34,7 +32,7 @@ export const MealSchema = z.object({
 
 export type MealEstimate = z.infer<typeof MealSchema>;
 
-const MEAL_SYSTEM = `You estimate the macronutrients of a meal from a single photo for Hu Lin, a patient with metastatic pancreatic adenocarcinoma on first-line gemcitabine + nab-paclitaxel.
+export const MEAL_SYSTEM = `You estimate the macronutrients of a meal from a single photo for Hu Lin, a patient with metastatic pancreatic adenocarcinoma on first-line gemcitabine + nab-paclitaxel.
 
 Rules:
 1. Keep estimates conservative; if unsure, err low on protein and say so in 'notes'.
@@ -43,51 +41,24 @@ Rules:
 4. If the photo is too unclear to judge (blur, distant, empty plate), set confidence=low and note what's missing.
 5. Never invent specific brands or recipes. Describe what's visually present.`;
 
+// Client-side shim. Posts the image to /api/ai/ingest-meal which holds
+// the server-side ANTHROPIC_API_KEY. Kept as a named export with the
+// same signature as before, minus the apiKey parameter.
 export async function estimateMeal({
-  apiKey,
   model = "claude-opus-4-7",
   image,
 }: {
-  apiKey: string;
   model?: string;
   image: PreparedImage;
 }): Promise<MealEstimate> {
-  const [{ default: Anthropic }, { zodOutputFormat }] = await Promise.all([
-    import("@anthropic-ai/sdk"),
-    import("@anthropic-ai/sdk/helpers/zod"),
-  ]);
-  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
-
-  const response = await client.messages.parse({
-    model,
-    max_tokens: 1024,
-    system: [
-      { type: "text", text: MEAL_SYSTEM, cache_control: { type: "ephemeral" } },
-    ],
-    output_config: { format: zodOutputFormat(MealSchema) },
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: image.mediaType,
-              data: image.base64,
-            },
-          },
-          {
-            type: "text",
-            text: "Estimate the macros for this meal and, if relevant, the PERT dose.",
-          },
-        ],
-      },
-    ],
+  const res = await fetch("/api/ai/ingest-meal", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ image, model }),
   });
-
-  if (!response.parsed_output) {
-    throw new Error("No meal estimate returned");
+  if (!res.ok) {
+    throw new Error(await res.text());
   }
-  return response.parsed_output;
+  const data = (await res.json()) as { result: MealEstimate };
+  return data.result;
 }
