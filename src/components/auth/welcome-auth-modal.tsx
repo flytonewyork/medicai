@@ -68,12 +68,20 @@ export function WelcomeAuthModal() {
         localStorage.setItem(SEEN_KEY, new Date().toISOString());
         setOpen(false);
         router.refresh();
-      } else {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        setInfo(t("welcomeAuth.created"));
-        setMode("signin");
+        return;
       }
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      // If Supabase returned a session, confirm-email was off — we're in.
+      if (data.session) {
+        localStorage.setItem(SEEN_KEY, new Date().toISOString());
+        setOpen(false);
+        router.refresh();
+        return;
+      }
+      // Otherwise email confirmation is on; tell dad to check his inbox.
+      setInfo(t("welcomeAuth.createdConfirm"));
+      setMode("signin");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

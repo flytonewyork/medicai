@@ -4,11 +4,11 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useState } from "react";
 import { db } from "~/lib/db/dexie";
 import { useZoneStatus } from "~/hooks/use-zone-status";
-import { useLocale } from "~/hooks/use-translate";
+import { useT } from "~/hooks/use-translate";
 import { Phone, AlertOctagon, MapPin, ChevronDown, ChevronUp } from "lucide-react";
 
 export function EmergencyCard() {
-  const locale = useLocale();
+  const t = useT();
   const settings = useLiveQuery(() => db.settings.toArray());
   const s = settings?.[0];
   const { zone } = useZoneStatus();
@@ -43,6 +43,7 @@ export function EmergencyCard() {
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center gap-3 px-4 py-3 text-left"
         aria-expanded={open}
+        aria-label={open ? t("emergencyCard.hideContacts") : t("emergencyCard.showContacts")}
       >
         <div
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
@@ -56,17 +57,11 @@ export function EmergencyCard() {
         <div className="flex-1 min-w-0">
           <div className="text-[12.5px] font-semibold text-ink-900">
             {alertActive
-              ? locale === "zh"
-                ? "警示激活 — 必要时拨打"
-                : "Alert active — call if needed"
-              : locale === "zh"
-                ? "紧急联络人"
-                : "Emergency contacts"}
+              ? t("emergencyCard.alertActive")
+              : t("emergencyCard.alertInactive")}
           </div>
           <div className="mono mt-0.5 text-[10px] uppercase tracking-wider text-ink-400">
-            {locale === "zh"
-              ? "体温 ≥ 38 °C → 立即前往医院"
-              : "Temp ≥ 38 °C → hospital now"}
+            {t("emergencyCard.tempWarning")}
           </div>
         </div>
         {open ? (
@@ -81,7 +76,7 @@ export function EmergencyCard() {
           {s?.oncall_phone && (
             <ContactLink
               icon={Phone}
-              label={locale === "zh" ? "24 小时值班" : "24/7 on-call"}
+              label={t("emergencyCard.oncall")}
               value={s.oncall_phone}
               href={`tel:${s.oncall_phone.replace(/\s/g, "")}`}
               tone="warn"
@@ -90,7 +85,7 @@ export function EmergencyCard() {
           {s?.managing_oncologist_phone && (
             <ContactLink
               icon={Phone}
-              label={s.managing_oncologist ?? (locale === "zh" ? "主诊" : "Oncologist")}
+              label={s.managing_oncologist ?? t("emergencyCard.oncology")}
               value={s.managing_oncologist_phone}
               href={`tel:${s.managing_oncologist_phone.replace(/\s/g, "")}`}
             />
@@ -98,7 +93,7 @@ export function EmergencyCard() {
           {s?.hospital_phone && (
             <ContactLink
               icon={Phone}
-              label={s.hospital_name ?? (locale === "zh" ? "医院" : "Hospital")}
+              label={s.hospital_name ?? t("emergencyCard.hospital")}
               value={s.hospital_phone}
               href={`tel:${s.hospital_phone.replace(/\s/g, "")}`}
             />
@@ -106,7 +101,7 @@ export function EmergencyCard() {
           {s?.hospital_address && (
             <ContactLink
               icon={MapPin}
-              label={locale === "zh" ? "医院地址" : "Hospital address"}
+              label={t("emergencyCard.hospital")}
               value={s.hospital_address}
               href={`https://maps.google.com/?q=${encodeURIComponent(s.hospital_address)}`}
             />

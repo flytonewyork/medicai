@@ -65,8 +65,47 @@
     "toggleToSignin": "Already have an account? Sign in",
     "pleaseWait": "Please wait…",
     "created": "Account created. Sign in now.",
+    "createdConfirm": "Check your inbox for a confirmation link, then sign in here.",
     "continueWithout": "Continue without signing in",
     "close": "Close"
+  },
+  "account": {
+    "signOut": "Sign out"
+  },
+  "login": {
+    "eyebrow": "ANCHOR",
+    "signinTitle": "Sign in to sync",
+    "signupTitle": "Create account",
+    "explainer": "Signing in saves your data to the cloud so someone you trust can see it on their device. You can keep using Anchor offline without an account.",
+    "signinCta": "Sign in",
+    "signupCta": "Create account",
+    "pleaseWait": "Please wait…",
+    "toggleToSignup": "No account? Create one",
+    "toggleToSignin": "Already have an account? Sign in"
+  },
+  "emergencyCard": {
+    "alertActive": "Alert active — call if needed",
+    "alertInactive": "Emergency contacts",
+    "tempWarning": "Temp ≥ 38 °C → hospital now",
+    "chestPainWarning": "Severe chest pain or breathlessness → call an ambulance",
+    "oncall": "On-call",
+    "oncology": "Oncology",
+    "hospital": "Hospital",
+    "showContacts": "Show contacts",
+    "hideContacts": "Hide contacts"
+  },
+  "todayFeed": {
+    "empty": "Nothing urgent for today. Don't forget to log your daily check-in.",
+    "aiLoading": "AI composing today's focus…",
+    "expand": "Show more",
+    "collapse": "Show less"
+  },
+  "onboarding": {
+    "begin": "Begin",
+    "continue": "Continue",
+    "back": "Back",
+    "saveAndContinue": "Save and continue",
+    "saving": "Saving…"
   },
   "daily": {
     "title": "Daily check-in",

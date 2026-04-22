@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { todayISO } from "~/lib/utils/date";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, useT } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -118,6 +118,7 @@ function toNum(s: string): number | undefined {
 
 export default function OnboardingPage() {
   const locale = useLocale();
+  const t = useT();
   const router = useRouter();
   const setUILocale = useUIStore((s) => s.setLocale);
   const setEnteredBy = useUIStore((s) => s.setEnteredBy);
@@ -322,7 +323,7 @@ export default function OnboardingPage() {
         {step !== "welcome" ? (
           <Button variant="ghost" onClick={back}>
             <ChevronLeft className="h-4 w-4" />
-            {locale === "zh" ? "返回" : "Back"}
+            {t("onboarding.back")}
           </Button>
         ) : (
           <span />
@@ -334,24 +335,14 @@ export default function OnboardingPage() {
             size="lg"
           >
             {step === "welcome"
-              ? locale === "zh"
-                ? "开始"
-                : "Begin"
-              : locale === "zh"
-                ? "继续"
-                : "Continue"}
+              ? t("onboarding.begin")
+              : t("onboarding.continue")}
             <ChevronRight className="h-4 w-4" />
           </Button>
         ) : (
           <Button onClick={finish} disabled={saving} size="lg">
             <Check className="h-4 w-4" />
-            {saving
-              ? locale === "zh"
-                ? "保存中…"
-                : "Saving…"
-              : locale === "zh"
-                ? "保存并继续"
-                : "Save and continue"}
+            {saving ? t("onboarding.saving") : t("onboarding.saveAndContinue")}
           </Button>
         )}
       </div>

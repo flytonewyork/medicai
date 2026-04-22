@@ -6,7 +6,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
 import { useTodayFeed } from "~/hooks/use-today-feed";
 import { useWeather } from "~/hooks/use-weather";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, useT } from "~/hooks/use-translate";
 import { generateNarrative } from "~/lib/nudges/ai-narrative";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -78,6 +78,7 @@ export function TodayFeed({
   excludeIds?: string[];
 } = {}) {
   const locale = useLocale();
+  const t = useT();
   const weather = useWeather();
   const rawFeed = useTodayFeed({ weather });
   const feed =
@@ -139,11 +140,7 @@ export function TodayFeed({
 
   if (feed.length === 0) {
     return (
-      <Card className="p-5 text-sm text-ink-500">
-        {locale === "zh"
-          ? "今日暂无需要注意的事。记得记录每日状态。"
-          : "Nothing urgent for today. Don't forget to log your daily check-in."}
-      </Card>
+      <Card className="p-5 text-sm text-ink-500">{t("todayFeed.empty")}</Card>
     );
   }
 
@@ -171,9 +168,7 @@ export function TodayFeed({
       )}
 
       {narrativeLoading && !narrative && (
-        <div className="eyebrow px-1">
-          {locale === "zh" ? "AI 正在总结今日重点…" : "AI composing today's focus…"}
-        </div>
+        <div className="eyebrow px-1">{t("todayFeed.aiLoading")}</div>
       )}
 
       <ul className="space-y-2">

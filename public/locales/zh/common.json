@@ -65,8 +65,47 @@
     "toggleToSignin": "已有账户？登录",
     "pleaseWait": "请稍候…",
     "created": "账户已创建，请登录。",
+    "createdConfirm": "请查看您的邮箱点击确认链接，然后在此登录。",
     "continueWithout": "不登录继续使用",
     "close": "关闭"
+  },
+  "account": {
+    "signOut": "退出登录"
+  },
+  "login": {
+    "eyebrow": "ANCHOR",
+    "signinTitle": "登录并同步",
+    "signupTitle": "创建账户",
+    "explainer": "登录后数据会同步到云端，您信任的亲人可以在他们的设备上看到。也可以不登录，离线使用 Anchor。",
+    "signinCta": "登录",
+    "signupCta": "创建账户",
+    "pleaseWait": "请稍候…",
+    "toggleToSignup": "还没有账户？创建一个",
+    "toggleToSignin": "已有账户？登录"
+  },
+  "emergencyCard": {
+    "alertActive": "警示激活 —— 如有需要请立即拨打",
+    "alertInactive": "紧急联系方式",
+    "tempWarning": "体温 ≥ 38 °C → 立即前往医院",
+    "chestPainWarning": "严重胸痛或呼吸困难 → 立即拨打急救电话",
+    "oncall": "值班",
+    "oncology": "肿瘤科",
+    "hospital": "医院",
+    "showContacts": "显示联系方式",
+    "hideContacts": "收起联系方式"
+  },
+  "todayFeed": {
+    "empty": "今天没有紧急事项。别忘了完成今日记录。",
+    "aiLoading": "AI 正在整理今日重点……",
+    "expand": "展开更多",
+    "collapse": "收起"
+  },
+  "onboarding": {
+    "begin": "开始",
+    "continue": "继续",
+    "back": "返回",
+    "saveAndContinue": "保存并继续",
+    "saving": "保存中…"
   },
   "daily": {
     "title": "每日记录",

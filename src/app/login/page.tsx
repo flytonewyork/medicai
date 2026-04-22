@@ -6,8 +6,10 @@ import { getSupabaseBrowser, isSupabaseConfigured } from "~/lib/supabase/client"
 import { Button } from "~/components/ui/button";
 import { Field, TextInput } from "~/components/ui/field";
 import { PageHeader } from "~/components/ui/page-header";
+import { useT } from "~/hooks/use-translate";
 
 function LoginForm() {
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/";
@@ -43,14 +45,20 @@ function LoginForm() {
         if (error) throw error;
         router.replace(next);
         router.refresh();
-      } else {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        setInfo(
-          "Account created. If email confirmation is on, check your inbox; otherwise sign in now.",
-        );
-        setMode("signin");
+        return;
       }
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      // If Supabase returned an active session, sign-up + sign-in happened in
+      // one go (email confirmation off). Skip the re-entry step.
+      if (data.session) {
+        router.replace(next);
+        router.refresh();
+        return;
+      }
+      // Otherwise email confirmation is on; dad needs to check his inbox.
+      setInfo(t("welcomeAuth.createdConfirm"));
+      setMode("signin");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -61,17 +69,16 @@ function LoginForm() {
   return (
     <div className="mx-auto max-w-sm space-y-6 p-6 pt-10 md:pt-20">
       <PageHeader
-        eyebrow="ANCHOR"
-        title={mode === "signin" ? "Sign in to sync" : "Create account"}
+        eyebrow={t("login.eyebrow")}
+        title={
+          mode === "signin" ? t("login.signinTitle") : t("login.signupTitle")
+        }
       />
 
-      <p className="text-sm text-ink-500">
-        Signing in saves your data to the cloud so someone you trust can see it
-        on their device. You can keep using Anchor offline without an account.
-      </p>
+      <p className="text-sm text-ink-500">{t("login.explainer")}</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Field label="Email">
+        <Field label={t("welcomeAuth.email")}>
           <TextInput
             type="email"
             autoComplete="email"
@@ -81,7 +88,7 @@ function LoginForm() {
             placeholder="you@example.com"
           />
         </Field>
-        <Field label="Password">
+        <Field label={t("welcomeAuth.password")}>
           <TextInput
             type="password"
             autoComplete={mode === "signin" ? "current-password" : "new-password"}
@@ -94,22 +101,28 @@ function LoginForm() {
         </Field>
 
         {error && (
-          <div className="rounded-md border border-[var(--warn)]/40 bg-[var(--warn)]/10 p-3 text-sm text-[var(--warn)]">
+          <div
+            role="alert"
+            className="rounded-md border border-[var(--warn)]/40 bg-[var(--warn)]/10 p-3 text-sm text-[var(--warn)]"
+          >
             {error}
           </div>
         )}
         {info && (
-          <div className="rounded-md border border-ink-200 bg-paper-2 p-3 text-sm text-ink-700">
+          <div
+            role="status"
+            className="rounded-md border border-ink-200 bg-paper-2 p-3 text-sm text-ink-700"
+          >
             {info}
           </div>
         )}
 
         <Button type="submit" size="lg" className="w-full" disabled={loading}>
           {loading
-            ? "Please wait…"
+            ? t("login.pleaseWait")
             : mode === "signin"
-              ? "Sign in"
-              : "Create account"}
+              ? t("login.signinCta")
+              : t("login.signupCta")}
         </Button>
 
         <button
@@ -122,8 +135,8 @@ function LoginForm() {
           }}
         >
           {mode === "signin"
-            ? "Don't have an account? Create one"
-            : "Already have an account? Sign in"}
+            ? t("login.toggleToSignup")
+            : t("login.toggleToSignin")}
         </button>
       </form>
     </div>

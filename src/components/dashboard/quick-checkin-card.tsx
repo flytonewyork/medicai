@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { todayISO } from "~/lib/utils/date";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, useT } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
 import { runEngineAndPersist } from "~/lib/rules/engine";
 import { Card } from "~/components/ui/card";
@@ -23,6 +23,7 @@ type ScaleKey = (typeof SCALES)[number]["key"];
 
 export function QuickCheckinCard() {
   const locale = useLocale();
+  const t = useT();
   const enteredBy = useUIStore((s) => s.enteredBy);
   const today = todayISO();
   const existing = useLiveQuery(
@@ -37,11 +38,13 @@ export function QuickCheckinCard() {
   const [fever, setFever] = useState(false);
   const [feverTemp, setFeverTemp] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   if (existing) return null;
 
   async function save() {
     setSaving(true);
+    setSaveError(null);
     try {
       const ts = now();
       const tempNum = Number.parseFloat(feverTemp);
@@ -70,7 +73,27 @@ export function QuickCheckinCard() {
         created_at: ts,
         updated_at: ts,
       });
-      await runEngineAndPersist();
+      try {
+        await runEngineAndPersist();
+      } catch (engineErr) {
+        // Entry is saved; zone engine failed. Log and warn but don't lose
+        // the data by re-throwing.
+        // eslint-disable-next-line no-console
+        console.warn("[zone-engine] evaluation failed after quick-checkin", engineErr);
+        setSaveError(
+          locale === "zh"
+            ? "已记录，但提醒评估失败。"
+            : "Saved, but the alert check didn't run.",
+        );
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[quick-checkin] save failed", err);
+      setSaveError(
+        locale === "zh"
+          ? "保存失败，请再试一次。"
+          : "Couldn't save — please try again.",
+      );
     } finally {
       setSaving(false);
     }
@@ -117,6 +140,15 @@ export function QuickCheckinCard() {
         />
       </div>
 
+      {saveError && (
+        <div
+          role="alert"
+          className="mt-3 rounded-md border border-[var(--warn)]/40 bg-[var(--warn)]/10 p-2.5 text-xs text-[var(--warn)]"
+        >
+          {saveError}
+        </div>
+      )}
+
       <div className="mt-5 flex items-center justify-between">
         <div className="mono text-[10px] uppercase tracking-wider text-ink-400">
           {today}
@@ -124,9 +156,7 @@ export function QuickCheckinCard() {
         <Button onClick={save} disabled={saving} size="lg">
           <Check className="h-4 w-4" />
           {saving
-            ? locale === "zh"
-              ? "保存中…"
-              : "Saving…"
+            ? t("common.saving")
             : locale === "zh"
               ? "保存今日"
               : "Save today"}
@@ -232,7 +262,7 @@ function FeverRow({
             type="button"
             onClick={() => onFeverChange(v)}
             className={cn(
-              "rounded-md border px-3 py-1.5 text-xs font-semibold",
+              "h-11 min-w-[44px] rounded-md border px-4 text-sm font-semibold",
               fever === v
                 ? "border-ink-900 bg-ink-900 text-paper"
                 : "border-ink-200 bg-paper-2 text-ink-500",
@@ -245,11 +275,12 @@ function FeverRow({
       {fever && (
         <input
           type="number"
+          inputMode="decimal"
           step="0.1"
           value={temp}
           onChange={(e) => onTempChange(e.target.value)}
           placeholder="°C"
-          className="h-9 w-20 rounded-md border border-ink-200 bg-paper-2 px-2 text-sm tabular-nums"
+          className="h-11 w-24 rounded-md border border-ink-200 bg-paper-2 px-3 text-base tabular-nums"
         />
       )}
     </div>
