@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ensureSeeded } from "~/lib/db/seed";
 import { initSync } from "~/lib/sync/init";
 import { useUIStore } from "~/stores/ui-store";
+import { WelcomeAuthModal } from "~/components/auth/welcome-auth-modal";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(() => new QueryClient());
@@ -24,5 +25,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
   }, [locale]);
 
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={client}>
+      {children}
+      <WelcomeAuthModal />
+    </QueryClientProvider>
+  );
 }
