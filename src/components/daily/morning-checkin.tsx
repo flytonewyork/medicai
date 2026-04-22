@@ -165,25 +165,42 @@ export function MorningCheckin({
         created_at: existing?.created_at ?? now(),
         updated_at: now(),
       };
-      if (entryId) {
-        await db.daily_entries.update(entryId, payload);
-      } else {
-        // Upsert by date so QuickCheckinCard + full log don't create
-        // duplicate rows — the dashboard tiles key off `date`.
-        const existingForDate = await db.daily_entries
-          .where("date")
-          .equals(payload.date)
-          .first();
-        if (existingForDate?.id) {
-          await db.daily_entries.update(existingForDate.id, {
-            ...payload,
-            created_at: existingForDate.created_at,
-          });
+      try {
+        if (entryId) {
+          await db.daily_entries.update(entryId, payload);
         } else {
-          await db.daily_entries.add(payload);
+          // Upsert by date so QuickCheckinCard + full log don't create
+          // duplicate rows — the dashboard tiles key off `date`.
+          const existingForDate = await db.daily_entries
+            .where("date")
+            .equals(payload.date)
+            .first();
+          if (existingForDate?.id) {
+            await db.daily_entries.update(existingForDate.id, {
+              ...payload,
+              created_at: existingForDate.created_at,
+            });
+          } else {
+            await db.daily_entries.add(payload);
+          }
         }
+      } catch (dbErr) {
+        // eslint-disable-next-line no-console
+        console.error("[daily] save failed", dbErr);
+        setError(
+          locale === "zh"
+            ? "保存失败，请再试一次。"
+            : "Couldn't save — please try again.",
+        );
+        return;
       }
-      await runEngineAndPersist();
+      try {
+        await runEngineAndPersist();
+      } catch (engineErr) {
+        // Entry is saved. Warn but don't block routing.
+        // eslint-disable-next-line no-console
+        console.warn("[zone-engine] evaluation failed after daily save", engineErr);
+      }
       router.push("/");
     } finally {
       setSaving(false);

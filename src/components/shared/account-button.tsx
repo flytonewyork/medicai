@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut, User } from "lucide-react";
 import { getSupabaseBrowser, isSupabaseConfigured } from "~/lib/supabase/client";
+import { useT } from "~/hooks/use-translate";
 import { SyncStatusPill } from "./sync-status";
 
 // Minimal "who am I / sign out" control. Rendered in settings.
 export function AccountButton() {
+  const t = useT();
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -48,7 +50,7 @@ export function AccountButton() {
           className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-ink-200 px-2.5 py-1.5 text-xs text-ink-700 hover:border-ink-300 hover:bg-paper-2 disabled:opacity-50"
         >
           <LogOut className="h-3.5 w-3.5" aria-hidden />
-          Sign out
+          {t("account.signOut")}
         </button>
       </div>
       <SyncStatusPill />
