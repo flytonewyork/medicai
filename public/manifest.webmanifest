@@ -1,20 +1,45 @@
 {
   "name": "Anchor",
   "short_name": "Anchor",
-  "description": "Function preservation + bridge-strategy tracker",
+  "description": "Function preservation + bridge-strategy tracker for metastatic pancreatic cancer.",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait-primary",
   "background_color": "#f5f1e8",
   "theme_color": "#19212f",
+  "lang": "en",
+  "dir": "ltr",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/anchor-mark.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/anchor-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
   ],
-  "categories": ["health", "medical", "lifestyle"]
+  "categories": ["health", "medical", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "Tell the team",
+      "short_name": "Log",
+      "description": "Free-text log routed to the specialist agents",
+      "url": "/log"
+    },
+    {
+      "name": "Today's check-in",
+      "short_name": "Check-in",
+      "description": "Symptoms, weight, practice",
+      "url": "/daily/new"
+    }
+  ]
 }
