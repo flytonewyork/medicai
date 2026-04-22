@@ -47,6 +47,27 @@
     "lastSaved": "Last saved",
     "localOnly": "Local only — data stays on this device"
   },
+  "syncPrompt": {
+    "title": "Save this across devices?",
+    "body": "Sign in to sync your entries to the cloud so someone you trust can see the same data on their device. You can keep using Anchor offline without an account.",
+    "cta": "Sign in to sync",
+    "dismiss": "Dismiss"
+  },
+  "welcomeAuth": {
+    "signinTitle": "Welcome back",
+    "signupTitle": "Create your account",
+    "body": "Sign in so someone you trust can see the same entries on their device. You can skip this and use Anchor offline.",
+    "email": "Email",
+    "password": "Password",
+    "signinCta": "Sign in",
+    "signupCta": "Create account",
+    "toggleToSignup": "No account? Create one",
+    "toggleToSignin": "Already have an account? Sign in",
+    "pleaseWait": "Please wait…",
+    "created": "Account created. Sign in now.",
+    "continueWithout": "Continue without signing in",
+    "close": "Close"
+  },
   "daily": {
     "title": "Daily check-in",
     "subtitle": "Under two minutes. Skip anything that does not apply.",

@@ -27,7 +27,8 @@ Copy from **Project Settings → API**:
 
 ## 2. Environment variables
 
-Local dev already has a `.env.local` pointing at the Supabase project. For
+For local dev, copy `.env.local.example` to `.env.local` — the Supabase URL
+and publishable key are already filled in for the shared project. For
 production, set the same two keys in Vercel (step 3).
 
 ```

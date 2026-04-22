@@ -47,6 +47,27 @@
     "lastSaved": "最后保存",
     "localOnly": "仅本机 —— 数据不离开本设备"
   },
+  "syncPrompt": {
+    "title": "要跨设备保存吗？",
+    "body": "登录后数据会同步到云端，您信任的亲人可以在他们的设备上看到相同的记录。不登录也可以继续离线使用 Anchor。",
+    "cta": "登录并同步",
+    "dismiss": "关闭"
+  },
+  "welcomeAuth": {
+    "signinTitle": "欢迎回来",
+    "signupTitle": "创建您的账户",
+    "body": "登录后，您信任的亲人可以在他们的设备上看到相同的记录。也可以跳过，继续离线使用 Anchor。",
+    "email": "邮箱",
+    "password": "密码",
+    "signinCta": "登录",
+    "signupCta": "创建账户",
+    "toggleToSignup": "还没有账户？创建一个",
+    "toggleToSignin": "已有账户？登录",
+    "pleaseWait": "请稍候…",
+    "created": "账户已创建，请登录。",
+    "continueWithout": "不登录继续使用",
+    "close": "关闭"
+  },
   "daily": {
     "title": "每日记录",
     "subtitle": "两分钟内完成。不适用的项目可跳过。",

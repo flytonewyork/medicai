@@ -15,6 +15,7 @@ import { SignalLoopSummaryCard } from "~/components/dashboard/signal-loop-summar
 import { MedicationPromptsCard } from "~/components/dashboard/medication-prompts-card";
 import { PracticesCard } from "~/components/dashboard/practices-card";
 import { TodayFeed } from "~/components/dashboard/today-feed";
+import { SyncPromptCard } from "~/components/dashboard/sync-prompt-card";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { PageHeader, SectionHeader } from "~/components/ui/page-header";
 
@@ -75,6 +76,8 @@ export default function DashboardPage() {
       />
 
       <EmergencyCard />
+
+      <SyncPromptCard />
 
       <QuickCheckinCard />
 

@@ -62,8 +62,13 @@ function LoginForm() {
     <div className="mx-auto max-w-sm space-y-6 p-6 pt-10 md:pt-20">
       <PageHeader
         eyebrow="ANCHOR"
-        title={mode === "signin" ? "Sign in" : "Create account"}
+        title={mode === "signin" ? "Sign in to sync" : "Create account"}
       />
+
+      <p className="text-sm text-ink-500">
+        Signing in saves your data to the cloud so someone you trust can see it
+        on their device. You can keep using Anchor offline without an account.
+      </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Field label="Email">
