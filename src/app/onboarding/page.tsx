@@ -21,15 +21,23 @@ import {
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 
+// Order is load-bearing: welcome + profile + preferences is the "core" path
+// that gets every user onto the dashboard quickly. Team / baselines /
+// treatment are optional detail — skippable via "Finish setup later" so the
+// patient isn't gated behind data they don't have on hand.
 const STEPS = [
   "welcome",
   "profile",
+  "preferences",
   "team",
   "baselines",
   "treatment",
-  "preferences",
   "done",
 ] as const;
+
+// Steps the user can "Finish setup later" from — i.e. jump straight to
+// done without filling the remaining steps.
+const CAN_SKIP_FROM: StepKey[] = ["profile", "preferences", "team", "baselines", "treatment"];
 
 type StepKey = (typeof STEPS)[number];
 
@@ -198,6 +206,10 @@ export default function OnboardingPage() {
     }
   }
 
+  function skipToEnd() {
+    setStep("done");
+  }
+
   const canContinue = useMemo(() => {
     if (step === "profile") return form.profile_name.trim().length > 0;
     return true;
@@ -319,21 +331,26 @@ export default function OnboardingPage() {
       )}
       {step === "done" && <DoneStep form={form} locale={locale} />}
 
-      <div className="flex items-center justify-between pt-2">
-        {step !== "welcome" ? (
-          <Button variant="ghost" onClick={back}>
-            <ChevronLeft className="h-4 w-4" />
-            {t("onboarding.back")}
-          </Button>
-        ) : (
-          <span />
-        )}
+      <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          {step !== "welcome" && (
+            <Button variant="ghost" onClick={back}>
+              <ChevronLeft className="h-4 w-4" />
+              {t("onboarding.back")}
+            </Button>
+          )}
+          {CAN_SKIP_FROM.includes(step) && (
+            <button
+              type="button"
+              onClick={skipToEnd}
+              className="text-[12px] text-ink-500 underline-offset-2 hover:text-ink-800 hover:underline"
+            >
+              {locale === "zh" ? "其余稍后再填" : "Finish setup later"}
+            </button>
+          )}
+        </div>
         {step !== "done" ? (
-          <Button
-            onClick={forward}
-            disabled={!canContinue}
-            size="lg"
-          >
+          <Button onClick={forward} disabled={!canContinue} size="lg">
             {step === "welcome"
               ? t("onboarding.begin")
               : t("onboarding.continue")}
@@ -360,20 +377,20 @@ function WelcomeStep({ locale }: { locale: Locale }) {
       </div>
       <p className="mt-3 text-[14px] leading-relaxed text-ink-700">
         {locale === "zh"
-          ? "接下来大约需要 5 分钟。我们会问一些基本信息，好让每日记录、警示与给医师的摘要都能与你的情况匹配。"
-          : "This takes about 5 minutes. We'll capture a few essentials so the daily check-in, the zone engine, and the pre-clinic summary all know who you are."}
+          ? "只需一两分钟：填姓名与语言偏好就能进入主界面。其余（医疗团队、基线数据、化疗方案）可以随时在设置里补齐。"
+          : "One or two minutes: a name and language preference is all that's needed to reach the dashboard. Everything else (clinical team, baselines, treatment) can be filled in later from Settings."}
       </p>
       <ul className="mt-4 space-y-2 text-[13px] text-ink-500">
         {(locale === "zh"
           ? [
-              "所有数据都留在这台设备上。不上传任何云端。",
-              "随时可以在设置里修改。",
-              "没有任何必填项是硬性的 —— 可以先跳过再补。",
+              "数据留在本设备。登录后可同步。",
+              "每一步都可以选择“其余稍后再填”。",
+              "所有字段都不是硬性的。",
             ]
           : [
-              "Everything stays on this device. Nothing is uploaded.",
-              "You can edit anything later in Settings.",
-              "Fields are optional — skip what you don't have yet.",
+              "Data stays on this device. Sync is optional, after signing in.",
+              "At any step you can tap 'Finish setup later'.",
+              "No field is required.",
             ]
         ).map((t, i) => (
           <li key={i} className="flex items-start gap-2">

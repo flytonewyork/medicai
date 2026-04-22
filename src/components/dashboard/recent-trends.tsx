@@ -20,14 +20,24 @@ export function RecentTrends() {
     value: typeof e.weight_kg === "number" ? e.weight_kg : null,
   }));
 
+  // Energy is now optional per daily_entry — only average the days the
+  // patient actually recorded it. Missing days render as a chart gap.
+  const energyValues = ordered.map((e) =>
+    typeof e.energy === "number" ? e.energy : null,
+  );
   const energyMA = movingAverage(
-    ordered.map((e) => e.energy),
+    energyValues.filter((v): v is number => v !== null),
     7,
   );
-  const energy = ordered.map((e, i) => ({
-    date: e.date.slice(5),
-    value: energyMA[i] ?? e.energy,
-  }));
+  // Re-align the moving average back to the ordered-by-date axis, using
+  // null for days with no reading.
+  let maIdx = 0;
+  const energy = ordered.map((e) => {
+    const has = typeof e.energy === "number";
+    const val = has ? (energyMA[maIdx] ?? e.energy ?? null) : null;
+    if (has) maIdx += 1;
+    return { date: e.date.slice(5), value: val ?? null };
+  });
 
   const practice = ordered.map((e) => ({
     date: e.date.slice(5),
