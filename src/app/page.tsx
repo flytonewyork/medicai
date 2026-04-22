@@ -6,22 +6,22 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { format } from "date-fns";
 import { db } from "~/lib/db/dexie";
 import { PillarTiles } from "~/components/dashboard/pillar-tiles";
-import { PillarsCard } from "~/components/dashboard/pillars-card";
-import { RecentTrends } from "~/components/dashboard/recent-trends";
 import { EmergencyCard } from "~/components/dashboard/emergency-card";
 import { QuickCheckinCard } from "~/components/dashboard/quick-checkin-card";
 import { PendingInvitesCard } from "~/components/dashboard/pending-invites-card";
 import { NextClinicCard } from "~/components/dashboard/next-clinic-card";
 import { ScheduleCard } from "~/components/dashboard/schedule-card";
 import { ChangeSignalsCard } from "~/components/dashboard/change-signals-card";
-import { SignalLoopSummaryCard } from "~/components/dashboard/signal-loop-summary-card";
 import { MedicationPromptsCard } from "~/components/dashboard/medication-prompts-card";
 import { PracticesCard } from "~/components/dashboard/practices-card";
 import { TodayFeed } from "~/components/dashboard/today-feed";
 import { SyncPromptCard } from "~/components/dashboard/sync-prompt-card";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { useHousehold } from "~/hooks/use-household";
-import { PageHeader, SectionHeader } from "~/components/ui/page-header";
+import { PageHeader } from "~/components/ui/page-header";
+
+// Module-level constant so TodayFeed's effect deps stay stable across renders.
+const EXCLUDE_IDS = ["checkin_today"];
 
 export default function DashboardPage() {
   const t = useT();
@@ -104,22 +104,13 @@ export default function DashboardPage() {
 
       <ChangeSignalsCard />
 
-      <SignalLoopSummaryCard />
-
       <MedicationPromptsCard />
 
       <PracticesCard />
 
-      <TodayFeed excludeIds={["checkin_today"]} />
-
       <PillarTiles />
 
-      <PillarsCard />
-
-      <section className="space-y-3">
-        <SectionHeader title={t("dashboard.recent_trends")} />
-        <RecentTrends />
-      </section>
+      <TodayFeed excludeIds={EXCLUDE_IDS} />
 
       <footer className="pt-6 text-center text-xs text-ink-400">
         {t("common.localOnly")}

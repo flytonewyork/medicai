@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
@@ -33,6 +34,7 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   Sparkles,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
@@ -119,8 +121,17 @@ export function ChangeSignalsCard() {
 
   return (
     <section className="space-y-2">
-      <div className="eyebrow px-1">
-        {locale === "zh" ? "变化信号" : "Change signals"}
+      <div className="flex items-baseline justify-between px-1">
+        <div className="eyebrow">
+          {locale === "zh" ? "变化信号" : "Change signals"}
+        </div>
+        <Link
+          href="/signals"
+          className="inline-flex items-center gap-0.5 text-[11px] text-ink-500 hover:text-ink-900"
+        >
+          {locale === "zh" ? "历史" : "History"}
+          <ChevronRight className="h-3 w-3" />
+        </Link>
       </div>
       <div className="space-y-2">
         {signals.map(({ row, signal }) => (
