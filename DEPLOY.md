@@ -35,6 +35,22 @@ NEXT_PUBLIC_SUPABASE_URL=https://tzmxmknkccxbvjhfvsdy.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_7TeUX3uaUaeL3oqCx7oHdA_Ub0P6Buw
 ```
 
+### Claude Code MCP (developer machines only)
+
+`.mcp.json` configures the Supabase MCP server so Claude Code can query the
+database directly during development. It reads a PAT from the environment:
+
+1. Go to https://supabase.com/dashboard/account/tokens → **Generate new token**.
+2. Name it `anchor-dev` and copy the token.
+3. Add it to your local `.env.local`:
+   ```
+   SUPABASE_PAT=sbp_xxxxxxxxxxxxxxxxxxxx
+   ```
+4. Reload Claude Code (or run `claude /mcp` to confirm the server connects).
+
+This variable is only needed on developer machines and is never used in
+production. Do not add `SUPABASE_PAT` to Vercel.
+
 ## 3. Vercel deploy (5 min)
 
 1. Go to https://vercel.com → **Add new → Project** → import
