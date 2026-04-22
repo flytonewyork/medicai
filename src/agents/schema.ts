@@ -63,6 +63,7 @@ const feedItemSchema = z.object({
 });
 
 export const AgentOutputSchema = z.object({
+  daily_report: localizedString,
   safety_flags: z.array(safetyFlagSchema),
   filings: z.array(dexiePatchSchema),
   questions: z.array(followUpQuestionSchema),

@@ -83,8 +83,14 @@ export interface FollowUpQuestion {
   kind: "numeric" | "yesno" | "text" | "scale_0_10";
 }
 
-// Everything a specialist returns on one referral.
+// Everything a specialist returns on one batch run (a day's referrals or
+// an on-demand invocation). The same shape is used for both the daily
+// scheduled run and an explicit "run now" trigger from the patient or
+// Thomas, so the consumer never has to branch on trigger type.
 export interface AgentOutput {
+  // Patient-facing morning brief for this batch — markdown narrative the
+  // feed renders as the agent's daily report card.
+  daily_report: LocalizedString;
   safety_flags: SafetyFlag[];
   filings: DexiePatch[];
   questions: FollowUpQuestion[];
@@ -101,14 +107,25 @@ export interface AgentStateRow {
 }
 
 // Raw log event — the single source of truth for what dad told the system.
-// Indexed by `at` for feed time-decay ranking.
+// Indexed by `at` for batch slicing ("today's referrals for nutrition").
 export interface LogEventRow {
   id?: number;
   at: string;
   input: LogInput;
-  // Per-agent output snapshots. Keyed by agent_id; absent for agents not
-  // routed to on this log.
-  outputs: Partial<Record<AgentId, AgentOutput>>;
-  // Server-applied summary. Filled in after /api/log merges results.
-  summary?: string;
+  // Set after a daily batch or on-demand run consumes this event. The
+  // referenced AgentRunRow.id values let us audit which run produced
+  // which fillings/nudges for this log. Empty until first batch consumes.
+  consumed_by?: number[];
+}
+
+// One row per agent invocation (daily batch or on-demand). Indexed by
+// agent_id + ran_at for "show me the latest report" queries.
+export interface AgentRunRow {
+  id?: number;
+  agent_id: AgentId;
+  ran_at: string;
+  trigger: "daily_batch" | "on_demand";
+  // The log_events.id values fed into this run.
+  referral_ids: number[];
+  output: AgentOutput;
 }

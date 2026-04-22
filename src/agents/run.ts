@@ -1,35 +1,61 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { AgentId, AgentOutput, LogInput } from "~/types/agent";
+import type {
+  AgentId,
+  AgentOutput,
+  LogEventRow,
+  LogInput,
+} from "~/types/agent";
+import type { Locale } from "~/types/clinical";
 import { AgentOutputSchema } from "./schema";
 
-// Shared runtime wrapper for every specialist agent. The server /api/log
-// route calls runAgent({ id, input, stateMd }) in parallel for each agent
-// returned by routing.ts. Each call is one messages.parse() with prompt
-// caching on both role.md and state.md (ephemeral), so subsequent calls on
-// the same deploy reuse the cached prefix.
+// Server-side runtime for one specialist invocation. Takes the batch of
+// log events that routed to this agent (a day's worth, typically) plus the
+// agent's current state.md, and returns one AgentOutput. Same code path
+// for the daily scheduled run and an explicit "run now" trigger.
 //
-// The caller is responsible for reading the current state.md from Dexie
-// (via state-store.ts) and writing back the returned state_diff.
+// The caller is responsible for reading state.md from Dexie before, and
+// writing the returned `state_diff` + persisting the AgentRunRow after.
 
 const MODEL = process.env.ANTHROPIC_LOG_MODEL || "claude-opus-4-7";
 
 function roleFor(id: AgentId): string {
   // Role files are committed to the repo. We resolve them relative to the
-  // project root at build time so they're bundled into the server build.
+  // project root at request time so they ship with the server build.
   const path = join(process.cwd(), "src", "agents", id, "role.md");
   return readFileSync(path, "utf8");
 }
 
-export async function runAgent({
-  id,
-  input,
-  stateMd,
-}: {
+function formatReferrals(referrals: readonly LogEventRow[]): string {
+  if (referrals.length === 0) {
+    return "(no new logs since the last run — produce a maintenance report from your state.md)";
+  }
+  return referrals
+    .map((row, i) => {
+      const lines = [
+        `[${i + 1}] ${row.at}  ·  tags: ${row.input.tags.join(", ") || "(none)"}`,
+      ];
+      if (row.input.text.trim()) {
+        lines.push(`text: ${row.input.text.trim()}`);
+      }
+      if (row.input.imageUrl) {
+        lines.push(`image: ${row.input.imageUrl}`);
+      }
+      return lines.join("\n");
+    })
+    .join("\n\n");
+}
+
+export interface RunAgentArgs {
   id: AgentId;
-  input: LogInput;
+  referrals: readonly LogEventRow[];
   stateMd: string;
-}): Promise<AgentOutput> {
+  locale: Locale;
+  date: string; // "YYYY-MM-DD" — the day this run is producing a report for
+  trigger: "daily_batch" | "on_demand";
+}
+
+export async function runAgent(args: RunAgentArgs): Promise<AgentOutput> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error("ANTHROPIC_API_KEY is not configured on the server");
@@ -40,55 +66,51 @@ export async function runAgent({
   ]);
   const client = new Anthropic({ apiKey });
 
-  const userContent: Array<
-    | { type: "text"; text: string }
-    | {
-        type: "image";
-        source: { type: "url"; url: string };
-      }
-  > = [];
-  if (input.imageUrl) {
-    userContent.push({
-      type: "image",
-      source: { type: "url", url: input.imageUrl },
-    });
-  }
-  userContent.push({
-    type: "text",
-    text: [
-      `Locale: ${input.locale}`,
-      `Timestamp: ${input.at}`,
-      `Tags the router picked: ${input.tags.join(", ") || "(none)"}`,
-      "",
-      "Patient said:",
-      input.text.trim() || "(no free text — input is image/numeric only)",
-    ].join("\n"),
-  });
+  const userText = [
+    `Date: ${args.date}`,
+    `Locale: ${args.locale}`,
+    `Trigger: ${args.trigger}`,
+    `Referrals routed to you (${args.referrals.length}):`,
+    "",
+    formatReferrals(args.referrals),
+  ].join("\n");
 
   const response = await client.messages.parse({
     model: MODEL,
-    max_tokens: 1500,
+    max_tokens: 2000,
     system: [
       {
         type: "text",
-        text: roleFor(id),
+        text: roleFor(args.id),
         cache_control: { type: "ephemeral" },
       },
       {
         type: "text",
         text:
-          stateMd.trim().length > 0
-            ? `Your current state summary (state.md):\n\n${stateMd}`
-            : "Your current state summary is empty — this is the first log you're seeing.",
+          args.stateMd.trim().length > 0
+            ? `Your current state summary (state.md):\n\n${args.stateMd}`
+            : "Your current state summary is empty — this is the first batch you're seeing.",
         cache_control: { type: "ephemeral" },
       },
     ],
     output_config: { format: zodOutputFormat(AgentOutputSchema) },
-    messages: [{ role: "user", content: userContent }],
+    messages: [{ role: "user", content: [{ type: "text", text: userText }] }],
   });
 
   if (!response.parsed_output) {
-    throw new Error(`Agent ${id} returned no parsed output`);
+    throw new Error(`Agent ${args.id} returned no parsed output`);
   }
   return response.parsed_output as AgentOutput;
+}
+
+// Pure helper: select the log_events whose tags route to this agent. Used
+// by both the daily-batch driver and the on-demand route. Importable from
+// non-server code so the client can preview "what would the agent see if
+// we ran it now?"
+export function selectReferralsForAgent(
+  agentId: AgentId,
+  events: readonly LogEventRow[],
+  routing: (tags: readonly LogInput["tags"][number][]) => readonly AgentId[],
+): LogEventRow[] {
+  return events.filter((row) => routing(row.input.tags).includes(agentId));
 }

@@ -28,7 +28,7 @@ import type {
   MedicationEvent,
   MedicationPromptEvent,
 } from "~/types/medication";
-import type { AgentStateRow, LogEventRow } from "~/types/agent";
+import type { AgentRunRow, AgentStateRow, LogEventRow } from "~/types/agent";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -58,6 +58,7 @@ export class AnchorDB extends Dexie {
   patient_tasks!: Table<PatientTask, number>;
   agent_states!: Table<AgentStateRow, number>;
   log_events!: Table<LogEventRow, number>;
+  agent_runs!: Table<AgentRunRow, number>;
 
   constructor() {
     super("anchor_db");
@@ -125,13 +126,18 @@ export class AnchorDB extends Dexie {
       signal_events:
         "++id, signal_id, kind, action_ref_id, created_at, [signal_id+created_at]",
     });
-    // v10: multi-agent super-brain (Sprint 2). `agent_states` stores a
-    // markdown summary per specialist agent (unique by agent_id). `log_events`
-    // stores every `/api/log` submission with the per-agent outputs so we
-    // can replay, audit, and feed-rank by recency.
+    // v10: multi-agent super-brain (Sprint 2). The patient's "log" surface
+    // writes to `log_events` directly (no per-log Claude call). Once daily
+    // (or on-demand), each specialist runs over its referrals: the run
+    // produces an `agent_runs` row with the daily report, and the
+    // specialist's `agent_states` row is rewritten in place.
+    // - agent_states: unique per agent_id, holds the living state.md
+    // - log_events: raw inputs; sliced by tag at batch time
+    // - agent_runs: one row per invocation, indexed for "latest report"
     this.version(10).stores({
       agent_states: "++id, &agent_id, updated_at",
       log_events: "++id, at",
+      agent_runs: "++id, agent_id, ran_at, [agent_id+ran_at]",
     });
   }
 }
