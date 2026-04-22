@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
+import { latestIngestedDocuments } from "~/lib/db/queries";
 import { useLocale } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -99,9 +100,7 @@ export default function IngestPage() {
     itemsRef.current = [];
   }
 
-  const recent = useLiveQuery(() =>
-    db.ingested_documents.orderBy("uploaded_at").reverse().limit(8).toArray(),
-  );
+  const recent = useLiveQuery(() => latestIngestedDocuments(8));
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-8">

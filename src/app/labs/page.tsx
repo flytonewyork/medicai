@@ -4,10 +4,11 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { format, parseISO } from "date-fns";
-import { db } from "~/lib/db/dexie";
+import { latestLabs } from "~/lib/db/queries";
 import { useLocale } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card } from "~/components/ui/card";
+import { EmptyState } from "~/components/ui/empty-state";
 import { MetricChart, type MetricPoint } from "~/components/labs/metric-chart";
 import { BarScale } from "~/components/ui/bar-scale";
 import {
@@ -29,9 +30,7 @@ import {
 
 export default function LabsPage() {
   const locale = useLocale();
-  const labs = useLiveQuery(() =>
-    db.labs.orderBy("date").reverse().limit(60).toArray(),
-  );
+  const labs = useLiveQuery(() => latestLabs(60));
 
   const orderedLabs = (labs ?? []).slice().reverse();
   const hasAnyData = (labs ?? []).length > 0;
@@ -268,32 +267,31 @@ export default function LabsPage() {
         </Link>
       </Card>
 
-      {/* Empty state — no labs at all */}
       {!hasAnyData && (
-        <Card className="p-10 text-center">
-          <div className="text-sm font-medium text-ink-900">
-            {locale === "zh" ? "还没有化验结果" : "No lab results yet"}
-          </div>
-          <div className="mx-auto mt-1 max-w-sm text-sm text-ink-500">
-            {locale === "zh"
+        <EmptyState
+          title={locale === "zh" ? "还没有化验结果" : "No lab results yet"}
+          description={
+            locale === "zh"
               ? "上传一份最近的化验报告，或逐项手动添加。"
-              : "Upload your most recent lab report or add values analyte-by-analyte."}
-          </div>
-          <div className="mt-4 flex items-center justify-center gap-2">
-            <Link
-              href="/ingest"
-              className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-paper hover:brightness-110"
-            >
-              {locale === "zh" ? "上传报告" : "Upload report"}
-            </Link>
-            <Link
-              href="/labs/ca199"
-              className="rounded-md border border-ink-200 bg-paper-2 px-4 py-2 text-sm font-medium text-ink-700 hover:border-ink-300"
-            >
-              {locale === "zh" ? "手动添加" : "Add manually"}
-            </Link>
-          </div>
-        </Card>
+              : "Upload your most recent lab report or add values analyte-by-analyte."
+          }
+          actions={
+            <>
+              <Link
+                href="/ingest"
+                className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-paper hover:brightness-110"
+              >
+                {locale === "zh" ? "上传报告" : "Upload report"}
+              </Link>
+              <Link
+                href="/labs/ca199"
+                className="rounded-md border border-ink-200 bg-paper-2 px-4 py-2 text-sm font-medium text-ink-700 hover:border-ink-300"
+              >
+                {locale === "zh" ? "手动添加" : "Add manually"}
+              </Link>
+            </>
+          }
+        />
       )}
 
       {/* Analyte panel — grouped */}

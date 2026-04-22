@@ -2,20 +2,18 @@
 
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
+import { latestWeeklyAssessments } from "~/lib/db/queries";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { Button } from "~/components/ui/button";
-import { Card } from "~/components/ui/card";
+import { EmptyState } from "~/components/ui/empty-state";
 import { CalendarRange, ChevronRight } from "lucide-react";
 import { formatWeekRange } from "~/lib/utils/week";
 
 export default function WeeklyListPage() {
   const t = useT();
   const locale = useLocale();
-  const assessments = useLiveQuery(() =>
-    db.weekly_assessments.orderBy("week_start").reverse().limit(24).toArray(),
-  );
+  const assessments = useLiveQuery(() => latestWeeklyAssessments(24));
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-8">
@@ -36,20 +34,22 @@ export default function WeeklyListPage() {
       />
 
       {(!assessments || assessments.length === 0) && (
-        <Card className="p-10 text-center">
-          <CalendarRange className="mx-auto mb-3 h-8 w-8 text-ink-400" />
-          <div className="text-sm font-medium">
-            {locale === "zh" ? "还没有每周记录" : "No weekly entries yet"}
-          </div>
-          <div className="mx-auto mt-1 max-w-sm text-sm text-ink-500">
-            {locale === "zh"
+        <EmptyState
+          icon={CalendarRange}
+          title={locale === "zh" ? "还没有每周记录" : "No weekly entries yet"}
+          description={
+            locale === "zh"
               ? "每周日晚做一次，五分钟。"
-              : "Best done Sunday evening. Takes ~5 minutes."}
-          </div>
-          <Link href="/weekly/new" className="mt-4 inline-block">
-            <Button>{locale === "zh" ? "开始第一次" : "Start first one"}</Button>
-          </Link>
-        </Card>
+              : "Best done Sunday evening. Takes ~5 minutes."
+          }
+          actions={
+            <Link href="/weekly/new">
+              <Button>
+                {locale === "zh" ? "开始第一次" : "Start first one"}
+              </Button>
+            </Link>
+          }
+        />
       )}
 
       <ul className="space-y-2">

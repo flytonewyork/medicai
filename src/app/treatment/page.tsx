@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
+import { latestTreatmentCycles } from "~/lib/db/queries";
 import { useLocale } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
-import { Card } from "~/components/ui/card";
+import { EmptyState } from "~/components/ui/empty-state";
 import { Button } from "~/components/ui/button";
 import { PROTOCOL_BY_ID } from "~/config/protocols";
 import { formatDate } from "~/lib/utils/date";
@@ -38,9 +38,7 @@ const STATUS_STYLES: Record<CycleStatus, { label: { en: string; zh: string }; cl
 
 export default function TreatmentListPage() {
   const locale = useLocale();
-  const cycles = useLiveQuery(() =>
-    db.treatment_cycles.orderBy("start_date").reverse().toArray(),
-  );
+  const cycles = useLiveQuery(() => latestTreatmentCycles());
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-8">
@@ -58,20 +56,22 @@ export default function TreatmentListPage() {
         }
       />
       {(!cycles || cycles.length === 0) && (
-        <Card className="p-10 text-center">
-          <Syringe className="mx-auto mb-3 h-8 w-8 text-ink-400" />
-          <div className="text-sm font-medium">
-            {locale === "zh" ? "还没有化疗方案" : "No protocol set"}
-          </div>
-          <div className="mx-auto mt-1 max-w-sm text-sm text-ink-500">
-            {locale === "zh"
+        <EmptyState
+          icon={Syringe}
+          title={locale === "zh" ? "还没有化疗方案" : "No protocol set"}
+          description={
+            locale === "zh"
               ? "选择一个方案，Anchor 会按周期日给出饮食、卫生、运动、睡眠、情绪的贴身提示。"
-              : "Pick a protocol and Anchor will surface day-specific nudges across diet, hygiene, exercise, sleep, and mental health."}
-          </div>
-          <Link href="/treatment/new" className="mt-4 inline-block">
-            <Button>{locale === "zh" ? "选择方案" : "Pick a protocol"}</Button>
-          </Link>
-        </Card>
+              : "Pick a protocol and Anchor will surface day-specific nudges across diet, hygiene, exercise, sleep, and mental health."
+          }
+          actions={
+            <Link href="/treatment/new">
+              <Button>
+                {locale === "zh" ? "选择方案" : "Pick a protocol"}
+              </Button>
+            </Link>
+          }
+        />
       )}
       <ul className="space-y-2">
         {(cycles ?? []).map((c) => {

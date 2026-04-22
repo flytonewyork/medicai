@@ -6,6 +6,7 @@ import { notFound, useParams, useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { format, parseISO } from "date-fns";
 import { db, now } from "~/lib/db/dexie";
+import { latestLabs } from "~/lib/db/queries";
 import { useLocale } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card } from "~/components/ui/card";
@@ -40,9 +41,7 @@ export default function AnalyteDetailPage() {
   const key = params?.analyte as AnalyteKey | undefined;
   const def = key && ALL_KEYS.includes(key) ? ANALYTE_BY_KEY[key] : undefined;
 
-  const labs = useLiveQuery(() =>
-    db.labs.orderBy("date").reverse().limit(60).toArray(),
-  );
+  const labs = useLiveQuery(() => latestLabs(60));
 
   const [newValue, setNewValue] = useState("");
   const [newDate, setNewDate] = useState(todayISO());

@@ -2,20 +2,18 @@
 
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
+import { latestDailyEntries } from "~/lib/db/queries";
 import { formatDate } from "~/lib/utils/date";
 import { useLocale, useT } from "~/hooks/use-translate";
-import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { PageHeader } from "~/components/ui/page-header";
+import { EmptyState } from "~/components/ui/empty-state";
 import { ChevronRight, CalendarDays } from "lucide-react";
 
 export default function DailyPage() {
   const t = useT();
   const locale = useLocale();
-  const entries = useLiveQuery(() =>
-    db.daily_entries.orderBy("date").reverse().limit(60).toArray(),
-  );
+  const entries = useLiveQuery(() => latestDailyEntries(60));
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-8">
@@ -34,20 +32,20 @@ export default function DailyPage() {
       />
 
       {(!entries || entries.length === 0) && (
-        <Card className="p-10 text-center">
-          <CalendarDays className="mx-auto mb-3 h-8 w-8 text-ink-400" />
-          <div className="text-sm font-medium">
-            {locale === "zh" ? "还没有记录" : "No entries yet"}
-          </div>
-          <div className="mx-auto mt-1 max-w-sm text-sm text-ink-500">
-            {locale === "zh"
+        <EmptyState
+          icon={CalendarDays}
+          title={locale === "zh" ? "还没有记录" : "No entries yet"}
+          description={
+            locale === "zh"
               ? "先开始今天的记录 —— 之后的趋势都以今天为起点。"
-              : "Start today's entry — every trend begins here."}
-          </div>
-          <Link href="/daily/new" className="mt-4 inline-block">
-            <Button>{t("dashboard.quick_entry")}</Button>
-          </Link>
-        </Card>
+              : "Start today's entry — every trend begins here."
+          }
+          actions={
+            <Link href="/daily/new">
+              <Button>{t("dashboard.quick_entry")}</Button>
+            </Link>
+          }
+        />
       )}
 
       <ul className="space-y-2">

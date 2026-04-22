@@ -2,16 +2,14 @@
 
 import { useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
+import { latestDailyEntries } from "~/lib/db/queries";
 import { TrendChart } from "~/components/charts/trend-chart";
 import { useT } from "~/hooks/use-translate";
 import { movingAverage } from "~/lib/calculations/trends";
 
 export function RecentTrends() {
   const t = useT();
-  const entries = useLiveQuery(() =>
-    db.daily_entries.orderBy("date").reverse().limit(28).toArray(),
-  );
+  const entries = useLiveQuery(() => latestDailyEntries(28));
 
   const ordered = useMemo(() => (entries ?? []).slice().reverse(), [entries]);
 
