@@ -36,9 +36,15 @@ const ITEMS = [
   { href: "/settings", key: "nav.settings", icon: SettingsIcon },
 ] as const;
 
+function isAuthRoute(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return pathname === "/login" || pathname.startsWith("/auth/");
+}
+
 export function DesktopSidebar() {
   const t = useT();
   const pathname = usePathname();
+  if (isAuthRoute(pathname)) return null;
   return (
     <aside className="hidden md:flex md:w-60 flex-col border-r border-ink-100/60 bg-paper-2/60">
       <div className="px-5 py-6">
@@ -79,6 +85,7 @@ export function DesktopSidebar() {
 export function MobileBottomNav() {
   const t = useT();
   const pathname = usePathname();
+  if (isAuthRoute(pathname)) return null;
   const mobileItems = ITEMS.filter((i) =>
     ["/", "/treatment", "/labs", "/tasks", "/assessment"].includes(i.href),
   );
@@ -121,6 +128,8 @@ export function MobileMoreMenu() {
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
+
+  if (isAuthRoute(pathname)) return null;
 
   return (
     <>

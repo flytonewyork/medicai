@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useLocale } from "~/hooks/use-translate";
 import { cn } from "~/lib/utils/cn";
 import {
@@ -100,6 +101,7 @@ const ITEMS: FabItem[] = [
 
 export function AddFab() {
   const locale = useLocale();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -120,6 +122,8 @@ export function AddFab() {
       window.removeEventListener("mousedown", onClick);
     };
   }, [open]);
+
+  if (pathname === "/login" || pathname?.startsWith("/auth/")) return null;
 
   return (
     <div

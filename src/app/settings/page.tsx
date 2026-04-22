@@ -8,6 +8,7 @@ import { db, now } from "~/lib/db/dexie";
 import { settingsSchema, type SettingsInput } from "~/lib/validators/schemas";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
+import { AccountButton } from "~/components/shared/account-button";
 
 export default function SettingsPage() {
   const t = useT();
@@ -96,6 +97,8 @@ export default function SettingsPage() {
           {t("settings.title")}
         </h1>
       </div>
+
+      <AccountButton />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <section className="space-y-3">
