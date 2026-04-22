@@ -52,8 +52,10 @@ export function AppointmentForm({
     ends_at: existing?.ends_at ?? initial?.ends_at ?? "",
     all_day: existing?.all_day ?? initial?.all_day ?? false,
     location: existing?.location ?? initial?.location ?? "",
+    location_url: existing?.location_url ?? initial?.location_url ?? "",
     doctor: existing?.doctor ?? initial?.doctor ?? "",
     phone: existing?.phone ?? initial?.phone ?? "",
+    attendees: existing?.attendees ?? initial?.attendees ?? [],
     notes: existing?.notes ?? initial?.notes ?? "",
     status: existing?.status ?? "scheduled",
   }));
@@ -87,8 +89,8 @@ export function AppointmentForm({
           ? new Date(form.starts_at).toISOString()
           : form.starts_at,
       ends_at: form.ends_at || undefined,
-      location_url: undefined,
-      attendees: form.attendees,
+      location_url: form.location_url || undefined,
+      attendees: (form.attendees ?? []).filter((n) => n.trim().length > 0),
       attachments: form.attachments,
     });
     if (!parsed.success) {
@@ -232,10 +234,46 @@ export function AppointmentForm({
         </Field>
       </div>
 
+      <Field
+        label={t("schedule.form.locationUrl")}
+        hint={t("schedule.form.locationUrlHint")}
+      >
+        <TextInput
+          type="url"
+          value={form.location_url ?? ""}
+          onChange={(e) => update("location_url", e.target.value)}
+          placeholder="https://maps.google.com/..."
+        />
+      </Field>
+
       <Field label={t("schedule.form.phone")}>
         <TextInput
           value={form.phone ?? ""}
           onChange={(e) => update("phone", e.target.value)}
+        />
+      </Field>
+
+      <Field
+        label={t("schedule.form.attendees")}
+        hint={t("schedule.form.attendeesHint")}
+      >
+        <Textarea
+          rows={2}
+          value={(form.attendees ?? []).join("\n")}
+          onChange={(e) =>
+            update(
+              "attendees",
+              e.target.value
+                .split(/\r?\n/)
+                .map((s) => s.trim())
+                .filter(Boolean),
+            )
+          }
+          placeholder={
+            locale === "zh"
+              ? "一行一位，例如：\nThomas\nCatherine\nWendy"
+              : "One per line, e.g.:\nThomas\nCatherine\nWendy"
+          }
         />
       </Field>
 

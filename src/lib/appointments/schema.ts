@@ -42,6 +42,7 @@ export const appointmentInputSchema = z.object({
   attachments: z.array(z.string()).optional(),
   derived_from_cycle: z.boolean().optional(),
   cycle_id: z.number().int().positive().optional(),
+  followup_logged_at: z.string().optional(),
 });
 
 export type AppointmentInput = z.infer<typeof appointmentInputSchema>;

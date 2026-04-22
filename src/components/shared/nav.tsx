@@ -12,7 +12,6 @@ import {
   FlaskConical,
   Compass,
   Syringe,
-  ListTodo,
   Sparkles,
   CalendarDays,
   Menu,
@@ -21,16 +20,18 @@ import {
 import { cn } from "~/lib/utils/cn";
 import { useT, useLocale } from "~/hooks/use-translate";
 
-// Stub routes (decisions, events, quarterly) are hidden until those modules ship.
-// Medications is accessed contextually (from treatment detail, daily check-in,
-// logging FAB) rather than via top-level nav — it's a cross-cutting concept.
+// Schedule replaces Tasks as the canonical "what's coming up / what
+// needs doing" surface — the /schedule page owns both upcoming
+// appointments and their derived prep + follow-up tasks. The /tasks
+// route still exists for one-off reminders but is no longer in primary
+// nav. Medications is accessed contextually (treatment detail, logging
+// FAB) rather than via top-level nav — it's cross-cutting.
 const ITEMS = [
   { href: "/", key: "nav.dashboard", icon: LayoutDashboard },
   { href: "/schedule", key: "nav.schedule", icon: CalendarDays },
   { href: "/assessment", key: "nav.assessment", icon: Compass },
   { href: "/treatment", key: "nav.treatment", icon: Syringe },
   { href: "/labs", key: "nav.labs", icon: FlaskConical },
-  { href: "/tasks", key: "nav.tasks", icon: ListTodo },
   { href: "/practices", key: "nav.practices", icon: Sparkles },
   { href: "/bridge", key: "nav.bridge", icon: Route },
   { href: "/ingest", key: "nav.ingest", icon: ScanLine },
@@ -89,7 +90,7 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   if (isAuthRoute(pathname)) return null;
   const mobileItems = ITEMS.filter((i) =>
-    ["/", "/treatment", "/labs", "/tasks", "/assessment"].includes(i.href),
+    ["/", "/schedule", "/assessment", "/treatment", "/labs"].includes(i.href),
   );
   return (
     <nav className="a-glass fixed inset-x-3 bottom-3 z-40 flex justify-around rounded-[22px] px-2 py-2.5 shadow-lg md:hidden">

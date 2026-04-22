@@ -52,6 +52,12 @@ export interface Appointment {
   // edit. Manual edits set this to false so we stop clobbering them.
   derived_from_cycle?: boolean;
   cycle_id?: number;
+  // Set the first time the patient (or Thomas) logs what happened after
+  // the appointment — what was discussed at clinic, how chemo went, etc.
+  // Drives the follow-up task engine: appointments with no
+  // `followup_logged_at` and a past `starts_at` emit a "log what
+  // happened" task; setting this dismisses the task.
+  followup_logged_at?: string;
   created_at: string;
   updated_at: string;
 }

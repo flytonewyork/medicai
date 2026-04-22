@@ -3,15 +3,17 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
+import { db, now } from "~/lib/db/dexie";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
+import { Field, Textarea } from "~/components/ui/field";
 import { AppointmentForm } from "~/components/schedule/appointment-form";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { useState } from "react";
 import type { Appointment, AppointmentLink } from "~/types/appointment";
-import { ArrowLeft, Link2, Trash2, Pencil } from "lucide-react";
+import { logTagsForKind } from "~/lib/appointments/follow-up-tasks";
+import { ArrowLeft, Link2, Trash2, Pencil, Users, Check, MessageSquarePlus } from "lucide-react";
 
 export default function AppointmentDetailPage() {
   const router = useRouter();
@@ -98,6 +100,11 @@ export default function AppointmentDetailPage() {
             eyebrow={t(`schedule.kind.${appt.kind}`)}
             title={appt.title}
           />
+
+          <AttendeeChips appt={appt} locale={locale} t={t} />
+
+          <FollowUpPrompt appt={appt} locale={locale} t={t} />
+
           <Card className="space-y-3 p-5 text-[13px]">
             <Row
               label={t("schedule.form.startsAt")}
@@ -110,7 +117,23 @@ export default function AppointmentDetailPage() {
               />
             )}
             {appt.location && (
-              <Row label={t("schedule.form.location")} value={appt.location} />
+              <Row
+                label={t("schedule.form.location")}
+                value={
+                  appt.location_url ? (
+                    <a
+                      href={appt.location_url}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="underline"
+                    >
+                      {appt.location}
+                    </a>
+                  ) : (
+                    appt.location
+                  )
+                }
+              />
             )}
             {appt.doctor && (
               <Row label={t("schedule.form.doctor")} value={appt.doctor} />
@@ -226,4 +249,129 @@ function formatDateTime(
     dateStyle: "medium",
     ...(allDay ? {} : { timeStyle: "short" }),
   });
+}
+
+// Small chip row showing the attending doctor + any listed attendees.
+// Kept visually light — it's meta, not structure.
+function AttendeeChips({
+  appt,
+  locale,
+  t,
+}: {
+  appt: Appointment;
+  locale: "en" | "zh";
+  t: (k: string) => string;
+}) {
+  const all: { label: string; kind: "doctor" | "attendee" }[] = [];
+  if (appt.doctor) all.push({ label: appt.doctor, kind: "doctor" });
+  for (const name of appt.attendees ?? []) {
+    if (!name?.trim()) continue;
+    all.push({ label: name.trim(), kind: "attendee" });
+  }
+  if (all.length === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="mono mr-1 text-[10px] uppercase tracking-[0.12em] text-ink-400">
+        <Users className="mr-1 inline h-3 w-3" />
+        {t("schedule.careTeam")}
+      </span>
+      {all.map((c, i) => (
+        <span
+          key={`${c.label}-${i}`}
+          className={
+            c.kind === "doctor"
+              ? "inline-flex items-center rounded-full bg-[var(--tide-soft)] px-2 py-0.5 text-[11.5px] font-medium text-[var(--tide-2)]"
+              : "inline-flex items-center rounded-full border border-ink-200 bg-paper-2 px-2 py-0.5 text-[11.5px] text-ink-700"
+          }
+        >
+          {c.label}
+          {c.kind === "doctor" && (
+            <span className="ml-1 text-[9px] uppercase tracking-wide opacity-70">
+              {locale === "zh" ? "主诊" : "Lead"}
+            </span>
+          )}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// Prompt the patient to log what happened after a past appointment.
+// Only shown when the appointment is past, not cancelled, and has no
+// followup_logged_at yet. Submitting writes a `log_events` row tagged
+// by kind (so the agent layer picks it up) and sets
+// `followup_logged_at`, which dismisses the prompt.
+function FollowUpPrompt({
+  appt,
+  locale,
+  t,
+}: {
+  appt: Appointment;
+  locale: "en" | "zh";
+  t: (k: string) => string;
+}) {
+  const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const startTime = new Date(appt.starts_at).getTime();
+  const isPast = Number.isFinite(startTime) && startTime <= Date.now();
+  const dismissed =
+    appt.status === "cancelled" ||
+    appt.status === "rescheduled" ||
+    Boolean(appt.followup_logged_at);
+
+  if (!isPast || dismissed || typeof appt.id !== "number") return null;
+
+  async function submit() {
+    if (!appt.id) return;
+    setSaving(true);
+    try {
+      const nowIso = now();
+      const body = text.trim();
+      if (body) {
+        await db.log_events.add({
+          at: nowIso,
+          input: {
+            text: `[follow-up · ${appt.kind}] ${appt.title}\n\n${body}`,
+            tags: logTagsForKind(appt.kind),
+            locale,
+            at: nowIso,
+          },
+        });
+      }
+      await db.appointments.update(appt.id, {
+        followup_logged_at: nowIso,
+        status: "attended",
+        updated_at: nowIso,
+      });
+      setText("");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card className="space-y-3 border-[var(--tide-2)]/40 bg-[var(--tide-soft)]/30 p-4">
+      <div className="flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-900">
+        <MessageSquarePlus className="h-3.5 w-3.5 text-[var(--tide-2)]" />
+        {t(`schedule.followUp.prompt.${appt.kind}`)}
+      </div>
+      <Field label={t("schedule.followUp.label")}>
+        <Textarea
+          rows={4}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={t(`schedule.followUp.placeholder.${appt.kind}`)}
+          disabled={saving}
+        />
+      </Field>
+      <div className="flex items-center justify-end gap-2">
+        <Button onClick={submit} disabled={saving} size="md">
+          <Check className="h-4 w-4" />
+          {saving
+            ? t("schedule.followUp.saving")
+            : t("schedule.followUp.save")}
+        </Button>
+      </div>
+    </Card>
+  );
 }
