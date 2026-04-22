@@ -1,0 +1,47 @@
+{
+  "packageId": "app.vercel.anchor",
+  "host": "REPLACE_WITH_VERCEL_PROD_HOST",
+  "name": "Anchor",
+  "launcherName": "Anchor",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#19212f",
+  "themeColorDark": "#19212f",
+  "navigationColor": "#19212f",
+  "navigationColorDark": "#19212f",
+  "navigationDividerColor": "#19212f",
+  "navigationDividerColorDark": "#19212f",
+  "backgroundColor": "#f5f1e8",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://REPLACE_WITH_VERCEL_PROD_HOST/anchor-mark.svg",
+  "maskableIconUrl": "https://REPLACE_WITH_VERCEL_PROD_HOST/anchor-mark.svg",
+  "appVersionName": "1.0.0",
+  "appVersion": 1,
+  "shortcuts": [
+    {
+      "name": "Tell the team",
+      "shortName": "Log",
+      "url": "/log",
+      "iconUrl": "https://REPLACE_WITH_VERCEL_PROD_HOST/anchor-mark.svg"
+    },
+    {
+      "name": "Today's check-in",
+      "shortName": "Check-in",
+      "url": "/daily/new",
+      "iconUrl": "https://REPLACE_WITH_VERCEL_PROD_HOST/anchor-mark.svg"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://REPLACE_WITH_VERCEL_PROD_HOST/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": { "enabled": false },
+    "playBilling": { "enabled": false }
+  },
+  "alphaDependencies": { "enabled": false },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://REPLACE_WITH_VERCEL_PROD_HOST/"
+}
