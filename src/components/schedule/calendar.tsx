@@ -11,15 +11,44 @@ import { useRouter } from "next/navigation";
 import { useLocale } from "~/hooks/use-translate";
 import type { Appointment, AppointmentKind } from "~/types/appointment";
 
-// Colour map keyed by appointment kind. Muted, matches the wider
-// paper/ink palette — we're not trying to be cheerful, just legible.
-const KIND_COLORS: Record<AppointmentKind, { bg: string; border: string; text: string }> = {
-  chemo:      { bg: "#1f2937", border: "#0f172a", text: "#f5f1e8" },
-  clinic:     { bg: "#64748b", border: "#334155", text: "#ffffff" },
-  scan:       { bg: "#b45309", border: "#92400e", text: "#ffffff" },
-  blood_test: { bg: "#991b1b", border: "#7f1d1d", text: "#ffffff" },
-  procedure:  { bg: "#4338ca", border: "#312e81", text: "#ffffff" },
-  other:      { bg: "#6b7280", border: "#4b5563", text: "#ffffff" },
+// Event colours map to the Anchor palette (see globals.css tokens).
+// Each kind gets a light soft background + a clear ink/tide/warn
+// accent for the left border + matching readable text. Muted on
+// purpose — we want legibility, not cheer.
+const KIND_STYLES: Record<
+  AppointmentKind,
+  { bg: string; border: string; text: string }
+> = {
+  chemo: {
+    bg: "color-mix(in oklch, var(--tide-soft), transparent 10%)",
+    border: "var(--tide-2)",
+    text: "var(--tide-2)",
+  },
+  clinic: {
+    bg: "var(--paper-2)",
+    border: "var(--ink-400)",
+    text: "var(--ink-700)",
+  },
+  scan: {
+    bg: "var(--sand)",
+    border: "var(--sand-2)",
+    text: "oklch(32% 0.04 70)",
+  },
+  blood_test: {
+    bg: "var(--warn-soft)",
+    border: "var(--warn)",
+    text: "var(--warn)",
+  },
+  procedure: {
+    bg: "color-mix(in oklch, var(--ink-900), transparent 92%)",
+    border: "var(--ink-900)",
+    text: "var(--ink-900)",
+  },
+  other: {
+    bg: "var(--ink-100)",
+    border: "var(--ink-300)",
+    text: "var(--ink-700)",
+  },
 };
 
 export function AppointmentsCalendar({
@@ -33,16 +62,17 @@ export function AppointmentsCalendar({
 
   const events = useMemo<EventInput[]>(() => {
     return appointments.map((a) => {
-      const colors = KIND_COLORS[a.kind] ?? KIND_COLORS.other;
+      const s = KIND_STYLES[a.kind] ?? KIND_STYLES.other;
       return {
         id: String(a.id ?? `new-${a.starts_at}`),
-        title: prefix(a.kind) + a.title,
+        title: a.title,
         start: a.starts_at,
         end: a.ends_at,
         allDay: a.all_day ?? false,
-        backgroundColor: colors.bg,
-        borderColor: colors.border,
-        textColor: colors.text,
+        backgroundColor: s.bg,
+        borderColor: s.border,
+        textColor: s.text,
+        classNames: ["anchor-event", `anchor-event-${a.kind}`],
         extendedProps: {
           kind: a.kind,
           doctor: a.doctor,
@@ -65,7 +95,7 @@ export function AppointmentsCalendar({
   }
 
   return (
-    <div className="overflow-hidden rounded-[var(--r-md)] border border-ink-100/70 bg-paper">
+    <div className="anchor-calendar overflow-hidden rounded-[var(--r-md)] border border-ink-100/70 bg-paper">
       <FullCalendar
         ref={calRef}
         plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
@@ -84,7 +114,13 @@ export function AppointmentsCalendar({
                 day: "日",
                 list: "列表",
               }
-            : undefined
+            : {
+                today: "Today",
+                month: "Month",
+                week: "Week",
+                day: "Day",
+                list: "List",
+              }
         }
         locale={locale === "zh" ? "zh-cn" : "en-au"}
         firstDay={1}
@@ -99,15 +135,4 @@ export function AppointmentsCalendar({
       />
     </div>
   );
-}
-
-function prefix(kind: AppointmentKind): string {
-  switch (kind) {
-    case "chemo":      return "◉ ";
-    case "clinic":     return "☰ ";
-    case "scan":       return "◎ ";
-    case "blood_test": return "∽ ";
-    case "procedure":  return "⊕ ";
-    case "other":      return "· ";
-  }
 }
