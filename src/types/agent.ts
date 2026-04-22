@@ -129,3 +129,23 @@ export interface AgentRunRow {
   referral_ids: number[];
   output: AgentOutput;
 }
+
+// Human-in-the-loop feedback against a specific run. Closes the dial-in
+// loop: each subsequent run gets a digest of recent feedback as a cached
+// system block, so the agent can adjust tone, calibration, or scope based
+// on how Thomas / the patient has reacted to past reports.
+export type FeedbackKind = "thumbs_up" | "thumbs_down" | "correction";
+export type FeedbackBy = "patient" | "thomas" | "clinician";
+
+export interface AgentFeedbackRow {
+  id?: number;
+  agent_id: AgentId;
+  run_id: number; // foreign key into agent_runs
+  kind: FeedbackKind;
+  by: FeedbackBy;
+  // Optional free-text. For `correction` kind this is what should have
+  // been said / filed instead — the agent is told to take it as ground
+  // truth on the next run.
+  notes?: string;
+  at: string;
+}

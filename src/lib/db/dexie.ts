@@ -28,7 +28,12 @@ import type {
   MedicationEvent,
   MedicationPromptEvent,
 } from "~/types/medication";
-import type { AgentRunRow, AgentStateRow, LogEventRow } from "~/types/agent";
+import type {
+  AgentFeedbackRow,
+  AgentRunRow,
+  AgentStateRow,
+  LogEventRow,
+} from "~/types/agent";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -59,6 +64,7 @@ export class AnchorDB extends Dexie {
   agent_states!: Table<AgentStateRow, number>;
   log_events!: Table<LogEventRow, number>;
   agent_runs!: Table<AgentRunRow, number>;
+  agent_feedback!: Table<AgentFeedbackRow, number>;
 
   constructor() {
     super("anchor_db");
@@ -138,6 +144,14 @@ export class AnchorDB extends Dexie {
       agent_states: "++id, &agent_id, updated_at",
       log_events: "++id, at",
       agent_runs: "++id, agent_id, ran_at, [agent_id+ran_at]",
+    });
+    // v11: dial-in loop. Per-run human feedback (Thomas, patient,
+    // clinician). The next agent run reads the most recent feedback for
+    // its agent_id and includes it as a cached system block, so the
+    // agent can adjust tone, calibration, or scope.
+    this.version(11).stores({
+      agent_feedback:
+        "++id, agent_id, run_id, by, kind, at, [agent_id+at]",
     });
   }
 }

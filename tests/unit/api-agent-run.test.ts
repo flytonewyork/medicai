@@ -35,6 +35,7 @@ const baseBody = {
     },
   ],
   state_md: "yesterday: protein 60 g",
+  recent_feedback: [],
   locale: "en",
   date: "2026-04-22",
   trigger: "on_demand",
@@ -158,6 +159,46 @@ describe("/api/agent/[id]/run route", () => {
     expect(res.status).toBe(502);
     const body = (await res.json()) as { error: string; message: string };
     expect(body.message).toBe("Claude 429");
+  });
+
+  it("threads recent_feedback through to runAgent (dial-in loop)", async () => {
+    runAgentMock.mockResolvedValue({
+      ...emptyOutput(),
+      daily_report: { en: "ack", zh: "" },
+    });
+    const { POST } = await import("~/app/api/agent/[id]/run/route");
+    const feedback = [
+      {
+        id: 7,
+        agent_id: "nutrition",
+        run_id: 12,
+        kind: "correction",
+        by: "thomas",
+        notes:
+          "You over-flagged weight loss yesterday — Hu Lin had been on a fast for a procedure.",
+        at: "2026-04-21T22:00:00Z",
+      },
+    ];
+    const res = await POST(
+      new Request("http://localhost/api/agent/nutrition/run", {
+        method: "POST",
+        body: JSON.stringify({ ...baseBody, recent_feedback: feedback }),
+        headers: { "content-type": "application/json" },
+      }),
+      { params: { id: "nutrition" } },
+    );
+    expect(res.status).toBe(200);
+    expect(runAgentMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recentFeedback: expect.arrayContaining([
+          expect.objectContaining({
+            kind: "correction",
+            by: "thomas",
+            notes: expect.stringMatching(/over-flagged/),
+          }),
+        ]),
+      }),
+    );
   });
 
   it("accepts an empty referrals array (maintenance run)", async () => {

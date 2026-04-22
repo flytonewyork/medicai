@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import type { AgentId, AgentOutput, LogEventRow, LogTag } from "~/types/agent";
+import type {
+  AgentFeedbackRow,
+  AgentId,
+  AgentOutput,
+  LogEventRow,
+  LogTag,
+} from "~/types/agent";
 import { AGENT_IDS, LOG_TAGS } from "~/types/agent";
 import { runAgent } from "~/agents/run";
 
@@ -26,9 +32,20 @@ const logEventSchema = z.object({
   consumed_by: z.array(z.number()).optional(),
 });
 
+const feedbackSchema = z.object({
+  id: z.number().optional(),
+  agent_id: z.enum(AGENT_IDS as unknown as [AgentId, ...AgentId[]]),
+  run_id: z.number(),
+  kind: z.enum(["thumbs_up", "thumbs_down", "correction"]),
+  by: z.enum(["patient", "thomas", "clinician"]),
+  notes: z.string().optional(),
+  at: z.string(),
+});
+
 const RequestSchema = z.object({
   referrals: z.array(logEventSchema),
   state_md: z.string().default(""),
+  recent_feedback: z.array(feedbackSchema).default([]),
   locale: z.enum(["en", "zh"]),
   date: z.string(), // YYYY-MM-DD
   trigger: z.enum(["daily_batch", "on_demand"]).default("on_demand"),
@@ -82,6 +99,7 @@ export async function POST(
       id,
       referrals: parsed.data.referrals as LogEventRow[],
       stateMd: parsed.data.state_md,
+      recentFeedback: parsed.data.recent_feedback as AgentFeedbackRow[],
       locale: parsed.data.locale,
       date: parsed.data.date,
       trigger: parsed.data.trigger,

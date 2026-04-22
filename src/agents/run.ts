@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type {
+  AgentFeedbackRow,
   AgentId,
   AgentOutput,
   LogEventRow,
@@ -46,10 +47,26 @@ function formatReferrals(referrals: readonly LogEventRow[]): string {
     .join("\n\n");
 }
 
+function formatFeedback(rows: readonly AgentFeedbackRow[]): string {
+  if (rows.length === 0) {
+    return "(no recent feedback — proceed with your usual approach)";
+  }
+  return rows
+    .map((row, i) => {
+      const head = `[${i + 1}] ${row.at}  ·  ${row.by} → ${row.kind} on run #${row.run_id}`;
+      return row.notes ? `${head}\nnote: ${row.notes}` : head;
+    })
+    .join("\n\n");
+}
+
 export interface RunAgentArgs {
   id: AgentId;
   referrals: readonly LogEventRow[];
   stateMd: string;
+  // Most recent feedback rows for this agent (typically the last ~10).
+  // Closes the dial-in loop: the agent sees how recent reports landed
+  // and adjusts. Empty array on first run.
+  recentFeedback: readonly AgentFeedbackRow[];
   locale: Locale;
   date: string; // "YYYY-MM-DD" — the day this run is producing a report for
   trigger: "daily_batch" | "on_demand";
@@ -90,6 +107,11 @@ export async function runAgent(args: RunAgentArgs): Promise<AgentOutput> {
           args.stateMd.trim().length > 0
             ? `Your current state summary (state.md):\n\n${args.stateMd}`
             : "Your current state summary is empty — this is the first batch you're seeing.",
+        cache_control: { type: "ephemeral" },
+      },
+      {
+        type: "text",
+        text: `Recent feedback on your past runs (most recent first):\n\n${formatFeedback(args.recentFeedback)}`,
         cache_control: { type: "ephemeral" },
       },
     ],
