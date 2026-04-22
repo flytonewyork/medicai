@@ -5,6 +5,7 @@
   },
   "nav": {
     "dashboard": "Dashboard",
+    "schedule": "Schedule",
     "assessment": "Assessment",
     "treatment": "Treatment",
     "daily": "Daily",
@@ -116,6 +117,65 @@
     "back": "Back",
     "saveAndContinue": "Save and continue",
     "saving": "Saving…"
+  },
+  "schedule": {
+    "eyebrow": "SCHEDULE",
+    "title": "Calendar",
+    "back": "Back to calendar",
+    "edit": "Edit appointment",
+    "addManual": "New appointment",
+    "addFromPhoto": "From photo",
+    "addFromEmail": "From email",
+    "upcoming": "Upcoming",
+    "noneUpcoming": "No upcoming appointments.",
+    "prepDue": "Prep due soon",
+    "notFound": "Appointment not found.",
+    "confirmDelete": "Delete this appointment and its links?",
+    "links": "Linked appointments",
+    "linkPrepForOutgoing": "Prep for",
+    "linkPrepForIncoming": "Prep: ",
+    "linkFollowUp": "Follow-up of",
+    "new": {
+      "manual": "New appointment",
+      "fromPhoto": "From a photo",
+      "fromEmail": "From an email",
+      "photoCta": "Take or upload photo",
+      "photoHint": "Appointment letter, clinic card, or scan referral",
+      "emailCta": "Paste email body",
+      "emailLabel": "Email text",
+      "emailPlaceholder": "Paste the full text of the appointment email here — including subject line, dates, times, and any prep instructions.",
+      "parseCta": "Parse",
+      "parsing": "Reading…",
+      "parsed": "Parsed — review and save",
+      "parsedHint": "Anything the parser wasn't sure about is noted at the end of the notes field."
+    },
+    "kind": {
+      "clinic": "Clinic",
+      "chemo": "Chemo",
+      "scan": "Scan",
+      "blood_test": "Blood test",
+      "procedure": "Procedure",
+      "other": "Other"
+    },
+    "status": {
+      "scheduled": "Scheduled",
+      "attended": "Attended",
+      "missed": "Missed",
+      "cancelled": "Cancelled",
+      "rescheduled": "Rescheduled"
+    },
+    "form": {
+      "kind": "Kind",
+      "title": "Title",
+      "startsAt": "Starts",
+      "endsAt": "Ends",
+      "allDay": "All day",
+      "location": "Location",
+      "doctor": "Clinician",
+      "phone": "Phone",
+      "notes": "Notes",
+      "status": "Status"
+    }
   },
   "daily": {
     "title": "Daily check-in",
