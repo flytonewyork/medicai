@@ -9,32 +9,36 @@ export type RuleCategory =
   | "psychological"
   | "nutrition";
 
+// Every clinical field is optional — the daily picker wizard records
+// only the categories the patient actually touched. Consumers that used
+// to assume presence (detectors, trend nudges, dashboard cards) now
+// treat undefined as "not entered today" rather than "zero / absent".
 export interface DailyEntry {
   id?: number;
   date: string;
   entered_at: string;
   entered_by: EnteredBy;
-  energy: number;
-  sleep_quality: number;
-  appetite: number;
-  pain_worst: number;
-  pain_current: number;
-  mood_clarity: number;
-  nausea: number;
+  energy?: number;
+  sleep_quality?: number;
+  appetite?: number;
+  pain_worst?: number;
+  pain_current?: number;
+  mood_clarity?: number;
+  nausea?: number;
   weight_kg?: number;
   steps?: number;
-  practice_morning_completed: boolean;
+  practice_morning_completed?: boolean;
   practice_morning_quality?: number;
-  practice_evening_completed: boolean;
+  practice_evening_completed?: boolean;
   practice_evening_quality?: number;
-  cold_dysaesthesia: boolean;
-  neuropathy_hands: boolean;
-  neuropathy_feet: boolean;
-  mouth_sores: boolean;
-  diarrhoea_count: number;
-  new_bruising: boolean;
-  dyspnoea: boolean;
-  fever: boolean;
+  cold_dysaesthesia?: boolean;
+  neuropathy_hands?: boolean;
+  neuropathy_feet?: boolean;
+  mouth_sores?: boolean;
+  diarrhoea_count?: number;
+  new_bruising?: boolean;
+  dyspnoea?: boolean;
+  fever?: boolean;
   fever_temp?: number;
   reflection?: string;
   reflection_lang?: Locale;

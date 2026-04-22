@@ -1,0 +1,924 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useLiveQuery } from "dexie-react-hooks";
+import Link from "next/link";
+import { db, now } from "~/lib/db/dexie";
+import { useLocale, useT } from "~/hooks/use-translate";
+import { useUIStore } from "~/stores/ui-store";
+import { runEngineAndPersist } from "~/lib/rules/engine";
+import { Button } from "~/components/ui/button";
+import { Card, CardContent } from "~/components/ui/card";
+import { Field, TextInput, Textarea } from "~/components/ui/field";
+import { ScaleInput } from "./scale-input";
+import { Toggle } from "./toggle";
+import type { DailyEntry } from "~/types/clinical";
+import {
+  Activity,
+  Bed,
+  Scale,
+  Sparkles,
+  Utensils,
+  Footprints,
+  AlertTriangle,
+  PenLine,
+  Pill,
+  ArrowLeft,
+  ArrowRight,
+  SkipForward,
+  Check,
+  X,
+} from "lucide-react";
+import { cn } from "~/lib/utils/cn";
+
+type Draft = Partial<DailyEntry>;
+type Bilingual = { en: string; zh: string };
+
+const CATS = [
+  {
+    id: "feelings",
+    icon: Activity,
+    title: { en: "How you feel", zh: "整体感受" } as Bilingual,
+    hint: {
+      en: "Energy, pain, mood, appetite",
+      zh: "精力、疼痛、情绪、食欲",
+    } as Bilingual,
+    fields: [
+      "energy",
+      "pain_current",
+      "pain_worst",
+      "mood_clarity",
+      "appetite",
+    ],
+  },
+  {
+    id: "sleep",
+    icon: Bed,
+    title: { en: "Sleep", zh: "睡眠" } as Bilingual,
+    hint: { en: "Last night's sleep", zh: "昨晚的睡眠" } as Bilingual,
+    fields: ["sleep_quality"],
+  },
+  {
+    id: "weight",
+    icon: Scale,
+    title: { en: "Weight", zh: "体重" } as Bilingual,
+    hint: { en: "Only if you weighed in", zh: "若今天称重了再填" } as Bilingual,
+    fields: ["weight_kg"],
+  },
+  {
+    id: "practice",
+    icon: Sparkles,
+    title: { en: "Practice", zh: "修习" } as Bilingual,
+    hint: { en: "Qigong, meditation", zh: "气功、冥想" } as Bilingual,
+    fields: [
+      "practice_morning_completed",
+      "practice_morning_quality",
+      "practice_evening_completed",
+      "practice_evening_quality",
+    ],
+  },
+  {
+    id: "food",
+    icon: Utensils,
+    title: { en: "Food", zh: "饮食" } as Bilingual,
+    hint: { en: "Protein, meals, fluids", zh: "蛋白质、正餐、饮水" } as Bilingual,
+    fields: ["protein_grams", "meals_count", "snacks_count", "fluids_ml"],
+  },
+  {
+    id: "movement",
+    icon: Footprints,
+    title: { en: "Movement", zh: "活动" } as Bilingual,
+    hint: {
+      en: "Walking, resistance, steps",
+      zh: "步行、阻力训练、步数",
+    } as Bilingual,
+    fields: [
+      "walking_minutes",
+      "resistance_training",
+      "other_exercise_minutes",
+      "steps",
+    ],
+  },
+  {
+    id: "symptoms",
+    icon: AlertTriangle,
+    title: { en: "Symptoms", zh: "症状" } as Bilingual,
+    hint: {
+      en: "Only record what's actually present",
+      zh: "只记今日出现的",
+    } as Bilingual,
+    fields: [
+      "nausea",
+      "fever",
+      "fever_temp",
+      "cold_dysaesthesia",
+      "neuropathy_hands",
+      "neuropathy_feet",
+      "mouth_sores",
+      "diarrhoea_count",
+      "new_bruising",
+      "dyspnoea",
+    ],
+  },
+  {
+    id: "reflection",
+    icon: PenLine,
+    title: { en: "Reflection", zh: "反思" } as Bilingual,
+    hint: { en: "Anything worth noting", zh: "想记下的一点" } as Bilingual,
+    fields: ["reflection"],
+  },
+] as const;
+
+type CatId = (typeof CATS)[number]["id"];
+
+function catDef(id: CatId) {
+  return CATS.find((c) => c.id === id)!;
+}
+
+function catTouched(id: CatId, draft: Draft): boolean {
+  const def = catDef(id);
+  return def.fields.some((f) => {
+    const v = (draft as Record<string, unknown>)[f];
+    return v !== undefined && v !== "";
+  });
+}
+
+interface Props {
+  entryId?: number;
+  date: string;
+}
+
+export function DailyWizard({ entryId, date }: Props) {
+  const locale = useLocale();
+  const t = useT();
+  const router = useRouter();
+  const enteredBy = useUIStore((s) => s.enteredBy);
+
+  const existing = useLiveQuery(
+    async () => (entryId ? await db.daily_entries.get(entryId) : undefined),
+    [entryId],
+  );
+
+  const [draft, setDraft] = useState<Draft>({});
+  const [picked, setPicked] = useState<CatId[]>([]);
+  const [phase, setPhase] = useState<"picking" | "stepping" | "review">(
+    "picking",
+  );
+  const [cursor, setCursor] = useState(0);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (existing) {
+      setDraft(existing);
+      const alreadyFilled = CATS.filter((c) =>
+        catTouched(c.id, existing),
+      ).map((c) => c.id);
+      if (alreadyFilled.length > 0) {
+        setPicked(alreadyFilled as CatId[]);
+      }
+    }
+  }, [existing]);
+
+  function patch<K extends keyof DailyEntry>(k: K, v: DailyEntry[K] | undefined) {
+    setDraft((d) => {
+      const next = { ...d };
+      if (v === undefined) {
+        delete (next as Record<string, unknown>)[k as string];
+      } else {
+        (next as Record<string, unknown>)[k as string] = v;
+      }
+      return next;
+    });
+  }
+
+  function toggleCat(id: CatId) {
+    setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  }
+
+  function start() {
+    if (picked.length === 0) return;
+    setCursor(0);
+    setPhase("stepping");
+  }
+
+  function advance() {
+    if (cursor + 1 >= picked.length) {
+      setPhase("review");
+    } else {
+      setCursor(cursor + 1);
+    }
+  }
+
+  function back() {
+    if (cursor > 0) setCursor(cursor - 1);
+    else setPhase("picking");
+  }
+
+  function skip() {
+    const cat = picked[cursor];
+    if (cat) {
+      const def = catDef(cat);
+      def.fields.forEach((f) => patch(f as keyof DailyEntry, undefined));
+    }
+    advance();
+  }
+
+  async function save() {
+    setSaving(true);
+    try {
+      const base: Partial<DailyEntry> = {
+        ...draft,
+        date,
+        entered_by: enteredBy,
+        entered_at: existing?.entered_at ?? now(),
+        updated_at: now(),
+      };
+      if (entryId) {
+        await db.daily_entries.update(entryId, base);
+      } else {
+        await db.daily_entries.add({
+          ...(base as DailyEntry),
+          created_at: now(),
+        });
+      }
+      await runEngineAndPersist();
+      router.push("/daily");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (phase === "picking") {
+    return (
+      <PickScreen
+        picked={picked}
+        onToggle={toggleCat}
+        onStart={start}
+        locale={locale}
+        t={t}
+      />
+    );
+  }
+
+  if (phase === "stepping") {
+    const catId = picked[cursor];
+    if (!catId) return null;
+    return (
+      <StepScreen
+        catId={catId}
+        index={cursor}
+        total={picked.length}
+        draft={draft}
+        patch={patch}
+        onBack={back}
+        onSkip={skip}
+        onNext={advance}
+        locale={locale}
+      />
+    );
+  }
+
+  return (
+    <ReviewScreen
+      picked={picked}
+      draft={draft}
+      saving={saving}
+      onResume={(id) => {
+        const idx = picked.indexOf(id);
+        if (idx >= 0) {
+          setCursor(idx);
+          setPhase("stepping");
+        }
+      }}
+      onAddMore={() => setPhase("picking")}
+      onSave={save}
+      locale={locale}
+    />
+  );
+}
+
+function PickScreen({
+  picked,
+  onToggle,
+  onStart,
+  locale,
+  t,
+}: {
+  picked: CatId[];
+  onToggle: (id: CatId) => void;
+  onStart: () => void;
+  locale: "en" | "zh";
+  t: (key: string) => string;
+}) {
+  return (
+    <div className="space-y-5">
+      <header>
+        <h1 className="serif text-[22px] text-ink-900">
+          {locale === "zh" ? "今天想记什么？" : "What would you like to note?"}
+        </h1>
+        <p className="mt-1 text-sm text-ink-500">
+          {locale === "zh"
+            ? "只选今天真正相关的。没有的项目就不用填。"
+            : "Pick only what actually applies today. Anything you don't tap stays unrecorded."}
+        </p>
+      </header>
+
+      <ul className="grid gap-2 sm:grid-cols-2">
+        {CATS.map((c) => {
+          const Icon = c.icon;
+          const active = picked.includes(c.id);
+          return (
+            <li key={c.id}>
+              <button
+                type="button"
+                onClick={() => onToggle(c.id)}
+                aria-pressed={active}
+                className={cn(
+                  "flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors",
+                  active
+                    ? "border-ink-900 bg-ink-900 text-paper"
+                    : "border-ink-100 bg-paper-2 hover:border-ink-300",
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-md",
+                    active
+                      ? "bg-paper/10 text-paper"
+                      : "bg-[var(--tide-soft)] text-[var(--tide-2)]",
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13.5px] font-semibold">
+                    {c.title[locale]}
+                  </div>
+                  <div
+                    className={cn(
+                      "mt-0.5 text-[11.5px]",
+                      active ? "text-paper/70" : "text-ink-500",
+                    )}
+                  >
+                    {c.hint[locale]}
+                  </div>
+                </div>
+                {active && <Check className="h-4 w-4 shrink-0" />}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      <Card>
+        <CardContent className="flex items-start gap-3 py-3">
+          <Pill className="mt-0.5 h-4 w-4 text-ink-400" />
+          <div className="flex-1 text-[12.5px] text-ink-500">
+            {locale === "zh"
+              ? "服药请用“记录服药”。"
+              : "For medications, use the dedicated Log medication screen."}
+          </div>
+          <Link
+            href="/medications/log"
+            className="rounded-md border border-ink-200 px-2.5 py-1.5 text-[12px] text-ink-700 hover:bg-ink-100/40"
+          >
+            {locale === "zh" ? "去记录" : "Log now"}
+          </Link>
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center justify-between">
+        <Link
+          href="/daily"
+          className="text-[12px] text-ink-500 hover:text-ink-800"
+        >
+          {locale === "zh" ? "取消" : t("common.cancel")}
+        </Link>
+        <Button onClick={onStart} disabled={picked.length === 0} size="lg">
+          {locale === "zh"
+            ? `开始（${picked.length}）`
+            : `Start (${picked.length})`}
+          <ArrowRight className="ml-1 h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function StepScreen({
+  catId,
+  index,
+  total,
+  draft,
+  patch,
+  onBack,
+  onSkip,
+  onNext,
+  locale,
+}: {
+  catId: CatId;
+  index: number;
+  total: number;
+  draft: Draft;
+  patch: <K extends keyof DailyEntry>(k: K, v: DailyEntry[K] | undefined) => void;
+  onBack: () => void;
+  onSkip: () => void;
+  onNext: () => void;
+  locale: "en" | "zh";
+}) {
+  const def = catDef(catId);
+  const pct = Math.round(((index + 1) / total) * 100);
+
+  return (
+    <div className="space-y-5">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-xs text-ink-500">
+          <span>
+            {index + 1} / {total}
+          </span>
+          <span className="tabular-nums">{pct}%</span>
+        </div>
+        <div className="h-1 w-full overflow-hidden rounded-full bg-ink-100">
+          <div
+            className="h-full bg-ink-900 transition-all duration-300"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      </div>
+
+      <header>
+        <h2 className="serif text-xl text-ink-900">{def.title[locale]}</h2>
+        <p className="mt-1 text-sm text-ink-500">{def.hint[locale]}</p>
+      </header>
+
+      <Card>
+        <CardContent className="space-y-4 pt-5">
+          <CategoryFields catId={catId} draft={draft} patch={patch} locale={locale} />
+        </CardContent>
+      </Card>
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex gap-2">
+          <Button variant="ghost" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4" />
+            {locale === "zh" ? "上一步" : "Back"}
+          </Button>
+          <Button variant="ghost" onClick={onSkip}>
+            <SkipForward className="h-4 w-4" />
+            {locale === "zh" ? "不记这项" : "Skip"}
+          </Button>
+        </div>
+        <Button onClick={onNext} size="lg">
+          {index + 1 >= total
+            ? locale === "zh"
+              ? "完成"
+              : "Review"
+            : locale === "zh"
+              ? "下一步"
+              : "Next"}
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function CategoryFields({
+  catId,
+  draft,
+  patch,
+  locale,
+}: {
+  catId: CatId;
+  draft: Draft;
+  patch: <K extends keyof DailyEntry>(k: K, v: DailyEntry[K] | undefined) => void;
+  locale: "en" | "zh";
+}) {
+  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+
+  if (catId === "feelings") {
+    return (
+      <>
+        <ScaleInput
+          label={L("Energy", "精力")}
+          value={draft.energy ?? 5}
+          onChange={(n) => patch("energy", n)}
+        />
+        <ScaleInput
+          label={L("Pain right now", "目前疼痛")}
+          value={draft.pain_current ?? 0}
+          onChange={(n) => patch("pain_current", n)}
+        />
+        <ScaleInput
+          label={L("Worst pain (24h)", "过去 24 小时最痛")}
+          value={draft.pain_worst ?? 0}
+          onChange={(n) => patch("pain_worst", n)}
+        />
+        <ScaleInput
+          label={L("Mental clarity", "头脑清明")}
+          value={draft.mood_clarity ?? 5}
+          onChange={(n) => patch("mood_clarity", n)}
+        />
+        <ScaleInput
+          label={L("Appetite", "食欲")}
+          value={draft.appetite ?? 5}
+          onChange={(n) => patch("appetite", n)}
+        />
+      </>
+    );
+  }
+
+  if (catId === "sleep") {
+    return (
+      <ScaleInput
+        label={L("Sleep quality", "睡眠质量")}
+        value={draft.sleep_quality ?? 5}
+        onChange={(n) => patch("sleep_quality", n)}
+      />
+    );
+  }
+
+  if (catId === "weight") {
+    return (
+      <Field label={L("Weight (kg)", "体重（公斤）")}>
+        <TextInput
+          type="number"
+          inputMode="decimal"
+          value={draft.weight_kg ?? ""}
+          onChange={(e) => {
+            const v = e.target.value;
+            patch("weight_kg", v === "" ? undefined : Number(v));
+          }}
+          placeholder={L("e.g. 68.5", "例如 68.5")}
+        />
+      </Field>
+    );
+  }
+
+  if (catId === "practice") {
+    return (
+      <div className="space-y-3">
+        <Toggle
+          label={L("Morning practice completed", "晨间修习完成")}
+          checked={draft.practice_morning_completed ?? false}
+          onChange={(v) =>
+            patch("practice_morning_completed", v ? true : undefined)
+          }
+        />
+        {draft.practice_morning_completed && (
+          <ScaleInput
+            label={L("Morning quality (0–5)", "晨间质量（0–5）")}
+            value={draft.practice_morning_quality ?? 3}
+            onChange={(n) => patch("practice_morning_quality", n)}
+            min={0}
+            max={5}
+          />
+        )}
+        <Toggle
+          label={L("Evening practice completed", "晚间修习完成")}
+          checked={draft.practice_evening_completed ?? false}
+          onChange={(v) =>
+            patch("practice_evening_completed", v ? true : undefined)
+          }
+        />
+        {draft.practice_evening_completed && (
+          <ScaleInput
+            label={L("Evening quality (0–5)", "晚间质量（0–5）")}
+            value={draft.practice_evening_quality ?? 3}
+            onChange={(n) => patch("practice_evening_quality", n)}
+            min={0}
+            max={5}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (catId === "food") {
+    return (
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field
+          label={L("Protein (grams)", "蛋白质（克）")}
+          hint={L(
+            "≈ 20 g per palm, 8 g per egg, 25 g per whey scoop",
+            "一掌肉约 20 g，一个鸡蛋约 8 g，一勺乳清约 25 g",
+          )}
+        >
+          <TextInput
+            type="number"
+            inputMode="numeric"
+            value={draft.protein_grams ?? ""}
+            onChange={(e) =>
+              patch(
+                "protein_grams",
+                e.target.value === "" ? undefined : Number(e.target.value),
+              )
+            }
+          />
+        </Field>
+        <Field label={L("Fluids (ml)", "饮水（毫升）")}>
+          <TextInput
+            type="number"
+            inputMode="numeric"
+            value={draft.fluids_ml ?? ""}
+            onChange={(e) =>
+              patch(
+                "fluids_ml",
+                e.target.value === "" ? undefined : Number(e.target.value),
+              )
+            }
+          />
+        </Field>
+        <Field label={L("Meals", "正餐")}>
+          <TextInput
+            type="number"
+            inputMode="numeric"
+            value={draft.meals_count ?? ""}
+            onChange={(e) =>
+              patch(
+                "meals_count",
+                e.target.value === "" ? undefined : Number(e.target.value),
+              )
+            }
+          />
+        </Field>
+        <Field label={L("Snacks", "加餐")}>
+          <TextInput
+            type="number"
+            inputMode="numeric"
+            value={draft.snacks_count ?? ""}
+            onChange={(e) =>
+              patch(
+                "snacks_count",
+                e.target.value === "" ? undefined : Number(e.target.value),
+              )
+            }
+          />
+        </Field>
+      </div>
+    );
+  }
+
+  if (catId === "movement") {
+    return (
+      <div className="space-y-3">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label={L("Walking (minutes)", "步行（分钟）")}>
+            <TextInput
+              type="number"
+              inputMode="numeric"
+              value={draft.walking_minutes ?? ""}
+              onChange={(e) =>
+                patch(
+                  "walking_minutes",
+                  e.target.value === "" ? undefined : Number(e.target.value),
+                )
+              }
+            />
+          </Field>
+          <Field label={L("Other exercise (min)", "其他运动（分钟）")}>
+            <TextInput
+              type="number"
+              inputMode="numeric"
+              value={draft.other_exercise_minutes ?? ""}
+              onChange={(e) =>
+                patch(
+                  "other_exercise_minutes",
+                  e.target.value === "" ? undefined : Number(e.target.value),
+                )
+              }
+            />
+          </Field>
+          <Field label={L("Steps", "步数")}>
+            <TextInput
+              type="number"
+              inputMode="numeric"
+              value={draft.steps ?? ""}
+              onChange={(e) =>
+                patch(
+                  "steps",
+                  e.target.value === "" ? undefined : Number(e.target.value),
+                )
+              }
+            />
+          </Field>
+        </div>
+        <Toggle
+          label={L(
+            "Any resistance training today",
+            "今天做过任何阻力训练",
+          )}
+          checked={draft.resistance_training ?? false}
+          onChange={(v) => patch("resistance_training", v ? true : undefined)}
+        />
+      </div>
+    );
+  }
+
+  if (catId === "symptoms") {
+    return (
+      <div className="space-y-3">
+        <ScaleInput
+          label={L("Nausea", "恶心")}
+          value={draft.nausea ?? 0}
+          onChange={(n) => patch("nausea", n)}
+        />
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Toggle
+            label={L("Fever", "发热")}
+            checked={draft.fever ?? false}
+            onChange={(v) => patch("fever", v ? true : undefined)}
+          />
+          {draft.fever && (
+            <Field label={L("Temperature (°C)", "体温（°C）")}>
+              <TextInput
+                type="number"
+                inputMode="decimal"
+                value={draft.fever_temp ?? ""}
+                onChange={(e) =>
+                  patch(
+                    "fever_temp",
+                    e.target.value === "" ? undefined : Number(e.target.value),
+                  )
+                }
+              />
+            </Field>
+          )}
+          <Toggle
+            label={L("Cold dysaesthesia", "遇冷异感")}
+            checked={draft.cold_dysaesthesia ?? false}
+            onChange={(v) => patch("cold_dysaesthesia", v ? true : undefined)}
+          />
+          <Toggle
+            label={L("Hand neuropathy", "手部神经病变")}
+            checked={draft.neuropathy_hands ?? false}
+            onChange={(v) => patch("neuropathy_hands", v ? true : undefined)}
+          />
+          <Toggle
+            label={L("Foot neuropathy", "足部神经病变")}
+            checked={draft.neuropathy_feet ?? false}
+            onChange={(v) => patch("neuropathy_feet", v ? true : undefined)}
+          />
+          <Toggle
+            label={L("Mouth sores", "口腔溃疡")}
+            checked={draft.mouth_sores ?? false}
+            onChange={(v) => patch("mouth_sores", v ? true : undefined)}
+          />
+          <Toggle
+            label={L("New bruising / bleeding", "新淤青 / 出血")}
+            checked={draft.new_bruising ?? false}
+            onChange={(v) => patch("new_bruising", v ? true : undefined)}
+          />
+          <Toggle
+            label={L("Breathlessness", "气促")}
+            checked={draft.dyspnoea ?? false}
+            onChange={(v) => patch("dyspnoea", v ? true : undefined)}
+          />
+        </div>
+        <Field label={L("Diarrhoea episodes today", "今日腹泻次数")}>
+          <TextInput
+            type="number"
+            inputMode="numeric"
+            value={draft.diarrhoea_count ?? ""}
+            onChange={(e) =>
+              patch(
+                "diarrhoea_count",
+                e.target.value === "" ? undefined : Number(e.target.value),
+              )
+            }
+          />
+        </Field>
+      </div>
+    );
+  }
+
+  if (catId === "reflection") {
+    return (
+      <Field label={L("Reflection", "反思")}>
+        <Textarea
+          rows={5}
+          value={draft.reflection ?? ""}
+          onChange={(e) =>
+            patch(
+              "reflection",
+              e.target.value === "" ? undefined : e.target.value,
+            )
+          }
+          placeholder={L(
+            "Anything worth noting, in English or 中文",
+            "任何想记下的，English 或中文都行",
+          )}
+        />
+      </Field>
+    );
+  }
+
+  return null;
+}
+
+function ReviewScreen({
+  picked,
+  draft,
+  saving,
+  onResume,
+  onAddMore,
+  onSave,
+  locale,
+}: {
+  picked: CatId[];
+  draft: Draft;
+  saving: boolean;
+  onResume: (id: CatId) => void;
+  onAddMore: () => void;
+  onSave: () => void;
+  locale: "en" | "zh";
+}) {
+  const filled = useMemo(
+    () => picked.filter((id) => catTouched(id, draft)),
+    [picked, draft],
+  );
+  const empty = picked.filter((id) => !catTouched(id, draft));
+
+  return (
+    <div className="space-y-4">
+      <header>
+        <h2 className="serif text-xl text-ink-900">
+          {locale === "zh" ? "复核" : "Review"}
+        </h2>
+        <p className="mt-1 text-sm text-ink-500">
+          {locale === "zh"
+            ? "只保存下面已填的项。"
+            : "Only the categories below will be saved."}
+        </p>
+      </header>
+
+      <Card>
+        <CardContent className="pt-4">
+          {filled.length === 0 ? (
+            <div className="text-sm text-ink-500">
+              {locale === "zh"
+                ? "还没有填任何项。"
+                : "Nothing recorded yet."}
+            </div>
+          ) : (
+            <ul className="divide-y divide-ink-100">
+              {filled.map((id) => {
+                const def = catDef(id);
+                const Icon = def.icon;
+                return (
+                  <li
+                    key={id}
+                    className="flex items-center justify-between py-2.5"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--tide-soft)] text-[var(--tide-2)]">
+                        <Icon className="h-3.5 w-3.5" />
+                      </div>
+                      <span className="text-sm text-ink-900">
+                        {def.title[locale]}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onResume(id)}
+                      className="text-[12px] text-ink-500 hover:text-ink-900"
+                    >
+                      {locale === "zh" ? "改" : "Edit"}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          {empty.length > 0 && (
+            <div className="mt-3 flex items-center gap-2 text-[12px] text-ink-400">
+              <X className="h-3.5 w-3.5" />
+              {locale === "zh"
+                ? `未记录：${empty.map((id) => catDef(id).title.zh).join("、")}`
+                : `Not recorded: ${empty
+                    .map((id) => catDef(id).title.en)
+                    .join(", ")}`}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <Button variant="ghost" onClick={onAddMore}>
+          {locale === "zh" ? "再加一项" : "Add another"}
+        </Button>
+        <Button onClick={onSave} disabled={saving || filled.length === 0} size="lg">
+          <Check className="h-4 w-4" />
+          {saving
+            ? locale === "zh"
+              ? "保存中…"
+              : "Saving…"
+            : locale === "zh"
+              ? "保存"
+              : "Save"}
+        </Button>
+      </div>
+    </div>
+  );
+}

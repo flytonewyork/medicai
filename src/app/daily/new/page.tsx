@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { db } from "~/lib/db/dexie";
 import { todayISO } from "~/lib/utils/date";
-import { MorningCheckin } from "~/components/daily/morning-checkin";
+import { DailyWizard } from "~/components/daily/daily-wizard";
 
 export default function NewDailyPage() {
   return (
@@ -31,5 +31,5 @@ function Inner() {
   }, [date]);
 
   if (entryId === undefined) return null;
-  return <MorningCheckin entryId={entryId ?? undefined} date={date} />;
+  return <DailyWizard entryId={entryId ?? undefined} date={date} />;
 }

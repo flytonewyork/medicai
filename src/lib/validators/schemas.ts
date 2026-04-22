@@ -2,30 +2,35 @@ import { z } from "zod";
 
 const scale0to10 = z.number().min(0).max(10);
 
+// Every field except date + entered_by is optional. The picker-style
+// wizard in /daily/new only records categories the patient actually
+// touched; "skipped" categories leave their fields undefined rather than
+// defaulting to zero/false (which used to read as "patient affirmed no
+// symptoms" rather than "didn't say").
 export const dailyEntrySchema = z.object({
   date: z.string(),
   entered_by: z.enum(["hulin", "catherine", "thomas"]),
-  energy: scale0to10,
-  sleep_quality: scale0to10,
-  appetite: scale0to10,
-  pain_worst: scale0to10,
-  pain_current: scale0to10,
-  mood_clarity: scale0to10,
-  nausea: scale0to10,
+  energy: scale0to10.optional(),
+  sleep_quality: scale0to10.optional(),
+  appetite: scale0to10.optional(),
+  pain_worst: scale0to10.optional(),
+  pain_current: scale0to10.optional(),
+  mood_clarity: scale0to10.optional(),
+  nausea: scale0to10.optional(),
   weight_kg: z.number().min(20).max(200).optional(),
   steps: z.number().int().min(0).max(200000).optional(),
-  practice_morning_completed: z.boolean(),
+  practice_morning_completed: z.boolean().optional(),
   practice_morning_quality: z.number().min(0).max(5).optional(),
-  practice_evening_completed: z.boolean(),
+  practice_evening_completed: z.boolean().optional(),
   practice_evening_quality: z.number().min(0).max(5).optional(),
-  cold_dysaesthesia: z.boolean(),
-  neuropathy_hands: z.boolean(),
-  neuropathy_feet: z.boolean(),
-  mouth_sores: z.boolean(),
-  diarrhoea_count: z.number().int().min(0).max(30),
-  new_bruising: z.boolean(),
-  dyspnoea: z.boolean(),
-  fever: z.boolean(),
+  cold_dysaesthesia: z.boolean().optional(),
+  neuropathy_hands: z.boolean().optional(),
+  neuropathy_feet: z.boolean().optional(),
+  mouth_sores: z.boolean().optional(),
+  diarrhoea_count: z.number().int().min(0).max(30).optional(),
+  new_bruising: z.boolean().optional(),
+  dyspnoea: z.boolean().optional(),
+  fever: z.boolean().optional(),
   fever_temp: z.number().min(30).max(45).optional(),
   reflection: z.string().max(4000).optional(),
   reflection_lang: z.enum(["en", "zh"]).optional(),
