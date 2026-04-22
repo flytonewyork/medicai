@@ -23,6 +23,7 @@ import type {
 import type { Trial } from "~/types/bridge";
 import type { TreatmentCycle } from "~/types/treatment";
 import type { PatientTask } from "~/types/task";
+import type { CareTeamMember } from "~/types/care-team";
 import type {
   Medication,
   MedicationEvent,
@@ -68,6 +69,7 @@ export class AnchorDB extends Dexie {
   agent_feedback!: Table<AgentFeedbackRow, number>;
   appointments!: Table<Appointment, number>;
   appointment_links!: Table<AppointmentLink, number>;
+  care_team!: Table<CareTeamMember, number>;
 
   constructor() {
     super("anchor_db");
@@ -167,6 +169,15 @@ export class AnchorDB extends Dexie {
         "++id, starts_at, kind, status, cycle_id, [kind+starts_at]",
       appointment_links:
         "++id, from_id, to_id, relation, [to_id+relation]",
+    });
+    // v13: care-team registry. One row per person involved in the
+    // patient's care (family, clinicians, allied health). Consumed by
+    // the appointment attendee chip picker, the emergency card, and
+    // the pre-clinic summary. Indexed on role + is_lead so the
+    // "primary oncologist" / "primary family contact" lookups are
+    // cheap.
+    this.version(13).stores({
+      care_team: "++id, role, is_lead, name",
     });
   }
 }
