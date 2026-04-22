@@ -10,6 +10,7 @@ import {
   X,
   CalendarDays,
   CalendarRange,
+  CalendarClock,
   Stethoscope,
   Utensils,
   NotebookPen,
@@ -38,6 +39,16 @@ const ITEMS: FabItem[] = [
     },
     icon: MessageSquarePlus,
     tone: "sand",
+  },
+  {
+    href: "/schedule/new",
+    label: { en: "New appointment", zh: "新建预约" },
+    hint: {
+      en: "Clinic / chemo / scan / blood test",
+      zh: "门诊 / 化疗 / 检查 / 化验",
+    },
+    icon: CalendarClock,
+    tone: "tide",
   },
   {
     href: "/daily/new",

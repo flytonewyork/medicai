@@ -14,6 +14,7 @@ import {
   Syringe,
   ListTodo,
   Sparkles,
+  CalendarDays,
   Menu,
   X,
 } from "lucide-react";
@@ -25,6 +26,7 @@ import { useT, useLocale } from "~/hooks/use-translate";
 // logging FAB) rather than via top-level nav — it's a cross-cutting concept.
 const ITEMS = [
   { href: "/", key: "nav.dashboard", icon: LayoutDashboard },
+  { href: "/schedule", key: "nav.schedule", icon: CalendarDays },
   { href: "/assessment", key: "nav.assessment", icon: Compass },
   { href: "/treatment", key: "nav.treatment", icon: Syringe },
   { href: "/labs", key: "nav.labs", icon: FlaskConical },

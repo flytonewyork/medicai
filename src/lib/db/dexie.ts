@@ -34,6 +34,7 @@ import type {
   AgentStateRow,
   LogEventRow,
 } from "~/types/agent";
+import type { Appointment, AppointmentLink } from "~/types/appointment";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -65,6 +66,8 @@ export class AnchorDB extends Dexie {
   log_events!: Table<LogEventRow, number>;
   agent_runs!: Table<AgentRunRow, number>;
   agent_feedback!: Table<AgentFeedbackRow, number>;
+  appointments!: Table<Appointment, number>;
+  appointment_links!: Table<AppointmentLink, number>;
 
   constructor() {
     super("anchor_db");
@@ -152,6 +155,18 @@ export class AnchorDB extends Dexie {
     this.version(11).stores({
       agent_feedback:
         "++id, agent_id, run_id, by, kind, at, [agent_id+at]",
+    });
+    // v12: scheduling module. `appointments` is first-class for any
+    // anticipated medical event; `appointment_links` is a directed
+    // edge table so a blood test can be flagged as "prep_for" a chemo
+    // consult. Indexes on starts_at / kind make range queries (month
+    // grid, next-week) + kind-filter cheap. Compound
+    // [kind+starts_at] lets "next scan" pull fast.
+    this.version(12).stores({
+      appointments:
+        "++id, starts_at, kind, status, cycle_id, [kind+starts_at]",
+      appointment_links:
+        "++id, from_id, to_id, relation, [to_id+relation]",
     });
   }
 }
