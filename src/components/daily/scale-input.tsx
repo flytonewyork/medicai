@@ -10,19 +10,30 @@ interface ScaleInputProps {
   max?: number;
 }
 
-export function ScaleInput({ label, value, onChange, min = 0, max = 10 }: ScaleInputProps) {
+export function ScaleInput({
+  label,
+  value,
+  onChange,
+  min = 0,
+  max = 10,
+}: ScaleInputProps) {
+  const count = max - min + 1;
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
-          {label}
-        </span>
-        <span className="text-sm tabular-nums text-slate-600 dark:text-slate-400">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-[13px] font-medium text-ink-900">{label}</span>
+        <span className="serif num text-lg leading-none text-ink-900">
           {value}
+          <span className="ml-0.5 mono text-[10px] font-normal text-ink-400">
+            /{max}
+          </span>
         </span>
       </div>
-      <div className="flex flex-wrap gap-1.5">
-        {Array.from({ length: max - min + 1 }, (_, i) => {
+      <div
+        className="grid gap-1.5"
+        style={{ gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))` }}
+      >
+        {Array.from({ length: count }, (_, i) => {
           const n = i + min;
           const active = value === n;
           return (
@@ -30,11 +41,12 @@ export function ScaleInput({ label, value, onChange, min = 0, max = 10 }: ScaleI
               key={n}
               type="button"
               onClick={() => onChange(n)}
+              aria-label={`${label} ${n}`}
               className={cn(
-                "h-10 min-w-[2.25rem] rounded-md border text-sm font-medium",
+                "h-10 rounded-md border text-[12px] font-semibold tabular-nums transition-colors",
                 active
-                  ? "bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100"
-                  : "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800",
+                  ? "border-ink-900 bg-ink-900 text-paper"
+                  : "border-ink-200 bg-paper-2 text-ink-500 hover:border-ink-400",
               )}
             >
               {n}
