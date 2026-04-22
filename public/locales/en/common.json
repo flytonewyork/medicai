@@ -47,6 +47,12 @@
     "lastSaved": "Last saved",
     "localOnly": "Local only — data stays on this device"
   },
+  "syncPrompt": {
+    "title": "Save this across devices?",
+    "body": "Sign in to sync your entries to the cloud so someone you trust can see the same data on their device. You can keep using Anchor offline without an account.",
+    "cta": "Sign in to sync",
+    "dismiss": "Dismiss"
+  },
   "daily": {
     "title": "Daily check-in",
     "subtitle": "Under two minutes. Skip anything that does not apply.",
