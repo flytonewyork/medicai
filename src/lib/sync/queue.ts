@@ -101,3 +101,11 @@ export function stopSyncRetryTimer(): void {
     retryTimer = null;
   }
 }
+
+// Test-only helper. Clears the in-memory queue and resets flags so each
+// test starts from a clean slate. Never call this from production code.
+export function __resetSyncQueueForTests(): void {
+  pending.length = 0;
+  processing = false;
+  suppressed = 0;
+}
