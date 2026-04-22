@@ -28,6 +28,7 @@ import type {
   MedicationEvent,
   MedicationPromptEvent,
 } from "~/types/medication";
+import type { AgentStateRow, LogEventRow } from "~/types/agent";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -55,6 +56,8 @@ export class AnchorDB extends Dexie {
   comprehensive_assessments!: Table<ComprehensiveAssessment, number>;
   treatment_cycles!: Table<TreatmentCycle, number>;
   patient_tasks!: Table<PatientTask, number>;
+  agent_states!: Table<AgentStateRow, number>;
+  log_events!: Table<LogEventRow, number>;
 
   constructor() {
     super("anchor_db");
@@ -121,6 +124,14 @@ export class AnchorDB extends Dexie {
     this.version(9).stores({
       signal_events:
         "++id, signal_id, kind, action_ref_id, created_at, [signal_id+created_at]",
+    });
+    // v10: multi-agent super-brain (Sprint 2). `agent_states` stores a
+    // markdown summary per specialist agent (unique by agent_id). `log_events`
+    // stores every `/api/log` submission with the per-agent outputs so we
+    // can replay, audit, and feed-rank by recency.
+    this.version(10).stores({
+      agent_states: "++id, &agent_id, updated_at",
+      log_events: "++id, at",
     });
   }
 }
