@@ -101,4 +101,22 @@ describe("agentRunsToFeedItems", () => {
     ]);
     expect(items).toEqual([]);
   });
+
+  it("attaches agent_run meta so the renderer can wire feedback controls", () => {
+    const items = agentRunsToFeedItems([
+      makeRun({ id: 42, agent_id: "clinical" }),
+    ]);
+    expect(items[0]?.meta).toEqual({
+      kind: "agent_run",
+      agent_id: "clinical",
+      run_id: 42,
+    });
+  });
+
+  it("drops runs without an id (not yet persisted)", () => {
+    const items = agentRunsToFeedItems([
+      makeRun({ id: undefined, agent_id: "nutrition" }),
+    ]);
+    expect(items).toEqual([]);
+  });
 });

@@ -27,7 +27,17 @@ export interface FeedItem {
   cta?: { href: string; label: LocalizedString };
   icon?: string;
   source?: string;
+  // Optional structured meta for sources that need to thread state back
+  // to the renderer (e.g. agent_run cards rendering thumbs/correction
+  // controls). Discriminated by `kind`.
+  meta?: AgentRunMeta;
 }
+
+export type AgentRunMeta = {
+  kind: "agent_run";
+  agent_id: string;
+  run_id: number;
+};
 
 export function localize(s: LocalizedString, locale: Locale): string {
   return s[locale] ?? s.en;

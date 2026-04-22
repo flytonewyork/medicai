@@ -100,6 +100,16 @@
     "expand": "Show more",
     "collapse": "Show less"
   },
+  "agentFeedback": {
+    "helpful": "Helpful",
+    "offBase": "Off base",
+    "correct": "Correct it",
+    "correctionPlaceholder": "What should have been said? Agents read this on the next run.",
+    "cancel": "Cancel",
+    "send": "Send",
+    "saving": "Saving…",
+    "recorded": "Feedback recorded"
+  },
   "onboarding": {
     "begin": "Begin",
     "continue": "Continue",

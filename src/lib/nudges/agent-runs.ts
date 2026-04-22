@@ -26,6 +26,7 @@ export function agentRunsToFeedItems(runs: readonly AgentRunRow[]): FeedItem[] {
 function runToFeedItem(run: AgentRunRow): FeedItem | null {
   const report = run.output.daily_report;
   if (!report || (!report.en?.trim() && !report.zh?.trim())) return null;
+  if (typeof run.id !== "number") return null;
 
   const flagLevels = run.output.safety_flags.map((f) => f.level);
   const hasRed = flagLevels.includes("red");
@@ -42,7 +43,7 @@ function runToFeedItem(run: AgentRunRow): FeedItem | null {
         : "info";
 
   return {
-    id: `agent_run_${run.agent_id}_${run.id ?? run.ran_at}`,
+    id: `agent_run_${run.agent_id}_${run.id}`,
     priority,
     category: AGENT_FEED_CATEGORY[run.agent_id],
     tone,
@@ -50,6 +51,11 @@ function runToFeedItem(run: AgentRunRow): FeedItem | null {
     body: report,
     icon: AGENT_ICON[run.agent_id],
     source: `agent:${run.agent_id}`,
+    meta: {
+      kind: "agent_run",
+      agent_id: run.agent_id,
+      run_id: run.id,
+    },
   };
 }
 

@@ -100,6 +100,16 @@
     "expand": "展开更多",
     "collapse": "收起"
   },
+  "agentFeedback": {
+    "helpful": "有用",
+    "offBase": "不到位",
+    "correct": "纠正",
+    "correctionPlaceholder": "应该怎么说才对？智能体下次会读到这条。",
+    "cancel": "取消",
+    "send": "发送",
+    "saving": "保存中…",
+    "recorded": "反馈已记录"
+  },
   "onboarding": {
     "begin": "开始",
     "continue": "继续",
