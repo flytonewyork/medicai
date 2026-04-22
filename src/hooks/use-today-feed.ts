@@ -29,6 +29,9 @@ export function useTodayFeed({
   const cycles = useLiveQuery(() =>
     db.treatment_cycles.orderBy("start_date").reverse().limit(1).toArray(),
   );
+  const agentRuns = useLiveQuery(() =>
+    db.agent_runs.orderBy("ran_at").reverse().limit(40).toArray(),
+  );
 
   return useMemo(() => {
     const s = settings?.[0] ?? null;
@@ -73,6 +76,7 @@ export function useTodayFeed({
       activeAlerts: openAlerts,
       cycleContext: ctx,
       weather,
+      agentRuns: agentRuns ?? [],
     });
-  }, [settings, dailies, labs, tasks, alerts, cycles, weather]);
+  }, [settings, dailies, labs, tasks, alerts, cycles, weather, agentRuns]);
 }

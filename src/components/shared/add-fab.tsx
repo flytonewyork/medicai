@@ -17,6 +17,7 @@ import {
   ListTodo,
   Camera,
   Pill,
+  MessageSquarePlus,
 } from "lucide-react";
 
 interface FabItem {
@@ -28,6 +29,16 @@ interface FabItem {
 }
 
 const ITEMS: FabItem[] = [
+  {
+    href: "/log",
+    label: { en: "Tell the team", zh: "告诉团队" },
+    hint: {
+      en: "Free text — agents file it",
+      zh: "随手写 —— 智能体整理",
+    },
+    icon: MessageSquarePlus,
+    tone: "sand",
+  },
   {
     href: "/daily/new",
     label: { en: "Today's check-in", zh: "今日记录" },

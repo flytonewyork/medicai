@@ -11,6 +11,8 @@ import { generateNarrative } from "~/lib/nudges/ai-narrative";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { localize, type FeedItem } from "~/types/feed";
+import { AgentFeedbackControls } from "./agent-feedback-controls";
+import type { AgentId } from "~/types/agent";
 import { cn } from "~/lib/utils/cn";
 import {
   Sparkles,
@@ -205,6 +207,7 @@ function FeedRow({ item }: { item: FeedItem }) {
   const locale = useLocale();
   const tone = TONE_STYLES[item.tone];
   const Icon = ICONS[item.icon ?? "dot"] ?? Circle;
+  const isAgentRun = item.meta?.kind === "agent_run";
   const body = (
     <div
       className={cn(
@@ -241,10 +244,18 @@ function FeedRow({ item }: { item: FeedItem }) {
         <p className="mt-1 text-[12.5px] leading-relaxed text-ink-700">
           {localize(item.body, locale)}
         </p>
+        {isAgentRun && item.meta?.kind === "agent_run" && (
+          <AgentFeedbackControls
+            agentId={item.meta.agent_id as AgentId}
+            runId={item.meta.run_id}
+          />
+        )}
       </div>
     </div>
   );
-  if (item.cta) {
+  // Agent-run cards never wrap in a Link — the embedded feedback controls
+  // need their own click surface.
+  if (item.cta && !isAgentRun) {
     return (
       <Link href={item.cta.href} className="block">
         {body}

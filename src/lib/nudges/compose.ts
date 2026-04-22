@@ -8,8 +8,10 @@ import type { PatientTask, TaskInstance } from "~/types/task";
 import type { CycleContext, NudgeTemplate } from "~/types/treatment";
 import type { CurrentWeather } from "~/lib/weather/open-meteo";
 import type { FeedItem } from "~/types/feed";
+import type { AgentRunRow } from "~/types/agent";
 import { computeTrendNudges } from "./trend-nudges";
 import { computeWeatherNudges } from "./weather-nudges";
+import { agentRunsToFeedItems } from "./agent-runs";
 import { getActiveTaskInstances } from "~/lib/tasks/engine";
 
 export interface ComposeInputs {
@@ -21,6 +23,7 @@ export interface ComposeInputs {
   activeAlerts: ZoneAlert[];
   cycleContext: CycleContext | null;
   weather: CurrentWeather | null;
+  agentRuns?: AgentRunRow[];
 }
 
 export function composeTodayFeed(inputs: ComposeInputs): FeedItem[] {
@@ -65,6 +68,11 @@ export function composeTodayFeed(inputs: ComposeInputs): FeedItem[] {
       cycleContext: inputs.cycleContext,
     }),
   );
+
+  // ── 6. Agent daily reports ─────────────────────────────────────────
+  if (inputs.agentRuns && inputs.agentRuns.length > 0) {
+    feed.push(...agentRunsToFeedItems(inputs.agentRuns));
+  }
 
   // ── Dedupe + sort + cap ────────────────────────────────────────────
   const seen = new Set<string>();

@@ -34,6 +34,40 @@ The platform's core job is detecting **axis 3 drift** before it causes permanent
 decline that breaks trial eligibility. Standard oncology monitors axis 1 (imaging)
 and partially axis 2 (symptoms). This platform fills the axis 3 gap.
 
+## Interaction model — single channel in, single channel out
+
+The patient sees ONE input and ONE feed. Everything else is hidden.
+
+**Single channel in.** The patient says what's happening — free text, voice,
+photo, or quick numeric tap. AI parses, classifies, attributes, and fans
+the input out across the multidisciplinary super-brain (function /
+toxicity / disease / psychology axes; daily / weekly / fortnightly /
+quarterly cadences; nutrition / PT / onc / psych disciplines). The
+patient never picks a form, a tab, or a category.
+
+**Hidden super-brain.** Zone engine, change detectors, signal attribution,
+medication prompts, treatment engine, axis-state machine, future
+discipline plug-ins all run off the same Dexie state. They are
+extensions on a typed event bus — adding a new discipline is a new
+plug-in, not a new screen. The patient never sees this layer.
+
+**Single channel out.** One feed. Every nudge, alert, trend, prompt,
+medication reminder, prep-for-clinic note, and zone change becomes a
+ranked feed item. The dashboard is the feed; the feed is the dashboard.
+A Red zone alert is a high-priority item in the same channel as a
+gentle "you're due for a weekly grip reading" — stack-ranked, not
+stashed in a separate card.
+
+**Loop closes through the same channel.** The patient's reaction to a
+nudge ("did the gait test, felt fine") is logged through the same
+single input. The system updates state and re-ranks the feed.
+
+This collapses the cognitive surface to: tell, see, repeat. The
+multidisciplinary depth lives behind it. Any feature that adds a new
+top-level form, tab, or screen for the patient is going the wrong way
+— it should become an input modality on the unified channel and a
+ranked item on the unified feed.
+
 ## Zone logic
 
 Green → Yellow → Orange → Red. Every input triggers zone evaluation. Crossing a
@@ -59,13 +93,16 @@ not predetermined.
 
 ## What NOT to build (scope discipline)
 
-- No AI chat in MVP (phase 2)
+- No general-purpose AI chat ("ask me anything"). AI parses input and
+  surfaces context; it does not act as a clinical advisor or chatbot
 - No patient-to-patient social features
 - No general-purpose health tracking beyond PDAC-relevant
 - No prescription/medication dosing calculations
 - No diagnostic features
 - No integration with hospital EMR (out of scope)
 - No multi-patient support (single-patient focus)
+- No new top-level screens for the patient. New capability becomes an
+  input modality + a feed-item type, not a tab
 
 ## Build philosophy
 

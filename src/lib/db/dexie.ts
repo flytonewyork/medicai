@@ -28,6 +28,12 @@ import type {
   MedicationEvent,
   MedicationPromptEvent,
 } from "~/types/medication";
+import type {
+  AgentFeedbackRow,
+  AgentRunRow,
+  AgentStateRow,
+  LogEventRow,
+} from "~/types/agent";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -55,6 +61,10 @@ export class AnchorDB extends Dexie {
   comprehensive_assessments!: Table<ComprehensiveAssessment, number>;
   treatment_cycles!: Table<TreatmentCycle, number>;
   patient_tasks!: Table<PatientTask, number>;
+  agent_states!: Table<AgentStateRow, number>;
+  log_events!: Table<LogEventRow, number>;
+  agent_runs!: Table<AgentRunRow, number>;
+  agent_feedback!: Table<AgentFeedbackRow, number>;
 
   constructor() {
     super("anchor_db");
@@ -121,6 +131,27 @@ export class AnchorDB extends Dexie {
     this.version(9).stores({
       signal_events:
         "++id, signal_id, kind, action_ref_id, created_at, [signal_id+created_at]",
+    });
+    // v10: multi-agent super-brain (Sprint 2). The patient's "log" surface
+    // writes to `log_events` directly (no per-log Claude call). Once daily
+    // (or on-demand), each specialist runs over its referrals: the run
+    // produces an `agent_runs` row with the daily report, and the
+    // specialist's `agent_states` row is rewritten in place.
+    // - agent_states: unique per agent_id, holds the living state.md
+    // - log_events: raw inputs; sliced by tag at batch time
+    // - agent_runs: one row per invocation, indexed for "latest report"
+    this.version(10).stores({
+      agent_states: "++id, &agent_id, updated_at",
+      log_events: "++id, at",
+      agent_runs: "++id, agent_id, ran_at, [agent_id+ran_at]",
+    });
+    // v11: dial-in loop. Per-run human feedback (Thomas, patient,
+    // clinician). The next agent run reads the most recent feedback for
+    // its agent_id and includes it as a cached system block, so the
+    // agent can adjust tone, calibration, or scope.
+    this.version(11).stores({
+      agent_feedback:
+        "++id, agent_id, run_id, by, kind, at, [agent_id+at]",
     });
   }
 }
