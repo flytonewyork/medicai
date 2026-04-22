@@ -1,0 +1,235 @@
+"use client";
+
+import { useMemo } from "react";
+import Link from "next/link";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "~/lib/db/dexie";
+import { useLocale } from "~/hooks/use-translate";
+import { Card, CardContent } from "~/components/ui/card";
+import { deriveFollowUpTasks } from "~/lib/appointments/follow-up-tasks";
+import type { Appointment, AppointmentKind } from "~/types/appointment";
+import {
+  CalendarDays,
+  ChevronRight,
+  Syringe,
+  ScanLine,
+  Droplet,
+  Stethoscope,
+  ClipboardList,
+  Sparkles,
+} from "lucide-react";
+import { cn } from "~/lib/utils/cn";
+
+const KIND_ICON: Record<AppointmentKind, React.ComponentType<{ className?: string }>> = {
+  clinic: Stethoscope,
+  chemo: Syringe,
+  scan: ScanLine,
+  blood_test: Droplet,
+  procedure: ClipboardList,
+  other: Sparkles,
+};
+
+const KIND_LABEL_EN: Record<AppointmentKind, string> = {
+  clinic: "Clinic",
+  chemo: "Chemo",
+  scan: "Scan",
+  blood_test: "Blood test",
+  procedure: "Procedure",
+  other: "Event",
+};
+
+const KIND_LABEL_ZH: Record<AppointmentKind, string> = {
+  clinic: "就诊",
+  chemo: "化疗",
+  scan: "影像",
+  blood_test: "抽血",
+  procedure: "操作",
+  other: "事件",
+};
+
+function startOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+export function ScheduleCard() {
+  const locale = useLocale();
+  const appointments = useLiveQuery(
+    () => db.appointments.orderBy("starts_at").toArray(),
+    [],
+  );
+
+  const { upcoming, followUps } = useMemo(() => {
+    const list = appointments ?? [];
+    const now = new Date();
+    const startToday = startOfDay(now).getTime();
+    const endTomorrow = startToday + 2 * 24 * 60 * 60 * 1000;
+
+    const upcoming = list
+      .filter((a) => {
+        const t = new Date(a.starts_at).getTime();
+        return (
+          Number.isFinite(t) &&
+          t >= startToday &&
+          t < endTomorrow &&
+          a.status !== "cancelled"
+        );
+      })
+      .sort(
+        (a, b) =>
+          new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
+      )
+      .slice(0, 3);
+
+    const followUps = deriveFollowUpTasks({ appointments: list, now }).slice(
+      0,
+      3,
+    );
+
+    return { upcoming, followUps };
+  }, [appointments]);
+
+  if (!appointments) return null;
+  if (upcoming.length === 0 && followUps.length === 0) return null;
+
+  return (
+    <Card>
+      <CardContent className="space-y-3 pt-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-[var(--tide-2)]" />
+            <div className="text-[13px] font-semibold text-ink-900">
+              {locale === "zh" ? "今明日程" : "Today & tomorrow"}
+            </div>
+          </div>
+          <Link
+            href="/schedule"
+            className="text-[12px] text-ink-500 hover:text-ink-900"
+          >
+            {locale === "zh" ? "全部" : "All"}
+            <ChevronRight className="ml-0.5 inline h-3 w-3" />
+          </Link>
+        </div>
+
+        {upcoming.length > 0 && (
+          <ul className="space-y-1.5">
+            {upcoming.map((a) => (
+              <li key={a.id}>
+                <UpcomingRow appt={a} locale={locale} />
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {followUps.length > 0 && (
+          <div className="border-t border-ink-100 pt-3">
+            <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-ink-400">
+              {locale === "zh" ? "等待跟进" : "Follow up on"}
+            </div>
+            <ul className="space-y-1.5">
+              {followUps.map((task) => (
+                <li key={task.id}>
+                  <Link
+                    href={`/schedule/${task.derived_from_appointment_id}`}
+                    className="flex items-center gap-2.5 rounded-md border border-dashed border-ink-200 px-2.5 py-1.5 hover:border-ink-400 hover:bg-ink-100/30"
+                  >
+                    <KindBadge kind={task.appointment_kind} />
+                    <div className="flex-1 text-[12.5px] text-ink-800">
+                      {locale === "zh" && task.title_zh
+                        ? task.title_zh
+                        : task.title}
+                    </div>
+                    <ChevronRight className="h-3.5 w-3.5 text-ink-400" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function UpcomingRow({
+  appt,
+  locale,
+}: {
+  appt: Appointment;
+  locale: "en" | "zh";
+}) {
+  const when = formatWhen(appt, locale);
+  const attendeeChip = appt.doctor || (appt.attendees ?? [])[0];
+  return (
+    <Link
+      href={`/schedule/${appt.id}`}
+      className="flex items-center gap-2.5 rounded-md bg-[var(--tide-soft)]/40 px-2.5 py-1.5 hover:bg-[var(--tide-soft)]"
+    >
+      <KindBadge kind={appt.kind} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className="truncate text-[13px] font-medium text-ink-900">
+            {appt.title}
+          </span>
+          {attendeeChip && (
+            <span className="inline-flex shrink-0 items-center rounded-full bg-paper-2 px-1.5 py-px text-[10px] font-medium text-[var(--tide-2)]">
+              {attendeeChip}
+            </span>
+          )}
+        </div>
+        <div className="truncate text-[11.5px] text-ink-500">
+          {when}
+          {appt.location && ` · ${appt.location}`}
+        </div>
+      </div>
+      <ChevronRight className="h-3.5 w-3.5 text-ink-400" />
+    </Link>
+  );
+}
+
+function KindBadge({ kind }: { kind: AppointmentKind }) {
+  const Icon = KIND_ICON[kind];
+  return (
+    <div
+      className={cn(
+        "flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
+        "bg-paper-2 text-[var(--tide-2)]",
+      )}
+    >
+      <Icon className="h-3.5 w-3.5" />
+    </div>
+  );
+}
+
+function formatWhen(appt: Appointment, locale: "en" | "zh"): string {
+  const date = new Date(appt.starts_at);
+  if (Number.isNaN(date.getTime())) return "";
+  const now = new Date();
+  const start = startOfDay(now);
+  const tomorrow = new Date(start);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const apptDay = startOfDay(date);
+  const kindLabel =
+    locale === "zh" ? KIND_LABEL_ZH[appt.kind] : KIND_LABEL_EN[appt.kind];
+
+  let dayLabel: string;
+  if (apptDay.getTime() === start.getTime()) {
+    dayLabel = locale === "zh" ? "今天" : "Today";
+  } else if (apptDay.getTime() === tomorrow.getTime()) {
+    dayLabel = locale === "zh" ? "明天" : "Tomorrow";
+  } else {
+    dayLabel = date.toLocaleDateString(locale === "zh" ? "zh-CN" : "en-AU", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
+  }
+
+  if (appt.all_day) return `${kindLabel} · ${dayLabel}`;
+  const timeLabel = date.toLocaleTimeString(locale === "zh" ? "zh-CN" : "en-AU", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `${kindLabel} · ${dayLabel} · ${timeLabel}`;
+}

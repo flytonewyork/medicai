@@ -8,7 +8,8 @@ import { PageHeader } from "~/components/ui/page-header";
 import { Button } from "~/components/ui/button";
 import { AppointmentsCalendar } from "~/components/schedule/calendar";
 import { derivePrepTasks } from "~/lib/appointments/prep-tasks";
-import { Plus, Camera, ClipboardList, AlertTriangle } from "lucide-react";
+import { deriveFollowUpTasks } from "~/lib/appointments/follow-up-tasks";
+import { Plus, AlertTriangle, ClipboardList } from "lucide-react";
 import type { Appointment } from "~/types/appointment";
 
 export default function SchedulePage() {
@@ -26,6 +27,9 @@ export default function SchedulePage() {
     appointments: appointments ?? [],
     links: links ?? [],
   });
+  const followUps = deriveFollowUpTasks({
+    appointments: appointments ?? [],
+  });
 
   const upcoming = (appointments ?? []).filter(
     (a) => new Date(a.starts_at).getTime() >= Date.now() - 12 * 3600 * 1000,
@@ -42,19 +46,7 @@ export default function SchedulePage() {
         <Link href="/schedule/new">
           <Button size="lg">
             <Plus className="h-4 w-4" />
-            {t("schedule.addManual")}
-          </Button>
-        </Link>
-        <Link href="/schedule/new?via=photo">
-          <Button size="lg" variant="secondary">
-            <Camera className="h-4 w-4" />
-            {t("schedule.addFromPhoto")}
-          </Button>
-        </Link>
-        <Link href="/schedule/new?via=email">
-          <Button size="lg" variant="secondary">
-            <ClipboardList className="h-4 w-4" />
-            {t("schedule.addFromEmail")}
+            {t("schedule.addSmart")}
           </Button>
         </Link>
       </div>
@@ -75,6 +67,35 @@ export default function SchedulePage() {
                   {locale === "zh" && task.title_zh ? task.title_zh : task.title}
                 </span>
                 <span className="mono text-[11px] text-ink-500">
+                  {task.due_date}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {followUps.length > 0 && (
+        <section className="rounded-[var(--r-md)] border border-ink-200 bg-paper-2 p-4">
+          <div className="mb-2 flex items-center gap-2 text-[12.5px] font-semibold text-ink-900">
+            <ClipboardList className="h-4 w-4 text-[var(--tide-2)]" />
+            {t("schedule.followUpDue")}
+          </div>
+          <ul className="space-y-1.5 text-[13px]">
+            {followUps.slice(0, 6).map((task) => (
+              <li
+                key={`followup-${task.derived_from_appointment_id}`}
+                className="flex items-center justify-between"
+              >
+                <Link
+                  href={`/schedule/${task.derived_from_appointment_id}`}
+                  className="flex-1 truncate text-ink-800 hover:text-ink-900 hover:underline"
+                >
+                  {locale === "zh" && task.title_zh
+                    ? task.title_zh
+                    : task.title}
+                </Link>
+                <span className="mono shrink-0 text-[11px] text-ink-500">
                   {task.due_date}
                 </span>
               </li>

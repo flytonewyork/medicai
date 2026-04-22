@@ -10,13 +10,18 @@ import { useLocale, useT } from "~/hooks/use-translate";
 import { AppointmentForm } from "~/components/schedule/appointment-form";
 import type { ParsedAppointment } from "~/lib/appointments/schema";
 import type { Appointment } from "~/types/appointment";
-import { Loader2, ImagePlus, Mail, FilePen } from "lucide-react";
+import { Loader2, ImagePlus, Sparkles, FilePen } from "lucide-react";
 
+// One unified "smart entry" surface. The patient can:
+//   1. Paste an email body or free-text ("Chemo Friday 10am with Dr Lee at Epworth")
+//   2. Snap a photo of an appointment card / letter / screenshot
+//   3. Ignore the smart box and fill the form manually
+// Any of the first two routes hit /api/parse-appointment and prefill the
+// form; the form stays editable before save.
 function NewAppointmentInner() {
   const t = useT();
   const locale = useLocale();
   const params = useSearchParams();
-  const via = params.get("via") ?? "manual";
   const prefillDate = params.get("date");
 
   const [parsed, setParsed] = useState<Partial<Appointment> | null>(null);
@@ -34,126 +39,27 @@ function NewAppointmentInner() {
     <div className="mx-auto max-w-2xl space-y-5 p-4 md:p-8">
       <PageHeader
         eyebrow={t("schedule.eyebrow")}
-        title={
-          via === "photo"
-            ? t("schedule.new.fromPhoto")
-            : via === "email"
-              ? t("schedule.new.fromEmail")
-              : t("schedule.new.manual")
-        }
+        title={t("schedule.new.title")}
       />
 
-      {via === "photo" && !parsed && (
-        <PhotoIngest onParsed={setParsed} locale={locale} t={t} />
-      )}
-      {via === "email" && !parsed && (
-        <EmailIngest onParsed={setParsed} locale={locale} t={t} />
+      <SmartEntry onParsed={setParsed} locale={locale} t={t} />
+
+      {parsed && (
+        <Card className="p-3 text-[12.5px] text-ink-700">
+          <div className="mb-1 flex items-center gap-1.5 font-semibold">
+            <FilePen className="h-3.5 w-3.5" />
+            {t("schedule.new.parsed")}
+          </div>
+          <div className="text-ink-500">{t("schedule.new.parsedHint")}</div>
+        </Card>
       )}
 
-      {(via === "manual" || parsed) && (
-        <>
-          {parsed && (
-            <Card className="p-3 text-[12.5px] text-ink-700">
-              <div className="mb-1 flex items-center gap-1.5 font-semibold">
-                <FilePen className="h-3.5 w-3.5" />
-                {t("schedule.new.parsed")}
-              </div>
-              <div className="text-ink-500">{t("schedule.new.parsedHint")}</div>
-            </Card>
-          )}
-          <AppointmentForm initial={initial} />
-        </>
-      )}
+      <AppointmentForm initial={initial} key={parsed ? "parsed" : "blank"} />
     </div>
   );
 }
 
-function PhotoIngest({
-  onParsed,
-  locale,
-  t,
-}: {
-  onParsed: (a: Partial<Appointment>) => void;
-  locale: "en" | "zh";
-  t: (k: string) => string;
-}) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function onFile(file: File) {
-    setError(null);
-    setBusy(true);
-    try {
-      const dataUrl = await fileToDataUrl(file);
-      const mediaType = (file.type || "image/jpeg") as
-        | "image/jpeg"
-        | "image/png"
-        | "image/gif"
-        | "image/webp";
-      const res = await fetch("/api/parse-appointment", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          imageBase64: dataUrl,
-          imageMediaType: mediaType,
-          locale,
-          today: new Date().toISOString().slice(0, 10),
-        }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const data = (await res.json()) as { appointment: ParsedAppointment };
-      onParsed(toAppointmentShape(data.appointment));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <Card className="space-y-3 p-5">
-      <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-ink-300 bg-paper-2 p-8 text-center hover:border-ink-500">
-        <ImagePlus className="h-6 w-6 text-ink-500" />
-        <span className="text-sm font-semibold text-ink-900">
-          {t("schedule.new.photoCta")}
-        </span>
-        <span className="text-[12px] text-ink-500">
-          {t("schedule.new.photoHint")}
-        </span>
-        <input
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          disabled={busy}
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) void onFile(f);
-          }}
-        />
-      </label>
-      {busy && (
-        <div
-          role="status"
-          className="flex items-center gap-2 text-[13px] text-ink-700"
-        >
-          <Loader2 className="h-4 w-4 animate-spin" />
-          {t("schedule.new.parsing")}
-        </div>
-      )}
-      {error && (
-        <div
-          role="alert"
-          className="rounded-md border border-[var(--warn)]/40 bg-[var(--warn)]/10 p-2.5 text-[12.5px] text-[var(--warn)]"
-        >
-          {error}
-        </div>
-      )}
-    </Card>
-  );
-}
-
-function EmailIngest({
+function SmartEntry({
   onParsed,
   locale,
   t,
@@ -166,7 +72,22 @@ function EmailIngest({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function submit() {
+  async function parseText() {
+    if (!text.trim()) return;
+    await callParser({ text, locale });
+  }
+
+  async function onPhoto(file: File) {
+    const dataUrl = await fileToDataUrl(file);
+    const mediaType = (file.type || "image/jpeg") as
+      | "image/jpeg"
+      | "image/png"
+      | "image/gif"
+      | "image/webp";
+    await callParser({ imageBase64: dataUrl, imageMediaType: mediaType, locale });
+  }
+
+  async function callParser(body: Record<string, unknown>) {
     setError(null);
     setBusy(true);
     try {
@@ -174,8 +95,7 @@ function EmailIngest({
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          text,
-          locale,
+          ...body,
           today: new Date().toISOString().slice(0, 10),
         }),
       });
@@ -192,24 +112,58 @@ function EmailIngest({
   return (
     <Card className="space-y-3 p-5">
       <div className="flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-900">
-        <Mail className="h-3.5 w-3.5" />
-        {t("schedule.new.emailCta")}
+        <Sparkles className="h-3.5 w-3.5 text-[var(--tide-2)]" />
+        {t("schedule.new.smartTitle")}
       </div>
-      <Field label={t("schedule.new.emailLabel")}>
+      <p className="text-[12px] text-ink-500">
+        {t("schedule.new.smartHint")}
+      </p>
+
+      <Field label={t("schedule.new.smartLabel")}>
         <Textarea
-          rows={10}
+          rows={5}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={t("schedule.new.emailPlaceholder")}
+          placeholder={t("schedule.new.smartPlaceholder")}
           disabled={busy}
         />
       </Field>
-      {busy && (
-        <div className="flex items-center gap-2 text-[13px] text-ink-700">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          {t("schedule.new.parsing")}
-        </div>
-      )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button onClick={parseText} disabled={busy || !text.trim()}>
+          {t("schedule.new.parseCta")}
+        </Button>
+        <label
+          className={
+            "inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-ink-200 px-3 py-2 text-[13px] text-ink-700 hover:bg-ink-100/40 " +
+            (busy ? "pointer-events-none opacity-50" : "")
+          }
+        >
+          <ImagePlus className="h-3.5 w-3.5" />
+          {t("schedule.new.photoCta")}
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            disabled={busy}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void onPhoto(f);
+            }}
+          />
+        </label>
+        {busy && (
+          <div
+            role="status"
+            className="flex items-center gap-1.5 text-[12.5px] text-ink-600"
+          >
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            {t("schedule.new.parsing")}
+          </div>
+        )}
+      </div>
+
       {error && (
         <div
           role="alert"
@@ -218,11 +172,6 @@ function EmailIngest({
           {error}
         </div>
       )}
-      <div className="flex justify-end">
-        <Button onClick={submit} disabled={busy || !text.trim()} size="lg">
-          {t("schedule.new.parseCta")}
-        </Button>
-      </div>
     </Card>
   );
 }

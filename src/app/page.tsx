@@ -10,6 +10,7 @@ import { PillarsCard } from "~/components/dashboard/pillars-card";
 import { RecentTrends } from "~/components/dashboard/recent-trends";
 import { EmergencyCard } from "~/components/dashboard/emergency-card";
 import { QuickCheckinCard } from "~/components/dashboard/quick-checkin-card";
+import { ScheduleCard } from "~/components/dashboard/schedule-card";
 import { ChangeSignalsCard } from "~/components/dashboard/change-signals-card";
 import { SignalLoopSummaryCard } from "~/components/dashboard/signal-loop-summary-card";
 import { MedicationPromptsCard } from "~/components/dashboard/medication-prompts-card";
@@ -80,6 +81,8 @@ export default function DashboardPage() {
       <SyncPromptCard />
 
       <QuickCheckinCard />
+
+      <ScheduleCard />
 
       <ChangeSignalsCard />
 
