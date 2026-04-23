@@ -10,8 +10,10 @@ import { EmptyState } from "~/components/ui/empty-state";
 import { PillarRing } from "~/components/assessment/pillar-card";
 import { formatDate } from "~/lib/utils/date";
 import { ChevronRight, Stethoscope, Clock } from "lucide-react";
+import { useRedirectCaregiverAway } from "~/lib/caregiver/guard";
 
 export default function AssessmentListPage() {
+  useRedirectCaregiverAway();
   const t = useT();
   const locale = useLocale();
   const assessments = useLiveQuery(() =>

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { db } from "~/lib/db/dexie";
 import { todayISO } from "~/lib/utils/date";
 import { DailyWizard } from "~/components/daily/daily-wizard";
+import { useRedirectCaregiverAway } from "~/lib/caregiver/guard";
 
 export default function NewDailyPage() {
   return (
@@ -15,6 +16,7 @@ export default function NewDailyPage() {
 }
 
 function Inner() {
+  useRedirectCaregiverAway();
   const params = useSearchParams();
   const date = params.get("date") ?? todayISO();
   const [entryId, setEntryId] = useState<number | null | undefined>(undefined);

@@ -25,7 +25,9 @@ import { cn } from "~/lib/utils/cn";
 // that gets every user onto the dashboard quickly. Team / baselines /
 // treatment are optional detail — skippable via "Finish setup later" so the
 // patient isn't gated behind data they don't have on hand.
-const STEPS = [
+// Patient onboarding walks the full path: profile + team + baselines +
+// treatment are all about the patient's own situation.
+const PATIENT_STEPS = [
   "welcome",
   "user_type",
   "profile",
@@ -36,16 +38,38 @@ const STEPS = [
   "done",
 ] as const;
 
+// Caregiver / clinician onboarding: pick the patient they're joining
+// from a list, fill in their own name + preferences, land on /family.
+// Baselines / team / treatment belong to the patient and are skipped.
+const CAREGIVER_STEPS = [
+  "welcome",
+  "user_type",
+  "pick_patient",
+  "profile",
+  "preferences",
+  "done",
+] as const;
+
+type StepKey =
+  | (typeof PATIENT_STEPS)[number]
+  | (typeof CAREGIVER_STEPS)[number];
+
 // Steps the user can "Finish setup later" from — i.e. jump straight to
 // done without filling the remaining steps.
-const CAN_SKIP_FROM: StepKey[] = ["profile", "preferences", "team", "baselines", "treatment"];
-
-type StepKey = (typeof STEPS)[number];
+const CAN_SKIP_FROM: StepKey[] = [
+  "profile",
+  "preferences",
+  "team",
+  "baselines",
+  "treatment",
+  "pick_patient",
+];
 
 const STEP_LABELS: Record<Locale, Record<StepKey, string>> = {
   en: {
     welcome: "Welcome",
     user_type: "Who you are",
+    pick_patient: "Pick a patient",
     profile: "About you",
     team: "Clinical team",
     baselines: "Baselines",
@@ -56,6 +80,7 @@ const STEP_LABELS: Record<Locale, Record<StepKey, string>> = {
   zh: {
     welcome: "欢迎",
     user_type: "您的身份",
+    pick_patient: "选择患者",
     profile: "基本信息",
     team: "医疗团队",
     baselines: "基线数据",
@@ -192,21 +217,29 @@ export default function OnboardingPage() {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
-  const stepIdx = STEPS.indexOf(step);
-  const progress = ((stepIdx + 1) / STEPS.length) * 100;
+  // The visible step sequence follows user type — caregivers don't get
+  // walked through baselines / team / treatment, which are all patient-
+  // authored values.
+  const steps: readonly StepKey[] =
+    form.user_type === "caregiver" || form.user_type === "clinician"
+      ? CAREGIVER_STEPS
+      : PATIENT_STEPS;
+
+  const stepIdx = steps.indexOf(step);
+  const progress = ((Math.max(0, stepIdx) + 1) / steps.length) * 100;
 
   function back() {
-    const i = STEPS.indexOf(step);
+    const i = steps.indexOf(step);
     if (i > 0) {
-      const prev = STEPS[i - 1];
+      const prev = steps[i - 1];
       if (prev) setStep(prev);
     }
   }
 
   function forward() {
-    const i = STEPS.indexOf(step);
-    if (i < STEPS.length - 1) {
-      const next = STEPS[i + 1];
+    const i = steps.indexOf(step);
+    if (i < steps.length - 1) {
+      const next = steps[i + 1];
       if (next) setStep(next);
     }
   }
@@ -242,31 +275,60 @@ export default function OnboardingPage() {
           // geocode failure is non-fatal
         }
       }
+      const isCaregiver =
+        form.user_type === "caregiver" || form.user_type === "clinician";
       const payload: Settings = {
         user_type: form.user_type || undefined,
+        // Caregivers don't own baselines, team contacts, or treatment
+        // data — that's the patient's territory. Write their own name +
+        // locale + timezone only. The Supabase join ensures the patient's
+        // data is still reachable via /family.
         profile_name: form.profile_name.trim() || "Patient",
-        dob: form.dob || undefined,
-        diagnosis_date: form.diagnosis_date || undefined,
-        height_cm: toNum(form.height_cm),
-        baseline_weight_kg: toNum(form.baseline_weight_kg),
-        baseline_date: form.baseline_weight_kg ? todayISO() : undefined,
-        baseline_grip_dominant_kg: toNum(form.baseline_grip_dominant_kg),
-        baseline_gait_speed_ms: toNum(form.baseline_gait_speed_ms),
-        baseline_sit_to_stand: toNum(form.baseline_sit_to_stand),
-        baseline_sts_5x_seconds: toNum(form.baseline_sts_5x_seconds),
-        baseline_tug_seconds: toNum(form.baseline_tug_seconds),
-        baseline_muac_cm: toNum(form.baseline_muac_cm),
-        baseline_calf_cm: toNum(form.baseline_calf_cm),
+        dob: isCaregiver ? undefined : form.dob || undefined,
+        diagnosis_date: isCaregiver ? undefined : form.diagnosis_date || undefined,
+        height_cm: isCaregiver ? undefined : toNum(form.height_cm),
+        baseline_weight_kg: isCaregiver ? undefined : toNum(form.baseline_weight_kg),
+        baseline_date:
+          isCaregiver || !form.baseline_weight_kg ? undefined : todayISO(),
+        baseline_grip_dominant_kg: isCaregiver
+          ? undefined
+          : toNum(form.baseline_grip_dominant_kg),
+        baseline_gait_speed_ms: isCaregiver
+          ? undefined
+          : toNum(form.baseline_gait_speed_ms),
+        baseline_sit_to_stand: isCaregiver
+          ? undefined
+          : toNum(form.baseline_sit_to_stand),
+        baseline_sts_5x_seconds: isCaregiver
+          ? undefined
+          : toNum(form.baseline_sts_5x_seconds),
+        baseline_tug_seconds: isCaregiver
+          ? undefined
+          : toNum(form.baseline_tug_seconds),
+        baseline_muac_cm: isCaregiver ? undefined : toNum(form.baseline_muac_cm),
+        baseline_calf_cm: isCaregiver ? undefined : toNum(form.baseline_calf_cm),
         locale: form.locale,
-        managing_oncologist: form.managing_oncologist.trim() || undefined,
-        managing_oncologist_phone:
-          form.managing_oncologist_phone.trim() || undefined,
-        hospital_name: form.hospital_name.trim() || undefined,
-        hospital_phone: form.hospital_phone.trim() || undefined,
-        hospital_address: form.hospital_address.trim() || undefined,
-        oncall_phone: form.oncall_phone.trim() || undefined,
-        emergency_instructions:
-          form.emergency_instructions.trim() || undefined,
+        managing_oncologist: isCaregiver
+          ? undefined
+          : form.managing_oncologist.trim() || undefined,
+        managing_oncologist_phone: isCaregiver
+          ? undefined
+          : form.managing_oncologist_phone.trim() || undefined,
+        hospital_name: isCaregiver
+          ? undefined
+          : form.hospital_name.trim() || undefined,
+        hospital_phone: isCaregiver
+          ? undefined
+          : form.hospital_phone.trim() || undefined,
+        hospital_address: isCaregiver
+          ? undefined
+          : form.hospital_address.trim() || undefined,
+        oncall_phone: isCaregiver
+          ? undefined
+          : form.oncall_phone.trim() || undefined,
+        emergency_instructions: isCaregiver
+          ? undefined
+          : form.emergency_instructions.trim() || undefined,
         home_city: form.home_city.trim() || undefined,
         home_lat,
         home_lon,
@@ -290,7 +352,7 @@ export default function OnboardingPage() {
             : "hulin",
       );
 
-      if (form.start_cycle && form.cycle_start_date) {
+      if (!isCaregiver && form.start_cycle && form.cycle_start_date) {
         await db.treatment_cycles.add({
           protocol_id: form.protocol_id,
           cycle_number: 1,
@@ -338,7 +400,9 @@ export default function OnboardingPage() {
         // Settings → Household section lets the user finish setup.
       }
 
-      router.replace("/");
+      // Caregivers + clinicians land on /family — the caregiver-focused
+      // shell. Patients stay on / (the full dashboard).
+      router.replace(isCaregiver ? "/family" : "/");
     } finally {
       setSaving(false);
     }
@@ -352,7 +416,7 @@ export default function OnboardingPage() {
           <div className="serif text-lg tracking-tight">Anchor</div>
         </div>
         <div className="eyebrow">
-          {STEP_LABELS[locale][step]} · {stepIdx + 1}/{STEPS.length}
+          {STEP_LABELS[locale][step]} · {stepIdx + 1}/{steps.length}
         </div>
         <div className="h-1 w-full overflow-hidden rounded-full bg-ink-100">
           <div
@@ -365,6 +429,16 @@ export default function OnboardingPage() {
       {step === "welcome" && <WelcomeStep locale={locale} />}
       {step === "user_type" && (
         <UserTypeStep form={form} update={update} locale={locale} />
+      )}
+      {step === "pick_patient" && (
+        <PickPatientStep
+          onJoined={() => setStep("profile")}
+          onStartFresh={() => {
+            update("user_type", "patient");
+            setStep("profile");
+          }}
+          locale={locale}
+        />
       )}
       {step === "profile" && (
         <ProfileStep form={form} update={update} locale={locale} />
@@ -401,17 +475,21 @@ export default function OnboardingPage() {
             </button>
           )}
         </div>
-        {step !== "done" ? (
+        {step === "done" ? (
+          <Button onClick={finish} disabled={saving} size="lg">
+            <Check className="h-4 w-4" />
+            {saving ? t("onboarding.saving") : t("onboarding.saveAndContinue")}
+          </Button>
+        ) : step === "pick_patient" ? (
+          // Pick-patient drives its own navigation (tap a row → joins →
+          // advances), so no Continue button. Skip + Back still work.
+          null
+        ) : (
           <Button onClick={forward} disabled={!canContinue} size="lg">
             {step === "welcome"
               ? t("onboarding.begin")
               : t("onboarding.continue")}
             <ChevronRight className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button onClick={finish} disabled={saving} size="lg">
-            <Check className="h-4 w-4" />
-            {saving ? t("onboarding.saving") : t("onboarding.saveAndContinue")}
           </Button>
         )}
       </div>
@@ -555,6 +633,152 @@ function UserTypeStep({
           />
         </Field>
       )}
+    </Card>
+  );
+}
+
+function PickPatientStep({
+  onJoined,
+  onStartFresh,
+  locale,
+}: {
+  onJoined: () => void;
+  onStartFresh: () => void;
+  locale: Locale;
+}) {
+  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const [rows, setRows] = useState<
+    Array<{
+      id: string;
+      name: string;
+      patient_display_name: string;
+      created_at: string;
+      member_count: number;
+    }>
+  >([]);
+  const [loading, setLoading] = useState(true);
+  const [joining, setJoining] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { listAllHouseholds } = await import(
+          "~/lib/supabase/households"
+        );
+        const all = await listAllHouseholds();
+        if (!cancelled) setRows(all);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : String(err));
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function join(id: string) {
+    setJoining(id);
+    setError(null);
+    try {
+      const { joinHouseholdAsFamily } = await import(
+        "~/lib/supabase/households"
+      );
+      await joinHouseholdAsFamily(id);
+      onJoined();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setJoining(null);
+    }
+  }
+
+  return (
+    <Card className="p-6 space-y-4">
+      <div className="serif text-[22px] leading-tight">
+        {L(
+          "Who are you supporting?",
+          "您要支持的是哪位患者?",
+        )}
+      </div>
+      <p className="text-[13px] text-ink-500">
+        {L(
+          "Pick the patient already using Anchor. You'll join their care team — no baselines or clinical setup on your end.",
+          "选择已在使用 Anchor 的患者。您将加入其护理团队 —— 无需输入基线或临床信息。",
+        )}
+      </p>
+
+      {loading && (
+        <div className="rounded-md border border-ink-200 bg-paper-2 p-3 text-[12.5px] text-ink-500">
+          {L("Loading patients…", "加载中…")}
+        </div>
+      )}
+
+      {!loading && rows.length === 0 && (
+        <div className="rounded-md border border-dashed border-ink-300 bg-paper p-4 text-[12.5px] text-ink-600">
+          {L(
+            "No patients have set up Anchor yet. Ask the person you're supporting to create their profile first, or set up a fresh patient yourself.",
+            "尚无患者设置 Anchor。请先请患者本人创建资料,或由您自己开始新患者流程。",
+          )}
+        </div>
+      )}
+
+      {!loading && rows.length > 0 && (
+        <ul className="space-y-2">
+          {rows.map((h) => (
+            <li key={h.id}>
+              <button
+                type="button"
+                onClick={() => void join(h.id)}
+                disabled={joining !== null}
+                className={cn(
+                  "flex w-full items-center justify-between gap-3 rounded-xl border p-4 text-left transition-colors",
+                  joining === h.id
+                    ? "border-[var(--tide-2)] bg-[var(--tide-soft)]"
+                    : "border-ink-200 bg-paper-2 hover:border-ink-400",
+                )}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="text-[14.5px] font-semibold text-ink-900">
+                    {h.patient_display_name || h.name}
+                  </div>
+                  <div className="mt-0.5 text-[11.5px] text-ink-500">
+                    {h.member_count}{" "}
+                    {h.member_count === 1
+                      ? L("member", "位成员")
+                      : L("members", "位成员")}
+                  </div>
+                </div>
+                <span className="mono text-[10px] uppercase tracking-[0.12em] text-ink-400">
+                  {joining === h.id ? L("Joining…", "加入中…") : L("Join", "加入")}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {error && (
+        <div className="rounded-md border border-[var(--warn)]/40 bg-[var(--warn-soft)] p-2.5 text-[12px] text-[var(--warn)]">
+          {error}
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={onStartFresh}
+        className="text-[12px] text-ink-500 underline-offset-2 hover:text-ink-900 hover:underline"
+      >
+        {L(
+          "I'm setting up a new patient instead",
+          "我要新建一位患者",
+        )}
+      </button>
     </Card>
   );
 }

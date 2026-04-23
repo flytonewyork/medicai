@@ -62,3 +62,15 @@ export interface HouseholdInvite {
 export interface HouseholdMemberWithProfile extends HouseholdMembership {
   profile: Profile;
 }
+
+// Lightweight household-picker shape — what `list_all_households()`
+// returns. Caregiver onboarding renders this in a tap-list; the full
+// household row isn't fetched until after the user joins and RLS opens
+// the regular `households` SELECT to them.
+export interface HouseholdSummary {
+  id: string;
+  name: string;
+  patient_display_name: string;
+  created_at: string;
+  member_count: number;
+}

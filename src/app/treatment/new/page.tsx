@@ -7,8 +7,10 @@ import { useLocale } from "~/hooks/use-translate";
 import { todayISO } from "~/lib/utils/date";
 import { PageHeader } from "~/components/ui/page-header";
 import { CycleForm, type CycleFormValues } from "~/components/treatment/cycle-form";
+import { useRedirectCaregiverAway } from "~/lib/caregiver/guard";
 
 export default function NewTreatmentCyclePage() {
+  useRedirectCaregiverAway();
   const locale = useLocale();
   const router = useRouter();
 

@@ -10,6 +10,9 @@ import { ZoneBanner } from "~/components/family/zone-banner";
 import { NextUp } from "~/components/family/next-up";
 import { QuickNote } from "~/components/family/quick-note";
 import { CallList } from "~/components/family/call-list";
+import { LogForPatient } from "~/components/family/log-for-patient";
+import { ThingsYouCanHelpWith } from "~/components/family/things-you-can-help-with";
+import { AppointmentsYoureAttending } from "~/components/family/appointments-youre-attending";
 
 // Family-facing landing page. Purpose-built for the carer who isn't
 // Thomas: calm status, what's coming up, a quick way to note what they
@@ -34,7 +37,13 @@ export default function FamilyPage() {
 
       <ZoneBanner />
 
+      <AppointmentsYoureAttending />
+
       <NextUp />
+
+      <LogForPatient />
+
+      <ThingsYouCanHelpWith />
 
       <QuickNote />
 
