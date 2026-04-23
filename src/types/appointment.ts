@@ -141,8 +141,22 @@ export interface Appointment {
   // `followup_logged_at` and a past `starts_at` emit a "log what
   // happened" task; setting this dismisses the task.
   followup_logged_at?: string;
+  // Ad-hoc items to raise at this visit — populated by the /log direct-
+  // file flow (e.g. "blood sugar 7.9 fasting") and by the patient / carer
+  // manually. Each entry is a short plain-language line; optional `source`
+  // lets the UI surface provenance ("from Tue's glucose log").
+  discussion_items?: AppointmentDiscussionItem[];
   created_at: string;
   updated_at: string;
+}
+
+export interface AppointmentDiscussionItem {
+  id: string;                     // local uuid-ish, just a client slug
+  text: string;                   // e.g. "Fasting glucose 7.9 on 5 May"
+  source?: "log" | "direct_file" | "manual" | "agent";
+  source_ref?: string;            // e.g. labs:123, daily_entries:45
+  added_at: string;               // ISO
+  resolved_at?: string;           // tick-off on the detail page
 }
 
 // Slice K: cross-module links from an appointment to any domain row
