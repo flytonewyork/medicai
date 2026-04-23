@@ -21,7 +21,7 @@ import {
   saveBulkItem,
   type BulkItem,
 } from "~/lib/ingest/bulk";
-import { Upload, Utensils, NotebookPen, ChevronRight } from "lucide-react";
+import { Upload } from "lucide-react";
 
 function newId(): string {
   return Math.random().toString(36).slice(2, 10);
@@ -108,7 +108,7 @@ export default function IngestPage() {
     <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-8">
       <PageHeader
         eyebrow={locale === "zh" ? "导入" : "Ingest"}
-        title={locale === "zh" ? "报告、照片、手写笔记" : "Reports, photos, handwritten notes"}
+        title={locale === "zh" ? "临床文档导入" : "Clinical document ingest"}
         subtitle={
           locale === "zh"
             ? "本机 OCR，可选 Claude 结构化。一次拖入多个文件。"
@@ -197,49 +197,9 @@ export default function IngestPage() {
         </CardContent>
       </Card>
 
-      <section className="grid gap-3 sm:grid-cols-2">
-        <Link
-          href="/ingest/meal"
-          className="a-card flex items-start gap-3 p-4 transition-colors hover:border-ink-300"
-        >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--tide-soft)] text-[var(--tide-2)]">
-            <Utensils className="h-5 w-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[13.5px] font-semibold text-ink-900">
-              {locale === "zh" ? "餐食照片 → 蛋白与热量" : "Meal photo → protein + calories"}
-            </div>
-            <div className="mt-0.5 text-xs text-ink-500">
-              {locale === "zh"
-                ? "拍一张盘中餐，Claude 估算宏量并建议胰酶剂量。"
-                : "Snap the plate; Claude estimates macros and a PERT suggestion."}
-            </div>
-          </div>
-          <ChevronRight className="mt-1.5 h-4 w-4 text-ink-300" />
-        </Link>
-
-        <Link
-          href="/ingest/notes"
-          className="a-card flex items-start gap-3 p-4 transition-colors hover:border-ink-300"
-        >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--tide-soft)] text-[var(--tide-2)]">
-            <NotebookPen className="h-5 w-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[13.5px] font-semibold text-ink-900">
-              {locale === "zh"
-                ? "手写笔记 → 今日日志"
-                : "Handwritten notes → daily log"}
-            </div>
-            <div className="mt-0.5 text-xs text-ink-500">
-              {locale === "zh"
-                ? "拍一张手写日记，结构化成今日条目。"
-                : "Photograph a paper note; it's transcribed and structured into today's entry."}
-            </div>
-          </div>
-          <ChevronRight className="mt-1.5 h-4 w-4 text-ink-300" />
-        </Link>
-      </section>
+      {/* Meal + handwritten-note tiles moved off clinical ingest
+          (they are not clinical data). They live on /capture now; the
+          AddFab still exposes both shortcuts globally. */}
 
       {recent && recent.length > 0 && (
         <section className="space-y-2">
