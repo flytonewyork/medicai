@@ -32,6 +32,8 @@ export function QuickNote() {
     try {
       const tags = tagInput(body);
       const at = new Date().toISOString();
+      const { getCachedUserId } = await import("~/lib/supabase/current-user");
+      const uid = getCachedUserId();
       await db.log_events.add({
         at,
         input: {
@@ -39,6 +41,8 @@ export function QuickNote() {
           tags: tags.length > 0 ? tags : ["symptom"],
           locale,
           at,
+          entered_by: enteredBy,
+          entered_by_user_id: uid ?? undefined,
         },
       });
       setText("");

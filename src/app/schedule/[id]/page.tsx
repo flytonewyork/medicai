@@ -328,6 +328,10 @@ function FollowUpPrompt({
       const nowIso = now();
       const body = text.trim();
       if (body) {
+        const { getCachedUserId } = await import(
+          "~/lib/supabase/current-user"
+        );
+        const uid = getCachedUserId();
         await db.log_events.add({
           at: nowIso,
           input: {
@@ -335,6 +339,7 @@ function FollowUpPrompt({
             tags: logTagsForKind(appt.kind),
             locale,
             at: nowIso,
+            entered_by_user_id: uid ?? undefined,
           },
         });
       }

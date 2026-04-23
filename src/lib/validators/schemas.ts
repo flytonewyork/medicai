@@ -10,6 +10,7 @@ const scale0to10 = z.number().min(0).max(10);
 export const dailyEntrySchema = z.object({
   date: z.string(),
   entered_by: z.enum(["hulin", "catherine", "thomas"]),
+  entered_by_user_id: z.string().uuid().optional(),
   energy: scale0to10.optional(),
   sleep_quality: scale0to10.optional(),
   appetite: scale0to10.optional(),

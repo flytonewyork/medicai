@@ -262,10 +262,13 @@ export function DailyWizard({ entryId, date }: Props) {
   async function save() {
     setSaving(true);
     try {
+      const { getCachedUserId } = await import("~/lib/supabase/current-user");
+      const uid = getCachedUserId();
       const base: Partial<DailyEntry> = {
         ...draft,
         date,
         entered_by: enteredBy,
+        entered_by_user_id: uid ?? existing?.entered_by_user_id,
         entered_at: existing?.entered_at ?? now(),
         updated_at: now(),
       };

@@ -8,6 +8,7 @@ import { useLocale, useT } from "~/hooks/use-translate";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { PageHeader } from "~/components/ui/page-header";
+import { Attribution } from "~/components/shared/attribution";
 import { ChevronRight, CalendarDays } from "lucide-react";
 
 export default function DailyPage() {
@@ -58,8 +59,15 @@ export default function DailyPage() {
               className="group flex items-center justify-between rounded-xl border border-ink-100/70 bg-paper-2 p-4 transition-colors hover:border-ink-300"
             >
               <div className="space-y-1">
-                <div className="text-sm font-medium text-ink-900">
-                  {formatDate(e.date, locale)}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-ink-900">
+                    {formatDate(e.date, locale)}
+                  </span>
+                  <Attribution
+                    enteredBy={e.entered_by}
+                    enteredByUserId={e.entered_by_user_id}
+                    at={e.entered_at}
+                  />
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-500">
                   <span>
