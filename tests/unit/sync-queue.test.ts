@@ -21,9 +21,17 @@ import {
   withSyncSuppressed,
   __resetSyncQueueForTests,
 } from "~/lib/sync/queue";
+import {
+  __resetHouseholdContextForTests,
+  __setHouseholdIdForTests,
+} from "~/lib/sync/household-context";
+
+const TEST_HOUSEHOLD = "00000000-0000-0000-0000-000000000001";
 
 beforeEach(() => {
   __resetSyncQueueForTests();
+  __resetHouseholdContextForTests();
+  __setHouseholdIdForTests(TEST_HOUSEHOLD);
   upsertMock.mockReset();
   updateMock.mockReset();
   eqMock.mockReset();
@@ -72,8 +80,34 @@ describe("sync queue — enqueueSync", () => {
       table_name: "daily_entries",
       local_id: 42,
       deleted: false,
+      household_id: TEST_HOUSEHOLD,
       data: { id: 42, date: "2026-04-22" },
     });
+  });
+
+  it("holds ops in the queue when there's no household yet", async () => {
+    __setHouseholdIdForTests(null);
+    enqueueSync({
+      kind: "upsert",
+      table: "daily_entries",
+      local_id: 7,
+      data: { id: 7 },
+    });
+    await flushMicrotasks();
+    expect(upsertMock).not.toHaveBeenCalled();
+    expect(pendingSyncCount()).toBe(1);
+
+    // Once the household resolves, the retried drain pushes.
+    __setHouseholdIdForTests(TEST_HOUSEHOLD);
+    enqueueSync({
+      kind: "upsert",
+      table: "medications",
+      local_id: 8,
+      data: { id: 8 },
+    });
+    await flushMicrotasks();
+    expect(upsertMock).toHaveBeenCalledTimes(2);
+    expect(pendingSyncCount()).toBe(0);
   });
 
   it("pushes a delete op as a soft delete (deleted=true)", async () => {
@@ -86,9 +120,10 @@ describe("sync queue — enqueueSync", () => {
 
     expect(updateMock).toHaveBeenCalledTimes(1);
     expect(updateMock.mock.calls[0]?.[0]).toMatchObject({ deleted: true });
-    // Two .eq() filters: table_name, local_id
+    // Three .eq() filters now: table_name, local_id, household_id
     expect(eqMock).toHaveBeenNthCalledWith(1, "table_name", "medications");
     expect(eqMock).toHaveBeenNthCalledWith(2, "local_id", 9);
+    expect(eqMock).toHaveBeenNthCalledWith(3, "household_id", TEST_HOUSEHOLD);
   });
 });
 
