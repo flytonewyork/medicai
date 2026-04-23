@@ -72,3 +72,11 @@ CREATE POLICY "authenticated delete"
 
 -- Realtime: enable so the app can subscribe to changes (Tom sees dad's logs).
 ALTER PUBLICATION supabase_realtime ADD TABLE public.cloud_rows;
+
+
+-- ═══════════════════════════════════════════════════════════════════
+-- Slice A — household foundation + profiles.
+-- Source of truth: supabase/migrations/2026_04_23_slice_a_households.sql
+-- For new installs: the migration file is run after this schema.sql
+-- via the Supabase CLI. For the consolidated view, read that file.
+-- ═══════════════════════════════════════════════════════════════════

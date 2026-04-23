@@ -18,6 +18,7 @@ import { PracticesCard } from "~/components/dashboard/practices-card";
 import { TodayFeed } from "~/components/dashboard/today-feed";
 import { SyncPromptCard } from "~/components/dashboard/sync-prompt-card";
 import { useLocale, useT } from "~/hooks/use-translate";
+import { useHousehold } from "~/hooks/use-household";
 import { PageHeader, SectionHeader } from "~/components/ui/page-header";
 
 export default function DashboardPage() {
@@ -26,6 +27,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const settings = useLiveQuery(() => db.settings.toArray());
   const profileName = settings?.[0]?.profile_name;
+  const { membership } = useHousehold();
 
   useEffect(() => {
     // First-run gate: no settings row (or no onboarded_at) → onboarding.
@@ -33,6 +35,16 @@ export default function DashboardPage() {
       router.replace("/onboarding");
     }
   }, [router, settings]);
+
+  // Non-primary household members see the family view by default —
+  // the clinician-heavy dashboard would overwhelm a visiting carer.
+  // Primary carers keep the full dashboard.
+  useEffect(() => {
+    if (!membership) return;
+    if (membership.role !== "primary_carer") {
+      router.replace("/family");
+    }
+  }, [membership, router]);
 
   const { greeting, eyebrow } = useMemo(() => {
     const now = new Date();

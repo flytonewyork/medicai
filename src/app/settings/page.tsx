@@ -9,6 +9,7 @@ import { settingsSchema, type SettingsInput } from "~/lib/validators/schemas";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
 import { AccountButton } from "~/components/shared/account-button";
+import { HouseholdSection } from "~/components/settings/household-section";
 import { CareTeamSection } from "~/components/settings/care-team-section";
 import { TrackedSymptomsSection } from "~/components/settings/tracked-symptoms-section";
 
@@ -101,6 +102,8 @@ export default function SettingsPage() {
       </div>
 
       <AccountButton />
+
+      <HouseholdSection />
 
       <CareTeamSection />
 
