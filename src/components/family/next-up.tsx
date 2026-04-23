@@ -105,9 +105,24 @@ export function NextUp() {
 function Row({ appt, locale }: { appt: Appointment; locale: "en" | "zh" }) {
   const Icon = KIND_ICON[appt.kind];
   const when = formatWhen(appt, locale);
-  const chips = [
+  // Slice F: prefer structured attendance with status colours; fall
+  // back to doctor / freetext attendees as pending chips.
+  const attendanceChips = (appt.attendance ?? []).map((a) => ({
+    label: a.name,
+    status: a.status as "confirmed" | "tentative" | "declined",
+  }));
+  const pendingNames = [
     ...(appt.doctor ? [appt.doctor] : []),
     ...(appt.attendees ?? []),
+  ].filter(
+    (n) =>
+      !attendanceChips.some(
+        (a) => a.label.trim().toLowerCase() === n.trim().toLowerCase(),
+      ),
+  );
+  const chips = [
+    ...attendanceChips,
+    ...pendingNames.map((n) => ({ label: n, status: "pending" as const })),
   ];
   return (
     <Link
@@ -148,14 +163,34 @@ function Row({ appt, locale }: { appt: Appointment; locale: "en" | "zh" }) {
           )}
           {chips.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-1">
-              {chips.map((c, i) => (
-                <span
-                  key={`${c}-${i}`}
-                  className="inline-flex items-center rounded-full bg-ink-100 px-2 py-0.5 text-[11px] text-ink-700"
-                >
-                  {c}
-                </span>
-              ))}
+              {chips.map((c, i) => {
+                const tone =
+                  c.status === "confirmed"
+                    ? "bg-[var(--ok-soft)] text-[var(--ok)]"
+                    : c.status === "tentative"
+                      ? "bg-[var(--sand)] text-ink-900"
+                      : c.status === "declined"
+                        ? "bg-ink-100 text-ink-400 line-through"
+                        : "bg-ink-100 text-ink-700";
+                const prefix =
+                  c.status === "confirmed"
+                    ? "✓ "
+                    : c.status === "tentative"
+                      ? "? "
+                      : "";
+                return (
+                  <span
+                    key={`${c.label}-${i}`}
+                    className={
+                      "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] " +
+                      tone
+                    }
+                  >
+                    {prefix}
+                    {c.label}
+                  </span>
+                );
+              })}
             </div>
           )}
         </div>

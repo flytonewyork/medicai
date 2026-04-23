@@ -27,6 +27,23 @@ export type AppointmentStatus =
   | "cancelled"
   | "rescheduled";
 
+// Slice F: structured attendance. Sits alongside the freetext
+// `attendees` list. A name in `attendees` with no matching
+// `attendance` entry renders as pending; members flip themselves
+// between confirmed / tentative / declined / (back to pending) with
+// one tap. Keyed by name (case-insensitive) so renames in the
+// care-team registry don't break old rows; `user_id` is the auth uid
+// when the claim came from a signed-in member.
+export type AttendanceStatus = "confirmed" | "tentative" | "declined";
+
+export interface AppointmentAttendance {
+  name: string;
+  user_id?: string;
+  status: AttendanceStatus;
+  claimed_at: string;
+  note?: string;
+}
+
 export interface Appointment {
   id?: number;
   kind: AppointmentKind;
@@ -41,9 +58,11 @@ export interface Appointment {
   phone?: string;
   notes?: string;                // markdown
   status: AppointmentStatus;
-  // Free-text attendee list. When collaboration lands properly this
-  // becomes a separate attendees table keyed by user_id; for now names.
+  // Free-text attendee list — "who was invited".
   attendees?: string[];
+  // Structured "who's actually going" — one row per member that has
+  // claimed a status. Name-keyed, case-insensitive on read.
+  attendance?: AppointmentAttendance[];
   // Photo / document references (keys into ingested_documents, or bare
   // data URLs for small captures).
   attachments?: string[];
