@@ -190,6 +190,26 @@ body {
   color: var(--ink-900);
 }
 
+/* Give the toolbar breathing room inside the card and keep buttons from
+ * hugging the rounded border. FullCalendar's default is zero outer padding
+ * on `.fc`, and adjacent buttons in a `.fc-button-group` sit flush together
+ * with only a -1px border merge — legible but cramped on mobile. */
+.anchor-calendar .fc {
+  padding: 0.75rem 0.75rem 0.5rem;
+}
+.anchor-calendar .fc-toolbar {
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  row-gap: 0.5rem;
+  margin-bottom: 0.75rem !important;
+}
+.anchor-calendar .fc-toolbar-chunk {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .anchor-calendar .fc-button {
   font-family: var(--mono);
   font-size: 10.5px;
@@ -197,9 +217,24 @@ body {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   border-radius: var(--r-sm);
-  padding: 0.4rem 0.7rem;
+  /* Vertical 0.55rem / horizontal 0.95rem — gives the uppercase mono
+   * text enough room to breathe and matches the resting button height
+   * used elsewhere in the app. */
+  padding: 0.55rem 0.95rem;
+  min-height: 2.1rem;
   box-shadow: none;
   transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+/* FullCalendar merges adjacent buttons into a button-group with a -1px
+ * negative margin. Un-merge so each one keeps its own rounded corner —
+ * reads cleaner at our button size. */
+.anchor-calendar .fc-button-group {
+  gap: 0.25rem;
+}
+.anchor-calendar .fc-button-group > .fc-button {
+  border-radius: var(--r-sm) !important;
+  margin-left: 0 !important;
 }
 
 .anchor-calendar .fc-button:focus {
