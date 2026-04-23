@@ -10,6 +10,7 @@ import { agentsForTags } from "~/agents/routing";
 import { runAgentClient } from "~/lib/log/run-agents";
 import { parseDirectFile, type DirectFileResult } from "~/lib/log/direct-file";
 import { applyDirectFile } from "~/lib/log/direct-file-apply";
+import { FollowUpsCard } from "~/components/log/follow-ups-card";
 import { useUIStore } from "~/stores/ui-store";
 import { LOG_TAGS, type AgentId, type LogTag } from "~/types/agent";
 import { Button } from "~/components/ui/button";
@@ -49,6 +50,7 @@ type RunState =
       summary: { en: string; zh: string };
       target: "lab" | "daily";
       rowId: number;
+      filed: DirectFileResult;
     }
   | { kind: "error"; message: string };
 
@@ -99,6 +101,7 @@ export default function LogPage() {
           summary: directFile.summary,
           target: applied.kind,
           rowId: applied.id,
+          filed: directFile,
         });
       } catch (err) {
         setRun({
@@ -358,6 +361,8 @@ export default function LogPage() {
           )}
         </div>
       </Card>
+
+      {run.kind === "filed" && <FollowUpsCard filed={run.filed} />}
 
       <p className="text-center text-[11px] text-ink-400">
         {locale === "zh"

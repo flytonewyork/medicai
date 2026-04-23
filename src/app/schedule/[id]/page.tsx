@@ -16,7 +16,23 @@ import { useLocale, useT } from "~/hooks/use-translate";
 import { useState } from "react";
 import type { Appointment, AppointmentLink } from "~/types/appointment";
 import { logTagsForKind } from "~/lib/appointments/follow-up-tasks";
-import { ArrowLeft, Link2, Trash2, Pencil, Users, Check, MessageSquarePlus } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Link2,
+  MessageSquarePlus,
+  Pencil,
+  Plus,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react";
+import {
+  addDiscussionItem,
+  removeDiscussionItem,
+  toggleDiscussionItemResolved,
+} from "~/lib/appointments/discussion-items";
+import { TextInput } from "~/components/ui/field";
 
 export default function AppointmentDetailPage() {
   const router = useRouter();
@@ -112,6 +128,8 @@ export default function AppointmentDetailPage() {
 
           <PrepPanel appt={appt} />
 
+          <DiscussionItemsPanel appt={appt} locale={locale} />
+
           <FollowUpPrompt appt={appt} locale={locale} t={t} />
 
           <Card className="space-y-3 p-5 text-[13px]">
@@ -201,6 +219,137 @@ export default function AppointmentDetailPage() {
         </>
       )}
     </div>
+  );
+}
+
+function DiscussionItemsPanel({
+  appt,
+  locale,
+}: {
+  appt: Appointment;
+  locale: "en" | "zh";
+}) {
+  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const [draft, setDraft] = useState("");
+  const items = appt.discussion_items ?? [];
+
+  async function add() {
+    if (!appt.id) return;
+    const text = draft.trim();
+    if (!text) return;
+    await addDiscussionItem(appt.id, { text, source: "manual" });
+    setDraft("");
+  }
+
+  // Hide the card entirely until there's something to show or add —
+  // keeps the appointment detail page quiet for routine visits that
+  // don't need a pre-visit agenda.
+  if (items.length === 0 && !draft) {
+    return (
+      <Card className="flex items-center justify-between gap-3 p-4 text-[12.5px]">
+        <div className="min-w-0">
+          <div className="mb-0.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-500">
+            <MessageSquarePlus className="h-3.5 w-3.5" />
+            {L("Things to raise", "议题")}
+          </div>
+          <p className="text-ink-500">
+            {L(
+              "Nothing queued yet. Filed vitals and agent flags land here.",
+              "暂无议题。所记录的指标与智能体标记会出现在这里。",
+            )}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setDraft(" ")}
+          className="shrink-0 rounded-md border border-ink-200 px-2 py-1 text-[11px] text-ink-700 hover:border-[var(--tide-2)] hover:text-[var(--tide-2)]"
+        >
+          <Plus className="h-3 w-3" />
+        </button>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="space-y-2 p-4">
+      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-500">
+        <MessageSquarePlus className="h-3.5 w-3.5" />
+        {L("Things to raise at this visit", "就诊议题")}
+      </div>
+      {items.length > 0 && (
+        <ul className="space-y-1.5">
+          {items.map((d) => (
+            <li
+              key={d.id}
+              className="flex items-start gap-2 rounded-[var(--r-md)] bg-paper-2 px-3 py-2 text-[12.5px]"
+            >
+              <button
+                type="button"
+                onClick={() => void toggleDiscussionItemResolved(appt.id!, d.id)}
+                aria-label={L("Toggle resolved", "切换完成状态")}
+                className={
+                  "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border " +
+                  (d.resolved_at
+                    ? "border-[var(--ok)] bg-[var(--ok)] text-paper"
+                    : "border-ink-300 bg-paper")
+                }
+              >
+                {d.resolved_at && <Check className="h-2.5 w-2.5" strokeWidth={3} />}
+              </button>
+              <div className="min-w-0 flex-1">
+                <div
+                  className={
+                    d.resolved_at
+                      ? "text-ink-400 line-through"
+                      : "text-ink-900"
+                  }
+                >
+                  {d.text}
+                </div>
+                {d.source && (
+                  <div className="mono mt-0.5 text-[9.5px] uppercase tracking-[0.1em] text-ink-400">
+                    {d.source === "direct_file"
+                      ? L("from log", "来自记录")
+                      : d.source === "agent"
+                        ? L("from agent", "来自智能体")
+                        : d.source === "log"
+                          ? L("from log", "来自记录")
+                          : L("manual", "手动")}
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => void removeDiscussionItem(appt.id!, d.id)}
+                aria-label={L("Remove", "删除")}
+                className="text-ink-400 hover:text-ink-900"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex items-center gap-2">
+        <TextInput
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder={L(
+            "Add something to raise…",
+            "补充一项议题…",
+          )}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void add();
+            }
+          }}
+        />
+        <Button size="sm" onClick={() => void add()} disabled={!draft.trim()}>
+          {L("Add", "加入")}
+        </Button>
+      </div>
+    </Card>
   );
 }
 
