@@ -10,6 +10,7 @@ import { useLocale, useT } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
 import { AccountButton } from "~/components/shared/account-button";
 import { CareTeamSection } from "~/components/settings/care-team-section";
+import { TrackedSymptomsSection } from "~/components/settings/tracked-symptoms-section";
 
 export default function SettingsPage() {
   const t = useT();
@@ -102,6 +103,8 @@ export default function SettingsPage() {
       <AccountButton />
 
       <CareTeamSection />
+
+      <TrackedSymptomsSection />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <section className="space-y-3">
