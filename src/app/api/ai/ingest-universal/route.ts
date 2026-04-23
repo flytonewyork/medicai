@@ -9,11 +9,13 @@ import type { PreparedImage } from "~/lib/ingest/image";
 import type { IngestDraft, IngestSourceKind } from "~/types/ingest";
 
 export const runtime = "nodejs";
-// Smart-capture ingest can emit up to 25 ops per document, on Opus-4-7
-// with a 4k-token budget + optional image input. Complex multi-page
-// clinic letters have hit FUNCTION_INVOCATION_TIMEOUT at 120s — bump to
-// Vercel Pro's 300s ceiling to cover those tails.
-export const maxDuration = 300;
+// Smart-capture ingest can emit up to 25 ops per document on Opus-4-7
+// with a 4k-token budget + optional image input. 60s is the safe
+// ceiling across all Vercel paid tiers without needing Fluid Compute;
+// complex multi-page clinic letters that still time out should be
+// split or downgraded to Sonnet per-route rather than pushing the
+// platform cap higher.
+export const maxDuration = 60;
 
 interface RequestBody {
   text?: string;
