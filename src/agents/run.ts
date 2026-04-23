@@ -77,9 +77,9 @@ export async function runAgent(args: RunAgentArgs): Promise<AgentOutput> {
   if (!apiKey) {
     throw new Error("ANTHROPIC_API_KEY is not configured on the server");
   }
-  const [{ default: Anthropic }, { zodOutputFormat }] = await Promise.all([
+  const [{ default: Anthropic }, { jsonOutputFormat }] = await Promise.all([
     import("@anthropic-ai/sdk"),
-    import("@anthropic-ai/sdk/helpers/zod"),
+    import("~/lib/anthropic/json-output"),
   ]);
   const client = new Anthropic({ apiKey });
 
@@ -115,7 +115,7 @@ export async function runAgent(args: RunAgentArgs): Promise<AgentOutput> {
         cache_control: { type: "ephemeral" },
       },
     ],
-    output_config: { format: zodOutputFormat(AgentOutputSchema) },
+    output_config: { format: jsonOutputFormat(AgentOutputSchema) },
     messages: [{ role: "user", content: [{ type: "text", text: userText }] }],
   });
 

@@ -28,6 +28,8 @@ export default function EditDailyPage() {
 
   if (date === null) return null;
   return (
-    <DailyWizard entryId={Number.isFinite(id) ? id : undefined} date={date} />
+    <div className="mx-auto max-w-3xl p-4 md:p-8">
+      <DailyWizard entryId={Number.isFinite(id) ? id : undefined} date={date} />
+    </div>
   );
 }

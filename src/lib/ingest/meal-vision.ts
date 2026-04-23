@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 import type { PreparedImage } from "./image";
 
 export const MealSchema = z.object({

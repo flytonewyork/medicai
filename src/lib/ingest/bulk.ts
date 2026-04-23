@@ -43,6 +43,15 @@ function isDirectImage(file: File): boolean {
   return file.type.startsWith("image/");
 }
 
+function isDocx(file: File): boolean {
+  const lower = file.name.toLowerCase();
+  return (
+    file.type ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    lower.endsWith(".docx")
+  );
+}
+
 export type BulkMutator = (
   id: string,
   patch: Partial<BulkItem>,
@@ -225,7 +234,60 @@ export async function processBulkItem(
   if (isDirectImage(item.file)) {
     return processBulkItemVision(item, mutate);
   }
+  if (isDocx(item.file)) {
+    return processBulkItemDocx(item, mutate);
+  }
   return processBulkItemOcr(item, mutate);
+}
+
+/**
+ * Client-side extract of a .docx — treat the result like OCR text so the rest
+ * of the parsing pipeline (heuristic → Claude) works unchanged.
+ */
+export async function processBulkItemDocx(
+  item: BulkItem,
+  mutate: BulkMutator,
+): Promise<void> {
+  const docRow: IngestedDocument = {
+    filename: item.file.name,
+    mime_type:
+      item.file.type ||
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    size_bytes: item.file.size,
+    kind: "other",
+    uploaded_at: now(),
+    status: "ocr_pending",
+    created_at: now(),
+    updated_at: now(),
+  };
+  const docId = (await db.ingested_documents.add(docRow)) as number;
+  mutate(item.id, { status: "ocr", documentId: docId, progress: "reading docx" });
+
+  try {
+    const { docxToText } = await import("./docx");
+    const text = await docxToText(item.file);
+    if (!text.trim()) throw new Error("No readable text in this .docx");
+    await db.ingested_documents.update(docId, {
+      ocr_text: text,
+      ocr_confidence: 1,
+      status: "ocr_complete",
+      updated_at: now(),
+    });
+    mutate(item.id, {
+      ocrText: text,
+      ocrConfidence: 1,
+      status: "parsing",
+      progress: undefined,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    await db.ingested_documents.update(docId, {
+      status: "error",
+      error_message: msg,
+      updated_at: now(),
+    });
+    mutate(item.id, { status: "ocr_failed", error: msg });
+  }
 }
 
 export async function saveBulkItem(

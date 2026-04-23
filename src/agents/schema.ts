@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 
 // Shared Zod output schema for every specialist agent. The server uses this
 // as the `output_config.format` target so Claude returns validated JSON.
@@ -20,7 +20,7 @@ const dexiePatchSchema = z.object({
     "pending_results",
   ]),
   strategy: z.enum(["upsert_by_date", "add"]),
-  data: z.record(z.unknown()),
+  data: z.record(z.string(), z.unknown()),
 });
 
 const safetyFlagSchema = z.object({

@@ -35,6 +35,22 @@ export function UniversalDrop({
     setError(null);
     setBusy(true);
     try {
+      const lowerName = file.name.toLowerCase();
+      const isDocx =
+        file.type ===
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+        lowerName.endsWith(".docx");
+      if (isDocx) {
+        const { docxToText } = await import("~/lib/ingest/docx");
+        const extracted = await docxToText(file);
+        if (!extracted.trim()) {
+          throw new Error(
+            "The .docx looks empty — couldn't find any readable text inside.",
+          );
+        }
+        await callRoute({ text: extracted, source: "paste" });
+        return;
+      }
       const prepared = await prepareImageForVision(file, { maxEdge: 1800 });
       await callRoute({
         image: prepared,
@@ -114,11 +130,10 @@ export function UniversalDrop({
             }
           >
             <ImagePlus className="h-3.5 w-3.5" />
-            {L("Photo / PDF", "照片 / PDF")}
+            {L("Photo / PDF / DOCX", "照片 / PDF / DOCX")}
             <input
               type="file"
-              accept="image/*,application/pdf"
-              capture="environment"
+              accept="image/*,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx"
               className="hidden"
               disabled={busy}
               onChange={(e) => {

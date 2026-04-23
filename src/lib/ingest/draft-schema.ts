@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 
 // Zod schema mirroring `IngestDraft` from src/types/ingest.ts. Used by
 // the /api/ai/ingest-universal route to parse Claude's structured
@@ -8,7 +8,7 @@ import { z } from "zod";
 export const ingestOpSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("add_appointment"),
-    data: z.record(z.unknown()),
+    data: z.record(z.string(), z.unknown()),
     reason: z.string().optional(),
   }),
   z.object({
@@ -18,12 +18,12 @@ export const ingestOpSchema = z.discriminatedUnion("kind", [
       title_contains: z.string().optional(),
       on_date: z.string().optional(),
     }),
-    changes: z.record(z.unknown()),
+    changes: z.record(z.string(), z.unknown()),
     reason: z.string(),
   }),
   z.object({
     kind: z.literal("add_lab_result"),
-    data: z.record(z.unknown()),
+    data: z.record(z.string(), z.unknown()),
     reason: z.string().optional(),
   }),
   z.object({
@@ -32,22 +32,22 @@ export const ingestOpSchema = z.discriminatedUnion("kind", [
       id: z.number().int().optional(),
       on_date: z.string(),
     }),
-    changes: z.record(z.unknown()),
+    changes: z.record(z.string(), z.unknown()),
     reason: z.string(),
   }),
   z.object({
     kind: z.literal("add_imaging"),
-    data: z.record(z.unknown()),
+    data: z.record(z.string(), z.unknown()),
     reason: z.string().optional(),
   }),
   z.object({
     kind: z.literal("add_ctdna_result"),
-    data: z.record(z.unknown()),
+    data: z.record(z.string(), z.unknown()),
     reason: z.string().optional(),
   }),
   z.object({
     kind: z.literal("add_medication"),
-    data: z.record(z.unknown()),
+    data: z.record(z.string(), z.unknown()),
     reason: z.string().optional(),
   }),
   z.object({
@@ -57,37 +57,37 @@ export const ingestOpSchema = z.discriminatedUnion("kind", [
       drug_id: z.string().optional(),
       name_contains: z.string().optional(),
     }),
-    changes: z.record(z.unknown()),
+    changes: z.record(z.string(), z.unknown()),
     reason: z.string(),
   }),
   z.object({
     kind: z.literal("add_care_team_member"),
-    data: z.record(z.unknown()),
+    data: z.record(z.string(), z.unknown()),
     reason: z.string().optional(),
   }),
   z.object({
     kind: z.literal("add_task"),
-    data: z.record(z.unknown()),
+    data: z.record(z.string(), z.unknown()),
     reason: z.string().optional(),
   }),
   z.object({
     kind: z.literal("add_life_event"),
-    data: z.record(z.unknown()),
+    data: z.record(z.string(), z.unknown()),
     reason: z.string().optional(),
   }),
   z.object({
     kind: z.literal("add_treatment_cycle"),
-    data: z.record(z.unknown()),
+    data: z.record(z.string(), z.unknown()),
     reason: z.string().optional(),
   }),
   z.object({
     kind: z.literal("add_decision"),
-    data: z.record(z.unknown()),
+    data: z.record(z.string(), z.unknown()),
     reason: z.string().optional(),
   }),
   z.object({
     kind: z.literal("update_settings"),
-    changes: z.record(z.unknown()),
+    changes: z.record(z.string(), z.unknown()),
     reason: z.string(),
   }),
 ]);

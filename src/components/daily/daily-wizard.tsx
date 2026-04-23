@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import Link from "next/link";
@@ -646,40 +646,7 @@ function CategoryFields({
 
   if (catId === "practice") {
     return (
-      <div className="space-y-3">
-        <Toggle
-          label={L("Morning practice completed", "晨间修习完成")}
-          checked={draft.practice_morning_completed ?? false}
-          onChange={(v) =>
-            patch("practice_morning_completed", v ? true : undefined)
-          }
-        />
-        {draft.practice_morning_completed && (
-          <ScaleInput
-            label={L("Morning quality (0–5)", "晨间质量（0–5）")}
-            value={draft.practice_morning_quality ?? 3}
-            onChange={(n) => patch("practice_morning_quality", n)}
-            min={0}
-            max={5}
-          />
-        )}
-        <Toggle
-          label={L("Evening practice completed", "晚间修习完成")}
-          checked={draft.practice_evening_completed ?? false}
-          onChange={(v) =>
-            patch("practice_evening_completed", v ? true : undefined)
-          }
-        />
-        {draft.practice_evening_completed && (
-          <ScaleInput
-            label={L("Evening quality (0–5)", "晚间质量（0–5）")}
-            value={draft.practice_evening_quality ?? 3}
-            onChange={(n) => patch("practice_evening_quality", n)}
-            min={0}
-            max={5}
-          />
-        )}
-      </div>
+      <PracticeFields draft={draft} patch={patch} locale={locale} />
     );
   }
 
@@ -837,6 +804,205 @@ function CategoryFields({
   }
 
   return null;
+}
+
+function PracticeFields({
+  draft,
+  patch,
+  locale,
+}: {
+  draft: Draft;
+  patch: <K extends keyof DailyEntry>(k: K, v: DailyEntry[K] | undefined) => void;
+  locale: "en" | "zh";
+}) {
+  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const practices = useLiveQuery(
+    () =>
+      db.medications
+        .where("category")
+        .equals("behavioural")
+        .filter((m) => m.active)
+        .toArray(),
+    [],
+  );
+
+  // Fallback controls on first use, before any practices have been set up.
+  if (practices === undefined) return null;
+  if (practices.length === 0) {
+    return (
+      <div className="space-y-3">
+        <div className="rounded-[var(--r-md)] border border-dashed border-ink-200 bg-paper p-3 text-[12.5px] text-ink-500">
+          {L(
+            "No practices configured yet — add Qigong, breathing, or your own under Practices so they appear here each day.",
+            "还未配置任何修习 —— 在「修习」中加入气功、呼吸法或自定义项目，之后就会每天出现在这里。",
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Link
+            href="/practices/new"
+            className="rounded-md border border-ink-200 px-2.5 py-1.5 text-[12px] text-ink-700 hover:bg-ink-100/40"
+          >
+            {L("Add a practice", "添加修习")}
+          </Link>
+        </div>
+        <Toggle
+          label={L(
+            "Did any practice today (morning)",
+            "今天上午有做修习",
+          )}
+          checked={draft.practice_morning_completed ?? false}
+          onChange={(v) =>
+            patch("practice_morning_completed", v ? true : undefined)
+          }
+        />
+        <Toggle
+          label={L(
+            "Did any practice today (evening)",
+            "今天晚上有做修习",
+          )}
+          checked={draft.practice_evening_completed ?? false}
+          onChange={(v) =>
+            patch("practice_evening_completed", v ? true : undefined)
+          }
+        />
+      </div>
+    );
+  }
+
+  const morning = practices.filter((m) => isMorningScheduled(m.schedule));
+  const evening = practices.filter((m) => isEveningScheduled(m.schedule));
+  const other = practices.filter(
+    (m) => !isMorningScheduled(m.schedule) && !isEveningScheduled(m.schedule),
+  );
+
+  return (
+    <div className="space-y-4">
+      {morning.length > 0 && (
+        <PracticeGroup
+          title={L("Morning", "上午")}
+          practices={morning}
+          locale={locale}
+          groupCompleted={draft.practice_morning_completed ?? false}
+          onGroupCompleted={(v) =>
+            patch("practice_morning_completed", v ? true : undefined)
+          }
+          quality={draft.practice_morning_quality}
+          onQuality={(n) => patch("practice_morning_quality", n)}
+        />
+      )}
+      {evening.length > 0 && (
+        <PracticeGroup
+          title={L("Evening", "晚上")}
+          practices={evening}
+          locale={locale}
+          groupCompleted={draft.practice_evening_completed ?? false}
+          onGroupCompleted={(v) =>
+            patch("practice_evening_completed", v ? true : undefined)
+          }
+          quality={draft.practice_evening_quality}
+          onQuality={(n) => patch("practice_evening_quality", n)}
+        />
+      )}
+      {other.length > 0 && (
+        <PracticeGroup
+          title={L("Other", "其他")}
+          practices={other}
+          locale={locale}
+        />
+      )}
+    </div>
+  );
+}
+
+function PracticeGroup({
+  title,
+  practices,
+  locale,
+  groupCompleted,
+  onGroupCompleted,
+  quality,
+  onQuality,
+}: {
+  title: string;
+  practices: Array<{
+    id?: number;
+    drug_id: string;
+    display_name?: string;
+    dose?: string;
+  }>;
+  locale: "en" | "zh";
+  groupCompleted?: boolean;
+  onGroupCompleted?: (v: boolean) => void;
+  quality?: number;
+  onQuality?: (n: number) => void;
+}) {
+  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  return (
+    <div className="space-y-2">
+      <div className="eyebrow text-ink-500">{title}</div>
+      <ul className="space-y-1.5">
+        {practices.map((m) => {
+          const name = m.display_name ?? m.drug_id;
+          return (
+            <li
+              key={m.id ?? m.drug_id}
+              className="flex items-center justify-between rounded-[var(--r-md)] bg-paper-2 px-3 py-2"
+            >
+              <div className="min-w-0">
+                <div className="truncate text-[13px] text-ink-900">{name}</div>
+                {m.dose && (
+                  <div className="text-[11px] text-ink-500">{m.dose}</div>
+                )}
+              </div>
+              <Link
+                href="/practices"
+                className="mono shrink-0 text-[10px] uppercase tracking-[0.12em] text-ink-400 hover:text-ink-700"
+              >
+                {L("Manage", "管理")}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+      {onGroupCompleted && (
+        <Toggle
+          label={L(
+            `Completed this ${title.toLowerCase()} session`,
+            `本时段已完成`,
+          )}
+          checked={groupCompleted ?? false}
+          onChange={onGroupCompleted}
+        />
+      )}
+      {groupCompleted && onQuality && (
+        <ScaleInput
+          label={L("Quality (0–5)", "质量（0–5）")}
+          value={quality ?? 3}
+          onChange={onQuality}
+          min={0}
+          max={5}
+        />
+      )}
+    </div>
+  );
+}
+
+function isMorningScheduled(schedule: unknown): boolean {
+  const s = schedule as { clock_times?: string[] } | null | undefined;
+  if (!s?.clock_times?.length) return false;
+  return s.clock_times.some((t) => {
+    const hour = Number(t.split(":")[0]);
+    return Number.isFinite(hour) && hour < 12;
+  });
+}
+
+function isEveningScheduled(schedule: unknown): boolean {
+  const s = schedule as { clock_times?: string[] } | null | undefined;
+  if (!s?.clock_times?.length) return false;
+  return s.clock_times.some((t) => {
+    const hour = Number(t.split(":")[0]);
+    return Number.isFinite(hour) && hour >= 12;
+  });
 }
 
 function ReviewScreen({

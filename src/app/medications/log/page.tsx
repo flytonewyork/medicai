@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
@@ -19,7 +20,16 @@ import {
 } from "~/lib/medication/log";
 import type { Medication, MedicationTodayStatus } from "~/types/medication";
 import { DRUGS_BY_ID } from "~/config/drug-registry";
-import { Check, X, AlertCircle, Pill, ChevronRight } from "lucide-react";
+import {
+  Check,
+  X,
+  AlertCircle,
+  Pill,
+  ChevronRight,
+  Pencil,
+  Plus,
+  ClipboardList,
+} from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 
 const COMMON_SIDE_EFFECTS = [
@@ -36,6 +46,7 @@ const COMMON_SIDE_EFFECTS = [
 
 export default function MedicationLogPage() {
   const locale = useLocale();
+  const router = useRouter();
   const ctx = useActiveCycleContext();
   const cycleId = ctx?.cycle.id;
   const cycleDay = ctx?.cycle_day;
@@ -92,18 +103,42 @@ export default function MedicationLogPage() {
       <PageHeader
         title={locale === "zh" ? "今日用药记录" : "Today's medication log"}
         subtitle={cycleLabel}
+        action={
+          <div className="flex flex-wrap gap-2">
+            <Link href="/prescriptions">
+              <Button size="sm" variant="secondary">
+                <ClipboardList className="h-3.5 w-3.5" />
+                {locale === "zh" ? "管理处方" : "Prescriptions"}
+              </Button>
+            </Link>
+            <Link href="/prescriptions">
+              <Button size="sm">
+                <Plus className="h-3.5 w-3.5" />
+                {locale === "zh" ? "添加" : "Add"}
+              </Button>
+            </Link>
+          </div>
+        }
       />
 
-      {!ctx && (
+      {!ctx && statuses.length === 0 && (
         <Card>
-          <CardContent className="p-6 text-sm text-ink-500">
-            {locale === "zh"
-              ? "开始一个治疗周期后，系统将自动填充今日应服用的药物。"
-              : "Start an active treatment cycle and this page will auto-populate today's medications."}
-            <div className="mt-4">
+          <CardContent className="space-y-3 p-6 text-sm text-ink-500">
+            <div>
+              {locale === "zh"
+                ? "当前没有活动处方。开始一个治疗周期会自动填充药物，或你也可以手动添加。"
+                : "No active prescriptions yet. Start a treatment cycle to auto-populate, or add one manually."}
+            </div>
+            <div className="flex flex-wrap gap-2">
               <Link href="/treatment/new">
-                <Button variant="secondary">
+                <Button variant="secondary" size="sm">
                   {locale === "zh" ? "开始新周期" : "Start a cycle"}
+                </Button>
+              </Link>
+              <Link href="/prescriptions">
+                <Button size="sm">
+                  <Plus className="h-3.5 w-3.5" />
+                  {locale === "zh" ? "添加处方" : "Add prescription"}
                 </Button>
               </Link>
             </div>
@@ -169,6 +204,18 @@ export default function MedicationLogPage() {
           onClose={() => setSheetFor(null)}
         />
       )}
+
+      {statuses.length > 0 && (
+        <div className="sticky bottom-24 flex items-center justify-end gap-2 pt-2 md:bottom-6">
+          <Button variant="ghost" onClick={() => router.push("/prescriptions")}>
+            {locale === "zh" ? "修改处方" : "Edit prescriptions"}
+          </Button>
+          <Button onClick={() => router.push("/")}>
+            <Check className="h-4 w-4" />
+            {locale === "zh" ? "完成" : "Save & close"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -227,7 +274,7 @@ function MedRow({
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             onClick={onTaken}
             size="sm"
@@ -246,6 +293,14 @@ function MedRow({
             <X className="h-3.5 w-3.5" />
             {locale === "zh" ? "漏服" : "Missed"}
           </Button>
+          <Link
+            href="/prescriptions"
+            aria-label={locale === "zh" ? "编辑处方" : "Edit prescription"}
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-ink-200 text-ink-500 hover:border-ink-400 hover:text-ink-900"
+            title={locale === "zh" ? "修改剂量或停用" : "Change dose or stop"}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Link>
           <Button
             onClick={onDetails}
             size="sm"

@@ -104,20 +104,11 @@ export const appointmentInputSchema = z.object({
 
 export type AppointmentInput = z.infer<typeof appointmentInputSchema>;
 
-// Schema the vision/email parser is asked to emit. Kept lean so the LLM
-// doesn't hallucinate URLs or status transitions it has no evidence for.
-export const parsedAppointmentSchema = z.object({
-  kind: appointmentKindSchema,
-  title: z.string().min(1),
-  starts_at: z.string(), // ISO; parser does its best, we validate on save
-  ends_at: z.string().optional(),
-  all_day: z.boolean().optional(),
-  location: z.string().optional(),
-  doctor: z.string().optional(),
-  phone: z.string().optional(),
-  notes: z.string().optional(),
-  confidence: z.enum(["high", "medium", "low"]),
-  ambiguities: z.array(z.string()).optional(),
-});
-
-export type ParsedAppointment = z.infer<typeof parsedAppointmentSchema>;
+// The parsed-output schema lives in `./parse-schema.ts` — it must be a zod/v4
+// schema so it can be fed to the Anthropic SDK's `zodOutputFormat` helper,
+// which internally calls `z.toJSONSchema` (v4-only). Re-exported here for
+// backwards compatibility with existing imports.
+export {
+  parsedAppointmentSchema,
+  type ParsedAppointment,
+} from "./parse-schema";

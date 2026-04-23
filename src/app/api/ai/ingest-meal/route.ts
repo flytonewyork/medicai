@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { jsonOutputFormat } from "~/lib/anthropic/json-output";
 import { MealSchema, MEAL_SYSTEM } from "~/lib/ingest/meal-vision";
 import type { PreparedImage } from "~/lib/ingest/image";
 
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       system: [
         { type: "text", text: MEAL_SYSTEM, cache_control: { type: "ephemeral" } },
       ],
-      output_config: { format: zodOutputFormat(MealSchema) },
+      output_config: { format: jsonOutputFormat(MealSchema) },
       messages: [
         {
           role: "user",

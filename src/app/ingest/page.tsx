@@ -164,7 +164,7 @@ export default function IngestPage() {
               type="file"
               className="hidden"
               multiple
-              accept="image/*,application/pdf"
+              accept="image/*,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx"
               onChange={(e) => {
                 void enqueueFiles(e.target.files);
                 e.target.value = "";
@@ -298,8 +298,8 @@ function DropZone({
       }
     >
       {locale === "zh"
-        ? "拖放任意数量的文件到这里（PDF / JPG / PNG）"
-        : "Drop any number of files here (PDF · JPG · PNG)"}
+        ? "拖放任意数量的文件到这里（PDF / JPG / PNG / DOCX）"
+        : "Drop any number of files here (PDF · JPG · PNG · DOCX)"}
     </div>
   );
 }
