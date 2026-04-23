@@ -35,6 +35,7 @@ import { cn } from "~/lib/utils/cn";
 
 const ROLE_LABEL: Record<HouseholdRole, string> = {
   primary_carer: "Primary carer",
+  patient: "Patient",
   family: "Family",
   clinician: "Clinician",
   observer: "Observer",
@@ -42,6 +43,7 @@ const ROLE_LABEL: Record<HouseholdRole, string> = {
 
 const ROLE_TONE: Record<HouseholdRole, string> = {
   primary_carer: "bg-[var(--tide-soft)] text-[var(--tide-2)]",
+  patient: "bg-[var(--tide)]/20 text-[var(--tide-2)]",
   family: "bg-ink-100 text-ink-700",
   clinician: "bg-[var(--sand)] text-ink-900",
   observer: "bg-paper-2 text-ink-500",
@@ -386,6 +388,7 @@ function InvitePanel({
               className="h-11 rounded-lg border border-ink-200 bg-paper-2 px-3 text-sm"
             >
               <option value="family">Family</option>
+              <option value="patient">Patient</option>
               <option value="primary_carer">Primary carer</option>
               <option value="clinician">Clinician</option>
               <option value="observer">Observer</option>

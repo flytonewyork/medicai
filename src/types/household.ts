@@ -4,6 +4,7 @@
 
 export type HouseholdRole =
   | "primary_carer"
+  | "patient"
   | "family"
   | "clinician"
   | "observer";
@@ -14,6 +15,13 @@ export interface Profile {
   avatar_url?: string | null;
   locale: "en" | "zh";
   care_role_label?: string | null;  // free-text ("Son", "Palliative RN")
+  relationship?: string | null;     // Slice M — "son", "wife", "oncology nurse"
+  timezone?: string | null;         // IANA id e.g. "Australia/Melbourne"
+  notification_preference?:
+    | "all"
+    | "digest"
+    | "emergency_only"
+    | null;
   created_at: string;
   updated_at: string;
 }

@@ -7,6 +7,7 @@ import { initSync } from "~/lib/sync/init";
 import { useUIStore } from "~/stores/ui-store";
 import { WelcomeAuthModal } from "~/components/auth/welcome-auth-modal";
 import { IngestModal } from "~/components/ingest/ingest-modal";
+import { ObserverBanner } from "~/components/shared/observer-banner";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(() => new QueryClient());
@@ -34,6 +35,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={client}>
+      <ObserverBanner />
       {children}
       <WelcomeAuthModal />
       <IngestModal />
