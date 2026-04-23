@@ -21,6 +21,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useIngestModal } from "~/components/ingest/ingest-modal";
+import { useAppPerspective } from "~/lib/caregiver/scope";
 
 interface FabItem {
   href?: string;
@@ -32,6 +33,51 @@ interface FabItem {
   icon: React.ComponentType<{ className?: string }>;
   tone?: "tide" | "sand";
 }
+
+// Caregiver-friendly FAB — only the verbs a supporting family member
+// reaches for. Patient-authored captures (daily wizard, weekly / fort.
+// assessments, meal photo, practice toggle) are hidden.
+const CAREGIVER_ITEMS: FabItem[] = [
+  {
+    href: "/log",
+    label: { en: "Log for dad", zh: "代记录" },
+    hint: {
+      en: "A note or vital you just observed",
+      zh: "刚观察到的情况或数值",
+    },
+    icon: MessageSquarePlus,
+    tone: "sand",
+  },
+  {
+    href: "/schedule/new",
+    label: { en: "New appointment", zh: "新建预约" },
+    hint: {
+      en: "Clinic / chemo / scan / blood test",
+      zh: "门诊 / 化疗 / 检查 / 化验",
+    },
+    icon: CalendarClock,
+    tone: "tide",
+  },
+  {
+    href: "/tasks/new",
+    label: { en: "Add task", zh: "新建任务" },
+    hint: {
+      en: "Something you'll chase up",
+      zh: "您要跟进的事项",
+    },
+    icon: ListTodo,
+  },
+  {
+    action: "ingest",
+    label: { en: "Upload clinic letter", zh: "上传就诊函" },
+    hint: {
+      en: "Photo or paste — the team sees it too",
+      zh: "拍照或粘贴 —— 团队也可看到",
+    },
+    icon: Sparkles,
+    tone: "tide",
+  },
+];
 
 const ITEMS: FabItem[] = [
   {
@@ -132,6 +178,8 @@ const ITEMS: FabItem[] = [
 export function AddFab() {
   const locale = useLocale();
   const pathname = usePathname();
+  const perspective = useAppPerspective();
+  const items = perspective === "patient" ? ITEMS : CAREGIVER_ITEMS;
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -168,7 +216,7 @@ export function AddFab() {
             </div>
           </div>
           <ul className="max-h-[70vh] overflow-y-auto">
-            {ITEMS.map((item, idx) => {
+            {items.map((item, idx) => {
               const Icon = item.icon;
               const inner = (
                 <>

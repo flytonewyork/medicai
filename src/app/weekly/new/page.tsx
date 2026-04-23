@@ -3,8 +3,10 @@
 import { WeeklyForm } from "~/components/weekly/weekly-form";
 import { PageHeader } from "~/components/ui/page-header";
 import { useLocale, useT } from "~/hooks/use-translate";
+import { useRedirectCaregiverAway } from "~/lib/caregiver/guard";
 
 export default function NewWeeklyPage() {
+  useRedirectCaregiverAway();
   const t = useT();
   const locale = useLocale();
   return (

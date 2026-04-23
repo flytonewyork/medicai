@@ -5,6 +5,7 @@ import type {
   HouseholdMembership,
   HouseholdMemberWithProfile,
   HouseholdRole,
+  HouseholdSummary,
   Profile,
 } from "~/types/household";
 
@@ -122,6 +123,35 @@ export async function createHousehold(args: {
   });
   if (error) throw error;
   if (typeof data !== "string") throw new Error("create_household_failed");
+  return data;
+}
+
+// RPC: list every household as a lightweight summary. Backed by the
+// SECURITY DEFINER function `public.list_all_households` — lets
+// caregiver onboarding show a patient picker without the caller being
+// a member yet. Safe under the product assumption that "all patients
+// are public within this family app"; tighten with a `discoverable`
+// flag if that ever changes.
+export async function listAllHouseholds(): Promise<HouseholdSummary[]> {
+  const sb = getSupabaseBrowser();
+  if (!sb) return [];
+  const { data, error } = await sb.rpc("list_all_households");
+  if (error) throw error;
+  return (data ?? []) as HouseholdSummary[];
+}
+
+// RPC: join an existing household as `family`. Idempotent — calls with
+// a pre-existing membership return without writing.
+export async function joinHouseholdAsFamily(
+  householdId: string,
+): Promise<string> {
+  const sb = getSupabaseBrowser();
+  if (!sb) throw new Error("supabase_not_configured");
+  const { data, error } = await sb.rpc("join_household_as_family", {
+    target_id: householdId,
+  });
+  if (error) throw error;
+  if (typeof data !== "string") throw new Error("join_household_failed");
   return data;
 }
 

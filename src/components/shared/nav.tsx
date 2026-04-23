@@ -21,14 +21,11 @@ import {
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 import { useT, useLocale } from "~/hooks/use-translate";
+import { useAppPerspective } from "~/lib/caregiver/scope";
 
-// Schedule replaces Tasks as the canonical "what's coming up / what
-// needs doing" surface — the /schedule page owns both upcoming
-// appointments and their derived prep + follow-up tasks. The /tasks
-// route still exists for one-off reminders but is no longer in primary
-// nav. Medications is accessed contextually (treatment detail, logging
-// FAB) rather than via top-level nav — it's cross-cutting.
-const ITEMS = [
+// Patient nav: everything. Patient owns self-reporting, treatment,
+// assessment, bridge strategy, reports.
+const PATIENT_ITEMS = [
   { href: "/", key: "nav.dashboard", icon: LayoutDashboard },
   { href: "/schedule", key: "nav.schedule", icon: CalendarDays },
   { href: "/family", key: "nav.family", icon: Users },
@@ -44,14 +41,36 @@ const ITEMS = [
   { href: "/settings", key: "nav.settings", icon: SettingsIcon },
 ] as const;
 
+// Caregiver nav: the things a supporting family member actually uses
+// — the family view, the shared schedule, the care-team call list, a
+// place to log what they observed. Patient-authored surfaces (daily
+// wizard, weekly/fortnightly, treatment cycle, assessment, bridge,
+// reports) are hidden.
+const CAREGIVER_ITEMS = [
+  { href: "/family", key: "nav.family", icon: Users },
+  { href: "/schedule", key: "nav.schedule", icon: CalendarDays },
+  { href: "/care-team", key: "nav.care_team", icon: Users },
+  { href: "/log", key: "nav.log", icon: Sparkles },
+  { href: "/history", key: "nav.history", icon: HistoryIcon },
+  { href: "/settings", key: "nav.settings", icon: SettingsIcon },
+] as const;
+
+type NavItem = (typeof PATIENT_ITEMS)[number] | (typeof CAREGIVER_ITEMS)[number];
+
 function isAuthRoute(pathname: string | null): boolean {
   if (!pathname) return false;
   return pathname === "/login" || pathname.startsWith("/auth/");
 }
 
+function useNavItems(): readonly NavItem[] {
+  const perspective = useAppPerspective();
+  return perspective === "patient" ? PATIENT_ITEMS : CAREGIVER_ITEMS;
+}
+
 export function DesktopSidebar() {
   const t = useT();
   const pathname = usePathname();
+  const items = useNavItems();
   if (isAuthRoute(pathname)) return null;
   return (
     <aside className="hidden md:flex md:w-60 flex-col border-r border-ink-100/60 bg-paper-2/60">
@@ -60,7 +79,7 @@ export function DesktopSidebar() {
         <div className="mt-1 text-[11px] text-ink-400">{t("app.tagline")}</div>
       </div>
       <nav className="flex-1 space-y-0.5 px-2 pb-4">
-        {ITEMS.map((item) => {
+        {items.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href;
           return (
@@ -93,10 +112,15 @@ export function DesktopSidebar() {
 export function MobileBottomNav() {
   const t = useT();
   const pathname = usePathname();
+  const items = useNavItems();
   if (isAuthRoute(pathname)) return null;
-  const mobileItems = ITEMS.filter((i) =>
-    ["/", "/schedule", "/assessment", "/treatment", "/labs"].includes(i.href),
-  );
+  // Mobile bottom nav keeps 4–5 most-used slots. Patients get the
+  // dashboard + schedule + key axes; caregivers get family + schedule +
+  // care team + log.
+  const patientHrefs = ["/", "/schedule", "/assessment", "/treatment", "/labs"];
+  const caregiverHrefs = ["/family", "/schedule", "/care-team", "/log"];
+  const selected = items === PATIENT_ITEMS ? patientHrefs : caregiverHrefs;
+  const mobileItems = items.filter((i) => selected.includes(i.href));
   return (
     <nav className="a-glass fixed inset-x-3 bottom-3 z-40 flex justify-around rounded-[22px] px-2 py-2.5 shadow-lg md:hidden">
       {mobileItems.map((item) => {
@@ -130,6 +154,7 @@ export function MobileMoreMenu() {
   const t = useT();
   const locale = useLocale();
   const pathname = usePathname();
+  const items = useNavItems();
   const [open, setOpen] = useState(false);
 
   // Close the menu whenever navigation happens so the overlay doesn't linger.
@@ -174,7 +199,7 @@ export function MobileMoreMenu() {
               </button>
             </div>
             <nav className="mt-3 grid grid-cols-2 gap-2">
-              {ITEMS.map((item) => {
+              {items.map((item) => {
                 const Icon = item.icon;
                 const active = pathname === item.href;
                 return (

@@ -23,7 +23,8 @@
     "settings": "设置",
     "practices": "修习",
     "history": "历史记录",
-    "care_team": "医疗团队"
+    "care_team": "医疗团队",
+    "log": "记录"
   },
   "zones": {
     "green": "稳定",

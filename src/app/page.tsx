@@ -38,15 +38,23 @@ export default function DashboardPage() {
     }
   }, [router, settings]);
 
-  // Non-primary household members see the family view by default —
+  // Anyone who isn't acting as the patient sees /family by default —
   // the clinician-heavy dashboard would overwhelm a visiting carer.
-  // Primary carers keep the full dashboard.
+  // Primary carers keep the full dashboard (they proxy for the patient).
+  // Checks both the Supabase household membership (authoritative once
+  // joined) AND the local Dexie settings.user_type (set during first-
+  // session onboarding before any sign-in).
   useEffect(() => {
+    const type = settings?.[0]?.user_type;
+    if (type === "caregiver" || type === "clinician") {
+      router.replace("/family");
+      return;
+    }
     if (!membership) return;
-    if (membership.role !== "primary_carer") {
+    if (membership.role !== "primary_carer" && membership.role !== "patient") {
       router.replace("/family");
     }
-  }, [membership, router]);
+  }, [membership, router, settings]);
 
   const { greeting, eyebrow } = useMemo(() => {
     const now = new Date();
