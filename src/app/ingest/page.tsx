@@ -10,6 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { CameraCapture } from "~/components/ingest/camera-capture";
 import { BulkQueue } from "~/components/ingest/bulk-queue";
+import { UniversalDrop } from "~/components/ingest/universal-drop";
+import { PreviewDiff } from "~/components/ingest/preview-diff";
+import type { IngestApplyResult, IngestDraft } from "~/types/ingest";
 import {
   parseBulkItem,
   processBulkItem,
@@ -24,6 +27,9 @@ function newId(): string {
 
 export default function IngestPage() {
   const locale = useLocale();
+
+  const [draft, setDraft] = useState<IngestDraft | null>(null);
+  const [appliedResults, setAppliedResults] = useState<IngestApplyResult[] | null>(null);
 
   const [items, setItems] = useState<BulkItem[]>([]);
   const itemsRef = useRef<BulkItem[]>([]);
@@ -116,6 +122,23 @@ export default function IngestPage() {
           </Link>
         }
       />
+
+      {!draft && !appliedResults && (
+        <UniversalDrop onDraft={setDraft} />
+      )}
+
+      {draft && (
+        <PreviewDiff
+          draft={draft}
+          onApplied={(rs) => {
+            setAppliedResults(rs);
+          }}
+          onDiscard={() => {
+            setDraft(null);
+            setAppliedResults(null);
+          }}
+        />
+      )}
 
       <Card>
         <CardContent className="space-y-4 pt-5">
