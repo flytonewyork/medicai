@@ -4,6 +4,7 @@ import { pullFromCloud, resetPullCursor } from "./pull";
 import { startSyncRetryTimer, stopSyncRetryTimer } from "./queue";
 import { subscribeToCloudChanges, unsubscribeFromCloudChanges } from "./realtime";
 import { refreshHouseholdId } from "./household-context";
+import { wireUserIdCache } from "~/lib/supabase/current-user";
 
 let initialized = false;
 
@@ -22,6 +23,7 @@ export async function initSync(): Promise<void> {
 
   attachSyncHooks();
   startSyncRetryTimer();
+  wireUserIdCache();
 
   const supabase = getSupabaseBrowser();
   if (!supabase) return;

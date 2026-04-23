@@ -18,6 +18,12 @@ export interface DailyEntry {
   date: string;
   entered_at: string;
   entered_by: EnteredBy;
+  // Slice C: when the user was signed in at save time, this carries
+  // their auth.uid so <Attribution /> can render the real profile
+  // display_name + avatar. Legacy rows without it fall back to the
+  // `entered_by` string label. Optional because not every device has
+  // an authenticated session (dad's phone, offline use).
+  entered_by_user_id?: string;
   energy?: number;
   sleep_quality?: number;
   appetite?: number;
@@ -69,6 +75,7 @@ export interface WeeklyAssessment {
   week_start: string;
   entered_at: string;
   entered_by: EnteredBy;
+  entered_by_user_id?: string;
   practice_full_days: number;
   practice_reduced_days: number;
   practice_skipped_days: number;
@@ -88,6 +95,7 @@ export interface FortnightlyAssessment {
   assessment_date: string;
   entered_at: string;
   entered_by: EnteredBy;
+  entered_by_user_id?: string;
   ecog_self: 0 | 1 | 2 | 3 | 4;
   pro_ctcae_fatigue_severity?: number;
   pro_ctcae_fatigue_interference?: number;

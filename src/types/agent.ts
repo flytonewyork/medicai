@@ -49,6 +49,12 @@ export interface LogInput {
   tags: LogTag[];
   locale: Locale;
   at: string; // ISO timestamp
+  // Slice C: attribution pair. `entered_by` is the device-local
+  // ui-store label; `entered_by_user_id` is the Supabase auth.uid of
+  // the signed-in user, if any. <Attribution /> prefers the profile
+  // lookup and falls back to the label.
+  entered_by?: string;
+  entered_by_user_id?: string;
 }
 
 // A structured patch the agent asks the client to apply to Dexie.
