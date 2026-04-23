@@ -66,6 +66,15 @@ export interface DailyEntry {
   resistance_training?: boolean;
   other_exercise_minutes?: number;
   height_cm?: number;
+  // External-axis inputs (slice 3). Daily count of meaningful human
+  // interactions — in-person visits, phone calls, video calls that lasted
+  // long enough to matter. Deliberately patient-subjective, not raw call
+  // count, so it tracks social connectedness rather than phone activity.
+  meaningful_interactions?: number;
+  // True if a family member / carer was physically present for part of the
+  // day. A simpler binary that catches carer-absence drift independent of
+  // total-contacts count.
+  carer_present?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -293,6 +302,35 @@ export interface SignalEventRow {
   action_kind?: string;             // "lever" | "task" | "question" | ...
   note?: string;
   created_at: string;
+}
+
+// External-axis: log of care-team touchpoints (clinician calls, clinic
+// visits, community nurse, allied health). Powers the clinician-gap
+// detector and lets the patient see their support-network activity over
+// time. Distinct from PatientTask (which is prospective / scheduling) —
+// this is retrospective / what actually happened.
+export type CareTeamContactKind =
+  | "clinic_visit"         // in-person visit with the oncologist / team
+  | "clinician_call"       // phone / telehealth with oncology team
+  | "specialist_visit"     // non-oncology specialist (HPB surgeon, etc.)
+  | "community_nurse"      // home or community nursing contact
+  | "allied_health"        // dietitian, physio, psychology, etc.
+  | "hospital_admission"   // inpatient stay
+  | "emergency_department"
+  | "pharmacist"
+  | "other";
+
+export interface CareTeamContact {
+  id?: number;
+  date: string;                      // ISO date
+  kind: CareTeamContactKind;
+  with_who?: string;                 // clinician / service name
+  duration_min?: number;
+  notes?: string;
+  follow_up_needed?: boolean;
+  follow_up_by?: string;             // ISO date for next action
+  created_at: string;
+  updated_at: string;
 }
 
 export interface LifeEvent {

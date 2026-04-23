@@ -21,7 +21,9 @@
     "ingest": "Ingest",
     "reports": "Reports",
     "settings": "Settings",
-    "practices": "Practices"
+    "practices": "Practices",
+    "history": "History",
+    "care_team": "Care team"
   },
   "zones": {
     "green": "Stable",

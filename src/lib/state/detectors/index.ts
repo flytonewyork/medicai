@@ -5,9 +5,13 @@
 import type { ChangeSignal, Detector, DetectorContext } from "./types";
 import { gripDeclineDetector } from "./grip-decline";
 import { stepsDeclineDetector } from "./steps-decline";
+import { socialIsolationDetector } from "./social-isolation";
+import { clinicianGapDetector } from "./clinician-gap";
 
 export { stepsDeclineDetector } from "./steps-decline";
 export { gripDeclineDetector } from "./grip-decline";
+export { socialIsolationDetector } from "./social-isolation";
+export { clinicianGapDetector } from "./clinician-gap";
 export {
   attributeSignal,
   eventsBySignalId,
@@ -50,6 +54,8 @@ export {
 export const DETECTORS: readonly Detector[] = [
   stepsDeclineDetector,
   gripDeclineDetector,
+  socialIsolationDetector,
+  clinicianGapDetector,
 ];
 
 export function evaluateDetectors(
