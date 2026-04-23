@@ -80,6 +80,25 @@ export const appointmentInputSchema = z.object({
     )
     .optional(),
   prep_info_received: z.boolean().optional(),
+  linked_records: z
+    .array(
+      z.object({
+        kind: z.enum([
+          "treatment_cycle",
+          "lab_result",
+          "pending_result",
+          "imaging",
+          "ctdna_result",
+          "medication",
+          "decision",
+          "task",
+        ]),
+        local_id: z.number().int().positive(),
+        label: z.string().optional(),
+      }),
+    )
+    .optional(),
+  ics_uid: z.string().optional(),
   followup_logged_at: z.string().optional(),
 });
 

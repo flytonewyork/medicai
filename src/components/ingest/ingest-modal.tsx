@@ -5,9 +5,10 @@ import { useEffect, useState } from "react";
 import { useLocale } from "~/hooks/use-translate";
 import { UniversalDrop } from "~/components/ingest/universal-drop";
 import { PhoneCallNote } from "~/components/ingest/phone-note";
+import { CalendarSubscribe } from "~/components/ingest/calendar-subscribe";
 import { PreviewDiff } from "~/components/ingest/preview-diff";
 import type { IngestApplyResult, IngestDraft } from "~/types/ingest";
-import { X, Phone, FileUp } from "lucide-react";
+import { X, Phone, FileUp, Calendar } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 
 // A globally-mountable ingest modal. Anything in the app can flip
@@ -29,7 +30,7 @@ export const useIngestModal = create<IngestModalState>((set) => ({
   close: () => set({ isOpen: false }),
 }));
 
-type Tab = "phone" | "drop";
+type Tab = "phone" | "drop" | "calendar";
 
 export function IngestModal() {
   const isOpen = useIngestModal((s) => s.isOpen);
@@ -122,11 +123,18 @@ export function IngestModal() {
                   active={tab === "drop"}
                   onClick={() => setTab("drop")}
                   icon={FileUp}
-                  label={L("Document or photo", "文档或照片")}
+                  label={L("Doc / photo", "文档 / 照片")}
+                />
+                <TabButton
+                  active={tab === "calendar"}
+                  onClick={() => setTab("calendar")}
+                  icon={Calendar}
+                  label={L("Calendar", "日历")}
                 />
               </div>
               {tab === "phone" && <PhoneCallNote onDraft={setDraft} />}
               {tab === "drop" && <UniversalDrop onDraft={setDraft} />}
+              {tab === "calendar" && <CalendarSubscribe onDraft={setDraft} />}
             </>
           )}
 

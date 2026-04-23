@@ -116,6 +116,18 @@ export interface Appointment {
   // edit. Manual edits set this to false so we stop clobbering them.
   derived_from_cycle?: boolean;
   cycle_id?: number;
+  // Slice K: richer cross-module linkage. An appointment can point
+  // at any domain record it relates to — a chemo appointment linked
+  // to its treatment cycle, a blood-test appointment linked to the
+  // pending lab panel, a scan linked (after the fact) to the imaging
+  // report that came back. Distinct from `cycle_id` above which
+  // stays as a first-class FK for fast-path queries (the
+  // [cycle_id+starts_at] Dexie index).
+  linked_records?: AppointmentLinkedRecord[];
+  // When this appointment came from an ICS / iCloud subscription,
+  // the source identifier so re-imports can dedupe + update rather
+  // than creating duplicates.
+  ics_uid?: string;
   // Structured preparation items (see AppointmentPrep).
   prep?: AppointmentPrep[];
   // Explicit flag for appointments where the patient knows prep will
@@ -131,6 +143,29 @@ export interface Appointment {
   followup_logged_at?: string;
   created_at: string;
   updated_at: string;
+}
+
+// Slice K: cross-module links from an appointment to any domain row
+// (treatment cycle, lab result, imaging report, ctDNA result, the
+// pending-result placeholder, medication, decision). Kept typed so
+// the UI renders the right icon + link per kind and readers can
+// cheaply filter without union-unwrapping.
+export type AppointmentLinkedRecordKind =
+  | "treatment_cycle"
+  | "lab_result"
+  | "pending_result"
+  | "imaging"
+  | "ctdna_result"
+  | "medication"
+  | "decision"
+  | "task";
+
+export interface AppointmentLinkedRecord {
+  kind: AppointmentLinkedRecordKind;
+  local_id: number;
+  // Short note on why the link exists ("Cycle 4 infusion",
+  // "ordered CA19-9 + FBE") — shown in the UI next to the chip.
+  label?: string;
 }
 
 // Directed edge. Today the only relation that matters clinically is
