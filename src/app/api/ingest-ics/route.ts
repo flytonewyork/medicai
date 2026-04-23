@@ -15,6 +15,10 @@ export const runtime = "nodejs";
 interface RequestBody {
   url?: string;
   text?: string;
+  // Patient's home IANA timezone; used as the fallback when a VEVENT
+  // has a floating DTSTART (no TZID, no Z suffix). Defaults to
+  // Australia/Melbourne for this install.
+  fallbackTimezone?: string;
 }
 
 function normaliseUrl(raw: string): string {
@@ -74,7 +78,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const events = parseIcs(raw);
+  const events = parseIcs(raw, body.fallbackTimezone);
   if (events.length === 0) {
     return NextResponse.json(
       { error: "No VEVENT blocks found." },

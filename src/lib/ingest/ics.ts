@@ -24,12 +24,60 @@ function unfold(text: string): string {
   return text.replace(/\r?\n[ \t]/g, "");
 }
 
-// Converts "20260429T092000" (floating), "20260429T092000Z" (UTC),
-// or "TZID=Australia/Melbourne:20260429T092000" into ISO 8601.
-// Floating times without a TZID are interpreted as UTC — we'd
-// rather the user see a clearly-offset value than a silently-wrong
-// local one.
-function parseIcsDate(raw: string): { iso: string; all_day: boolean } | null {
+// Convert a local wall-clock time in the given IANA timezone into a UTC
+// Date. The naive trick: build a UTC date from the components, ask Intl
+// what wall time that shows as in the target zone, and subtract the offset.
+// Handles DST because Intl resolves zone rules per date.
+export function zonedTimeToUtc(
+  y: number,
+  mo: number,
+  d: number,
+  h: number,
+  mi: number,
+  s: number,
+  timezone: string,
+): Date {
+  const asUtc = Date.UTC(y, mo - 1, d, h, mi, s);
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const parts: Record<string, string> = {};
+  for (const p of fmt.formatToParts(new Date(asUtc))) parts[p.type] = p.value;
+  const tzUtc = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    // Intl sometimes returns "24" for midnight in hour12:false mode.
+    parts.hour === "24" ? 0 : Number(parts.hour),
+    Number(parts.minute),
+    Number(parts.second),
+  );
+  return new Date(asUtc - (tzUtc - asUtc));
+}
+
+// Converts an ICS DTSTART / DTEND property value into ISO 8601. Handles:
+//   - "20260429T092000Z"                         → UTC
+//   - "TZID=Australia/Melbourne:20260429T092000" → local time in that zone,
+//                                                   resolved to real UTC
+//   - "20260429T092000"                          → floating, resolved using
+//                                                   `fallbackTimezone` so
+//                                                   imports from calendars
+//                                                   without TZID still land
+//                                                   on the patient's clock
+//   - "VALUE=DATE:20260429"                      → all-day
+// `fallbackTimezone` defaults to Australia/Melbourne (patient's home) when
+// the caller doesn't pass one.
+function parseIcsDate(
+  raw: string,
+  fallbackTimezone = "Australia/Melbourne",
+): { iso: string; all_day: boolean } | null {
   // Property form:  DTSTART;TZID=...;VALUE=DATE:...
   const parts = raw.split(":");
   if (parts.length < 2) return null;
@@ -51,18 +99,49 @@ function parseIcsDate(raw: string): { iso: string; all_day: boolean } | null {
       all_day: false,
     };
   }
-  // Floating — append +00:00 but leave a breadcrumb in the
-  // description ambiguity. Caller gets to note this.
-  return {
-    iso: `${y}-${mo}-${d}T${h}:${mi}:${s}+00:00`,
-    all_day: false,
-  };
+  const tzidMatch = params.match(/TZID=([^;:]+)/i);
+  const zone = tzidMatch ? tzidMatch[1] : fallbackTimezone;
+  try {
+    const utc = zonedTimeToUtc(
+      Number(y),
+      Number(mo),
+      Number(d),
+      Number(h),
+      Number(mi),
+      Number(s),
+      zone!,
+    );
+    return { iso: utc.toISOString(), all_day: false };
+  } catch {
+    // Unknown TZID (or Intl refusing the zone name) — fall back to the
+    // patient's home zone rather than silently emitting UTC.
+    try {
+      const utc = zonedTimeToUtc(
+        Number(y),
+        Number(mo),
+        Number(d),
+        Number(h),
+        Number(mi),
+        Number(s),
+        fallbackTimezone,
+      );
+      return { iso: utc.toISOString(), all_day: false };
+    } catch {
+      return null;
+    }
+  }
 }
 
 // Parses an ICS payload into a flat list of VEVENTs. Minimal —
 // ignores alarms, recurrence expansion, attachments. Good enough
 // for an import flow where every event is reviewed in the preview.
-export function parseIcs(raw: string): ParsedVEvent[] {
+// `fallbackTimezone` is used when a VEVENT's DTSTART is a floating
+// time (no TZID, no Z). Pass the patient's home timezone so imports
+// from calendars that drop TZID don't land on the wrong day.
+export function parseIcs(
+  raw: string,
+  fallbackTimezone = "Australia/Melbourne",
+): ParsedVEvent[] {
   const text = unfold(raw);
   const lines = text.split(/\r?\n/);
   const events: ParsedVEvent[] = [];
@@ -86,13 +165,13 @@ export function parseIcs(raw: string): ParsedVEvent[] {
     else if (line.startsWith("DESCRIPTION:"))
       current.description = unescapeIcsText(line.slice(12));
     else if (line.startsWith("DTSTART")) {
-      const parsed = parseIcsDate(line.slice(7));
+      const parsed = parseIcsDate(line.slice(7), fallbackTimezone);
       if (parsed) {
         current.starts_at = parsed.iso;
         current.all_day = parsed.all_day;
       }
     } else if (line.startsWith("DTEND")) {
-      const parsed = parseIcsDate(line.slice(5));
+      const parsed = parseIcsDate(line.slice(5), fallbackTimezone);
       if (parsed) current.ends_at = parsed.iso;
     }
   }

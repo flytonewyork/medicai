@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -25,6 +27,11 @@ export function CalendarSubscribe({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Pull the patient's home timezone so floating ICS times (no TZID) are
+  // resolved to the right wall clock. Falls back to the browser zone.
+  const settings = useLiveQuery(() => db.settings.toArray(), []);
+  const homeTz = settings?.[0]?.home_timezone;
+
   async function fetchAndParse() {
     const canUrl = url.trim().length > 0;
     const canText = text.trim().length > 0;
@@ -32,12 +39,22 @@ export function CalendarSubscribe({
     setBusy(true);
     setError(null);
     try {
+      const fallbackTimezone =
+        homeTz ??
+        (() => {
+          try {
+            return Intl.DateTimeFormat().resolvedOptions().timeZone;
+          } catch {
+            return "Australia/Melbourne";
+          }
+        })();
+      const payload = canUrl
+        ? { url: url.trim(), fallbackTimezone }
+        : { text, fallbackTimezone };
       const res = await fetch("/api/ingest-ics", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(
-          canUrl ? { url: url.trim() } : { text },
-        ),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(await res.text());
       const data = (await res.json()) as { draft: IngestDraft };

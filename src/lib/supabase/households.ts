@@ -45,7 +45,17 @@ export async function getCurrentProfile(): Promise<Profile | null> {
 }
 
 export async function updateMyProfile(
-  patch: Partial<Pick<Profile, "display_name" | "locale" | "care_role_label">>,
+  patch: Partial<
+    Pick<
+      Profile,
+      | "display_name"
+      | "locale"
+      | "care_role_label"
+      | "relationship"
+      | "timezone"
+      | "notification_preference"
+    >
+  >,
 ): Promise<void> {
   const sb = getSupabaseBrowser();
   if (!sb) return;
@@ -54,6 +64,18 @@ export async function updateMyProfile(
   if (!uid) return;
   const { error } = await sb.from("profiles").update(patch).eq("id", uid);
   if (error) throw error;
+}
+
+// True if the carer / family member has at least filled the minimum fields
+// the /family view needs to render a useful call-list (a display name + how
+// they're related). Drives the post-invite welcome flow — if false, we
+// route the user to /invite/welcome instead of straight to /family.
+export function isProfileComplete(p: Profile | null): boolean {
+  if (!p) return false;
+  const hasName = !!p.display_name?.trim();
+  const hasRelationship =
+    !!p.relationship?.trim() || !!p.care_role_label?.trim();
+  return hasName && hasRelationship;
 }
 
 export async function listHouseholdMembers(

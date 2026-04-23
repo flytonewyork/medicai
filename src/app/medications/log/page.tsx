@@ -14,6 +14,7 @@ import {
   ensureCycleMedications,
   getActiveMedications,
 } from "~/lib/medication/active";
+import { syncCycleToCalendar } from "~/lib/treatment/calendar-sync";
 import {
   compileTodayStatuses,
   logMedicationEvent,
@@ -53,10 +54,11 @@ export default function MedicationLogPage() {
   const [statuses, setStatuses] = useState<MedicationTodayStatus[]>([]);
   const [sheetFor, setSheetFor] = useState<Medication | null>(null);
 
-  // Auto-seed protocol-derived meds when a cycle is active
+  // Auto-seed protocol-derived meds + calendar events when a cycle is active.
   useEffect(() => {
     if (ctx?.cycle) {
       void ensureCycleMedications(ctx.cycle);
+      void syncCycleToCalendar(ctx.cycle);
     }
   }, [ctx?.cycle]);
 
