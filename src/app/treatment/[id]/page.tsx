@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { CycleCalendar } from "~/components/treatment/cycle-calendar";
 import { CycleDayDetail } from "~/components/treatment/cycle-day-detail";
+import { CycleMedicationsCard } from "~/components/treatment/cycle-medications-card";
 import { NudgeCard } from "~/components/treatment/nudge-card";
 import { formatDate } from "~/lib/utils/date";
 import { addDays, format, parseISO } from "date-fns";
@@ -213,6 +214,8 @@ export default function CycleDetailPage() {
           onClose={() => setSelectedDay(null)}
         />
       )}
+
+      <CycleMedicationsCard cycleId={cycle.id} />
 
       <CycleQuickActions cycle={cycle} protocol={protocol} locale={locale} />
 
