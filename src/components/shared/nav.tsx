@@ -14,6 +14,7 @@ import {
   Syringe,
   Sparkles,
   CalendarDays,
+  Users,
   Menu,
   X,
 } from "lucide-react";
@@ -29,6 +30,7 @@ import { useT, useLocale } from "~/hooks/use-translate";
 const ITEMS = [
   { href: "/", key: "nav.dashboard", icon: LayoutDashboard },
   { href: "/schedule", key: "nav.schedule", icon: CalendarDays },
+  { href: "/family", key: "nav.family", icon: Users },
   { href: "/assessment", key: "nav.assessment", icon: Compass },
   { href: "/treatment", key: "nav.treatment", icon: Syringe },
   { href: "/labs", key: "nav.labs", icon: FlaskConical },
