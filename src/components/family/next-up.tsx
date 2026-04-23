@@ -6,6 +6,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
 import type { Appointment, AppointmentKind } from "~/types/appointment";
+import { activeFast, hasActivePrep } from "~/lib/appointments/prep";
 import {
   Stethoscope,
   Syringe,
@@ -139,8 +140,15 @@ function Row({ appt, locale }: { appt: Appointment; locale: "en" | "zh" }) {
           <Icon className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[14px] font-semibold text-ink-900">
-            {appt.title}
+          <div className="flex items-start justify-between gap-2">
+            <div className="text-[14px] font-semibold text-ink-900">
+              {appt.title}
+            </div>
+            {hasActivePrep(appt) && (
+              <span className="mono shrink-0 rounded-full bg-[var(--warn-soft)] px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.1em] text-[var(--warn)]">
+                {activeFast(appt) ? "Fasting now" : "Prep now"}
+              </span>
+            )}
           </div>
           <div className="mt-0.5 text-[12px] text-ink-500">{when}</div>
           {(appt.location || appt.location_url) && (

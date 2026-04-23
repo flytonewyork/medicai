@@ -7,6 +7,7 @@ import { db } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
 import { Card, CardContent } from "~/components/ui/card";
 import { deriveFollowUpTasks } from "~/lib/appointments/follow-up-tasks";
+import { activeFast, hasActivePrep } from "~/lib/appointments/prep";
 import type { Appointment, AppointmentKind } from "~/types/appointment";
 import {
   CalendarDays,
@@ -205,6 +206,11 @@ function UpcomingRow({
               {chip.status === "confirmed" && "✓ "}
               {chip.status === "tentative" && "? "}
               {chip.label}
+            </span>
+          )}
+          {hasActivePrep(appt) && (
+            <span className="inline-flex shrink-0 items-center rounded-full bg-[var(--warn-soft)] px-1.5 py-px text-[10px] font-medium text-[var(--warn)]">
+              {activeFast(appt) ? "· fasting" : "· prep now"}
             </span>
           )}
         </div>

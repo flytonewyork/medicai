@@ -11,6 +11,7 @@ import { Button } from "~/components/ui/button";
 import { CameraCapture } from "~/components/ingest/camera-capture";
 import { BulkQueue } from "~/components/ingest/bulk-queue";
 import { UniversalDrop } from "~/components/ingest/universal-drop";
+import { PhoneCallNote } from "~/components/ingest/phone-note";
 import { PreviewDiff } from "~/components/ingest/preview-diff";
 import type { IngestApplyResult, IngestDraft } from "~/types/ingest";
 import {
@@ -124,7 +125,10 @@ export default function IngestPage() {
       />
 
       {!draft && !appliedResults && (
-        <UniversalDrop onDraft={setDraft} />
+        <>
+          <PhoneCallNote onDraft={setDraft} />
+          <UniversalDrop onDraft={setDraft} />
+        </>
       )}
 
       {draft && (
