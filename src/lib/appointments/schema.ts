@@ -42,6 +42,17 @@ export const appointmentInputSchema = z.object({
   attachments: z.array(z.string()).optional(),
   derived_from_cycle: z.boolean().optional(),
   cycle_id: z.number().int().positive().optional(),
+  attendance: z
+    .array(
+      z.object({
+        name: z.string().min(1),
+        user_id: z.string().uuid().optional(),
+        status: z.enum(["confirmed", "tentative", "declined"]),
+        claimed_at: z.string(),
+        note: z.string().optional(),
+      }),
+    )
+    .optional(),
   followup_logged_at: z.string().optional(),
 });
 

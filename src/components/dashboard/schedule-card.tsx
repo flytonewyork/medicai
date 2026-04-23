@@ -160,7 +160,30 @@ function UpcomingRow({
   locale: "en" | "zh";
 }) {
   const when = formatWhen(appt, locale);
-  const attendeeChip = appt.doctor || (appt.attendees ?? [])[0];
+  // Slice F: prefer a confirmed attendance name, then tentative, then
+  // falling back to the old doctor / first-attendee chip.
+  const confirmed = (appt.attendance ?? []).find(
+    (a) => a.status === "confirmed",
+  );
+  const tentative = (appt.attendance ?? []).find(
+    (a) => a.status === "tentative",
+  );
+  const chip = confirmed
+    ? { label: confirmed.name, status: "confirmed" as const }
+    : tentative
+      ? { label: tentative.name, status: "tentative" as const }
+      : appt.doctor || (appt.attendees ?? [])[0]
+        ? {
+            label: (appt.doctor || (appt.attendees ?? [])[0])!,
+            status: "pending" as const,
+          }
+        : null;
+  const chipTone =
+    chip?.status === "confirmed"
+      ? "bg-[var(--ok-soft)] text-[var(--ok)]"
+      : chip?.status === "tentative"
+        ? "bg-[var(--sand)] text-ink-900"
+        : "bg-paper-2 text-[var(--tide-2)]";
   return (
     <Link
       href={`/schedule/${appt.id}`}
@@ -172,9 +195,16 @@ function UpcomingRow({
           <span className="truncate text-[13px] font-medium text-ink-900">
             {appt.title}
           </span>
-          {attendeeChip && (
-            <span className="inline-flex shrink-0 items-center rounded-full bg-paper-2 px-1.5 py-px text-[10px] font-medium text-[var(--tide-2)]">
-              {attendeeChip}
+          {chip && (
+            <span
+              className={
+                "inline-flex shrink-0 items-center rounded-full px-1.5 py-px text-[10px] font-medium " +
+                chipTone
+              }
+            >
+              {chip.status === "confirmed" && "✓ "}
+              {chip.status === "tentative" && "? "}
+              {chip.label}
             </span>
           )}
         </div>
