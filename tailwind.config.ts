@@ -2,7 +2,12 @@ import { type Config } from "tailwindcss";
 
 export default {
   content: ["./src/**/*.{js,ts,jsx,tsx}"],
-  darkMode: "media",
+  // `class` (not `media`) so Tailwind's `dark:` variant only fires when
+  // <html class="dark"> is present — the app currently locks to light mode
+  // via data-theme and nothing sets that class, so no `dark:` rules apply.
+  // Prevents legacy dark: overrides from flipping inputs on OS dark-mode
+  // users while our CSS-var theme stays light.
+  darkMode: "class",
   theme: {
     extend: {
       colors: {

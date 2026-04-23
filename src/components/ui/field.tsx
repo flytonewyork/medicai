@@ -7,6 +7,10 @@ import type {
 } from "react";
 import { forwardRef } from "react";
 
+// Anchor-tokenised form primitives. All styling reads from the ink/paper/tide
+// CSS variables so inputs stay readable even when the OS reports dark mode —
+// Tailwind's `dark:` variant was flipping backgrounds independently of our
+// token theme, leaving dark text on dark fills in Smart Ingest.
 export function Field({
   label,
   hint,
@@ -20,14 +24,10 @@ export function Field({
 }) {
   return (
     <label className={cn("block space-y-1.5", className)}>
-      <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
-        {label}
-      </span>
+      <span className="text-[13px] font-medium text-ink-700">{label}</span>
       {children}
       {hint && (
-        <span className="block text-xs text-slate-500 dark:text-slate-400">
-          {hint}
-        </span>
+        <span className="block text-[11px] text-ink-500">{hint}</span>
       )}
     </label>
   );
@@ -39,24 +39,20 @@ export function FieldLabel({
 }: LabelHTMLAttributes<HTMLLabelElement>) {
   return (
     <label
-      className={cn("text-sm font-medium text-slate-800 dark:text-slate-200", className)}
+      className={cn("text-[13px] font-medium text-ink-700", className)}
       {...props}
     />
   );
 }
 
+const INPUT_CLASSES =
+  "h-11 w-full rounded-md border border-ink-200 bg-paper px-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-ink-900 focus:outline-none focus:ring-2 focus:ring-ink-900/10";
+
 export const TextInput = forwardRef<
   HTMLInputElement,
   InputHTMLAttributes<HTMLInputElement>
 >(({ className, ...props }, ref) => (
-  <input
-    ref={ref}
-    className={cn(
-      "h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-100 dark:focus:ring-slate-100/10",
-      className,
-    )}
-    {...props}
-  />
+  <input ref={ref} className={cn(INPUT_CLASSES, className)} {...props} />
 ));
 TextInput.displayName = "TextInput";
 
@@ -67,7 +63,7 @@ export function Textarea({
   return (
     <textarea
       className={cn(
-        "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:border-slate-700 dark:bg-slate-900 dark:focus:border-slate-100 dark:focus:ring-slate-100/10",
+        "w-full rounded-md border border-ink-200 bg-paper px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400 focus:border-ink-900 focus:outline-none focus:ring-2 focus:ring-ink-900/10",
         className,
       )}
       {...props}
