@@ -4,6 +4,7 @@ import { useLocale } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { EmergencyCard } from "~/components/dashboard/emergency-card";
 import { HouseholdHeader } from "~/components/family/household-header";
+import { PresenceStack } from "~/components/shared/presence-stack";
 import { ZoneBanner } from "~/components/family/zone-banner";
 import { NextUp } from "~/components/family/next-up";
 import { QuickNote } from "~/components/family/quick-note";
@@ -23,6 +24,8 @@ export default function FamilyPage() {
       />
 
       <HouseholdHeader />
+
+      <PresenceStack surface="/family" />
 
       <EmergencyCard />
 

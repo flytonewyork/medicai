@@ -5,6 +5,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
+import { PresenceStack } from "~/components/shared/presence-stack";
 import { Button } from "~/components/ui/button";
 import { AppointmentsCalendar } from "~/components/schedule/calendar";
 import { derivePrepTasks } from "~/lib/appointments/prep-tasks";
@@ -41,6 +42,8 @@ export default function SchedulePage() {
         eyebrow={t("schedule.eyebrow")}
         title={t("schedule.title")}
       />
+
+      <PresenceStack surface="/schedule" />
 
       <div className="flex flex-wrap gap-2">
         <Link href="/schedule/new">
