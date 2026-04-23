@@ -43,6 +43,7 @@
     "recharts": "^2.12.3",
     "tailwind-merge": "^2.2.2",
     "tesseract.js": "^7.0.0",
+    "web-push": "^3.6.7",
     "zod": "^3.22.4",
     "zustand": "^4.5.2"
   },
@@ -53,6 +54,7 @@
     "@types/node": "^20.11.30",
     "@types/react": "^18.2.73",
     "@types/react-dom": "^18.2.22",
+    "@types/web-push": "^3.6.4",
     "@typescript-eslint/eslint-plugin": "^7.4.0",
     "@typescript-eslint/parser": "^7.4.0",
     "@vitejs/plugin-react": "^4.2.1",
