@@ -53,6 +53,33 @@ export const appointmentInputSchema = z.object({
       }),
     )
     .optional(),
+  prep: z
+    .array(
+      z.object({
+        kind: z.enum([
+          "fast",
+          "medication_hold",
+          "medication_take",
+          "arrive_early",
+          "bring",
+          "sample",
+          "transport",
+          "companion",
+          "consent",
+          "pre_scan_contrast",
+          "other",
+        ]),
+        description: z.string().min(1),
+        starts_at: z.string().optional(),
+        hours_before: z.number().min(0).max(168).optional(),
+        completed_at: z.string().optional(),
+        info_source: z
+          .enum(["email", "phone", "letter", "in_person", "other"])
+          .optional(),
+      }),
+    )
+    .optional(),
+  prep_info_received: z.boolean().optional(),
   followup_logged_at: z.string().optional(),
 });
 
