@@ -5,6 +5,7 @@ import { jsonOutputFormat } from "~/lib/anthropic/json-output";
 import { SUMMARY_SYSTEM } from "~/lib/ai/coach";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const SummarySchema = z.object({
   patient: z.string(),

@@ -11,6 +11,9 @@ import type { Appointment } from "~/types/appointment";
 import type { ZoneAlert } from "~/types/clinical";
 
 export const runtime = "nodejs";
+// Daily digest fans out push notifications and may iterate households;
+// give it generous headroom so it doesn't cut off mid-send.
+export const maxDuration = 300;
 
 // Vercel Cron entry point. Fires at 21:00 UTC daily (configured in
 // vercel.json), which is 07:00 AEST — Hu Lin's morning in Melbourne.

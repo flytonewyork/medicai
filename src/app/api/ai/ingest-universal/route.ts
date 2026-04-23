@@ -9,6 +9,12 @@ import type { PreparedImage } from "~/lib/ingest/image";
 import type { IngestDraft, IngestSourceKind } from "~/types/ingest";
 
 export const runtime = "nodejs";
+// Smart-capture ingest can emit up to 25 ops per document, on Opus-4-7
+// with a 4k-token budget + optional image input. The default 10–15s
+// serverless timeout isn't enough — users were seeing
+// FUNCTION_INVOCATION_TIMEOUT on longer clinic letters. 120s sits well
+// under the Vercel Pro 300s cap and covers real-world docs.
+export const maxDuration = 120;
 
 interface RequestBody {
   text?: string;

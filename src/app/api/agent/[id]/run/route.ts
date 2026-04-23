@@ -11,6 +11,10 @@ import { AGENT_IDS, LOG_TAGS } from "~/types/agent";
 import { runAgent } from "~/agents/run";
 
 export const runtime = "nodejs";
+// Specialist agents chew through referrals + state and emit up to 2k tokens
+// of structured output. Give them Vercel's Pro ceiling minus headroom so
+// on-demand /agent runs don't time out mid-call.
+export const maxDuration = 120;
 
 // We accept the day's referrals + current state.md from the caller (the
 // patient's browser, or a Vercel Cron driver) so the route stays stateless
