@@ -8,6 +8,9 @@ import { useLocale, useT } from "~/hooks/use-translate";
 import { tagInput } from "~/lib/log/tag";
 import { agentsForTags } from "~/agents/routing";
 import { runAgentClient } from "~/lib/log/run-agents";
+import { parseDirectFile, type DirectFileResult } from "~/lib/log/direct-file";
+import { applyDirectFile } from "~/lib/log/direct-file-apply";
+import { useUIStore } from "~/stores/ui-store";
 import { LOG_TAGS, type AgentId, type LogTag } from "~/types/agent";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
@@ -41,6 +44,12 @@ type RunState =
   | { kind: "saving" }
   | { kind: "running"; total: number; done: AgentId[]; failed: AgentId[] }
   | { kind: "done"; ran: AgentId[]; failed: AgentId[] }
+  | {
+      kind: "filed";
+      summary: { en: string; zh: string };
+      target: "lab" | "daily";
+      rowId: number;
+    }
   | { kind: "error"; message: string };
 
 export default function LogPage() {
@@ -53,9 +62,21 @@ export default function LogPage() {
   const [overrideTags, setOverrideTags] = useState<Set<LogTag> | null>(null);
   const [run, setRun] = useState<RunState>({ kind: "idle" });
 
+  const enteredBy = useUIStore((s) => s.enteredBy);
+
   const autoTags = useMemo(() => new Set(tagInput(text)), [text]);
   const tags = overrideTags ?? autoTags;
   const agentIds = useMemo(() => agentsForTags(Array.from(tags)), [tags]);
+
+  // If the text is a simple, unambiguous data point (e.g. "blood sugar
+  // 7.9 this morning", "weight 64.5 kg"), bypass the agent fan-out and
+  // file it straight into labs / daily_entries. Keeps routine values out
+  // of the agent pipeline. Only triggers when the user hasn't manually
+  // overridden tags — explicit tag edits imply they want the full run.
+  const directFile: DirectFileResult | null = useMemo(() => {
+    if (overrideTags) return null;
+    return parseDirectFile(text, today);
+  }, [text, today, overrideTags]);
 
   function toggleTag(tag: LogTag) {
     const next = new Set(tags);
@@ -65,8 +86,30 @@ export default function LogPage() {
   }
 
   async function submit() {
-    if (!text.trim() || agentIds.length === 0) return;
+    if (!text.trim()) return;
     setRun({ kind: "saving" });
+
+    // Fast path: a single structured value like "blood sugar 7.9" goes
+    // straight into the right Dexie table and skips the agent run.
+    if (directFile) {
+      try {
+        const applied = await applyDirectFile(directFile, enteredBy);
+        setRun({
+          kind: "filed",
+          summary: directFile.summary,
+          target: applied.kind,
+          rowId: applied.id,
+        });
+      } catch (err) {
+        setRun({
+          kind: "error",
+          message: err instanceof Error ? err.message : String(err),
+        });
+      }
+      return;
+    }
+
+    if (agentIds.length === 0) return;
 
     let logId: number;
     try {
@@ -123,8 +166,11 @@ export default function LogPage() {
     setRun({ kind: "idle" });
   }
 
+  // A direct-filed value bypasses the agent requirement.
   const canSubmit =
-    run.kind === "idle" && text.trim().length > 0 && agentIds.length > 0;
+    run.kind === "idle" &&
+    text.trim().length > 0 &&
+    (directFile !== null || agentIds.length > 0);
 
   return (
     <div className="mx-auto max-w-xl space-y-5 p-4 md:p-8">
@@ -178,11 +224,27 @@ export default function LogPage() {
               );
             })}
           </div>
-          {agentIds.length > 0 && (
-            <p className="mt-3 text-[11px] text-ink-500">
-              {locale === "zh" ? "将通知：" : "Will notify:"}{" "}
-              {agentIds.map((id) => AGENT_LABELS[id][locale]).join(" · ")}
+          {directFile ? (
+            <p className="mt-3 flex items-start gap-1.5 text-[11px] text-[var(--tide-2)]">
+              <Check className="mt-[1px] h-3 w-3 shrink-0" />
+              <span>
+                {locale === "zh"
+                  ? "直接归档为："
+                  : "Will file directly as:"}{" "}
+                <span className="font-medium">
+                  {directFile.summary[locale]}
+                </span>
+                {" · "}
+                {locale === "zh" ? "不调用智能体" : "no agents called"}
+              </span>
             </p>
+          ) : (
+            agentIds.length > 0 && (
+              <p className="mt-3 text-[11px] text-ink-500">
+                {locale === "zh" ? "将通知：" : "Will notify:"}{" "}
+                {agentIds.map((id) => AGENT_LABELS[id][locale]).join(" · ")}
+              </p>
+            )
           )}
         </div>
 
@@ -210,6 +272,30 @@ export default function LogPage() {
                   ? `${run.total} 个智能体在整理…`
                   : `${run.total} agent${run.total === 1 ? "" : "s"} thinking…`}
             </span>
+          </div>
+        )}
+
+        {run.kind === "filed" && (
+          <div
+            role="status"
+            className="mt-4 space-y-2 rounded-md border border-[var(--ok)]/40 bg-[var(--ok-soft)] p-3 text-sm"
+          >
+            <div className="flex items-center gap-2 text-ink-900">
+              <Check className="h-4 w-4 text-[var(--ok)]" />
+              {locale === "zh" ? "已归档" : "Filed"}
+            </div>
+            <div className="text-[13px] text-ink-700">
+              {run.summary[locale]}
+            </div>
+            <div className="text-[11px] text-ink-500">
+              {locale === "zh"
+                ? run.target === "lab"
+                  ? "已加入化验记录。智能体未参与解读。"
+                  : "已加入今日条目。智能体未参与解读。"
+                : run.target === "lab"
+                  ? "Added to labs. Agents were not called."
+                  : "Added to today's entry. Agents were not called."}
+            </div>
           </div>
         )}
 

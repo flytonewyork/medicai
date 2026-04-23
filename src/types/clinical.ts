@@ -190,7 +190,7 @@ export interface LabResult {
   // Coag / endocrine
   inr?: number;
   tsh?: number;
-  source: "epworth" | "external";
+  source: "epworth" | "external" | "patient_self_report";
   notes?: string;
   created_at: string;
   updated_at: string;
