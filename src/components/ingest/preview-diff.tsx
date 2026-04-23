@@ -23,6 +23,12 @@ import {
   X,
   Sparkles,
   AlertTriangle,
+  ScanLine,
+  Dna,
+  Syringe,
+  Gavel,
+  Settings as SettingsIcon,
+  PencilLine,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 
@@ -30,20 +36,34 @@ const OP_ICON: Record<IngestOpKind, React.ComponentType<{ className?: string }>>
   add_appointment: CalendarPlus,
   update_appointment: CalendarClock,
   add_lab_result: TestTube2,
+  update_lab_result: PencilLine,
+  add_imaging: ScanLine,
+  add_ctdna_result: Dna,
   add_medication: Pill,
+  update_medication: PencilLine,
   add_care_team_member: Users,
   add_task: ListChecks,
   add_life_event: BookOpenText,
+  add_treatment_cycle: Syringe,
+  add_decision: Gavel,
+  update_settings: SettingsIcon,
 };
 
 const OP_LABEL: Record<IngestOpKind, { en: string; zh: string }> = {
   add_appointment: { en: "New appointment", zh: "新增预约" },
   update_appointment: { en: "Update appointment", zh: "更新预约" },
   add_lab_result: { en: "New lab result", zh: "新增化验结果" },
+  update_lab_result: { en: "Update lab result", zh: "更新化验结果" },
+  add_imaging: { en: "New imaging report", zh: "新增影像报告" },
+  add_ctdna_result: { en: "New ctDNA result", zh: "新增 ctDNA 结果" },
   add_medication: { en: "New medication", zh: "新增用药" },
+  update_medication: { en: "Update medication", zh: "更新用药" },
   add_care_team_member: { en: "New care-team contact", zh: "新增团队联系人" },
   add_task: { en: "New task", zh: "新增任务" },
   add_life_event: { en: "Note this event", zh: "记录事件" },
+  add_treatment_cycle: { en: "Start new treatment cycle", zh: "开始新疗程" },
+  add_decision: { en: "Record decision", zh: "记录决定" },
+  update_settings: { en: "Update clinical contacts", zh: "更新医疗团队联系方式" },
 };
 
 interface Props {
@@ -294,10 +314,17 @@ function describeOp(op: IngestOp, locale: "en" | "zh"): Array<[string, string]> 
     add_appointment: ["title", "kind", "starts_at", "location", "doctor", "phone", "notes"],
     update_appointment: ["title", "starts_at", "location", "doctor", "status", "notes"],
     add_lab_result: ["date", "ca199", "albumin", "hemoglobin", "neutrophils", "platelets", "creatinine"],
+    update_lab_result: ["date", "ca199", "albumin", "hemoglobin", "neutrophils", "platelets", "creatinine"],
+    add_imaging: ["date", "modality", "findings_summary", "recist_status", "notes"],
+    add_ctdna_result: ["date", "platform", "detected", "value", "unit"],
     add_medication: ["drug_id", "category", "dose", "schedule", "started_on", "notes"],
+    update_medication: ["drug_id", "dose", "schedule", "active", "notes"],
     add_care_team_member: ["name", "role", "specialty", "organisation", "phone", "email"],
     add_task: ["title", "due_date", "priority", "category", "notes"],
     add_life_event: ["title", "event_date", "category", "notes"],
+    add_treatment_cycle: ["protocol_id", "cycle_number", "start_date", "dose_level", "status"],
+    add_decision: ["decision_date", "summary", "rationale", "made_by"],
+    update_settings: ["managing_oncologist", "managing_oncologist_phone", "hospital_name", "hospital_phone", "oncall_phone"],
   };
   const order = showFirst[op.kind] ?? [];
   for (const k of order) push(k, (data as Record<string, unknown>)[k]);
@@ -307,12 +334,23 @@ function describeOp(op: IngestOp, locale: "en" | "zh"): Array<[string, string]> 
   }
 
   // Match info for updates
-  if (op.kind === "update_appointment" && op.match) {
-    if (typeof op.match.id === "number") push("matches id", op.match.id);
-    if (op.match.title_contains)
-      push(locale === "zh" ? "匹配标题" : "matches title", op.match.title_contains);
-    if (op.match.on_date)
-      push(locale === "zh" ? "于日期" : "on date", op.match.on_date);
+  if (
+    (op.kind === "update_appointment" ||
+      op.kind === "update_medication" ||
+      op.kind === "update_lab_result") &&
+    "match" in op &&
+    op.match
+  ) {
+    const m = op.match as Record<string, unknown>;
+    if (typeof m.id === "number") push("matches id", m.id);
+    if (typeof m.title_contains === "string")
+      push(locale === "zh" ? "匹配标题" : "matches title", m.title_contains);
+    if (typeof m.on_date === "string")
+      push(locale === "zh" ? "于日期" : "on date", m.on_date);
+    if (typeof m.drug_id === "string")
+      push(locale === "zh" ? "药物" : "drug", m.drug_id);
+    if (typeof m.name_contains === "string")
+      push(locale === "zh" ? "名称包含" : "name contains", m.name_contains);
   }
   return out;
 }
