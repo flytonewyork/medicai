@@ -12,12 +12,22 @@ import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { CycleCalendar } from "~/components/treatment/cycle-calendar";
+import { CycleDayDetail } from "~/components/treatment/cycle-day-detail";
+import { CycleMedicationsCard } from "~/components/treatment/cycle-medications-card";
 import { NudgeCard } from "~/components/treatment/nudge-card";
 import { formatDate } from "~/lib/utils/date";
 import { addDays, format, parseISO } from "date-fns";
 import type { NudgeCategory } from "~/types/treatment";
 import type { LabResult } from "~/types/clinical";
-import { CheckCircle2, Pencil, Trash2 } from "lucide-react";
+import {
+  CalendarPlus,
+  CheckCircle2,
+  Pencil,
+  ScanLine,
+  Stethoscope,
+  TimerOff,
+  Trash2,
+} from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 import {
   ANALYTES,
@@ -50,6 +60,7 @@ export default function CycleDetailPage() {
   const latestDaily = useLiveQuery(() => latestDailyEntries(1));
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const ctx = useMemo(() => {
     if (!cycle) return null;
@@ -172,14 +183,41 @@ export default function CycleDetailPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <CycleCalendar cycle={cycle} protocol={protocol} />
-          {ctx.phase?.description[locale] && (
+          <CycleCalendar
+            cycle={cycle}
+            protocol={protocol}
+            selectedDay={selectedDay ?? undefined}
+            onSelectDay={(d) =>
+              setSelectedDay((prev) => (prev === d ? null : d))
+            }
+          />
+          {!selectedDay && ctx.phase?.description[locale] && (
             <div className="text-xs text-ink-600">
               {ctx.phase.description[locale]}
             </div>
           )}
+          {!selectedDay && (
+            <div className="text-[11px] text-ink-400">
+              {locale === "zh"
+                ? "点一下任意一天查看该日详情与日程。"
+                : "Tap any day to see that day's detail and schedule."}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {selectedDay !== null && (
+        <CycleDayDetail
+          cycle={cycle}
+          protocol={protocol}
+          dayNumber={selectedDay}
+          onClose={() => setSelectedDay(null)}
+        />
+      )}
+
+      <CycleMedicationsCard cycleId={cycle.id} />
+
+      <CycleQuickActions cycle={cycle} protocol={protocol} locale={locale} />
 
       <CycleLabsCard labs={cycleLabs ?? []} locale={locale} />
 
@@ -339,6 +377,132 @@ export default function CycleDetailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function CycleQuickActions({
+  cycle,
+  protocol,
+  locale,
+}: {
+  cycle: { id?: number; start_date: string; rest_days_added?: number };
+  protocol: { dose_days: number[]; cycle_length_days: number };
+  locale: "en" | "zh";
+}) {
+  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+
+  const today = new Date();
+  const startMs = parseISO(cycle.start_date).getTime();
+
+  // Pre-chemo consult date: one calendar day before the next upcoming
+  // dose day. If all dose days in this cycle have passed, fall back to
+  // the first dose day of a presumptive next cycle (start + cycle_length
+  // + rest_days_added + 1 + protocol.dose_days[0] - 1 ...). Keep it
+  // simple for now — show an inline note if no upcoming dose.
+  const nextDoseDay = useMemo(() => {
+    const dayOffsets = protocol.dose_days.map((d) => d - 1);
+    for (const o of dayOffsets) {
+      const ms = startMs + o * 86_400_000;
+      if (ms >= today.getTime()) return ms;
+    }
+    return null;
+  }, [protocol.dose_days, startMs, today]);
+
+  const preChemoDate = nextDoseDay
+    ? format(addDays(new Date(nextDoseDay), -1), "yyyy-MM-dd")
+    : null;
+
+  // Default re-staging scan at cycle end (day N of protocol).
+  const restageDate = format(
+    addDays(parseISO(cycle.start_date), protocol.cycle_length_days - 1),
+    "yyyy-MM-dd",
+  );
+
+  async function addRestWeek() {
+    if (!cycle.id) return;
+    const { db, now } = await import("~/lib/db/dexie");
+    await db.treatment_cycles.update(cycle.id, {
+      rest_days_added: (cycle.rest_days_added ?? 0) + 7,
+      updated_at: now(),
+    });
+  }
+
+  async function clearRestDays() {
+    if (!cycle.id) return;
+    const { db, now } = await import("~/lib/db/dexie");
+    await db.treatment_cycles.update(cycle.id, {
+      rest_days_added: 0,
+      updated_at: now(),
+    });
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          {L("Schedule shortcuts", "日程快捷操作")}
+        </CardTitle>
+        <div className="mt-1 text-xs text-ink-500">
+          {L(
+            "One-tap additions that pre-fill the appointment form for this cycle.",
+            "一键预填适用于本周期的预约表单。",
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-wrap gap-2">
+        {preChemoDate ? (
+          <Link
+            href={`/schedule/new?date=${preChemoDate}&time=10:00&kind=clinic&title=${encodeURIComponent(
+              "Pre-chemo consult",
+            )}&cycle=${cycle.id ?? ""}`}
+          >
+            <Button variant="secondary" size="sm">
+              <Stethoscope className="h-3.5 w-3.5" />
+              {L("Add pre-chemo consult", "新增化疗前复诊")}
+            </Button>
+          </Link>
+        ) : (
+          <span className="text-[11px] text-ink-400">
+            {L(
+              "No upcoming dose day — start a new cycle to schedule a pre-chemo consult.",
+              "本周期无后续用药日 —— 新建周期后可安排化疗前复诊。",
+            )}
+          </span>
+        )}
+        <Link
+          href={`/schedule/new?date=${restageDate}&kind=scan&title=${encodeURIComponent(
+            "Re-staging scan",
+          )}&cycle=${cycle.id ?? ""}`}
+        >
+          <Button variant="secondary" size="sm">
+            <ScanLine className="h-3.5 w-3.5" />
+            {L("Add re-staging scan", "新增再分期检查")}
+          </Button>
+        </Link>
+        <Link
+          href={`/schedule/new?date=${restageDate}&cycle=${cycle.id ?? ""}`}
+        >
+          <Button variant="secondary" size="sm">
+            <CalendarPlus className="h-3.5 w-3.5" />
+            {L("Add other test / visit", "新增其他检查 / 就诊")}
+          </Button>
+        </Link>
+        <Button variant="secondary" size="sm" onClick={() => void addRestWeek()}>
+          <TimerOff className="h-3.5 w-3.5" />
+          {L("+1 rest week", "加一周休息")}
+          {(cycle.rest_days_added ?? 0) > 0 && (
+            <span className="mono ml-1 text-[10px] text-ink-400">
+              ({cycle.rest_days_added}d)
+            </span>
+          )}
+        </Button>
+        {(cycle.rest_days_added ?? 0) > 0 && (
+          <Button variant="ghost" size="sm" onClick={() => void clearRestDays()}>
+            {L("Reset rest days", "重置休息天数")}
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

@@ -23,15 +23,25 @@ function NewAppointmentInner() {
   const locale = useLocale();
   const params = useSearchParams();
   const prefillDate = params.get("date");
+  const prefillTime = params.get("time") ?? "09:00";
+  const prefillKind = params.get("kind") as Appointment["kind"] | null;
+  const prefillTitle = params.get("title");
+  const prefillCycleId = params.get("cycle");
 
   const [parsed, setParsed] = useState<Partial<Appointment> | null>(null);
 
   const initial: Partial<Appointment> | undefined = parsed
     ? parsed
-    : prefillDate
+    : prefillDate || prefillKind || prefillTitle || prefillCycleId
       ? {
-          starts_at: new Date(`${prefillDate}T09:00:00`).toISOString(),
+          starts_at: prefillDate
+            ? new Date(`${prefillDate}T${prefillTime}:00`).toISOString()
+            : undefined,
           all_day: false,
+          kind: prefillKind ?? undefined,
+          title: prefillTitle ?? undefined,
+          cycle_id: prefillCycleId ? Number(prefillCycleId) : undefined,
+          derived_from_cycle: prefillCycleId ? true : undefined,
         }
       : undefined;
 

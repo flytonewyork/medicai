@@ -4,7 +4,11 @@ import { addDays, format, parseISO } from "date-fns";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
-import type { Protocol, TreatmentCycle } from "~/types/treatment";
+import {
+  effectiveCycleLengthDays,
+  type Protocol,
+  type TreatmentCycle,
+} from "~/types/treatment";
 import { cycleDayFor, currentPhase } from "~/lib/treatment/engine";
 import { FlaskConical } from "lucide-react";
 
@@ -63,25 +67,33 @@ const LEGEND_KEYS = [
 export function CycleCalendar({
   cycle,
   protocol,
+  selectedDay,
+  onSelectDay,
 }: {
   cycle: TreatmentCycle;
   protocol: Protocol;
+  selectedDay?: number;
+  onSelectDay?: (day: number) => void;
 }) {
   const locale = useLocale();
   const today = new Date();
   const todayDay = cycleDayFor(cycle.start_date, today);
   const start = parseISO(cycle.start_date);
 
-  const days = Array.from({ length: protocol.cycle_length_days }, (_, i) => {
+  const effectiveLen = effectiveCycleLengthDays(cycle, protocol);
+  const days = Array.from({ length: effectiveLen }, (_, i) => {
     const n = i + 1;
     const date = addDays(start, i);
     const phase = currentPhase(protocol, n);
     const isDose = protocol.dose_days.includes(n);
-    return { n, date, phase, isDose };
+    // Any day past the protocol's natural end that the user added as
+    // extra rest — surfaced with the "rest" swatch regardless of phase.
+    const isExtraRest = n > protocol.cycle_length_days;
+    return { n, date, phase, isDose, isExtraRest };
   });
 
   // Lab draw markers — any lab row whose date falls inside this cycle window.
-  const cycleEnd = addDays(start, protocol.cycle_length_days - 1);
+  const cycleEnd = addDays(start, effectiveLen - 1);
   const cycleStartStr = cycle.start_date;
   const cycleEndStr = format(cycleEnd, "yyyy-MM-dd");
   const labsInCycle = useLiveQuery(
@@ -98,7 +110,7 @@ export function CycleCalendar({
       Math.max(
         1,
         Math.min(
-          protocol.cycle_length_days,
+          effectiveLen,
           Math.floor(
             (parseISO(l.date).getTime() - start.getTime()) / 86400000,
           ) + 1,
@@ -110,28 +122,14 @@ export function CycleCalendar({
   return (
     <div>
       <div className="grid grid-cols-7 gap-1.5">
-        {days.map(({ n, date, phase, isDose }) => {
+        {days.map(({ n, date, phase, isDose, isExtraRest }) => {
           const isToday = n === todayDay;
-          const key = isDose ? "dose_day" : phase?.key ?? "rest";
+          const key = isDose ? "dose_day" : isExtraRest ? "rest" : phase?.key ?? "rest";
           const swatch = SWATCHES[key] ?? SWATCHES.rest!;
           const hasLab = labDays.has(n);
-          return (
-            <div
-              key={n}
-              className="relative flex aspect-square flex-col items-center justify-center rounded-[10px]"
-              style={{
-                background: swatch.bg,
-                color: swatch.color,
-                boxShadow: isToday ? "0 0 0 2px var(--ink-900)" : undefined,
-              }}
-              title={[
-                `Day ${n} · ${format(date, "d MMM")}`,
-                phase?.label[locale],
-                hasLab ? (locale === "zh" ? "化验" : "lab draw") : undefined,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            >
+          const isSelected = selectedDay === n;
+          const content = (
+            <>
               <span className="mono text-[9px] uppercase opacity-70">
                 D{n}
               </span>
@@ -150,6 +148,50 @@ export function CycleCalendar({
                   <FlaskConical className="h-2 w-2" strokeWidth={2.5} />
                 </span>
               )}
+            </>
+          );
+          const tooltip = [
+            `Day ${n} · ${format(date, "d MMM")}`,
+            phase?.label[locale],
+            hasLab ? (locale === "zh" ? "化验" : "lab draw") : undefined,
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          const ring = isSelected
+            ? "0 0 0 2px var(--tide-2)"
+            : isToday
+              ? "0 0 0 2px var(--ink-900)"
+              : undefined;
+          const style = {
+            background: swatch.bg,
+            color: swatch.color,
+            boxShadow: ring,
+          } as const;
+
+          if (onSelectDay) {
+            return (
+              <button
+                key={n}
+                type="button"
+                onClick={() => onSelectDay(n)}
+                aria-pressed={isSelected}
+                aria-label={tooltip}
+                title={tooltip}
+                className="relative flex aspect-square flex-col items-center justify-center rounded-[10px] transition-transform hover:scale-[1.03] focus:outline-none"
+                style={style}
+              >
+                {content}
+              </button>
+            );
+          }
+          return (
+            <div
+              key={n}
+              className="relative flex aspect-square flex-col items-center justify-center rounded-[10px]"
+              style={style}
+              title={tooltip}
+            >
+              {content}
             </div>
           );
         })}

@@ -112,11 +112,23 @@ export interface TreatmentCycle {
   dose_level: number;
   dose_modification_notes?: string;
   day_records?: CycleDoseDayRecord[];
+  // Extra rest days appended to the cycle (e.g. a full +7 day gap because
+  // bloods hadn't recovered). Honoured by `effectiveCycleLengthDays` so
+  // the calendar view + linked appointments respect the delay without
+  // mutating the protocol.
+  rest_days_added?: number;
   snoozed_nudge_ids?: string[];
   dismissed_nudge_ids?: string[];
   notes?: string;
   created_at: string;
   updated_at: string;
+}
+
+export function effectiveCycleLengthDays(
+  cycle: TreatmentCycle,
+  protocol: Protocol,
+): number {
+  return protocol.cycle_length_days + Math.max(0, cycle.rest_days_added ?? 0);
 }
 
 export interface CycleContext {
