@@ -18,6 +18,12 @@ export interface DailyEntry {
   date: string;
   entered_at: string;
   entered_by: EnteredBy;
+  // Slice C: when the user was signed in at save time, this carries
+  // their auth.uid so <Attribution /> can render the real profile
+  // display_name + avatar. Legacy rows without it fall back to the
+  // `entered_by` string label. Optional because not every device has
+  // an authenticated session (dad's phone, offline use).
+  entered_by_user_id?: string;
   energy?: number;
   sleep_quality?: number;
   appetite?: number;
@@ -32,14 +38,24 @@ export interface DailyEntry {
   practice_evening_completed?: boolean;
   practice_evening_quality?: number;
   cold_dysaesthesia?: boolean;
-  neuropathy_hands?: boolean;
-  neuropathy_feet?: boolean;
+  neuropathy_hands?: number;   // CTCAE 0–4 (was boolean; older rows coerce via Number())
+  neuropathy_feet?: number;    // CTCAE 0–4
   mouth_sores?: boolean;
   diarrhoea_count?: number;
   new_bruising?: boolean;
   dyspnoea?: boolean;
   fever?: boolean;
   fever_temp?: number;
+  // Curated PDAC / GnP symptom additions — tracked when the user has
+  // them enabled in settings.tracked_symptoms. Semantics:
+  //   fatigue, anorexia, abdominal_pain — 0–10 severity
+  //   taste_changes — 0–5 (0 normal, 5 food tastes wrong)
+  //   steatorrhoea — boolean (flags possible PERT under-dosing)
+  fatigue?: number;
+  anorexia?: number;
+  abdominal_pain?: number;
+  taste_changes?: number;
+  steatorrhoea?: boolean;
   reflection?: string;
   reflection_lang?: Locale;
   protein_grams?: number;
@@ -59,6 +75,7 @@ export interface WeeklyAssessment {
   week_start: string;
   entered_at: string;
   entered_by: EnteredBy;
+  entered_by_user_id?: string;
   practice_full_days: number;
   practice_reduced_days: number;
   practice_skipped_days: number;
@@ -78,6 +95,7 @@ export interface FortnightlyAssessment {
   assessment_date: string;
   entered_at: string;
   entered_by: EnteredBy;
+  entered_by_user_id?: string;
   ecog_self: 0 | 1 | 2 | 3 | 4;
   pro_ctcae_fatigue_severity?: number;
   pro_ctcae_fatigue_interference?: number;
@@ -360,6 +378,14 @@ export interface Settings {
   last_exported_at?: string;
   anthropic_api_key?: string;
   default_ai_model?: string;
+  // Which symptom ids (from SYMPTOM_CATALOG) the daily-check-in surfaces.
+  // Undefined falls back to defaultTrackedSymptomIds() — the top-10
+  // GnP/PDAC list.
+  tracked_symptoms?: string[];
+  // Date the patient first completed a full check-in covering all
+  // tracked symptoms — later changes are read against this row as
+  // "baseline vs current" when generating trend nudges / reports.
+  symptoms_baseline_set_at?: string;
   created_at: string;
   updated_at: string;
 }

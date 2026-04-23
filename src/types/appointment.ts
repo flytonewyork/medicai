@@ -27,6 +27,68 @@ export type AppointmentStatus =
   | "cancelled"
   | "rescheduled";
 
+// Slice F: structured attendance. Sits alongside the freetext
+// `attendees` list. A name in `attendees` with no matching
+// `attendance` entry renders as pending; members flip themselves
+// between confirmed / tentative / declined / (back to pending) with
+// one tap. Keyed by name (case-insensitive) so renames in the
+// care-team registry don't break old rows; `user_id` is the auth uid
+// when the claim came from a signed-in member.
+export type AttendanceStatus = "confirmed" | "tentative" | "declined";
+
+export interface AppointmentAttendance {
+  name: string;
+  user_id?: string;
+  status: AttendanceStatus;
+  claimed_at: string;
+  note?: string;
+}
+
+// Slice I: structured preparation instructions. A clinic phone call
+// often lands several time-sensitive requirements — "6-hour fast
+// starts at 1 AM, hold metformin from tonight, arrive 30 minutes
+// early, bring photo ID" — that the patient needs to check off like
+// a pre-flight list. The typed array surfaces as a Preparation
+// section on the appointment detail page and drives the dashboard's
+// "fasting now" banner.
+export type AppointmentPrepKind =
+  | "fast"              // no food/drink for N hours before
+  | "medication_hold"   // stop a med ahead of the procedure
+  | "medication_take"   // do take something ("drink the contrast")
+  | "arrive_early"      // be there N minutes before start
+  | "bring"             // bring ID, referral, scans, etc.
+  | "sample"            // provide a sample (urine, stool) on the day
+  | "transport"         // can't drive after (sedation etc.)
+  | "companion"         // needs an accompanying adult
+  | "consent"           // consent form to sign beforehand
+  | "pre_scan_contrast" // oral / IV contrast pre-scan
+  | "other";
+
+export type AppointmentPrepSource =
+  | "email"
+  | "phone"
+  | "letter"
+  | "in_person"
+  | "other";
+
+export interface AppointmentPrep {
+  kind: AppointmentPrepKind;
+  description: string;
+  // Time-sensitive prep carries either an absolute start time
+  // (e.g. fast starts at 2026-04-24T01:00:00+10:00) OR a relative
+  // "N hours before appointment" hint that the UI resolves at read.
+  starts_at?: string;
+  hours_before?: number;
+  // Set when the patient (or Thomas) ticks the item off on the
+  // detail page — used to colour completed items and to compute
+  // whether an active fast/prep window is currently in effect.
+  completed_at?: string;
+  // Where the instruction came from. Captured so Thomas can trace
+  // "who told us this?" — especially important for items delivered
+  // over the phone with no written source.
+  info_source?: AppointmentPrepSource;
+}
+
 export interface Appointment {
   id?: number;
   kind: AppointmentKind;
@@ -41,9 +103,11 @@ export interface Appointment {
   phone?: string;
   notes?: string;                // markdown
   status: AppointmentStatus;
-  // Free-text attendee list. When collaboration lands properly this
-  // becomes a separate attendees table keyed by user_id; for now names.
+  // Free-text attendee list — "who was invited".
   attendees?: string[];
+  // Structured "who's actually going" — one row per member that has
+  // claimed a status. Name-keyed, case-insensitive on read.
+  attendance?: AppointmentAttendance[];
   // Photo / document references (keys into ingested_documents, or bare
   // data URLs for small captures).
   attachments?: string[];
@@ -52,6 +116,25 @@ export interface Appointment {
   // edit. Manual edits set this to false so we stop clobbering them.
   derived_from_cycle?: boolean;
   cycle_id?: number;
+  // Slice K: richer cross-module linkage. An appointment can point
+  // at any domain record it relates to — a chemo appointment linked
+  // to its treatment cycle, a blood-test appointment linked to the
+  // pending lab panel, a scan linked (after the fact) to the imaging
+  // report that came back. Distinct from `cycle_id` above which
+  // stays as a first-class FK for fast-path queries (the
+  // [cycle_id+starts_at] Dexie index).
+  linked_records?: AppointmentLinkedRecord[];
+  // When this appointment came from an ICS / iCloud subscription,
+  // the source identifier so re-imports can dedupe + update rather
+  // than creating duplicates.
+  ics_uid?: string;
+  // Structured preparation items (see AppointmentPrep).
+  prep?: AppointmentPrep[];
+  // Explicit flag for appointments where the patient knows prep will
+  // be needed but hasn't received the details yet (e.g. "chemo is
+  // Wednesday but the office will email the prep details later").
+  // Drives a derived awaiting-info task on the schedule.
+  prep_info_received?: boolean;
   // Set the first time the patient (or Thomas) logs what happened after
   // the appointment — what was discussed at clinic, how chemo went, etc.
   // Drives the follow-up task engine: appointments with no
@@ -60,6 +143,29 @@ export interface Appointment {
   followup_logged_at?: string;
   created_at: string;
   updated_at: string;
+}
+
+// Slice K: cross-module links from an appointment to any domain row
+// (treatment cycle, lab result, imaging report, ctDNA result, the
+// pending-result placeholder, medication, decision). Kept typed so
+// the UI renders the right icon + link per kind and readers can
+// cheaply filter without union-unwrapping.
+export type AppointmentLinkedRecordKind =
+  | "treatment_cycle"
+  | "lab_result"
+  | "pending_result"
+  | "imaging"
+  | "ctdna_result"
+  | "medication"
+  | "decision"
+  | "task";
+
+export interface AppointmentLinkedRecord {
+  kind: AppointmentLinkedRecordKind;
+  local_id: number;
+  // Short note on why the link exists ("Cycle 4 infusion",
+  // "ordered CA19-9 + FBE") — shown in the UI next to the chip.
+  label?: string;
 }
 
 // Directed edge. Today the only relation that matters clinically is

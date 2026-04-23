@@ -9,6 +9,9 @@ import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Field, Textarea } from "~/components/ui/field";
 import { AppointmentForm } from "~/components/schedule/appointment-form";
+import { AttendanceControls } from "~/components/schedule/attendance-controls";
+import { LinkedRecords } from "~/components/schedule/linked-records";
+import { PrepPanel } from "~/components/schedule/prep-panel";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { useState } from "react";
 import type { Appointment, AppointmentLink } from "~/types/appointment";
@@ -102,6 +105,12 @@ export default function AppointmentDetailPage() {
           />
 
           <AttendeeChips appt={appt} locale={locale} t={t} />
+
+          <AttendanceControls appt={appt} locale={locale} />
+
+          <LinkedRecords appt={appt} />
+
+          <PrepPanel appt={appt} />
 
           <FollowUpPrompt appt={appt} locale={locale} t={t} />
 
@@ -328,6 +337,10 @@ function FollowUpPrompt({
       const nowIso = now();
       const body = text.trim();
       if (body) {
+        const { getCachedUserId } = await import(
+          "~/lib/supabase/current-user"
+        );
+        const uid = getCachedUserId();
         await db.log_events.add({
           at: nowIso,
           input: {
@@ -335,6 +348,7 @@ function FollowUpPrompt({
             tags: logTagsForKind(appt.kind),
             locale,
             at: nowIso,
+            entered_by_user_id: uid ?? undefined,
           },
         });
       }

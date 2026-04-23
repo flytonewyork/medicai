@@ -13,6 +13,8 @@ import { Card, CardContent } from "~/components/ui/card";
 import { Field, TextInput, Textarea } from "~/components/ui/field";
 import { ScaleInput } from "./scale-input";
 import { Toggle } from "./toggle";
+import { SymptomStep } from "./symptom-step";
+import { isInChemoWindow } from "~/lib/daily/symptom-catalog";
 import type { DailyEntry } from "~/types/clinical";
 import {
   Activity,
@@ -160,6 +162,32 @@ export function DailyWizard({ entryId, date }: Props) {
     [entryId],
   );
 
+  // Find the nearest chemo appointment (past or future) so we can
+  // highlight the symptoms step and pre-select it when the patient is
+  // inside a ±3-day chemo window.
+  const nearestChemoAt = useLiveQuery(async () => {
+    const rows = await db.appointments
+      .where("[kind+starts_at]")
+      .between(["chemo", ""], ["chemo", "￿"])
+      .toArray();
+    if (rows.length === 0) return null;
+    const nowMs = Date.now();
+    let best: string | null = null;
+    let bestDelta = Infinity;
+    for (const a of rows) {
+      if (a.status === "cancelled") continue;
+      const t = new Date(a.starts_at).getTime();
+      if (!Number.isFinite(t)) continue;
+      const delta = Math.abs(t - nowMs);
+      if (delta < bestDelta) {
+        bestDelta = delta;
+        best = a.starts_at;
+      }
+    }
+    return best;
+  }, []);
+  const inChemoWindow = isInChemoWindow(nearestChemoAt ?? null);
+
   const [draft, setDraft] = useState<Draft>({});
   const [picked, setPicked] = useState<CatId[]>([]);
   const [phase, setPhase] = useState<"picking" | "stepping" | "review">(
@@ -179,6 +207,13 @@ export function DailyWizard({ entryId, date }: Props) {
       }
     }
   }, [existing]);
+
+  // When a fresh check-in starts inside a chemo window, auto-pick the
+  // Symptoms step so the GnP-specific items are one tap away.
+  useEffect(() => {
+    if (!inChemoWindow || existing) return;
+    setPicked((p) => (p.includes("symptoms") ? p : [...p, "symptoms"]));
+  }, [inChemoWindow, existing]);
 
   function patch<K extends keyof DailyEntry>(k: K, v: DailyEntry[K] | undefined) {
     setDraft((d) => {
@@ -227,10 +262,13 @@ export function DailyWizard({ entryId, date }: Props) {
   async function save() {
     setSaving(true);
     try {
+      const { getCachedUserId } = await import("~/lib/supabase/current-user");
+      const uid = getCachedUserId();
       const base: Partial<DailyEntry> = {
         ...draft,
         date,
         entered_by: enteredBy,
+        entered_by_user_id: uid ?? existing?.entered_by_user_id,
         entered_at: existing?.entered_at ?? now(),
         updated_at: now(),
       };
@@ -242,6 +280,30 @@ export function DailyWizard({ entryId, date }: Props) {
           created_at: now(),
         });
       }
+
+      // Stamp the symptom baseline the first time a check-in writes to
+      // any tracked symptom field. Read existing settings to avoid
+      // clobbering a pre-existing baseline date.
+      const { SYMPTOM_CATALOG, defaultTrackedSymptomIds } = await import(
+        "~/lib/daily/symptom-catalog"
+      );
+      const settingsRow = (await db.settings.toArray())[0];
+      if (settingsRow?.id && !settingsRow.symptoms_baseline_set_at) {
+        const trackedIds =
+          settingsRow.tracked_symptoms ?? defaultTrackedSymptomIds();
+        const wroteASymptom = SYMPTOM_CATALOG.some((d) => {
+          if (!trackedIds.includes(d.id)) return false;
+          const v = (base as Record<string, unknown>)[d.dailyEntryField];
+          return v !== undefined && v !== null && v !== "";
+        });
+        if (wroteASymptom) {
+          await db.settings.update(settingsRow.id, {
+            symptoms_baseline_set_at: now(),
+            updated_at: now(),
+          });
+        }
+      }
+
       await runEngineAndPersist();
       router.push("/daily");
     } finally {
@@ -257,6 +319,7 @@ export function DailyWizard({ entryId, date }: Props) {
         onStart={start}
         locale={locale}
         t={t}
+        inChemoWindow={inChemoWindow}
       />
     );
   }
@@ -271,6 +334,7 @@ export function DailyWizard({ entryId, date }: Props) {
         total={picked.length}
         draft={draft}
         patch={patch}
+        inChemoWindow={inChemoWindow}
         onBack={back}
         onSkip={skip}
         onNext={advance}
@@ -304,12 +368,14 @@ function PickScreen({
   onStart,
   locale,
   t,
+  inChemoWindow,
 }: {
   picked: CatId[];
   onToggle: (id: CatId) => void;
   onStart: () => void;
   locale: "en" | "zh";
   t: (key: string) => string;
+  inChemoWindow: boolean;
 }) {
   return (
     <div className="space-y-5">
@@ -322,6 +388,18 @@ function PickScreen({
             ? "只选今天真正相关的。没有的项目就不用填。"
             : "Pick only what actually applies today. Anything you don't tap stays unrecorded."}
         </p>
+        {inChemoWindow && (
+          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[var(--tide-soft)] px-2.5 py-1 text-[11px] text-[var(--tide-2)]">
+            <span className="mono font-medium uppercase tracking-[0.12em]">
+              {locale === "zh" ? "化疗窗口" : "Chemo window"}
+            </span>
+            <span className="text-ink-500">
+              {locale === "zh"
+                ? "· Symptoms 已为你勾选"
+                : "· Symptoms pre-selected for you"}
+            </span>
+          </div>
+        )}
       </header>
 
       <ul className="grid gap-2 sm:grid-cols-2">
@@ -416,6 +494,7 @@ function StepScreen({
   onSkip,
   onNext,
   locale,
+  inChemoWindow,
 }: {
   catId: CatId;
   index: number;
@@ -426,6 +505,7 @@ function StepScreen({
   onSkip: () => void;
   onNext: () => void;
   locale: "en" | "zh";
+  inChemoWindow: boolean;
 }) {
   const def = catDef(catId);
   const pct = Math.round(((index + 1) / total) * 100);
@@ -454,7 +534,13 @@ function StepScreen({
 
       <Card>
         <CardContent className="space-y-4 pt-5">
-          <CategoryFields catId={catId} draft={draft} patch={patch} locale={locale} />
+          <CategoryFields
+            catId={catId}
+            draft={draft}
+            patch={patch}
+            locale={locale}
+            inChemoWindow={inChemoWindow}
+          />
         </CardContent>
       </Card>
 
@@ -489,11 +575,13 @@ function CategoryFields({
   draft,
   patch,
   locale,
+  inChemoWindow,
 }: {
   catId: CatId;
   draft: Draft;
   patch: <K extends keyof DailyEntry>(k: K, v: DailyEntry[K] | undefined) => void;
   locale: "en" | "zh";
+  inChemoWindow: boolean;
 }) {
   const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
 
@@ -718,78 +806,12 @@ function CategoryFields({
 
   if (catId === "symptoms") {
     return (
-      <div className="space-y-3">
-        <ScaleInput
-          label={L("Nausea", "恶心")}
-          value={draft.nausea ?? 0}
-          onChange={(n) => patch("nausea", n)}
-        />
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Toggle
-            label={L("Fever", "发热")}
-            checked={draft.fever ?? false}
-            onChange={(v) => patch("fever", v ? true : undefined)}
-          />
-          {draft.fever && (
-            <Field label={L("Temperature (°C)", "体温（°C）")}>
-              <TextInput
-                type="number"
-                inputMode="decimal"
-                value={draft.fever_temp ?? ""}
-                onChange={(e) =>
-                  patch(
-                    "fever_temp",
-                    e.target.value === "" ? undefined : Number(e.target.value),
-                  )
-                }
-              />
-            </Field>
-          )}
-          <Toggle
-            label={L("Cold dysaesthesia", "遇冷异感")}
-            checked={draft.cold_dysaesthesia ?? false}
-            onChange={(v) => patch("cold_dysaesthesia", v ? true : undefined)}
-          />
-          <Toggle
-            label={L("Hand neuropathy", "手部神经病变")}
-            checked={draft.neuropathy_hands ?? false}
-            onChange={(v) => patch("neuropathy_hands", v ? true : undefined)}
-          />
-          <Toggle
-            label={L("Foot neuropathy", "足部神经病变")}
-            checked={draft.neuropathy_feet ?? false}
-            onChange={(v) => patch("neuropathy_feet", v ? true : undefined)}
-          />
-          <Toggle
-            label={L("Mouth sores", "口腔溃疡")}
-            checked={draft.mouth_sores ?? false}
-            onChange={(v) => patch("mouth_sores", v ? true : undefined)}
-          />
-          <Toggle
-            label={L("New bruising / bleeding", "新淤青 / 出血")}
-            checked={draft.new_bruising ?? false}
-            onChange={(v) => patch("new_bruising", v ? true : undefined)}
-          />
-          <Toggle
-            label={L("Breathlessness", "气促")}
-            checked={draft.dyspnoea ?? false}
-            onChange={(v) => patch("dyspnoea", v ? true : undefined)}
-          />
-        </div>
-        <Field label={L("Diarrhoea episodes today", "今日腹泻次数")}>
-          <TextInput
-            type="number"
-            inputMode="numeric"
-            value={draft.diarrhoea_count ?? ""}
-            onChange={(e) =>
-              patch(
-                "diarrhoea_count",
-                e.target.value === "" ? undefined : Number(e.target.value),
-              )
-            }
-          />
-        </Field>
-      </div>
+      <SymptomStep
+        draft={draft}
+        patch={patch}
+        locale={locale}
+        inChemoWindow={inChemoWindow}
+      />
     );
   }
 

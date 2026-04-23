@@ -5,10 +5,12 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
+import { PresenceStack } from "~/components/shared/presence-stack";
 import { Button } from "~/components/ui/button";
 import { AppointmentsCalendar } from "~/components/schedule/calendar";
 import { derivePrepTasks } from "~/lib/appointments/prep-tasks";
 import { deriveFollowUpTasks } from "~/lib/appointments/follow-up-tasks";
+import { deriveAwaitingPrepTasks } from "~/lib/appointments/prep";
 import { Plus, AlertTriangle, ClipboardList } from "lucide-react";
 import type { Appointment } from "~/types/appointment";
 
@@ -30,6 +32,9 @@ export default function SchedulePage() {
   const followUps = deriveFollowUpTasks({
     appointments: appointments ?? [],
   });
+  const awaitingPrep = deriveAwaitingPrepTasks({
+    appointments: appointments ?? [],
+  });
 
   const upcoming = (appointments ?? []).filter(
     (a) => new Date(a.starts_at).getTime() >= Date.now() - 12 * 3600 * 1000,
@@ -41,6 +46,8 @@ export default function SchedulePage() {
         eyebrow={t("schedule.eyebrow")}
         title={t("schedule.title")}
       />
+
+      <PresenceStack surface="/schedule" />
 
       <div className="flex flex-wrap gap-2">
         <Link href="/schedule/new">
@@ -85,6 +92,35 @@ export default function SchedulePage() {
             {followUps.slice(0, 6).map((task) => (
               <li
                 key={`followup-${task.derived_from_appointment_id}`}
+                className="flex items-center justify-between"
+              >
+                <Link
+                  href={`/schedule/${task.derived_from_appointment_id}`}
+                  className="flex-1 truncate text-ink-800 hover:text-ink-900 hover:underline"
+                >
+                  {locale === "zh" && task.title_zh
+                    ? task.title_zh
+                    : task.title}
+                </Link>
+                <span className="mono shrink-0 text-[11px] text-ink-500">
+                  {task.due_date}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {awaitingPrep.length > 0 && (
+        <section className="rounded-[var(--r-md)] border border-[var(--sand-2)] bg-[var(--sand)]/40 p-4">
+          <div className="mb-2 flex items-center gap-2 text-[12.5px] font-semibold text-ink-900">
+            <ClipboardList className="h-4 w-4 text-[var(--tide-2)]" />
+            {locale === "zh" ? "等待准备事项信息" : "Awaiting prep info"}
+          </div>
+          <ul className="space-y-1.5 text-[13px]">
+            {awaitingPrep.slice(0, 6).map((task) => (
+              <li
+                key={`prepinfo-${task.derived_from_appointment_id}`}
                 className="flex items-center justify-between"
               >
                 <Link

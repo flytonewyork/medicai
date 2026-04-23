@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
@@ -18,14 +17,13 @@ import {
   type NotesStructure,
 } from "~/lib/ingest/notes-vision";
 import { todayISO } from "~/lib/utils/date";
-import { Sparkles, Check, Loader2, AlertCircle } from "lucide-react";
+import { Sparkles, Check, Loader2 } from "lucide-react";
 
 type DailyPatch = NonNullable<NotesStructure["daily_patch"]>;
 
 export default function NotesIngestPage() {
   const locale = useLocale();
   const settings = useLiveQuery(() => db.settings.toArray());
-  const apiKey = settings?.[0]?.anthropic_api_key;
   const model = settings?.[0]?.default_ai_model ?? "claude-opus-4-7";
 
   const [prepared, setPrepared] = useState<PreparedImage | null>(null);
@@ -52,11 +50,11 @@ export default function NotesIngestPage() {
   }
 
   async function runStructure() {
-    if (!prepared || !apiKey) return;
+    if (!prepared) return;
     setBusy("structure");
     setError(null);
     try {
-      const result = await structureNotes({ apiKey, model, image: prepared });
+      const result = await structureNotes({ model, image: prepared });
       setStructured(result);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -96,8 +94,8 @@ export default function NotesIngestPage() {
           practice_morning_completed: false,
           practice_evening_completed: false,
           cold_dysaesthesia: false,
-          neuropathy_hands: false,
-          neuropathy_feet: false,
+          neuropathy_hands: 0,
+          neuropathy_feet: 0,
           mouth_sores: false,
           diarrhoea_count: 0,
           new_bruising: false,
@@ -140,35 +138,6 @@ export default function NotesIngestPage() {
         }
       />
 
-      {!apiKey && (
-        <Card>
-          <CardContent className="flex items-start gap-3 pt-5 text-sm">
-            <AlertCircle
-              className="mt-0.5 h-4 w-4 shrink-0"
-              style={{ color: "var(--warn)" }}
-            />
-            <div>
-              <div className="font-semibold text-ink-900">
-                {locale === "zh"
-                  ? "需要 Anthropic API Key"
-                  : "Claude API key required"}
-              </div>
-              <div className="mt-0.5 text-ink-500">
-                {locale === "zh"
-                  ? "手写识别使用 Claude Vision。在设置中添加你的密钥。"
-                  : "This flow uses Claude Vision. Add your key in Settings."}
-              </div>
-              <Link
-                href="/settings"
-                className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[var(--tide-2)]"
-              >
-                {locale === "zh" ? "打开设置" : "Open Settings"} →
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <Card>
         <CardContent className="space-y-4 pt-5">
           {!prepared && (
@@ -203,7 +172,7 @@ export default function NotesIngestPage() {
           )}
 
           {prepared && !structured && busy !== "structure" && (
-            <Button onClick={runStructure} disabled={!apiKey}>
+            <Button onClick={runStructure}>
               <Sparkles className="h-4 w-4" />
               {locale === "zh" ? "让 Claude 识别" : "Read with Claude"}
             </Button>

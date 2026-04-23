@@ -1,4 +1,5 @@
 import { getSupabaseBrowser } from "~/lib/supabase/client";
+import { getCachedHouseholdId, refreshHouseholdId } from "./household-context";
 import type { SyncedTable } from "./tables";
 
 export type SyncOp =
@@ -43,6 +44,20 @@ async function processQueue(): Promise<void> {
   const supabase = getSupabaseBrowser();
   if (!supabase) return;
 
+  // Slice B: tag every push with the current user's household_id so
+  // RLS can scope reads to the family. If we don't know the household
+  // yet (fresh sign-in, brand-new signup pre-create_household), try
+  // to resolve it now; if still unknown, leave the queue intact and
+  // retry on the next tick.
+  let householdId = getCachedHouseholdId();
+  if (!householdId) {
+    householdId = await refreshHouseholdId();
+  }
+  if (!householdId) {
+    // No household yet — can't satisfy RLS. Hold the ops.
+    return;
+  }
+
   processing = true;
   try {
     while (pending.length > 0) {
@@ -55,6 +70,7 @@ async function processQueue(): Promise<void> {
               local_id: op.local_id,
               data: op.data,
               deleted: false,
+              household_id: householdId,
               updated_at: new Date().toISOString(),
             },
             { onConflict: "table_name,local_id" },
@@ -68,7 +84,8 @@ async function processQueue(): Promise<void> {
               updated_at: new Date().toISOString(),
             })
             .eq("table_name", op.table)
-            .eq("local_id", op.local_id);
+            .eq("local_id", op.local_id)
+            .eq("household_id", householdId);
           if (error) throw error;
         }
         pending.shift();

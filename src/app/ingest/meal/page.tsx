@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { format } from "date-fns";
 import { db, now } from "~/lib/db/dexie";
@@ -19,12 +18,11 @@ import {
   type MealEstimate,
 } from "~/lib/ingest/meal-vision";
 import { todayISO } from "~/lib/utils/date";
-import { Sparkles, Check, Loader2, AlertCircle } from "lucide-react";
+import { Sparkles, Check, Loader2 } from "lucide-react";
 
 export default function MealIngestPage() {
   const locale = useLocale();
   const settings = useLiveQuery(() => db.settings.toArray());
-  const apiKey = settings?.[0]?.anthropic_api_key;
   const model = settings?.[0]?.default_ai_model ?? "claude-opus-4-7";
 
   const [prepared, setPrepared] = useState<PreparedImage | null>(null);
@@ -51,11 +49,11 @@ export default function MealIngestPage() {
   }
 
   async function runEstimate() {
-    if (!prepared || !apiKey) return;
+    if (!prepared) return;
     setBusy("estimate");
     setError(null);
     try {
-      const result = await estimateMeal({ apiKey, model, image: prepared });
+      const result = await estimateMeal({ model, image: prepared });
       setEstimate(result);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -96,8 +94,8 @@ export default function MealIngestPage() {
           practice_morning_completed: false,
           practice_evening_completed: false,
           cold_dysaesthesia: false,
-          neuropathy_hands: false,
-          neuropathy_feet: false,
+          neuropathy_hands: 0,
+          neuropathy_feet: 0,
           mouth_sores: false,
           diarrhoea_count: 0,
           new_bruising: false,
@@ -139,35 +137,6 @@ export default function MealIngestPage() {
         }
       />
 
-      {!apiKey && (
-        <Card>
-          <CardContent className="flex items-start gap-3 pt-5 text-sm">
-            <AlertCircle
-              className="mt-0.5 h-4 w-4 shrink-0"
-              style={{ color: "var(--warn)" }}
-            />
-            <div>
-              <div className="font-semibold text-ink-900">
-                {locale === "zh"
-                  ? "需要 Anthropic API Key"
-                  : "Claude API key required"}
-              </div>
-              <div className="mt-0.5 text-ink-500">
-                {locale === "zh"
-                  ? "餐食视觉分析使用 Claude Vision。在设置中添加你的密钥。"
-                  : "This flow uses Claude Vision. Add your key in Settings."}
-              </div>
-              <Link
-                href="/settings"
-                className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[var(--tide-2)]"
-              >
-                {locale === "zh" ? "打开设置" : "Open Settings"} →
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <Card>
         <CardContent className="space-y-4 pt-5">
           {!prepared && (
@@ -202,7 +171,7 @@ export default function MealIngestPage() {
           )}
 
           {prepared && !estimate && busy !== "estimate" && (
-            <Button onClick={runEstimate} disabled={!apiKey}>
+            <Button onClick={runEstimate}>
               <Sparkles className="h-4 w-4" />
               {locale === "zh" ? "让 Claude 估算" : "Estimate with Claude"}
             </Button>

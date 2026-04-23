@@ -11,6 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { CameraCapture } from "~/components/ingest/camera-capture";
 import { BulkQueue } from "~/components/ingest/bulk-queue";
+import { UniversalDrop } from "~/components/ingest/universal-drop";
+import { PhoneCallNote } from "~/components/ingest/phone-note";
+import { PreviewDiff } from "~/components/ingest/preview-diff";
+import type { IngestApplyResult, IngestDraft } from "~/types/ingest";
 import {
   parseBulkItem,
   processBulkItem,
@@ -25,9 +29,9 @@ function newId(): string {
 
 export default function IngestPage() {
   const locale = useLocale();
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const apiKey = settings?.[0]?.anthropic_api_key;
-  const apiKeyConfigured = !!apiKey;
+
+  const [draft, setDraft] = useState<IngestDraft | null>(null);
+  const [appliedResults, setAppliedResults] = useState<IngestApplyResult[] | null>(null);
 
   const [items, setItems] = useState<BulkItem[]>([]);
   const itemsRef = useRef<BulkItem[]>([]);
@@ -56,17 +60,15 @@ export default function IngestPage() {
     setItems((prev) => [...prev, ...newItems]);
     itemsRef.current = [...itemsRef.current, ...newItems];
 
-    // Process one at a time to avoid memory pressure. When the file is an
-    // image and a Claude key is configured, processBulkItem skips OCR
-    // entirely and extracts via vision directly; PDFs still go through OCR.
+    // Process one at a time to avoid memory pressure. Images go directly
+    // through Claude Vision (server-side key); PDFs still go through OCR
+    // and then the heuristic parser auto-runs for a first-pass result.
     for (const item of newItems) {
-      await processBulkItem(item, apiKey, mutate);
+      await processBulkItem(item, mutate);
       const latest =
         itemsRef.current.find((i) => i.id === item.id) ?? item;
-      // OCR path finishes at status "parsing" with ocrText populated — auto-run
-      // the heuristic parser so the user sees a first-pass result immediately.
       if (latest.status === "parsing" && latest.ocrText) {
-        await parseBulkItem(latest, "heuristic", apiKey, mutate);
+        await parseBulkItem(latest, "heuristic", true, mutate);
       }
     }
   }
@@ -74,7 +76,7 @@ export default function IngestPage() {
   async function reparseItem(id: string, method: "heuristic" | "claude" | "vision") {
     const item = itemsRef.current.find((i) => i.id === id);
     if (!item) return;
-    await parseBulkItem(item, method, apiKey, mutate);
+    await parseBulkItem(item, method, true, mutate);
   }
 
   async function saveItem(id: string) {
@@ -121,6 +123,26 @@ export default function IngestPage() {
         }
       />
 
+      {!draft && !appliedResults && (
+        <>
+          <PhoneCallNote onDraft={setDraft} />
+          <UniversalDrop onDraft={setDraft} />
+        </>
+      )}
+
+      {draft && (
+        <PreviewDiff
+          draft={draft}
+          onApplied={(rs) => {
+            setAppliedResults(rs);
+          }}
+          onDiscard={() => {
+            setDraft(null);
+            setAppliedResults(null);
+          }}
+        />
+      )}
+
       <Card>
         <CardContent className="space-y-4 pt-5">
           <div className="flex flex-wrap items-center gap-2">
@@ -148,13 +170,6 @@ export default function IngestPage() {
                 e.target.value = "";
               }}
             />
-            {!apiKeyConfigured && (
-              <span className="mono text-[10px] uppercase tracking-wider text-ink-400">
-                {locale === "zh"
-                  ? "· 未配置 Claude 密钥，使用本地规则解析"
-                  : "· No Claude key — local rules only"}
-              </span>
-            )}
           </div>
 
           <DropZone onFiles={(fs) => void enqueueFiles(fs)} locale={locale} />
@@ -170,7 +185,7 @@ export default function IngestPage() {
           {items.length > 0 && (
             <BulkQueue
               items={items}
-              apiKeyConfigured={apiKeyConfigured}
+              apiKeyConfigured={true}
               onParseHeuristic={(id) => void reparseItem(id, "heuristic")}
               onParseClaude={(id) => void reparseItem(id, "claude")}
               onSave={(id) => void saveItem(id)}

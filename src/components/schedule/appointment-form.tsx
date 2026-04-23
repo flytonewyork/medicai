@@ -13,6 +13,7 @@ import { useLocale, useT } from "~/hooks/use-translate";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Field, TextInput, Textarea } from "~/components/ui/field";
+import { PrepEditor } from "~/components/schedule/prep-editor";
 
 const KINDS: AppointmentKind[] = [
   "clinic",
@@ -56,6 +57,9 @@ export function AppointmentForm({
     doctor: existing?.doctor ?? initial?.doctor ?? "",
     phone: existing?.phone ?? initial?.phone ?? "",
     attendees: existing?.attendees ?? initial?.attendees ?? [],
+    prep: existing?.prep ?? initial?.prep ?? [],
+    prep_info_received:
+      existing?.prep_info_received ?? initial?.prep_info_received ?? true,
     notes: existing?.notes ?? initial?.notes ?? "",
     status: existing?.status ?? "scheduled",
   }));
@@ -92,6 +96,8 @@ export function AppointmentForm({
       location_url: form.location_url || undefined,
       attendees: (form.attendees ?? []).filter((n) => n.trim().length > 0),
       attachments: form.attachments,
+      prep: (form.prep ?? []).filter((p) => p.description.trim().length > 0),
+      prep_info_received: form.prep_info_received,
     });
     if (!parsed.success) {
       setError(
@@ -276,6 +282,26 @@ export function AppointmentForm({
           }
         />
       </Field>
+
+      <div className="space-y-2">
+        <div className="mono text-[10px] uppercase tracking-[0.12em] text-ink-400">
+          {locale === "zh" ? "准备事项" : "Preparation"}
+        </div>
+        <PrepEditor
+          value={form.prep ?? []}
+          onChange={(next) => update("prep", next)}
+        />
+        <label className="flex items-center gap-2 text-[12px] text-ink-700">
+          <input
+            type="checkbox"
+            checked={form.prep_info_received !== false}
+            onChange={(e) => update("prep_info_received", e.target.checked)}
+          />
+          {locale === "zh"
+            ? "已收到准备事项"
+            : "Prep info has been received"}
+        </label>
+      </div>
 
       <Field label={t("schedule.form.notes")}>
         <Textarea

@@ -9,6 +9,10 @@ import { settingsSchema, type SettingsInput } from "~/lib/validators/schemas";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
 import { AccountButton } from "~/components/shared/account-button";
+import { HouseholdSection } from "~/components/settings/household-section";
+import { NotificationsSection } from "~/components/settings/notifications-section";
+import { CareTeamSection } from "~/components/settings/care-team-section";
+import { TrackedSymptomsSection } from "~/components/settings/tracked-symptoms-section";
 
 export default function SettingsPage() {
   const t = useT();
@@ -99,6 +103,14 @@ export default function SettingsPage() {
       </div>
 
       <AccountButton />
+
+      <HouseholdSection />
+
+      <NotificationsSection />
+
+      <CareTeamSection />
+
+      <TrackedSymptomsSection />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <section className="space-y-3">
@@ -247,21 +259,12 @@ export default function SettingsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="eyebrow">AI ingestion (optional)</h2>
+          <h2 className="eyebrow">AI model</h2>
           <p className="text-xs text-ink-500">
-            Paste your own Anthropic API key to let Claude structure uploaded
-            reports. The key is stored only in this browser and sent only to
-            api.anthropic.com. Leave blank to rely on the local heuristic parser.
+            Claude calls run through Anchor&rsquo;s server (the shared
+            ANTHROPIC_API_KEY configured in Vercel) — no per-device key
+            needed. This field lets you override the default model.
           </p>
-          <Field label="Anthropic API key">
-            <input
-              type="password"
-              autoComplete="off"
-              className={inputCls}
-              placeholder="sk-ant-…"
-              {...register("anthropic_api_key")}
-            />
-          </Field>
           <Field label="Model (default claude-opus-4-7)">
             <input
               className={inputCls}

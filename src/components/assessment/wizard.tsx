@@ -413,8 +413,6 @@ function ReviewView({
 
   async function generateAiSummary() {
     const settings = await db.settings.toArray();
-    const apiKey = settings[0]?.anthropic_api_key;
-    if (!apiKey) return;
     setAiBusy(true);
     setAiError(null);
     try {
@@ -430,7 +428,6 @@ function ReviewView({
       const model =
         settings[0]?.default_ai_model ?? "claude-opus-4-7";
       const summary = await summariseAssessment({
-        apiKey,
         model,
         assessment: filled,
       });

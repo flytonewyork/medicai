@@ -10,6 +10,7 @@ const scale0to10 = z.number().min(0).max(10);
 export const dailyEntrySchema = z.object({
   date: z.string(),
   entered_by: z.enum(["hulin", "catherine", "thomas"]),
+  entered_by_user_id: z.string().uuid().optional(),
   energy: scale0to10.optional(),
   sleep_quality: scale0to10.optional(),
   appetite: scale0to10.optional(),
@@ -24,14 +25,22 @@ export const dailyEntrySchema = z.object({
   practice_evening_completed: z.boolean().optional(),
   practice_evening_quality: z.number().min(0).max(5).optional(),
   cold_dysaesthesia: z.boolean().optional(),
-  neuropathy_hands: z.boolean().optional(),
-  neuropathy_feet: z.boolean().optional(),
+  // CTCAE 0–4. Legacy records may have booleans; the wizard coerces
+  // on read, so accept both for backwards compatibility.
+  neuropathy_hands: z.union([z.number().int().min(0).max(4), z.boolean()]).optional(),
+  neuropathy_feet: z.union([z.number().int().min(0).max(4), z.boolean()]).optional(),
   mouth_sores: z.boolean().optional(),
   diarrhoea_count: z.number().int().min(0).max(30).optional(),
   new_bruising: z.boolean().optional(),
   dyspnoea: z.boolean().optional(),
   fever: z.boolean().optional(),
   fever_temp: z.number().min(30).max(45).optional(),
+  // Curated symptom additions.
+  fatigue: scale0to10.optional(),
+  anorexia: scale0to10.optional(),
+  abdominal_pain: scale0to10.optional(),
+  taste_changes: z.number().min(0).max(5).optional(),
+  steatorrhoea: z.boolean().optional(),
   reflection: z.string().max(4000).optional(),
   reflection_lang: z.enum(["en", "zh"]).optional(),
   protein_grams: z.number().min(0).max(500).optional(),
@@ -76,6 +85,8 @@ export const settingsSchema = z.object({
   last_exported_at: z.string().optional(),
   anthropic_api_key: z.string().optional(),
   default_ai_model: z.string().optional(),
+  tracked_symptoms: z.array(z.string()).optional(),
+  symptoms_baseline_set_at: z.string().optional(),
 });
 
 export type SettingsInput = z.infer<typeof settingsSchema>;

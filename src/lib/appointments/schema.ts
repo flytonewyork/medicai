@@ -42,6 +42,63 @@ export const appointmentInputSchema = z.object({
   attachments: z.array(z.string()).optional(),
   derived_from_cycle: z.boolean().optional(),
   cycle_id: z.number().int().positive().optional(),
+  attendance: z
+    .array(
+      z.object({
+        name: z.string().min(1),
+        user_id: z.string().uuid().optional(),
+        status: z.enum(["confirmed", "tentative", "declined"]),
+        claimed_at: z.string(),
+        note: z.string().optional(),
+      }),
+    )
+    .optional(),
+  prep: z
+    .array(
+      z.object({
+        kind: z.enum([
+          "fast",
+          "medication_hold",
+          "medication_take",
+          "arrive_early",
+          "bring",
+          "sample",
+          "transport",
+          "companion",
+          "consent",
+          "pre_scan_contrast",
+          "other",
+        ]),
+        description: z.string().min(1),
+        starts_at: z.string().optional(),
+        hours_before: z.number().min(0).max(168).optional(),
+        completed_at: z.string().optional(),
+        info_source: z
+          .enum(["email", "phone", "letter", "in_person", "other"])
+          .optional(),
+      }),
+    )
+    .optional(),
+  prep_info_received: z.boolean().optional(),
+  linked_records: z
+    .array(
+      z.object({
+        kind: z.enum([
+          "treatment_cycle",
+          "lab_result",
+          "pending_result",
+          "imaging",
+          "ctdna_result",
+          "medication",
+          "decision",
+          "task",
+        ]),
+        local_id: z.number().int().positive(),
+        label: z.string().optional(),
+      }),
+    )
+    .optional(),
+  ics_uid: z.string().optional(),
   followup_logged_at: z.string().optional(),
 });
 

@@ -155,3 +155,112 @@ body {
   -webkit-backdrop-filter: blur(20px) saturate(140%);
   border: 0.5px solid color-mix(in oklch, var(--ink-900), transparent 92%);
 }
+
+/* -----------------------------------------------------------------
+ * FullCalendar overrides — scoped to .anchor-calendar so FullCalendar's
+ * default Bootstrap-ish look is replaced by the Anchor paper/ink/tide
+ * palette, serif title, mono eyebrows, and pill-style view switcher.
+ * -----------------------------------------------------------------*/
+.anchor-calendar {
+  --fc-border-color: var(--ink-100);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: var(--paper-2);
+  --fc-list-event-hover-bg-color: var(--ink-100);
+  --fc-today-bg-color: color-mix(in oklch, var(--tide-soft), transparent 40%);
+  --fc-now-indicator-color: var(--tide-2);
+  --fc-button-text-color: var(--ink-700);
+  --fc-button-bg-color: var(--paper-2);
+  --fc-button-border-color: var(--ink-200);
+  --fc-button-hover-bg-color: var(--ink-100);
+  --fc-button-hover-border-color: var(--ink-300);
+  --fc-button-active-bg-color: var(--ink-900);
+  --fc-button-active-border-color: var(--ink-900);
+  font-family: var(--sans);
+}
+
+.anchor-calendar .fc-toolbar-title {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.125rem;
+  letter-spacing: -0.01em;
+  color: var(--ink-900);
+}
+
+.anchor-calendar .fc-button {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: var(--r-sm);
+  padding: 0.4rem 0.7rem;
+  box-shadow: none;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.anchor-calendar .fc-button:focus {
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--ink-900), transparent 90%);
+}
+
+.anchor-calendar .fc-button-primary:not(:disabled).fc-button-active,
+.anchor-calendar .fc-button-primary:not(:disabled):active {
+  color: var(--paper);
+}
+
+.anchor-calendar .fc-col-header-cell-cushion {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-400);
+  padding: 0.6rem 0.25rem;
+}
+
+.anchor-calendar .fc-daygrid-day-number,
+.anchor-calendar .fc-list-day-cushion a,
+.anchor-calendar .fc-list-event-time {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink-500);
+}
+
+.anchor-calendar .fc-day-today .fc-daygrid-day-number {
+  color: var(--tide-2);
+  font-weight: 600;
+}
+
+.anchor-calendar .fc-event {
+  border-radius: 5px;
+  border-width: 0;
+  padding: 1.5px 5px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.anchor-calendar .fc-event:hover {
+  filter: brightness(1.06);
+}
+
+/* List view — soft, readable rather than striped */
+.anchor-calendar .fc-list,
+.anchor-calendar .fc-list-day-cushion {
+  background: transparent;
+}
+.anchor-calendar .fc-list-day-cushion {
+  background: var(--paper-2);
+  padding: 0.5rem 0.75rem;
+}
+.anchor-calendar .fc-list-event td {
+  padding: 0.6rem 0.75rem;
+}
+
+/* "Day has more" row */
+.anchor-calendar .fc-daygrid-more-link {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-500);
+}
