@@ -6,6 +6,7 @@ import { useLocale, useT } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
+import { EmptyState } from "~/components/ui/empty-state";
 import { TaskRow } from "~/components/tasks/task-row";
 import { PresetPicker } from "~/components/tasks/preset-picker";
 import {
@@ -96,29 +97,29 @@ export default function TasksPage() {
       )}
 
       {instances.length === 0 && !showPresets && (
-        <Card className="p-10 text-center">
-          <ListTodo className="mx-auto mb-3 h-8 w-8 text-ink-400" />
-          <div className="text-sm font-medium">
-            {locale === "zh" ? "还没有任务" : "No tasks yet"}
-          </div>
-          <div className="mx-auto mt-1 max-w-sm text-sm text-ink-500">
-            {locale === "zh"
+        <EmptyState
+          icon={ListTodo}
+          title={locale === "zh" ? "还没有任务" : "No tasks yet"}
+          description={
+            locale === "zh"
               ? "从建议列表添加，或自己写一个。"
-              : "Start from a suggestion or write your own."}
-          </div>
-          <div className="mt-4 flex items-center justify-center gap-2">
-            <Button onClick={() => setShowPresets(true)}>
-              <Sparkles className="h-4 w-4" />
-              {locale === "zh" ? "建议任务" : "Suggestions"}
-            </Button>
-            <Link href="/tasks/new">
-              <Button variant="secondary">
-                <Plus className="h-4 w-4" />
-                {locale === "zh" ? "新建" : "New"}
+              : "Start from a suggestion or write your own."
+          }
+          actions={
+            <>
+              <Button onClick={() => setShowPresets(true)}>
+                <Sparkles className="h-4 w-4" />
+                {locale === "zh" ? "建议任务" : "Suggestions"}
               </Button>
-            </Link>
-          </div>
-        </Card>
+              <Link href="/tasks/new">
+                <Button variant="secondary">
+                  <Plus className="h-4 w-4" />
+                  {locale === "zh" ? "新建" : "New"}
+                </Button>
+              </Link>
+            </>
+          }
+        />
       )}
 
       {sectionOrder.map(([key, label]) => {

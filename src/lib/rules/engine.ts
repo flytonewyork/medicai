@@ -1,4 +1,10 @@
 import { db, now } from "~/lib/db/dexie";
+import {
+  latestDailyEntries,
+  latestFortnightlyAssessments,
+  latestLabs,
+  latestWeeklyAssessments,
+} from "~/lib/db/queries";
 import type { ClinicalSnapshot, ZoneRule } from "./types";
 import { ZONE_RULES } from "./zone-rules";
 import { buildPatientState } from "~/lib/state";
@@ -17,10 +23,10 @@ export async function buildSnapshot(): Promise<ClinicalSnapshot> {
     db.settings.toArray(),
     // Wider windows than the rules strictly need so the patient_state module
     // has enough history to build rolling_28d baselines and 28d slopes.
-    db.daily_entries.orderBy("date").reverse().limit(60).toArray(),
-    db.weekly_assessments.orderBy("week_start").reverse().limit(8).toArray(),
-    db.fortnightly_assessments.orderBy("assessment_date").reverse().limit(6).toArray(),
-    db.labs.orderBy("date").reverse().limit(30).toArray(),
+    latestDailyEntries(60),
+    latestWeeklyAssessments(8),
+    latestFortnightlyAssessments(6),
+    latestLabs(30),
     db.pending_results.toArray(),
     db.treatment_cycles.toArray(),
   ]);

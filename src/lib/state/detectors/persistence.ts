@@ -3,6 +3,7 @@
 // handles IO. Writes to signal_events on every lifecycle transition so the
 // attribution layer (slice 4) can walk the timeline.
 import { db } from "~/lib/db/dexie";
+import { latestChangeSignals } from "~/lib/db/queries";
 import type { ChangeSignalRow, SignalEventKind } from "~/types/clinical";
 import { evaluateDetectors, reconcileSignals } from ".";
 import type { ChangeSignal, DetectorContext, SignalStatus } from "./types";
@@ -13,7 +14,7 @@ export async function getOpenSignals(): Promise<ChangeSignalRow[]> {
 }
 
 export async function getAllSignals(): Promise<ChangeSignalRow[]> {
-  return db.change_signals.orderBy("detected_at").reverse().toArray();
+  return latestChangeSignals();
 }
 
 export function deserializeSignal(row: ChangeSignalRow): ChangeSignal {

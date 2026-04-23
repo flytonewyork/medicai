@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
+import { latestPendingResults } from "~/lib/db/queries";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -25,9 +26,7 @@ const CATEGORIES: PendingResultCategory[] = [
 
 export default function PendingResultsPage() {
   const locale = useLocale();
-  const rows = useLiveQuery(() =>
-    db.pending_results.orderBy("ordered_date").reverse().toArray(),
-  );
+  const rows = useLiveQuery(() => latestPendingResults());
 
   const [testName, setTestName] = useState("");
   const [category, setCategory] = useState<PendingResultCategory>("imaging");

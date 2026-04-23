@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
+import { latestDailyEntries } from "~/lib/db/queries";
 import { buildCycleContext } from "~/lib/treatment/engine";
 import { useLocale } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
@@ -46,9 +47,7 @@ export default function CycleDetailPage() {
     () => (Number.isFinite(id) ? db.treatment_cycles.get(id) : undefined),
     [id],
   );
-  const latestDaily = useLiveQuery(() =>
-    db.daily_entries.orderBy("date").reverse().limit(1).toArray(),
-  );
+  const latestDaily = useLiveQuery(() => latestDailyEntries(1));
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 

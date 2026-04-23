@@ -6,7 +6,7 @@ import { db } from "~/lib/db/dexie";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { Button } from "~/components/ui/button";
-import { Card, CardContent } from "~/components/ui/card";
+import { EmptyState } from "~/components/ui/empty-state";
 import { PillarRing } from "~/components/assessment/pillar-card";
 import { formatDate } from "~/lib/utils/date";
 import { ChevronRight, Stethoscope, Clock } from "lucide-react";
@@ -49,20 +49,24 @@ export default function AssessmentListPage() {
       />
 
       {(!assessments || assessments.length === 0) && (
-        <Card className="p-10 text-center">
-          <Stethoscope className="mx-auto mb-3 h-8 w-8 text-ink-400" />
-          <div className="text-sm font-medium">
-            {locale === "zh" ? "尚未做过综合评估" : "No comprehensive assessment yet"}
-          </div>
-          <div className="mx-auto mt-1 max-w-sm text-sm text-ink-500">
-            {locale === "zh"
+        <EmptyState
+          icon={Stethoscope}
+          title={
+            locale === "zh"
+              ? "尚未做过综合评估"
+              : "No comprehensive assessment yet"
+          }
+          description={
+            locale === "zh"
               ? "第一次评估会建立基线，后续的变化都以此为参照。"
-              : "Your first assessment becomes the baseline. Everything after compares against it."}
-          </div>
-          <Link href="/assessment/new" className="mt-4 inline-block">
-            <Button>{locale === "zh" ? "开始" : "Begin"}</Button>
-          </Link>
-        </Card>
+              : "Your first assessment becomes the baseline. Everything after compares against it."
+          }
+          actions={
+            <Link href="/assessment/new">
+              <Button>{locale === "zh" ? "开始" : "Begin"}</Button>
+            </Link>
+          }
+        />
       )}
 
       <ul className="space-y-3">

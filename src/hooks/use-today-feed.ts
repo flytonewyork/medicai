@@ -4,6 +4,12 @@ import { useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { differenceInCalendarDays, parseISO } from "date-fns";
 import { db } from "~/lib/db/dexie";
+import {
+  latestAgentRuns,
+  latestDailyEntries,
+  latestLabs,
+  latestTreatmentCycles,
+} from "~/lib/db/queries";
 import { composeTodayFeed } from "~/lib/nudges/compose";
 import { PROTOCOL_BY_ID } from "~/config/protocols";
 import { NUDGE_LIBRARY } from "~/config/treatment-nudges";
@@ -18,20 +24,12 @@ export function useTodayFeed({
   weather: CurrentWeather | null;
 }): FeedItem[] {
   const settings = useLiveQuery(() => db.settings.toArray());
-  const dailies = useLiveQuery(() =>
-    db.daily_entries.orderBy("date").reverse().limit(28).toArray(),
-  );
-  const labs = useLiveQuery(() =>
-    db.labs.orderBy("date").reverse().limit(10).toArray(),
-  );
+  const dailies = useLiveQuery(() => latestDailyEntries(28));
+  const labs = useLiveQuery(() => latestLabs(10));
   const tasks = useLiveQuery(() => db.patient_tasks.toArray());
   const alerts = useLiveQuery(() => db.zone_alerts.toArray());
-  const cycles = useLiveQuery(() =>
-    db.treatment_cycles.orderBy("start_date").reverse().limit(1).toArray(),
-  );
-  const agentRuns = useLiveQuery(() =>
-    db.agent_runs.orderBy("ran_at").reverse().limit(40).toArray(),
-  );
+  const cycles = useLiveQuery(() => latestTreatmentCycles(1));
+  const agentRuns = useLiveQuery(() => latestAgentRuns(40));
 
   return useMemo(() => {
     const s = settings?.[0] ?? null;

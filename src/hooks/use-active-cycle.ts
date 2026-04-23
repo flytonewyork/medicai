@@ -3,14 +3,13 @@
 import { useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
+import { latestDailyEntries } from "~/lib/db/queries";
 import { buildCycleContext } from "~/lib/treatment/engine";
 import type { CycleContext } from "~/types/treatment";
 
 export function useActiveCycleContext(): CycleContext | null {
   const cycles = useLiveQuery(() => db.treatment_cycles.toArray());
-  const latestDaily = useLiveQuery(() =>
-    db.daily_entries.orderBy("date").reverse().limit(1).toArray(),
-  );
+  const latestDaily = useLiveQuery(() => latestDailyEntries(1));
 
   return useMemo(() => {
     if (!cycles || cycles.length === 0) return null;

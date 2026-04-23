@@ -9,6 +9,11 @@ import {
   parseISO,
 } from "date-fns";
 import { db } from "~/lib/db/dexie";
+import {
+  latestDailyEntries,
+  latestLabs,
+  latestTreatmentCycles,
+} from "~/lib/db/queries";
 import { useLocale } from "~/hooks/use-translate";
 import { useWeather } from "~/hooks/use-weather";
 import { Sparkline } from "~/components/ui/sparkline";
@@ -51,15 +56,9 @@ const LFT_FLAGS = {
 export function PillarTiles() {
   const locale = useLocale();
   const weather = useWeather();
-  const dailies = useLiveQuery(() =>
-    db.daily_entries.orderBy("date").reverse().limit(7).toArray(),
-  );
-  const labs = useLiveQuery(() =>
-    db.labs.orderBy("date").reverse().limit(7).toArray(),
-  );
-  const cycles = useLiveQuery(() =>
-    db.treatment_cycles.orderBy("start_date").reverse().limit(1).toArray(),
-  );
+  const dailies = useLiveQuery(() => latestDailyEntries(7));
+  const labs = useLiveQuery(() => latestLabs(7));
+  const cycles = useLiveQuery(() => latestTreatmentCycles(1));
   const settings = useLiveQuery(() => db.settings.toArray());
 
   const ordered = (dailies ?? []).slice().reverse();

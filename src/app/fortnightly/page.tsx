@@ -2,24 +2,18 @@
 
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
+import { latestFortnightlyAssessments } from "~/lib/db/queries";
 import { formatDate } from "~/lib/utils/date";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { Button } from "~/components/ui/button";
-import { Card } from "~/components/ui/card";
+import { EmptyState } from "~/components/ui/empty-state";
 import { Stethoscope, ChevronRight } from "lucide-react";
 
 export default function FortnightlyListPage() {
   const t = useT();
   const locale = useLocale();
-  const assessments = useLiveQuery(() =>
-    db.fortnightly_assessments
-      .orderBy("assessment_date")
-      .reverse()
-      .limit(24)
-      .toArray(),
-  );
+  const assessments = useLiveQuery(() => latestFortnightlyAssessments(24));
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-8">
@@ -40,20 +34,22 @@ export default function FortnightlyListPage() {
       />
 
       {(!assessments || assessments.length === 0) && (
-        <Card className="p-10 text-center">
-          <Stethoscope className="mx-auto mb-3 h-8 w-8 text-ink-400" />
-          <div className="text-sm font-medium">
-            {locale === "zh" ? "还没有评估记录" : "No assessments yet"}
-          </div>
-          <div className="mx-auto mt-1 max-w-sm text-sm text-ink-500">
-            {locale === "zh"
+        <EmptyState
+          icon={Stethoscope}
+          title={locale === "zh" ? "还没有评估记录" : "No assessments yet"}
+          description={
+            locale === "zh"
               ? "第一次测试将作为之后对比的基线。"
-              : "Your first measurements establish the baseline that later values compare against."}
-          </div>
-          <Link href="/fortnightly/new" className="mt-4 inline-block">
-            <Button>{locale === "zh" ? "开始第一次评估" : "Start first assessment"}</Button>
-          </Link>
-        </Card>
+              : "Your first measurements establish the baseline that later values compare against."
+          }
+          actions={
+            <Link href="/fortnightly/new">
+              <Button>
+                {locale === "zh" ? "开始第一次评估" : "Start first assessment"}
+              </Button>
+            </Link>
+          }
+        />
       )}
 
       <ul className="space-y-2">

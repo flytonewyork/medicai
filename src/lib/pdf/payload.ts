@@ -1,4 +1,10 @@
 import { db } from "~/lib/db/dexie";
+import {
+  latestDailyEntries,
+  latestFortnightlyAssessments,
+  latestLabs,
+  latestWeeklyAssessments,
+} from "~/lib/db/queries";
 import { buildSnapshot, highestZone } from "~/lib/rules/engine";
 import { assessSarcopenia } from "~/lib/calculations/sarcopenia";
 import type { ReportPayload } from "./pre-clinic-report";
@@ -13,10 +19,10 @@ export async function buildReportPayload(): Promise<ReportPayload> {
     alerts,
   ] = await Promise.all([
     db.settings.toArray(),
-    db.daily_entries.orderBy("date").reverse().limit(14).toArray(),
-    db.fortnightly_assessments.orderBy("assessment_date").reverse().limit(2).toArray(),
-    db.weekly_assessments.orderBy("week_start").reverse().limit(1).toArray(),
-    db.labs.orderBy("date").reverse().limit(5).toArray(),
+    latestDailyEntries(14),
+    latestFortnightlyAssessments(2),
+    latestWeeklyAssessments(1),
+    latestLabs(5),
     db.zone_alerts.toArray(),
   ]);
 
