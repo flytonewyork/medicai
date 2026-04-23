@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
 import { useTodayFeed } from "~/hooks/use-today-feed";
@@ -83,10 +83,16 @@ export function TodayFeed({
   const t = useT();
   const weather = useWeather();
   const rawFeed = useTodayFeed({ weather });
-  const feed =
-    excludeIds.length === 0
-      ? rawFeed
-      : rawFeed.filter((f) => !excludeIds.includes(f.id));
+  const excludeKey = excludeIds.join(",");
+  const feed = useMemo(
+    () =>
+      excludeIds.length === 0
+        ? rawFeed
+        : rawFeed.filter((f) => !excludeIds.includes(f.id)),
+    // excludeKey captures array content; excludeIds identity is caller-dependent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rawFeed, excludeKey],
+  );
   const settings = useLiveQuery(() => db.settings.toArray());
   const model = settings?.[0]?.default_ai_model ?? "claude-opus-4-7";
 
@@ -95,6 +101,13 @@ export function TodayFeed({
   const [narrativeLoading, setNarrativeLoading] = useState(false);
 
   const visible = expanded ? feed : feed.slice(0, 6);
+
+  // Signature of feed contents — stable unless the feed actually changes.
+  // Prevents the narrative fetch from re-firing on every parent re-render.
+  const feedSignature = useMemo(
+    () => feed.map((f) => f.id).join("|"),
+    [feed],
+  );
 
   // Narrative fetch — cached daily per locale. Uses the server-side
   // ANTHROPIC_API_KEY via /api/ai/feed-narrative; no per-user key needed.
@@ -137,7 +150,9 @@ export function TodayFeed({
         setNarrativeLoading(false);
       }
     })();
-  }, [model, locale, feed]);
+    // `feed` is intentionally excluded — feedSignature captures content-level change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model, locale, feedSignature]);
 
   if (feed.length === 0) {
     return (

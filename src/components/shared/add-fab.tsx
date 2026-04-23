@@ -14,7 +14,6 @@ import {
   Stethoscope,
   Utensils,
   NotebookPen,
-  FileText,
   ListTodo,
   Camera,
   Pill,
@@ -127,12 +126,6 @@ const ITEMS: FabItem[] = [
       zh: "提醒或行动",
     },
     icon: ListTodo,
-  },
-  {
-    href: "/reports",
-    label: { en: "Generate report", zh: "生成报告" },
-    hint: { en: "Pre-clinic PDF / JSON", zh: "就诊前 PDF / 备份" },
-    icon: FileText,
   },
 ];
 
