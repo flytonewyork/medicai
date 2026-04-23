@@ -87,7 +87,6 @@ interface FormState {
   cycle_start_date: string;
   locale: Locale;
   home_city: string;
-  anthropic_api_key: string;
 }
 
 const EMPTY: FormState = {
@@ -115,7 +114,6 @@ const EMPTY: FormState = {
   cycle_start_date: todayISO(),
   locale: "en",
   home_city: "",
-  anthropic_api_key: "",
 };
 
 function toNum(s: string): number | undefined {
@@ -178,7 +176,6 @@ export default function OnboardingPage() {
         baseline_calf_cm: s.baseline_calf_cm ? String(s.baseline_calf_cm) : "",
         locale: s.locale,
         home_city: s.home_city ?? "",
-        anthropic_api_key: s.anthropic_api_key ?? "",
       }));
     }
   }, [existingSettings, router]);
@@ -264,7 +261,6 @@ export default function OnboardingPage() {
         home_lat,
         home_lon,
         home_timezone,
-        anthropic_api_key: form.anthropic_api_key.trim() || undefined,
         onboarded_at: ts,
         created_at: existingSettings?.[0]?.created_at ?? ts,
         updated_at: ts,
@@ -808,26 +804,6 @@ function PreferencesStep({
         />
       </Field>
 
-      <Field
-        label={
-          locale === "zh"
-            ? "Anthropic API Key（可选 — 用于 AI 教练和报告解析）"
-            : "Anthropic API key (optional — unlocks the AI coach and report parsing)"
-        }
-        hint={
-          locale === "zh"
-            ? "留空也没关系，本地功能全部可用。之后可以在设置里加。"
-            : "Leave blank and everything local still works. You can add it later in Settings."
-        }
-      >
-        <TextInput
-          type="password"
-          value={form.anthropic_api_key}
-          onChange={(e) => update("anthropic_api_key", e.target.value)}
-          placeholder="sk-ant-..."
-          autoComplete="off"
-        />
-      </Field>
     </Card>
   );
 }

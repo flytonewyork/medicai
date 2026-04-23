@@ -1,5 +1,3 @@
-"use client";
-
 import { z } from "zod";
 import type { PreparedImage } from "./image";
 
@@ -42,7 +40,7 @@ export const NotesStructureSchema = z.object({
 
 export type NotesStructure = z.infer<typeof NotesStructureSchema>;
 
-const NOTES_SYSTEM = `You're reading a photo of Hu Lin's handwritten daily notes from his cancer-tracking journal and structuring them into Anchor's daily-log fields.
+export const NOTES_SYSTEM = `You're reading a photo of Hu Lin's handwritten daily notes from his cancer-tracking journal and structuring them into Anchor's daily-log fields.
 
 Rules:
 1. First transcribe the note faithfully — no rewording, no added words, no interpretation.
@@ -54,49 +52,18 @@ Rules:
 7. Put any free-text reflection (non-metric sentences) into the 'reflection' field.`;
 
 export async function structureNotes({
-  apiKey,
   model = "claude-opus-4-7",
   image,
 }: {
-  apiKey: string;
   model?: string;
   image: PreparedImage;
 }): Promise<NotesStructure> {
-  const [{ default: Anthropic }, { zodOutputFormat }] = await Promise.all([
-    import("@anthropic-ai/sdk"),
-    import("@anthropic-ai/sdk/helpers/zod"),
-  ]);
-  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
-
-  const response = await client.messages.parse({
-    model,
-    max_tokens: 1500,
-    system: [
-      { type: "text", text: NOTES_SYSTEM, cache_control: { type: "ephemeral" } },
-    ],
-    output_config: { format: zodOutputFormat(NotesStructureSchema) },
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: image.mediaType,
-              data: image.base64,
-            },
-          },
-          {
-            type: "text",
-            text: "Transcribe this note and structure it into Anchor's daily log fields.",
-          },
-        ],
-      },
-    ],
+  const res = await fetch("/api/ai/ingest-notes", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ image, model }),
   });
-  if (!response.parsed_output) {
-    throw new Error("No notes structure returned");
-  }
-  return response.parsed_output;
+  if (!res.ok) throw new Error(await res.text());
+  const data = (await res.json()) as { result: NotesStructure };
+  return data.result;
 }

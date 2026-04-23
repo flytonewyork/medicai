@@ -98,28 +98,26 @@ export async function processBulkItemOcr(
 export async function parseBulkItem(
   item: BulkItem,
   method: "heuristic" | "claude" | "vision",
-  apiKey: string | undefined,
+  useClaude: boolean,
   mutate: BulkMutator,
 ): Promise<void> {
   if (!item.documentId) return;
-  const canVision = method === "vision" && apiKey && item.visionImage;
-  const canClaudeText = method === "claude" && apiKey && item.ocrText;
+  const canVision = method === "vision" && useClaude && item.visionImage;
+  const canClaudeText = method === "claude" && useClaude && item.ocrText;
   if (!canVision && !canClaudeText && !item.ocrText) return;
 
   mutate(item.id, { status: "parsing", method });
   try {
     let extraction: UnifiedExtraction;
-    if (canVision && item.visionImage && apiKey) {
+    if (canVision && item.visionImage) {
       const claudeOut = await extractWithClaude({
-        apiKey,
         image: item.visionImage,
         // Pass OCR text as an extra signal when we happen to have it
         text: item.ocrText,
       });
       extraction = fromClaude(claudeOut);
-    } else if (canClaudeText && apiKey && item.ocrText) {
+    } else if (canClaudeText && item.ocrText) {
       const claudeOut = await extractWithClaude({
-        apiKey,
         text: item.ocrText,
       });
       extraction = fromClaude(claudeOut);
@@ -151,7 +149,6 @@ export async function parseBulkItem(
  */
 export async function processBulkItemVision(
   item: BulkItem,
-  apiKey: string,
   mutate: BulkMutator,
 ): Promise<void> {
   if (!item.file) return;
@@ -190,7 +187,6 @@ export async function processBulkItemVision(
 
   try {
     const claudeOut = await extractWithClaude({
-      apiKey,
       image: prepared,
     });
     const extraction = fromClaude(claudeOut);
@@ -219,16 +215,15 @@ export async function processBulkItemVision(
 
 /**
  * Entry point that picks the optimal pipeline for a single file.
- * - Image + apiKey → Claude Vision direct (fastest, best quality)
- * - PDF or no apiKey → OCR first, parser runs after
+ * - Image → Claude Vision direct (fastest, best quality; server key)
+ * - PDF → OCR first, parser runs after
  */
 export async function processBulkItem(
   item: BulkItem,
-  apiKey: string | undefined,
   mutate: BulkMutator,
 ): Promise<void> {
-  if (apiKey && isDirectImage(item.file)) {
-    return processBulkItemVision(item, apiKey, mutate);
+  if (isDirectImage(item.file)) {
+    return processBulkItemVision(item, mutate);
   }
   return processBulkItemOcr(item, mutate);
 }

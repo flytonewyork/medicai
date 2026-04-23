@@ -12,7 +12,6 @@ import { Sparkles, X, Send, Loader2 } from "lucide-react";
 export function CoachDrawer({ context }: { context: CoachContext }) {
   const locale = useLocale();
   const settings = useLiveQuery(() => db.settings.toArray());
-  const apiKey = settings?.[0]?.anthropic_api_key;
   const model = settings?.[0]?.default_ai_model ?? "claude-opus-4-7";
 
   const [open, setOpen] = useState(false);
@@ -20,10 +19,6 @@ export function CoachDrawer({ context }: { context: CoachContext }) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  if (!apiKey) {
-    return null;
-  }
 
   async function send() {
     if (!input.trim() || busy) return;
@@ -34,7 +29,6 @@ export function CoachDrawer({ context }: { context: CoachContext }) {
     setError(null);
     try {
       const reply = await askCoach({
-        apiKey: apiKey!,
         model,
         context,
         history: [...history, userMsg],
