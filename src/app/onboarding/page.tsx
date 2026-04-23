@@ -305,7 +305,7 @@ export default function OnboardingPage() {
             const existing = await getCurrentMembership();
             if (!existing) {
               await createHousehold({
-                name: `${(form.profile_name || "Patient").trim()}'s household`,
+                name: `${(form.profile_name || "Patient").trim()}'s family`,
                 patient_name: (form.profile_name || "Patient").trim(),
               });
             }

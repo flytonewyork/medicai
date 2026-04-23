@@ -82,7 +82,7 @@ export function HouseholdSection() {
       <section className="space-y-3">
         <h2 className="eyebrow">
           <Users className="mr-1.5 inline h-3.5 w-3.5" />
-          Household
+          Family
         </h2>
         <p className="text-[12px] text-ink-500">Loading&hellip;</p>
       </section>
@@ -94,11 +94,11 @@ export function HouseholdSection() {
       <section className="space-y-3">
         <h2 className="eyebrow">
           <Users className="mr-1.5 inline h-3.5 w-3.5" />
-          Household
+          Family
         </h2>
         <Card>
           <CardContent className="py-4 text-[12.5px] text-ink-500">
-            You aren&rsquo;t part of a household yet. Sign in and either
+            You aren&rsquo;t part of a family yet. Sign in and either
             create one from the dashboard or accept an invite link.
           </CardContent>
         </Card>
@@ -111,7 +111,7 @@ export function HouseholdSection() {
       <div>
         <h2 className="eyebrow">
           <Users className="mr-1.5 inline h-3.5 w-3.5" />
-          Household
+          Family
         </h2>
         {household && (
           <p className="mt-1 text-xs text-ink-500">
@@ -137,7 +137,7 @@ export function HouseholdSection() {
           if (!householdId) return;
           if (
             !window.confirm(
-              "Remove this person from the household? They'll keep their account.",
+              "Remove this person from the family? They'll keep their account.",
             )
           )
             return;
@@ -163,7 +163,7 @@ export function HouseholdSection() {
           onLeave={async () => {
             if (
               !window.confirm(
-                "Leave this household? You'll stop seeing their data.",
+                "Leave this family? You'll stop seeing their data.",
               )
             )
               return;
@@ -469,7 +469,7 @@ function LeaveButton({ onLeave }: { onLeave: () => Promise<void> }) {
         className="inline-flex items-center gap-1.5 rounded-md border border-ink-200 px-3 py-2 text-[12px] text-ink-600 hover:border-[var(--warn)] hover:text-[var(--warn)]"
       >
         <LogOut className="h-3.5 w-3.5" />
-        Leave household
+        Leave family
       </button>
     </div>
   );

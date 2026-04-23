@@ -79,7 +79,7 @@ export default function InvitePage() {
     <div className="mx-auto max-w-md space-y-5 p-6 pt-16">
       <PageHeader
         eyebrow="CARE TEAM"
-        title="Joining the household"
+        title="Joining the family"
       />
 
       {phase.kind === "checking" && <Spinner label="Checking invite…" />}
@@ -94,7 +94,7 @@ export default function InvitePage() {
               </div>
             </div>
             <p className="text-[13px] text-ink-500">
-              Sign in or create your account to join this household. After
+              Sign in or create your account to join this family. After
               signing in you&rsquo;ll land straight on the family view.
             </p>
             <Link
