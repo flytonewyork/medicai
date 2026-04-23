@@ -285,6 +285,43 @@ export default function OnboardingPage() {
           updated_at: ts,
         });
       }
+
+      // Slice A — if the user is signed in and doesn't already belong to
+      // a household, stand one up now with themselves as primary_carer.
+      // Invited family members arrive via /invite/<token> which skips
+      // onboarding entirely, so any user reaching this point is the one
+      // creating the household.
+      try {
+        const { getSupabaseBrowser } = await import("~/lib/supabase/client");
+        const sb = getSupabaseBrowser();
+        if (sb) {
+          const { data: auth } = await sb.auth.getUser();
+          if (auth.user) {
+            const {
+              getCurrentMembership,
+              createHousehold,
+              updateMyProfile,
+            } = await import("~/lib/supabase/households");
+            const existing = await getCurrentMembership();
+            if (!existing) {
+              await createHousehold({
+                name: `${(form.profile_name || "Patient").trim()}'s family`,
+                patient_name: (form.profile_name || "Patient").trim(),
+              });
+            }
+            // Mirror the user-facing name + locale onto their profile
+            // so carers see a sensible display name everywhere.
+            await updateMyProfile({
+              display_name: (form.profile_name || "").trim() || "Patient",
+              locale: form.locale,
+            });
+          }
+        }
+      } catch {
+        // Network or Supabase hiccup shouldn't block onboarding; the
+        // Settings → Household section lets the user finish setup.
+      }
+
       router.replace("/");
     } finally {
       setSaving(false);
