@@ -3,6 +3,10 @@ import { icsEventsToOps, parseIcs } from "~/lib/ingest/ics";
 import type { IngestDraft } from "~/types/ingest";
 
 export const runtime = "nodejs";
+// ICS import fetches a remote webcal URL server-side (sometimes slow iCloud
+// feeds with many years of events) and runs regex parsing over the result.
+// 60s is generous for network + parse.
+export const maxDuration = 60;
 
 // Server-side ICS fetcher. The browser can't fetch a webcal:// URL
 // cross-origin; we do it server-side, normalise the scheme, parse
@@ -15,6 +19,10 @@ export const runtime = "nodejs";
 interface RequestBody {
   url?: string;
   text?: string;
+  // Patient's home IANA timezone; used as the fallback when a VEVENT
+  // has a floating DTSTART (no TZID, no Z suffix). Defaults to
+  // Australia/Melbourne for this install.
+  fallbackTimezone?: string;
 }
 
 function normaliseUrl(raw: string): string {
@@ -74,7 +82,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const events = parseIcs(raw);
+  const events = parseIcs(raw, body.fallbackTimezone);
   if (events.length === 0) {
     return NextResponse.json(
       { error: "No VEVENT blocks found." },

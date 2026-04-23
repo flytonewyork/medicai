@@ -179,7 +179,7 @@ export default function PendingResultsPage() {
                     )}
                     {r.site && <span>{r.site}</span>}
                     {overdue && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--warn-soft)] px-2 py-0.5 text-[var(--warn)]">
                         <Clock className="h-3 w-3" />
                         {locale === "zh" ? "超期" : "overdue"}
                       </span>

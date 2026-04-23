@@ -79,6 +79,32 @@ describe("parseIcs", () => {
     ].join("\r\n");
     expect(parseIcs(raw)).toHaveLength(0);
   });
+
+  it("resolves TZID to the correct UTC instant (Australia/Melbourne in May = UTC+10)", () => {
+    const events = parseIcs(ICS_SAMPLE);
+    const pet = events.find((e) => e.uid?.startsWith("abc-124"));
+    expect(pet).toBeDefined();
+    // 07:00 Melbourne on 2026-05-06 is UTC+10 (AEST, not summer time)
+    // → 21:00 UTC the previous day.
+    expect(pet!.starts_at).toBe("2026-05-05T21:00:00.000Z");
+    expect(pet!.ends_at).toBe("2026-05-05T22:00:00.000Z");
+  });
+
+  it("interprets floating times against the supplied fallback timezone, not UTC", () => {
+    const raw = [
+      "BEGIN:VCALENDAR",
+      "BEGIN:VEVENT",
+      "UID:floating@example",
+      "SUMMARY:Clinic floating time",
+      "DTSTART:20260506T090000",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
+    // Pass the patient's home zone as the fallback — 09:00 Melbourne
+    // in May is 23:00 UTC the previous day, NOT 09:00 UTC.
+    const [event] = parseIcs(raw, "Australia/Melbourne");
+    expect(event!.starts_at).toBe("2026-05-05T23:00:00.000Z");
+  });
 });
 
 describe("guessAppointmentKind", () => {

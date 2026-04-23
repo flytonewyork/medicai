@@ -10,6 +10,7 @@ import {
   ensureCycleMedications,
   getActiveMedications,
 } from "~/lib/medication/active";
+import { syncCycleToCalendar } from "~/lib/treatment/calendar-sync";
 import { DRUGS_BY_ID } from "~/config/drug-registry";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent } from "~/components/ui/card";
@@ -61,6 +62,12 @@ function Inner() {
     if (!cycle) return;
     void (async () => {
       await ensureCycleMedications(cycle);
+      // Dose days appear on the schedule as chemo appointments so the
+      // calendar is the single source of truth for "what's coming up."
+      await syncCycleToCalendar(cycle).catch(() => {
+        // Non-fatal — the prescription review screen still works if the
+        // sync errors (e.g. Dexie migration still in flight on first load).
+      });
       setSeeded(true);
     })();
   }, [cycle]);

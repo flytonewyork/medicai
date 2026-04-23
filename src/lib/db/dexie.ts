@@ -190,6 +190,13 @@ export class AnchorDB extends Dexie {
       care_team_contacts:
         "++id, date, kind, follow_up_needed, follow_up_by",
     });
+    // v15: index `appointments.ics_uid` so cycle-→-calendar sync can
+    // dedupe in O(k) instead of scanning the whole table each cycle.
+    // Same rows, new index — Dexie migrates in place.
+    this.version(15).stores({
+      appointments:
+        "++id, starts_at, kind, status, cycle_id, ics_uid, [kind+starts_at]",
+    });
   }
 }
 

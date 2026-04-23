@@ -7,6 +7,8 @@ import { getSupabaseBrowser } from "~/lib/supabase/client";
 import {
   acceptInvite,
   friendlyInviteError,
+  getCurrentProfile,
+  isProfileComplete,
 } from "~/lib/supabase/households";
 import { PageHeader } from "~/components/ui/page-header";
 import { Button } from "~/components/ui/button";
@@ -61,9 +63,13 @@ export default function InvitePage() {
         await acceptInvite(token);
         if (cancelled) return;
         setPhase({ kind: "accepted" });
-        // Short pause so the "welcome" state is readable, then land on
-        // /family where the newly-joined carer sees dad's data.
-        setTimeout(() => router.replace("/family"), 1200);
+        // If the invitee's profile has no relationship / name yet, run
+        // the welcome wizard so the care-team list renders something
+        // useful. If they're returning (re-invite) and everything's set,
+        // drop them straight on /family.
+        const profile = await getCurrentProfile().catch(() => null);
+        const next = isProfileComplete(profile) ? "/family" : "/invite/welcome";
+        setTimeout(() => router.replace(next), 1200);
       } catch (err) {
         if (!cancelled)
           setPhase({ kind: "error", message: friendlyInviteError(err) });

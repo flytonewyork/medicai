@@ -11,6 +11,7 @@ import type {
 import { useLocale } from "~/hooks/use-translate";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
+import { TextInput, Textarea } from "~/components/ui/field";
 import {
   CalendarPlus,
   CalendarClock,
@@ -88,6 +89,11 @@ export function PreviewDiff({ draft, onApplied, onDiscard }: Props) {
   const [selected, setSelected] = useState<Set<number>>(initialSelected);
   const [applying, setApplying] = useState(false);
   const [results, setResults] = useState<IngestApplyResult[] | null>(null);
+  // Per-op field overrides. Keyed by index. We keep the full (possibly
+  // edited) op here so multi-field edits roll up into one object the
+  // save path can use directly.
+  const [edits, setEdits] = useState<Record<number, IngestOp>>({});
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
 
   function toggle(i: number) {
     setSelected((prev) => {
@@ -98,8 +104,18 @@ export function PreviewDiff({ draft, onApplied, onDiscard }: Props) {
     });
   }
 
+  function patch(i: number, next: IngestOp) {
+    setEdits((prev) => ({ ...prev, [i]: next }));
+  }
+
+  function effectiveOp(i: number): IngestOp {
+    return edits[i] ?? draft.ops[i]!;
+  }
+
   async function applySelected() {
-    const ops = draft.ops.filter((_, i) => selected.has(i));
+    const ops = draft.ops
+      .map((_, i) => (selected.has(i) ? effectiveOp(i) : null))
+      .filter((o): o is IngestOp => o !== null);
     if (ops.length === 0) return;
     setApplying(true);
     try {
@@ -162,11 +178,16 @@ export function PreviewDiff({ draft, onApplied, onDiscard }: Props) {
           {draft.ops.map((op, i) => (
             <li key={i}>
               <OpCard
-                op={op}
+                op={effectiveOp(i)}
                 index={i}
                 selected={selected.has(i)}
+                editing={editingIdx === i}
                 result={results?.[results.findIndex((r) => r.op === op)] ?? null}
                 onToggle={() => toggle(i)}
+                onEdit={() =>
+                  setEditingIdx((prev) => (prev === i ? null : i))
+                }
+                onChange={(next) => patch(i, next)}
                 locale={locale}
               />
             </li>
@@ -202,10 +223,10 @@ export function PreviewDiff({ draft, onApplied, onDiscard }: Props) {
             >
               <Check className="h-4 w-4" />
               {applying
-                ? L("Applying…", "应用中…")
+                ? L("Saving…", "保存中…")
                 : L(
-                    `Apply ${selected.size} change${selected.size === 1 ? "" : "s"}`,
-                    `应用 ${selected.size} 项变更`,
+                    `Save ${selected.size} item${selected.size === 1 ? "" : "s"}`,
+                    `保存 ${selected.size} 项`,
                   )}
             </Button>
           </div>
@@ -215,25 +236,38 @@ export function PreviewDiff({ draft, onApplied, onDiscard }: Props) {
   );
 }
 
+const EDITABLE_KINDS: IngestOpKind[] = [
+  "add_appointment",
+  "add_task",
+  "add_medication",
+];
+
 function OpCard({
   op,
   index,
   selected,
+  editing,
   result,
   onToggle,
+  onEdit,
+  onChange,
   locale,
 }: {
   op: IngestOp;
   index: number;
   selected: boolean;
+  editing: boolean;
   result: IngestApplyResult | null;
   onToggle: () => void;
+  onEdit: () => void;
+  onChange: (next: IngestOp) => void;
   locale: "en" | "zh";
 }) {
   const Icon = OP_ICON[op.kind];
   const label = OP_LABEL[op.kind][locale];
   const lines = describeOp(op, locale);
   const reason = "reason" in op && op.reason ? op.reason : null;
+  const canEdit = EDITABLE_KINDS.includes(op.kind) && !result;
 
   return (
     <div
@@ -248,40 +282,66 @@ function OpCard({
               : "border-ink-100 bg-paper-2",
       )}
     >
-      <label className="flex cursor-pointer items-start gap-3">
-        <input
-          type="checkbox"
-          checked={selected}
-          onChange={onToggle}
-          disabled={Boolean(result)}
-          className="mt-1 h-4 w-4 shrink-0 accent-ink-900"
-        />
+      <div className="flex items-start gap-3">
+        <label className="mt-1 flex shrink-0 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={onToggle}
+            disabled={Boolean(result)}
+            className="h-4 w-4 accent-ink-900"
+          />
+        </label>
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-paper-2 text-[var(--tide-2)]">
           <Icon className="h-3.5 w-3.5" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[12.5px] font-semibold text-ink-900">
-              {label}
-            </span>
-            <span className="mono text-[10px] text-ink-400">#{index + 1}</span>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <span className="text-[12.5px] font-semibold text-ink-900">
+                {label}
+              </span>
+              <span className="mono text-[10px] text-ink-400">
+                #{index + 1}
+              </span>
+            </div>
+            {canEdit && (
+              <button
+                type="button"
+                onClick={onEdit}
+                className="inline-flex items-center gap-1 rounded-md border border-ink-200 px-2 py-0.5 text-[11px] text-ink-700 hover:border-[var(--tide-2)] hover:text-[var(--tide-2)]"
+              >
+                <PencilLine className="h-3 w-3" />
+                {editing
+                  ? locale === "zh"
+                    ? "收起"
+                    : "Done"
+                  : locale === "zh"
+                    ? "编辑"
+                    : "Edit"}
+              </button>
+            )}
           </div>
           {reason && (
             <p className="mt-0.5 text-[11.5px] italic text-ink-500">
               {reason}
             </p>
           )}
-          {lines.length > 0 && (
-            <dl className="mt-1.5 space-y-0.5 text-[12px]">
-              {lines.map(([k, v]) => (
-                <div key={k} className="flex gap-1.5">
-                  <dt className="mono text-[10.5px] uppercase tracking-[0.08em] text-ink-400">
-                    {k}
-                  </dt>
-                  <dd className="text-ink-800">{v}</dd>
-                </div>
-              ))}
-            </dl>
+          {editing && canEdit ? (
+            <OpEditor op={op} onChange={onChange} locale={locale} />
+          ) : (
+            lines.length > 0 && (
+              <dl className="mt-1.5 space-y-0.5 text-[12px]">
+                {lines.map(([k, v]) => (
+                  <div key={k} className="flex gap-1.5">
+                    <dt className="mono text-[10.5px] uppercase tracking-[0.08em] text-ink-400">
+                      {k}
+                    </dt>
+                    <dd className="text-ink-800">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            )
           )}
           {result && !result.ok && (
             <p className="mt-1.5 text-[11px] text-[var(--warn)]">
@@ -294,9 +354,200 @@ function OpCard({
             </p>
           )}
         </div>
-      </label>
+      </div>
     </div>
   );
+}
+
+// Compact editor shown in the preview card. Only the most commonly
+// incorrect fields are surfaced — title, date/time, location, doctor
+// for appointments; title + due_date for tasks; name + dose + schedule
+// for medications. The full detail form still lives on the detail page
+// post-save; this is just to stop the user having to delete+recreate a
+// row for a single typo.
+function OpEditor({
+  op,
+  onChange,
+  locale,
+}: {
+  op: IngestOp;
+  onChange: (next: IngestOp) => void;
+  locale: "en" | "zh";
+}) {
+  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+
+  if (op.kind === "add_appointment") {
+    const data = op.data as Record<string, unknown>;
+    const set = (k: string, v: unknown) =>
+      onChange({ ...op, data: { ...data, [k]: v } });
+    return (
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <FieldRow label={L("Title", "标题")} full>
+          <TextInput
+            value={(data.title as string) ?? ""}
+            onChange={(e) => set("title", e.target.value)}
+          />
+        </FieldRow>
+        <FieldRow label={L("Starts", "开始时间")}>
+          <TextInput
+            type="datetime-local"
+            value={toDatetimeLocal(data.starts_at as string | undefined)}
+            onChange={(e) =>
+              set("starts_at", fromDatetimeLocal(e.target.value))
+            }
+          />
+        </FieldRow>
+        <FieldRow label={L("Ends", "结束时间")}>
+          <TextInput
+            type="datetime-local"
+            value={toDatetimeLocal(data.ends_at as string | undefined)}
+            onChange={(e) =>
+              set("ends_at", fromDatetimeLocal(e.target.value))
+            }
+          />
+        </FieldRow>
+        <FieldRow label={L("Location", "地点")} full>
+          <TextInput
+            value={(data.location as string) ?? ""}
+            onChange={(e) => set("location", e.target.value)}
+          />
+        </FieldRow>
+        <FieldRow label={L("Doctor", "医师")}>
+          <TextInput
+            value={(data.doctor as string) ?? ""}
+            onChange={(e) => set("doctor", e.target.value)}
+          />
+        </FieldRow>
+        <FieldRow label={L("Phone", "电话")}>
+          <TextInput
+            value={(data.phone as string) ?? ""}
+            onChange={(e) => set("phone", e.target.value)}
+          />
+        </FieldRow>
+        <FieldRow label={L("Notes", "备注")} full>
+          <Textarea
+            rows={2}
+            value={(data.notes as string) ?? ""}
+            onChange={(e) => set("notes", e.target.value)}
+          />
+        </FieldRow>
+      </div>
+    );
+  }
+
+  if (op.kind === "add_task") {
+    const data = op.data as Record<string, unknown>;
+    const set = (k: string, v: unknown) =>
+      onChange({ ...op, data: { ...data, [k]: v } });
+    return (
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <FieldRow label={L("Title", "标题")} full>
+          <TextInput
+            value={(data.title as string) ?? ""}
+            onChange={(e) => set("title", e.target.value)}
+          />
+        </FieldRow>
+        <FieldRow label={L("Due date", "到期日")}>
+          <TextInput
+            type="date"
+            value={(data.due_date as string) ?? ""}
+            onChange={(e) => set("due_date", e.target.value)}
+          />
+        </FieldRow>
+        <FieldRow label={L("Category", "分类")}>
+          <TextInput
+            value={(data.category as string) ?? ""}
+            onChange={(e) => set("category", e.target.value)}
+          />
+        </FieldRow>
+        <FieldRow label={L("Notes", "备注")} full>
+          <Textarea
+            rows={2}
+            value={(data.notes as string) ?? ""}
+            onChange={(e) => set("notes", e.target.value)}
+          />
+        </FieldRow>
+      </div>
+    );
+  }
+
+  if (op.kind === "add_medication") {
+    const data = op.data as Record<string, unknown>;
+    const set = (k: string, v: unknown) =>
+      onChange({ ...op, data: { ...data, [k]: v } });
+    return (
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <FieldRow label={L("Drug", "药物")} full>
+          <TextInput
+            value={
+              ((data.display_name as string) ??
+                (data.drug_id as string) ??
+                "") as string
+            }
+            onChange={(e) => set("display_name", e.target.value)}
+          />
+        </FieldRow>
+        <FieldRow label={L("Dose", "剂量")}>
+          <TextInput
+            value={(data.dose as string) ?? ""}
+            onChange={(e) => set("dose", e.target.value)}
+          />
+        </FieldRow>
+        <FieldRow label={L("Started on", "开始日期")}>
+          <TextInput
+            type="date"
+            value={(data.started_on as string) ?? ""}
+            onChange={(e) => set("started_on", e.target.value)}
+          />
+        </FieldRow>
+        <FieldRow label={L("Notes", "备注")} full>
+          <Textarea
+            rows={2}
+            value={(data.notes as string) ?? ""}
+            onChange={(e) => set("notes", e.target.value)}
+          />
+        </FieldRow>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function FieldRow({
+  label,
+  full,
+  children,
+}: {
+  label: string;
+  full?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className={cn("block space-y-1", full && "sm:col-span-2")}>
+      <span className="mono text-[10px] uppercase tracking-[0.1em] text-ink-400">
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+function toDatetimeLocal(iso?: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+    d.getHours(),
+  )}:${pad(d.getMinutes())}`;
+}
+
+function fromDatetimeLocal(v: string): string | undefined {
+  if (!v) return undefined;
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toISOString();
 }
 
 function describeOp(op: IngestOp, locale: "en" | "zh"): Array<[string, string]> {
