@@ -19,10 +19,15 @@ import {
   Camera,
   Pill,
   MessageSquarePlus,
+  Sparkles,
 } from "lucide-react";
+import { useIngestModal } from "~/components/ingest/ingest-modal";
 
 interface FabItem {
-  href: string;
+  href?: string;
+  // When set, the item is rendered as a button that runs `action`
+  // instead of navigating. Used for the smart-ingest opener.
+  action?: "ingest";
   label: { en: string; zh: string };
   hint: { en: string; zh: string };
   icon: React.ComponentType<{ className?: string }>;
@@ -30,6 +35,16 @@ interface FabItem {
 }
 
 const ITEMS: FabItem[] = [
+  {
+    action: "ingest",
+    label: { en: "Smart capture", zh: "智能导入" },
+    hint: {
+      en: "Phone note, photo, paste — Claude classifies and previews",
+      zh: "电话记录、照片、粘贴 —— Claude 分类并预览",
+    },
+    icon: Sparkles,
+    tone: "tide",
+  },
   {
     href: "/log",
     label: { en: "Tell the team", zh: "告诉团队" },
@@ -160,36 +175,56 @@ export function AddFab() {
             </div>
           </div>
           <ul className="max-h-[70vh] overflow-y-auto">
-            {ITEMS.map((item) => {
+            {ITEMS.map((item, idx) => {
               const Icon = item.icon;
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={() => setOpen(false)}
-                    className="flex items-start gap-3 border-t border-ink-100/60 px-4 py-2.5 hover:bg-ink-100/40"
+              const inner = (
+                <>
+                  <div
+                    className={cn(
+                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
+                      item.tone === "tide"
+                        ? "bg-[var(--tide-soft)] text-[var(--tide-2)]"
+                        : item.tone === "sand"
+                          ? "bg-[var(--sand)] text-ink-900"
+                          : "bg-ink-100 text-ink-700",
+                    )}
                   >
-                    <div
-                      className={cn(
-                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
-                        item.tone === "tide"
-                          ? "bg-[var(--tide-soft)] text-[var(--tide-2)]"
-                          : item.tone === "sand"
-                            ? "bg-[var(--sand)] text-ink-900"
-                            : "bg-ink-100 text-ink-700",
-                      )}
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1 text-left">
+                    <div className="text-[13px] font-semibold text-ink-900">
+                      {item.label[locale]}
+                    </div>
+                    <div className="mt-0.5 text-[11.5px] text-ink-500">
+                      {item.hint[locale]}
+                    </div>
+                  </div>
+                </>
+              );
+              const cls =
+                "flex w-full items-start gap-3 border-t border-ink-100/60 px-4 py-2.5 hover:bg-ink-100/40";
+              return (
+                <li key={item.href ?? `action-${item.action}-${idx}`}>
+                  {item.action === "ingest" ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpen(false);
+                        useIngestModal.getState().open();
+                      }}
+                      className={cls}
                     >
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[13px] font-semibold text-ink-900">
-                        {item.label[locale]}
-                      </div>
-                      <div className="mt-0.5 text-[11.5px] text-ink-500">
-                        {item.hint[locale]}
-                      </div>
-                    </div>
-                  </Link>
+                      {inner}
+                    </button>
+                  ) : (
+                    <Link
+                      href={item.href!}
+                      onClick={() => setOpen(false)}
+                      className={cls}
+                    >
+                      {inner}
+                    </Link>
+                  )}
                 </li>
               );
             })}

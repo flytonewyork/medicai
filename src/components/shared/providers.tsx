@@ -6,6 +6,7 @@ import { ensureSeeded } from "~/lib/db/seed";
 import { initSync } from "~/lib/sync/init";
 import { useUIStore } from "~/stores/ui-store";
 import { WelcomeAuthModal } from "~/components/auth/welcome-auth-modal";
+import { IngestModal } from "~/components/ingest/ingest-modal";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(() => new QueryClient());
@@ -35,6 +36,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={client}>
       {children}
       <WelcomeAuthModal />
+      <IngestModal />
     </QueryClientProvider>
   );
 }
