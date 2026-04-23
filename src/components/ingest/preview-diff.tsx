@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { applyIngestOps } from "~/lib/ingest/operations";
 import type {
   IngestApplyResult,
@@ -127,6 +128,30 @@ export function PreviewDiff({ draft, onApplied, onDiscard }: Props) {
     }
   }
 
+  // Auto-close on a fully-successful save. Users kept staring at the
+  // preview wondering whether anything happened; closing returns them
+  // to the ingest landing which is where the next capture starts.
+  useEffect(() => {
+    if (!results) return;
+    const allOk = results.length > 0 && results.every((r) => r.ok);
+    if (!allOk) return;
+    const t = setTimeout(() => onDiscard(), 1400);
+    return () => clearTimeout(t);
+  }, [results, onDiscard]);
+
+  const savedAppointmentIds = useMemo(() => {
+    if (!results) return [] as number[];
+    return results
+      .filter(
+        (r) =>
+          r.ok &&
+          typeof r.id === "number" &&
+          (r.op.kind === "add_appointment" ||
+            r.op.kind === "update_appointment"),
+      )
+      .map((r) => r.id as number);
+  }, [results]);
+
   const okCount = results?.filter((r) => r.ok).length ?? 0;
   const failCount = (results?.length ?? 0) - okCount;
 
@@ -195,20 +220,38 @@ export function PreviewDiff({ draft, onApplied, onDiscard }: Props) {
         </ul>
 
         {results ? (
-          <div className="flex items-center justify-between rounded-md border border-ink-200 bg-paper-2 p-3 text-[13px]">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-ink-200 bg-paper-2 p-3 text-[13px]">
             <div>
               <span className="font-semibold text-[var(--ok)]">
-                {okCount} {L("applied", "已应用")}
+                {L(
+                  `${okCount} saved`,
+                  `已保存 ${okCount}`,
+                )}
               </span>
               {failCount > 0 && (
                 <span className="ml-2 text-[var(--warn)]">
                   {failCount} {L("failed", "失败")}
                 </span>
               )}
+              {failCount === 0 && (
+                <span className="ml-2 text-[11px] text-ink-500">
+                  {L("closing…", "即将关闭…")}
+                </span>
+              )}
             </div>
-            <Button onClick={onDiscard} variant="ghost">
-              {L("Done", "完成")}
-            </Button>
+            <div className="flex items-center gap-2">
+              {savedAppointmentIds.length > 0 && (
+                <Link
+                  href="/schedule"
+                  className="inline-flex items-center gap-1 rounded-md border border-ink-200 px-2.5 py-1 text-[12px] text-ink-700 hover:border-[var(--tide-2)] hover:text-[var(--tide-2)]"
+                >
+                  {L("View in Schedule", "前往日程")}
+                </Link>
+              )}
+              <Button onClick={onDiscard} variant="ghost">
+                {L("Done", "完成")}
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="flex items-center justify-between gap-2">
