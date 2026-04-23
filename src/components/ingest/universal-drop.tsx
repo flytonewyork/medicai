@@ -121,7 +121,7 @@ export function UniversalDrop({
 
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={parseText} disabled={busy || !text.trim()}>
-            {busy ? L("Reading…", "正在识别…") : L("Read this", "解析")}
+            {busy ? L("Reading…", "正在识别…") : L("Save", "保存")}
           </Button>
           <label
             className={

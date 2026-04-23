@@ -146,6 +146,24 @@ function catTouched(id: CatId, draft: Draft): boolean {
   });
 }
 
+// Scale fields default to a visible value (e.g. energy shows "5" by default)
+// but don't commit that value to the draft until the user taps. If the user
+// reads the page and moves on, the "review" screen previously marked the
+// category as empty and refused to save. Stamping these defaults on
+// advance matches the mental model that "what's on screen is what's
+// recorded." Only scale defaults — toggles, weights, and free-text fields
+// stay unrecorded unless actively set.
+const SCALE_DEFAULTS: Partial<Record<string, number>> = {
+  energy: 5,
+  pain_current: 0,
+  pain_worst: 0,
+  mood_clarity: 5,
+  appetite: 5,
+  sleep_quality: 5,
+  practice_morning_quality: 3,
+  practice_evening_quality: 3,
+};
+
 interface Props {
   entryId?: number;
   date: string;
@@ -237,7 +255,26 @@ export function DailyWizard({ entryId, date }: Props) {
     setPhase("stepping");
   }
 
+  function stampDefaultsFor(catId: CatId) {
+    const def = catDef(catId);
+    setDraft((d) => {
+      const next = { ...d };
+      for (const f of def.fields) {
+        const key = f as keyof DailyEntry;
+        const current = (next as Record<string, unknown>)[f];
+        if (current !== undefined && current !== "") continue;
+        const fallback = SCALE_DEFAULTS[f];
+        if (typeof fallback === "number") {
+          (next as Record<string, unknown>)[f] = fallback;
+        }
+      }
+      return next;
+    });
+  }
+
   function advance() {
+    const current = picked[cursor];
+    if (current) stampDefaultsFor(current);
     if (cursor + 1 >= picked.length) {
       setPhase("review");
     } else {

@@ -169,7 +169,7 @@ export function PhoneCallNote({
           <Button onClick={submit} disabled={busy || !text.trim()}>
             {busy
               ? L("Reading…", "正在识别…")
-              : L("Structure this", "结构化")}
+              : L("Save", "保存")}
           </Button>
           {canSpeech && (
             <Button
