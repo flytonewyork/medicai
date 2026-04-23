@@ -10,6 +10,7 @@ import { useLocale, useT } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
 import { AccountButton } from "~/components/shared/account-button";
 import { HouseholdSection } from "~/components/settings/household-section";
+import { NotificationsSection } from "~/components/settings/notifications-section";
 import { CareTeamSection } from "~/components/settings/care-team-section";
 import { TrackedSymptomsSection } from "~/components/settings/tracked-symptoms-section";
 
@@ -104,6 +105,8 @@ export default function SettingsPage() {
       <AccountButton />
 
       <HouseholdSection />
+
+      <NotificationsSection />
 
       <CareTeamSection />
 

@@ -19,6 +19,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
       // eslint-disable-next-line no-console
       console.warn("[sync] init failed", err);
     });
+    // Slice D: register the push service worker early so subscribing
+    // later (from Settings) is a synchronous-feeling flow. Safe to
+    // call unconditionally — unsupported environments no-op.
+    void import("~/lib/push/client").then(({ registerServiceWorker }) =>
+      registerServiceWorker(),
+    );
   }, []);
 
   useEffect(() => {
