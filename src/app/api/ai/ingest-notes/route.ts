@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { jsonOutputFormat } from "~/lib/anthropic/json-output";
 import {
   NotesStructureSchema,
   NOTES_SYSTEM,
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       system: [
         { type: "text", text: NOTES_SYSTEM, cache_control: { type: "ephemeral" } },
       ],
-      output_config: { format: zodOutputFormat(NotesStructureSchema) },
+      output_config: { format: jsonOutputFormat(NotesStructureSchema) },
       messages: [
         {
           role: "user",

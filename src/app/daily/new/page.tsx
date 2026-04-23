@@ -31,5 +31,9 @@ function Inner() {
   }, [date]);
 
   if (entryId === undefined) return null;
-  return <DailyWizard entryId={entryId ?? undefined} date={date} />;
+  return (
+    <div className="mx-auto max-w-3xl p-4 md:p-8">
+      <DailyWizard entryId={entryId ?? undefined} date={date} />
+    </div>
+  );
 }

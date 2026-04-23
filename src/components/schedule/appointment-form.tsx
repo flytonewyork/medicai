@@ -14,6 +14,7 @@ import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Field, TextInput, Textarea } from "~/components/ui/field";
 import { PrepEditor } from "~/components/schedule/prep-editor";
+import { AttendeeChips } from "~/components/schedule/attendee-chips";
 
 const KINDS: AppointmentKind[] = [
   "clinic",
@@ -263,23 +264,10 @@ export function AppointmentForm({
         label={t("schedule.form.attendees")}
         hint={t("schedule.form.attendeesHint")}
       >
-        <Textarea
-          rows={2}
-          value={(form.attendees ?? []).join("\n")}
-          onChange={(e) =>
-            update(
-              "attendees",
-              e.target.value
-                .split(/\r?\n/)
-                .map((s) => s.trim())
-                .filter(Boolean),
-            )
-          }
-          placeholder={
-            locale === "zh"
-              ? "一行一位，例如：\nThomas\nCatherine\nWendy"
-              : "One per line, e.g.:\nThomas\nCatherine\nWendy"
-          }
+        <AttendeeChips
+          value={form.attendees ?? []}
+          onChange={(next) => update("attendees", next)}
+          locale={locale}
         />
       </Field>
 

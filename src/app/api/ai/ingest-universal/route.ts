@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { jsonOutputFormat } from "~/lib/anthropic/json-output";
 import {
   INGEST_SYSTEM,
   ingestDraftSchema,
@@ -95,7 +95,7 @@ export async function POST(req: Request) {
           cache_control: { type: "ephemeral" },
         },
       ],
-      output_config: { format: zodOutputFormat(ingestDraftSchema) },
+      output_config: { format: jsonOutputFormat(ingestDraftSchema) },
       messages: [{ role: "user", content }],
     });
     if (!response.parsed_output) {

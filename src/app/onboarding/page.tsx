@@ -27,6 +27,7 @@ import { cn } from "~/lib/utils/cn";
 // patient isn't gated behind data they don't have on hand.
 const STEPS = [
   "welcome",
+  "user_type",
   "profile",
   "preferences",
   "team",
@@ -44,6 +45,7 @@ type StepKey = (typeof STEPS)[number];
 const STEP_LABELS: Record<Locale, Record<StepKey, string>> = {
   en: {
     welcome: "Welcome",
+    user_type: "Who you are",
     profile: "About you",
     team: "Clinical team",
     baselines: "Baselines",
@@ -53,6 +55,7 @@ const STEP_LABELS: Record<Locale, Record<StepKey, string>> = {
   },
   zh: {
     welcome: "欢迎",
+    user_type: "您的身份",
     profile: "基本信息",
     team: "医疗团队",
     baselines: "基线数据",
@@ -63,6 +66,8 @@ const STEP_LABELS: Record<Locale, Record<StepKey, string>> = {
 };
 
 interface FormState {
+  user_type: "patient" | "caregiver" | "clinician" | "";
+  invite_code: string;
   profile_name: string;
   dob: string;
   diagnosis_date: string;
@@ -90,6 +95,8 @@ interface FormState {
 }
 
 const EMPTY: FormState = {
+  user_type: "",
+  invite_code: "",
   profile_name: "",
   dob: "",
   diagnosis_date: "",
@@ -143,6 +150,7 @@ export default function OnboardingPage() {
       // Prefill from partial existing settings
       setForm((f) => ({
         ...f,
+        user_type: s.user_type ?? f.user_type,
         profile_name: s.profile_name ?? "",
         dob: s.dob ?? "",
         diagnosis_date: s.diagnosis_date ?? "",
@@ -208,9 +216,10 @@ export default function OnboardingPage() {
   }
 
   const canContinue = useMemo(() => {
+    if (step === "user_type") return form.user_type !== "";
     if (step === "profile") return form.profile_name.trim().length > 0;
     return true;
-  }, [step, form.profile_name]);
+  }, [step, form.profile_name, form.user_type]);
 
   async function finish() {
     setSaving(true);
@@ -234,6 +243,7 @@ export default function OnboardingPage() {
         }
       }
       const payload: Settings = {
+        user_type: form.user_type || undefined,
         profile_name: form.profile_name.trim() || "Patient",
         dob: form.dob || undefined,
         diagnosis_date: form.diagnosis_date || undefined,
@@ -272,7 +282,13 @@ export default function OnboardingPage() {
         await db.settings.add(payload);
       }
       setUILocale(form.locale);
-      setEnteredBy("hulin");
+      setEnteredBy(
+        form.user_type === "caregiver"
+          ? "catherine"
+          : form.user_type === "clinician"
+            ? "clinician"
+            : "hulin",
+      );
 
       if (form.start_cycle && form.cycle_start_date) {
         await db.treatment_cycles.add({
@@ -347,6 +363,9 @@ export default function OnboardingPage() {
       </header>
 
       {step === "welcome" && <WelcomeStep locale={locale} />}
+      {step === "user_type" && (
+        <UserTypeStep form={form} update={update} locale={locale} />
+      )}
       {step === "profile" && (
         <ProfileStep form={form} update={update} locale={locale} />
       )}
@@ -432,6 +451,110 @@ function WelcomeStep({ locale }: { locale: Locale }) {
           </li>
         ))}
       </ul>
+    </Card>
+  );
+}
+
+function UserTypeStep({
+  form,
+  update,
+  locale,
+}: {
+  form: FormState;
+  update: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
+  locale: Locale;
+}) {
+  const options: Array<{
+    id: "patient" | "caregiver" | "clinician";
+    title: { en: string; zh: string };
+    body: { en: string; zh: string };
+  }> = [
+    {
+      id: "patient",
+      title: { en: "I'm the patient", zh: "我是患者" },
+      body: {
+        en: "You'll log your own check-ins. Family and clinicians can join later via an invite link.",
+        zh: "您本人记录每日检查。家人和医生可稍后通过邀请链接加入。",
+      },
+    },
+    {
+      id: "caregiver",
+      title: { en: "I'm family or a caregiver", zh: "我是家人或照护者" },
+      body: {
+        en: "You're setting this up to support the patient — or you're already part of their care circle.",
+        zh: "您在为患者设置 Anchor —— 或您已是照护圈的一员。",
+      },
+    },
+    {
+      id: "clinician",
+      title: { en: "I'm a clinician", zh: "我是医护" },
+      body: {
+        en: "You're part of the medical team and will view the patient's record with their consent.",
+        zh: "您是医疗团队的一员，将在患者同意下查看记录。",
+      },
+    },
+  ];
+  return (
+    <Card className="p-6 space-y-4">
+      <div className="serif text-[22px] leading-tight">
+        {locale === "zh" ? "您是谁？" : "Who are you?"}
+      </div>
+      <p className="text-[13px] text-ink-500">
+        {locale === "zh"
+          ? "这决定了你的第一屏：记录、照护，还是查看。随时可在设置里更改。"
+          : "Sets your first screen — logging, supporting, or reviewing. You can change this in Settings anytime."}
+      </p>
+      <div className="space-y-2">
+        {options.map((opt) => {
+          const active = form.user_type === opt.id;
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => update("user_type", opt.id)}
+              aria-pressed={active}
+              className={cn(
+                "w-full rounded-xl border p-4 text-left transition-colors",
+                active
+                  ? "border-ink-900 bg-ink-900 text-paper"
+                  : "border-ink-200 bg-paper-2 hover:border-ink-400",
+              )}
+            >
+              <div className="text-[14px] font-semibold">
+                {opt.title[locale]}
+              </div>
+              <div
+                className={cn(
+                  "mt-1 text-[12.5px]",
+                  active ? "text-paper/75" : "text-ink-500",
+                )}
+              >
+                {opt.body[locale]}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      {form.user_type && form.user_type !== "patient" && (
+        <Field
+          label={
+            locale === "zh"
+              ? "患者的邀请代码（如果已有）"
+              : "Patient's invite code (if you have one)"
+          }
+          hint={
+            locale === "zh"
+              ? "之后也可在「设置 → 家庭/医疗团队」里关联。"
+              : "You can also link later from Settings → Family / care team."
+          }
+        >
+          <TextInput
+            value={form.invite_code}
+            onChange={(e) => update("invite_code", e.target.value)}
+            placeholder={locale === "zh" ? "粘贴邀请代码" : "Paste invite code"}
+          />
+        </Field>
+      )}
     </Card>
   );
 }

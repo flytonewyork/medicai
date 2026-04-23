@@ -23,7 +23,10 @@ export default function NewTreatmentCyclePage() {
       created_at: now(),
       updated_at: now(),
     });
-    router.push(`/treatment/${id}`);
+    // After creating a new cycle, drop the user into the prescription
+    // review screen so they can confirm / edit the protocol-derived meds
+    // (dose, timing, duration) before anything is logged against them.
+    router.push(`/prescriptions?cycle=${id}&from=treatment-new`);
   }
 
   return (

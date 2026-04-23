@@ -182,8 +182,8 @@ export function CareTeamSection() {
           </h2>
           <p className="mt-1 text-xs text-ink-500">
             {L(
-              "One source of truth for everyone involved in care. Attendee chips on appointments read from here.",
-              "团队名单的唯一来源。预约上的陪同人名从这里读取。",
+              "One source of truth for everyone involved in care. Attendee chips on appointments read from here. To give a family member or clinician their own login, send them a household invite from Settings → Household.",
+              "团队名单的唯一来源。预约上的陪同人名从这里读取。如需邀请家人或医生使用自己的账号登录，请在「设置 → 家庭」处生成邀请链接。",
             )}
           </p>
         </div>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { z } from "zod";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { z } from "zod/v4";
+import { jsonOutputFormat } from "~/lib/anthropic/json-output";
 import { SUMMARY_SYSTEM } from "~/lib/ai/coach";
 
 export const runtime = "nodejs";
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
           cache_control: { type: "ephemeral" },
         },
       ],
-      output_config: { format: zodOutputFormat(SummarySchema) },
+      output_config: { format: jsonOutputFormat(SummarySchema) },
       messages: [
         {
           role: "user",

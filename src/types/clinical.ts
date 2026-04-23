@@ -378,6 +378,10 @@ export interface Settings {
   last_exported_at?: string;
   anthropic_api_key?: string;
   default_ai_model?: string;
+  // Who is using this install: the patient themselves, a family member /
+  // caregiver, or a clinician on the team. Set during onboarding; gates the
+  // care-team invite flow and the default attribution for manual entries.
+  user_type?: "patient" | "caregiver" | "clinician";
   // Which symptom ids (from SYMPTOM_CATALOG) the daily-check-in surfaces.
   // Undefined falls back to defaultTrackedSymptomIds() — the top-10
   // GnP/PDAC list.

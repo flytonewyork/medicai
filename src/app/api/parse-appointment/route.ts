@@ -73,9 +73,9 @@ export async function POST(req: Request) {
     );
   }
 
-  const [{ default: Anthropic }, { zodOutputFormat }] = await Promise.all([
+  const [{ default: Anthropic }, { jsonOutputFormat }] = await Promise.all([
     import("@anthropic-ai/sdk"),
-    import("@anthropic-ai/sdk/helpers/zod"),
+    import("~/lib/anthropic/json-output"),
   ]);
   const client = new Anthropic({ apiKey });
 
@@ -122,7 +122,7 @@ export async function POST(req: Request) {
           cache_control: { type: "ephemeral" },
         },
       ],
-      output_config: { format: zodOutputFormat(parsedAppointmentSchema) },
+      output_config: { format: jsonOutputFormat(parsedAppointmentSchema) },
       messages: [{ role: "user", content: userContent }],
     });
     if (!response.parsed_output) {

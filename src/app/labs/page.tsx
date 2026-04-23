@@ -22,7 +22,6 @@ import {
 } from "~/config/lab-reference-ranges";
 import { cn } from "~/lib/utils/cn";
 import {
-  Camera,
   ChevronRight,
   Sparkles,
   Upload,
@@ -115,46 +114,31 @@ export default function LabsPage() {
         }
       />
 
-      {/* Frictionless ingest CTAs */}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Link
-          href="/ingest"
-          className="group flex items-center gap-3 rounded-[var(--r-md)] border border-ink-900 bg-ink-900 px-4 py-3.5 text-paper transition-transform hover:-translate-y-[1px]"
-        >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-paper/15">
-            <Upload className="h-4 w-4" />
+      {/* Unified ingest CTA — identical surface to Smart Capture. A lab
+        * report is just one of the document kinds the universal parser
+        * classifies; keeping two entry points out of sync produced the
+        * "why are these different?" confusion. */}
+      <Link
+        href="/ingest"
+        className="group flex items-center gap-3 rounded-[var(--r-md)] border border-ink-900 bg-ink-900 px-4 py-3.5 text-paper transition-transform hover:-translate-y-[1px]"
+      >
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-paper/15">
+          <Upload className="h-4 w-4" />
+        </div>
+        <div className="flex-1">
+          <div className="text-[13.5px] font-semibold">
+            {locale === "zh"
+              ? "导入任何医疗资料"
+              : "Drop in anything medical"}
           </div>
-          <div className="flex-1">
-            <div className="text-[13.5px] font-semibold">
-              {locale === "zh" ? "上传化验报告" : "Upload lab report"}
-            </div>
-            <div className="mono mt-0.5 text-[10px] uppercase tracking-wider text-ink-300">
-              {locale === "zh" ? "PDF / 图片 · 自动提取" : "PDF / photo · auto-extract"}
-            </div>
+          <div className="mono mt-0.5 text-[10px] uppercase tracking-wider text-ink-300">
+            {locale === "zh"
+              ? "PDF / 图片 / DOCX · 自动识别化验、影像、就诊函"
+              : "PDF · photo · DOCX · labs, imaging, letters auto-detected"}
           </div>
-          <ChevronRight className="h-4 w-4 text-ink-300" />
-        </Link>
-        <Link
-          href="/ingest?camera=1"
-          className="group flex items-center gap-3 rounded-[var(--r-md)] border border-ink-100/70 bg-paper-2 px-4 py-3.5 hover:border-ink-300"
-        >
-          <div
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md"
-            style={{ background: "var(--tide-soft)", color: "var(--tide-2)" }}
-          >
-            <Camera className="h-4 w-4" />
-          </div>
-          <div className="flex-1">
-            <div className="text-[13.5px] font-semibold text-ink-900">
-              {locale === "zh" ? "拍一张照片" : "Snap a photo"}
-            </div>
-            <div className="mono mt-0.5 text-[10px] uppercase tracking-wider text-ink-400">
-              {locale === "zh" ? "手写纸质结果" : "Handwritten or printout"}
-            </div>
-          </div>
-          <ChevronRight className="h-4 w-4 text-ink-400" />
-        </Link>
-      </div>
+        </div>
+        <ChevronRight className="h-4 w-4 text-ink-300" />
+      </Link>
 
       {/* Hero picker */}
       <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-0.5 md:mx-0 md:px-0">

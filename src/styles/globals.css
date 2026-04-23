@@ -37,24 +37,28 @@
   --r-md: 14px;
   --r-lg: 22px;
   --r-xl: 28px;
+
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper:   oklch(18% 0.012 250);
-    --paper-2: oklch(22% 0.012 250);
-    --ink-100: oklch(28% 0.010 250);
-    --ink-200: oklch(34% 0.010 250);
-    --ink-300: oklch(44% 0.010 250);
-    --ink-400: oklch(60% 0.010 250);
-    --ink-500: oklch(72% 0.010 250);
-    --ink-700: oklch(88% 0.008 250);
-    --ink-900: oklch(96% 0.006 250);
-    --tide-soft: oklch(32% 0.05 210);
-    --warn-soft: oklch(28% 0.06 50);
-    --ok-soft:   oklch(28% 0.04 160);
-    --sand:      oklch(30% 0.025 75);
-  }
+/* Dark-mode palette — opt-in only (legibility on the dark theme wasn't
+ * usable yet, so we lock to light by default). Add `data-theme="dark"`
+ * to <html> to re-enable when the tokens are tuned. */
+html[data-theme="dark"] :root,
+:root[data-theme="dark"] {
+  --paper:   oklch(18% 0.012 250);
+  --paper-2: oklch(22% 0.012 250);
+  --ink-100: oklch(28% 0.010 250);
+  --ink-200: oklch(34% 0.010 250);
+  --ink-300: oklch(44% 0.010 250);
+  --ink-400: oklch(60% 0.010 250);
+  --ink-500: oklch(72% 0.010 250);
+  --ink-700: oklch(88% 0.008 250);
+  --ink-900: oklch(96% 0.006 250);
+  --tide-soft: oklch(32% 0.05 210);
+  --warn-soft: oklch(28% 0.06 50);
+  --ok-soft:   oklch(28% 0.04 160);
+  --sand:      oklch(30% 0.025 75);
 }
 
 html,
