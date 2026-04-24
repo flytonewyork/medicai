@@ -87,7 +87,7 @@ export function TestListBuilder({
           <CardTitle>
             {locale === "zh" ? "选择一个起点" : "Start with a preset"}
           </CardTitle>
-          <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <div className="mt-1 text-sm text-ink-500">
             {locale === "zh"
               ? "之后可以随时增删。"
               : "You can add or remove individual tests afterwards."}
@@ -103,28 +103,26 @@ export function TestListBuilder({
                 type="button"
                 onClick={() => applyPreset(p)}
                 className={cn(
-                  "rounded-xl border p-4 text-left transition-colors",
+                  "rounded-lg border p-4 text-left transition-colors",
                   active
-                    ? "border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900"
-                    : "border-slate-200 bg-white hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-600",
+                    ? "border-ink-900 bg-ink-900 text-paper"
+                    : "border-ink-200 bg-paper-2 hover:border-ink-300",
                 )}
                 aria-pressed={active}
               >
-                <div className="text-sm font-semibold">{info.title[locale]}</div>
+                <div className="serif text-sm">{info.title[locale]}</div>
                 <div
                   className={cn(
                     "mt-1 text-xs",
-                    active
-                      ? "text-slate-200 dark:text-slate-700"
-                      : "text-slate-500",
+                    active ? "text-paper/80" : "text-ink-500",
                   )}
                 >
                   {info.description[locale]}
                 </div>
                 <div
                   className={cn(
-                    "mt-2 text-xs font-medium",
-                    active ? "text-slate-300 dark:text-slate-600" : "text-slate-400",
+                    "mono mt-2 text-[10.5px] uppercase tracking-[0.1em]",
+                    active ? "text-paper/70" : "text-ink-400",
                   )}
                 >
                   {info.tests.length} {locale === "zh" ? "项" : "tests"}
@@ -135,14 +133,14 @@ export function TestListBuilder({
         </CardContent>
       </Card>
 
-      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60">
+      <div className="a-card px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <div className="text-sm font-semibold">
+            <div className="serif text-sm text-ink-900">
               {selectedList.length}{" "}
               {locale === "zh" ? "项已选" : "tests selected"}
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-500">
               <Clock className="h-3 w-3" />
               {locale === "zh"
                 ? `估计约 ${minutes} 分钟`
@@ -165,7 +163,7 @@ export function TestListBuilder({
         const label = CATEGORY_META[cat].label[locale];
         return (
           <section key={cat} className="space-y-2">
-            <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+            <h2 className="eyebrow flex items-center gap-2">
               <Icon className="h-3.5 w-3.5" />
               {label}
             </h2>
@@ -176,21 +174,21 @@ export function TestListBuilder({
                   <div
                     key={t.id}
                     className={cn(
-                      "rounded-xl border p-3 transition-colors",
+                      "rounded-lg border p-3 transition-colors",
                       on
-                        ? "border-slate-400 bg-white dark:border-slate-600 dark:bg-slate-900"
-                        : "border-dashed border-slate-300 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-900/40",
+                        ? "border-ink-300 bg-paper-2"
+                        : "border-dashed border-ink-200 bg-paper/60",
                     )}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <div className="text-sm font-semibold">
+                        <div className="serif text-sm text-ink-900">
                           {t.title[locale]}
                         </div>
-                        <div className="mt-0.5 text-xs text-slate-500">
+                        <div className="mt-0.5 text-xs text-ink-500">
                           {t.description[locale]}
                         </div>
-                        <div className="mt-1.5 flex flex-wrap gap-2 text-[11px] text-slate-400">
+                        <div className="mt-1.5 flex flex-wrap gap-2 text-[11px] text-ink-400">
                           <span className="inline-flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             {t.est_minutes} min
@@ -206,10 +204,10 @@ export function TestListBuilder({
                         aria-pressed={on}
                         aria-label={on ? "Remove" : "Add"}
                         className={cn(
-                          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border",
+                          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors",
                           on
-                            ? "border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900"
-                            : "border-slate-300 bg-white text-slate-600 hover:border-slate-500 dark:border-slate-700 dark:bg-slate-900",
+                            ? "border-ink-900 bg-ink-900 text-paper"
+                            : "border-ink-200 bg-paper text-ink-500 hover:border-ink-300",
                         )}
                       >
                         {on ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}

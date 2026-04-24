@@ -150,8 +150,8 @@ export default function MedicationLogPage() {
 
       {ctx && dueNow.length > 0 && (
         <section>
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-ink-500">
-            <AlertCircle className="h-4 w-4" />
+          <h2 className="eyebrow mb-3 flex items-center gap-2">
+            <AlertCircle className="h-3.5 w-3.5" />
             {locale === "zh" ? "待服药" : "Due now"}
           </h2>
           <div className="space-y-2">
@@ -171,7 +171,7 @@ export default function MedicationLogPage() {
 
       {ctx && otherActive.length > 0 && (
         <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-500">
+          <h2 className="eyebrow mb-3">
             {locale === "zh" ? "其他活动药物" : "Other active medications"}
           </h2>
           <div className="space-y-2">
@@ -357,7 +357,7 @@ function SideEffectSheet({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-t-2xl bg-paper p-5 shadow-xl sm:rounded-2xl"
+        className="a-card w-full max-w-lg rounded-t-lg p-5 sm:rounded-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">

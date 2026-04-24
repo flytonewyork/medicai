@@ -72,9 +72,9 @@ export function PhqGad({
         return (
           <div
             key={i}
-            className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
+            className="rounded-md border border-ink-200 bg-paper-2 p-3"
           >
-            <div className="text-sm text-slate-800 dark:text-slate-200">
+            <div className="text-sm text-ink-900">
               {i + 1}. {q}
             </div>
             <div className="mt-2 grid grid-cols-4 gap-1.5">
@@ -90,10 +90,10 @@ export function PhqGad({
                       onChange(next);
                     }}
                     className={cn(
-                      "rounded-md border px-1 py-2 text-[11px] font-medium leading-tight",
+                      "rounded-md border px-1 py-2 text-[11px] font-medium leading-tight transition-colors",
                       active
-                        ? "border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900"
-                        : "border-slate-200 text-slate-600 dark:border-slate-800 dark:text-slate-400",
+                        ? "border-ink-900 bg-ink-900 text-paper"
+                        : "border-ink-200 text-ink-500 hover:border-ink-300",
                     )}
                     aria-pressed={active}
                   >
@@ -193,9 +193,9 @@ export function FacitSp({
         return (
           <div
             key={i}
-            className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
+            className="rounded-md border border-ink-200 bg-paper-2 p-3"
           >
-            <div className="text-sm text-slate-800 dark:text-slate-200">
+            <div className="text-sm text-ink-900">
               {i + 1}. {q.text}
             </div>
             <div className="mt-2 grid grid-cols-5 gap-1.5">
@@ -211,10 +211,10 @@ export function FacitSp({
                       onChange(next);
                     }}
                     className={cn(
-                      "rounded-md border px-1 py-1.5 text-[11px] font-medium leading-tight",
+                      "rounded-md border px-1 py-1.5 text-[11px] font-medium leading-tight transition-colors",
                       active
-                        ? "border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900"
-                        : "border-slate-200 text-slate-600 dark:border-slate-800 dark:text-slate-400",
+                        ? "border-ink-900 bg-ink-900 text-paper"
+                        : "border-ink-200 text-ink-500 hover:border-ink-300",
                     )}
                     aria-pressed={active}
                   >
@@ -266,11 +266,11 @@ export function DistressThermometer({
 }) {
   const locale = useLocale();
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-      <div className="text-sm font-medium">
+    <div className="a-card p-4">
+      <div className="text-sm font-medium text-ink-900">
         {locale === "zh" ? "痛苦温度计（0–10）" : "Distress thermometer (0–10)"}
       </div>
-      <div className="mt-2 text-xs text-slate-500">
+      <div className="mt-2 text-xs text-ink-500">
         {locale === "zh"
           ? "0 = 没有痛苦，10 = 极度痛苦。涵盖情绪、身体、家庭、实际问题。"
           : "0 = no distress, 10 = extreme distress. Cover emotional, physical, family, practical."}
@@ -279,17 +279,17 @@ export function DistressThermometer({
         {Array.from({ length: 11 }, (_, i) => {
           const active = value === i;
           const tone =
-            i >= 7 ? "red-600" : i >= 4 ? "amber-500" : "slate-400";
+            i >= 7 ? "text-[var(--warn)]" : i >= 4 ? "text-[var(--sand-2)]" : "text-ink-400";
           return (
             <button
               key={i}
               type="button"
               onClick={() => onChange(i)}
               className={cn(
-                "h-10 rounded-md border text-sm font-semibold",
+                "h-10 rounded-md border text-sm font-semibold transition-colors",
                 active
-                  ? `border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900`
-                  : `border-slate-200 dark:border-slate-800 text-${tone}`,
+                  ? "border-ink-900 bg-ink-900 text-paper"
+                  : cn("border-ink-200 hover:border-ink-300", tone),
               )}
             >
               {i}

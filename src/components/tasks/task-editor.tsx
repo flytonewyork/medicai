@@ -179,7 +179,7 @@ export function TaskEditor({ taskId, presetId }: Props) {
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as TaskCategory)}
-                className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"
+                className="h-11 w-full rounded-md border border-ink-200 bg-paper px-3 text-sm text-ink-900 focus:border-ink-900 focus:outline-none focus:ring-2 focus:ring-ink-900/10"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
@@ -192,7 +192,7 @@ export function TaskEditor({ taskId, presetId }: Props) {
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"
+                className="h-11 w-full rounded-md border border-ink-200 bg-paper px-3 text-sm text-ink-900 focus:border-ink-900 focus:outline-none focus:ring-2 focus:ring-ink-900/10"
               >
                 {PRIORITIES.map((p) => (
                   <option key={p} value={p}>
@@ -229,8 +229,8 @@ export function TaskEditor({ taskId, presetId }: Props) {
                   onClick={() => setScheduleKind(k)}
                   className={
                     active
-                      ? "rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-sm font-medium text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900"
-                      : "rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                      ? "rounded-md border border-ink-900 bg-ink-900 px-3 py-2 text-sm font-medium text-paper transition-colors"
+                      : "rounded-md border border-ink-200 bg-paper-2 px-3 py-2 text-sm text-ink-700 transition-colors hover:border-ink-300"
                   }
                 >
                   {label}
@@ -283,7 +283,7 @@ export function TaskEditor({ taskId, presetId }: Props) {
               <select
                 value={cyclePhase}
                 onChange={(e) => setCyclePhase(e.target.value as CyclePhaseKey)}
-                className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"
+                className="h-11 w-full rounded-md border border-ink-200 bg-paper px-3 text-sm text-ink-900 focus:border-ink-900 focus:outline-none focus:ring-2 focus:ring-ink-900/10"
               >
                 {PHASES.map((p) => (
                   <option key={p} value={p}>
@@ -313,21 +313,21 @@ export function TaskEditor({ taskId, presetId }: Props) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm text-ink-900">
             <input
               type="checkbox"
               checked={surfaceDashboard}
               onChange={(e) => setSurfaceDashboard(e.target.checked)}
-              className="h-4 w-4"
+              className="h-4 w-4 accent-ink-900"
             />
             {locale === "zh" ? "在仪表板显示" : "Show on dashboard"}
           </label>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm text-ink-900">
             <input
               type="checkbox"
               checked={surfaceDaily}
               onChange={(e) => setSurfaceDaily(e.target.checked)}
-              className="h-4 w-4"
+              className="h-4 w-4 accent-ink-900"
             />
             {locale === "zh" ? "在每日记录中显示" : "Show on daily check-in"}
           </label>

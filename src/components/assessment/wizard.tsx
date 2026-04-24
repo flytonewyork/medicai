@@ -188,7 +188,7 @@ export function AssessmentWizard({ assessmentId }: WizardProps) {
 
   if (!existing) {
     return (
-      <div className="p-6 text-sm text-slate-500">
+      <div className="p-6 text-sm text-ink-500">
         {locale === "zh" ? "载入评估中…" : "Loading assessment…"}
       </div>
     );
@@ -238,27 +238,27 @@ export function AssessmentWizard({ assessmentId }: WizardProps) {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs text-slate-500">
-          <span>
+        <div className="flex items-center justify-between text-xs text-ink-500">
+          <span className="mono uppercase tracking-[0.08em]">
             {cursor + 1} / {tests.length} · {currentTest.category}
           </span>
-          <span className="tabular-nums">{progressPct}%</span>
+          <span className="num">{progressPct}%</span>
         </div>
-        <div className="h-1 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+        <div className="h-1 w-full overflow-hidden rounded-full bg-ink-100">
           <div
-            className="h-full bg-slate-900 transition-all duration-300 dark:bg-slate-100"
+            className="h-full bg-ink-900 transition-all duration-300"
             style={{ width: `${progressPct}%` }}
           />
         </div>
       </div>
 
       <div>
-        <h2 className="text-xl font-semibold">{currentTest.title[locale]}</h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <h2 className="serif text-xl text-ink-900">{currentTest.title[locale]}</h2>
+        <p className="mt-1 text-sm text-ink-500">
           {currentTest.description[locale]}
         </p>
         {currentTest.equipment && (
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-ink-400">
             {locale === "zh" ? "器材：" : "Equipment: "}
             {currentTest.equipment[locale]}
           </p>
@@ -448,10 +448,10 @@ function ReviewView({
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-semibold">
+        <h2 className="serif text-xl text-ink-900">
           {locale === "zh" ? "复核" : "Review"}
         </h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-ink-500">
           {locale === "zh"
             ? "检查已完成的项目，跳过的可以回头补，完成后保存。"
             : "Check what's done, revisit anything you skipped, then save."}
@@ -511,7 +511,7 @@ function ReviewView({
       {showAdd && available.length > 0 && (
         <Card>
           <CardContent className="pt-5">
-            <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            <div className="eyebrow">
               {locale === "zh" ? "可添加的测试" : "Available tests"}
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -520,10 +520,10 @@ function ReviewView({
                   key={t.id}
                   type="button"
                   onClick={() => onAddTests([t.id])}
-                  className="rounded-xl border border-dashed border-slate-300 p-3 text-left hover:border-slate-500 dark:border-slate-700 dark:hover:border-slate-500"
+                  className="rounded-lg border border-dashed border-ink-200 p-3 text-left transition-colors hover:border-ink-400"
                 >
-                  <div className="text-sm font-semibold">{t.title[locale]}</div>
-                  <div className="mt-0.5 text-xs text-slate-500">
+                  <div className="serif text-sm text-ink-900">{t.title[locale]}</div>
+                  <div className="mt-0.5 text-xs text-ink-500">
                     {t.description[locale]}
                   </div>
                 </button>
@@ -549,7 +549,7 @@ function ReviewList({
 }) {
   const locale = useLocale();
   return (
-    <ul className="divide-y divide-slate-200 dark:divide-slate-800">
+    <ul className="divide-y divide-ink-100">
       {tests.map((id) => {
         const t = testById(id);
         if (!t) return null;
@@ -558,15 +558,15 @@ function ReviewList({
         return (
           <li key={id} className="flex items-center justify-between py-2.5">
             <div>
-              <div className="text-sm font-medium">{t.title[locale]}</div>
+              <div className="text-sm font-medium text-ink-900">{t.title[locale]}</div>
               <div
                 className={cn(
-                  "text-xs",
+                  "mono mt-0.5 text-[10.5px] uppercase tracking-[0.1em]",
                   isDone
-                    ? "text-emerald-600 dark:text-emerald-400"
+                    ? "text-[var(--ok)]"
                     : isSkipped
-                      ? "text-amber-600 dark:text-amber-400"
-                      : "text-slate-500",
+                      ? "text-[var(--sand-2)]"
+                      : "text-ink-400",
                 )}
               >
                 {isDone
