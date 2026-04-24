@@ -52,7 +52,7 @@ export function Sparkline({
             cx={x}
             cy={y}
             r={i === highlight ? 3 : 1.8}
-            fill={i === highlight ? stroke : "#fff"}
+            fill={i === highlight ? stroke : "var(--paper)"}
             stroke={stroke}
             strokeWidth={1.5}
           />

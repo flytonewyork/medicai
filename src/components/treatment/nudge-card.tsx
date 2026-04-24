@@ -1,7 +1,6 @@
 "use client";
 
 import { useLocale } from "~/hooks/use-translate";
-import { cn } from "~/lib/utils/cn";
 import type { NudgeCategory, NudgeTemplate } from "~/types/treatment";
 import {
   Apple,
@@ -45,23 +44,30 @@ const CATEGORY_LABEL: Record<NudgeCategory, { en: string; zh: string }> = {
   intimacy: { en: "Intimacy", zh: "亲密" },
 };
 
-const SEVERITY_TONE = {
+type SeverityTone = {
+  ringStyle: React.CSSProperties;
+  bgStyle: React.CSSProperties;
+  pillStyle: React.CSSProperties;
+  icon: React.ComponentType<{ className?: string }>;
+};
+
+const SEVERITY_TONE: Record<"warning" | "caution" | "info", SeverityTone> = {
   warning: {
-    ring: "border-red-300 dark:border-red-900",
-    bg: "bg-red-50/70 dark:bg-red-950/30",
-    pill: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200",
+    ringStyle: { borderColor: "color-mix(in oklch, var(--warn), transparent 60%)" },
+    bgStyle: { background: "var(--warn-soft)" },
+    pillStyle: { background: "var(--warn-soft)", color: "var(--warn)" },
     icon: AlertTriangle,
   },
   caution: {
-    ring: "border-amber-300 dark:border-amber-900",
-    bg: "bg-amber-50/70 dark:bg-amber-950/30",
-    pill: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
+    ringStyle: { borderColor: "color-mix(in oklch, var(--sand-2), transparent 40%)" },
+    bgStyle: { background: "var(--sand)" },
+    pillStyle: { background: "var(--shell)", color: "oklch(35% 0.04 70)" },
     icon: ShieldAlert,
   },
   info: {
-    ring: "border-slate-200 dark:border-slate-800",
-    bg: "bg-white dark:bg-slate-900",
-    pill: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+    ringStyle: { borderColor: "var(--ink-200)" },
+    bgStyle: { background: "var(--paper-2)" },
+    pillStyle: { background: "var(--ink-100)", color: "var(--ink-700)" },
     icon: Info,
   },
 };
@@ -81,38 +87,31 @@ export function NudgeCard({
 
   return (
     <div
-      className={cn(
-        "rounded-xl border p-3 transition-colors",
-        tone.ring,
-        tone.bg,
-      )}
+      className="rounded-[var(--r-md)] border p-3 transition-colors"
+      style={{ ...tone.ringStyle, ...tone.bgStyle }}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2">
           <div
-            className={cn(
-              "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
-              tone.pill,
-            )}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+            style={tone.pillStyle}
           >
             <CatIcon className="h-3.5 w-3.5" />
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-sm font-semibold leading-tight">
+              <span className="text-sm font-semibold leading-tight text-ink-900">
                 {nudge.title[locale]}
               </span>
               <span
-                className={cn(
-                  "rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
-                  tone.pill,
-                )}
+                className="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide"
+                style={tone.pillStyle}
               >
                 {CATEGORY_LABEL[nudge.category][locale]}
               </span>
             </div>
             {!compact && (
-              <p className="mt-1 text-xs leading-relaxed text-slate-700 dark:text-slate-300">
+              <p className="mt-1 text-xs leading-relaxed text-ink-700">
                 {nudge.body[locale]}
               </p>
             )}
@@ -123,7 +122,7 @@ export function NudgeCard({
             type="button"
             onClick={() => onSnooze(nudge.id)}
             aria-label="Snooze this nudge"
-            className="rounded-md p-1 text-slate-400 hover:bg-white hover:text-slate-700 dark:hover:bg-slate-800"
+            className="rounded-[var(--r-sm)] p-1 text-ink-400 hover:bg-paper hover:text-ink-700"
           >
             <X className="h-3.5 w-3.5" />
           </button>

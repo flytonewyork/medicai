@@ -72,7 +72,7 @@ export function PhqGad({
         return (
           <div
             key={i}
-            className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
+            className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
           >
             <div className="text-sm text-slate-800 dark:text-slate-200">
               {i + 1}. {q}
@@ -193,7 +193,7 @@ export function FacitSp({
         return (
           <div
             key={i}
-            className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
+            className="rounded-md border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
           >
             <div className="text-sm text-slate-800 dark:text-slate-200">
               {i + 1}. {q.text}

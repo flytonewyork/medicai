@@ -100,7 +100,7 @@ export function WelcomeAuthModal() {
       onClick={close}
     >
       <div
-        className="relative w-full max-w-sm rounded-lg border border-ink-100 bg-paper p-6 shadow-xl"
+        className="relative w-full max-w-sm rounded-[var(--r-lg)] border border-ink-100 bg-paper-2 p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button

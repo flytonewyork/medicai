@@ -21,7 +21,7 @@ type Swatch = {
 const SWATCHES: Record<string, Swatch> = {
   dose_day: {
     bg: "var(--tide-2)",
-    color: "#fff",
+    color: "var(--paper)",
     label: { en: "Dose", zh: "用药" },
   },
   post_dose: {
