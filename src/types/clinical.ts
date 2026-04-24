@@ -337,7 +337,7 @@ export interface LifeEvent {
   id?: number;
   title: string;
   event_date: string;
-  category: "family" | "cultural" | "travel" | "practice" | "medical" | "other";
+  category: "family" | "cultural" | "travel" | "practice" | "medical" | "diary" | "other";
   notes?: string;
   pre_event_buffer_days?: number;
   post_event_buffer_days?: number;

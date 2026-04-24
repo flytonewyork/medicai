@@ -8,7 +8,12 @@ export type FeedCategory =
   | "weather"
   | "body"
   | "trend"
-  | "encouragement";
+  | "encouragement"
+  // Legacy-module categories. `memory` resurfaces anniversary items at
+  // low priority; `invitation` carries orchestrator event suggestions
+  // (slice 15). Both are always lower-priority than clinical items.
+  | "memory"
+  | "invitation";
 
 export type FeedTone = "info" | "caution" | "warning" | "positive";
 

@@ -75,6 +75,39 @@ const RULES: Rule[] = [
       /[血质检测验实]/, // 血质检测验实
     ],
   },
+  // Legacy-module tags. Heuristics intentionally loose: the biographer
+  // would rather see a candidate memory and decide it's not one than
+  // miss it entirely. `legacy_voice` and `legacy_session` are not
+  // keyword-triggered — they're set by the capture flow itself.
+  {
+    tag: "memory",
+    patterns: [
+      /\b(remember\b|remembered|recalling|recall\b|childhood|when i was|years ago|back then|used to|we used to|the time (?:we|when|i)|reminisc\w*|nostalg\w*|the old days)\b/,
+      /[忆記憶记得小时候从前昔日怀旧]/,
+    ],
+  },
+  {
+    tag: "social",
+    patterns: [
+      /\bfamily\s+(meal|dinner|lunch|breakfast|gathering|visit)\b/,
+      /\b(dinner together|lunch together|meal together|gathering|get.?together|visit\w*|party|celebrat\w*|catch up|birthday|anniversary|reunion|holiday feast)\b/,
+      /[聚会聚餐团聚家宴聚]/,
+    ],
+  },
+  {
+    tag: "cooking",
+    patterns: [
+      /\b(recipe|cook\w*|bak\w*|boil\w*|steam\w*|stir.?fry|fry|saut[eé]\w*|simmer|season\w*|marinat\w*|knead\w*|dough|broth|stock|sauce|dumpling|soup|dish)\b/,
+      /[煮炒煎炖蒸烹饪做菜菜谱汤饺]/,
+    ],
+  },
+  {
+    tag: "practice",
+    patterns: [
+      /\b(qigong|qi ?gong|tai ?chi|meditat\w*|breath.?work|mindful\w*|pray\w*|scripture|sutra|dharma|mantra|chant\w*|spiritual\s+practice)\b/,
+      /[气功太极打坐禅修静坐念经诵经]/,
+    ],
+  },
 ];
 
 export function tagInput(text: string): LogTag[] {

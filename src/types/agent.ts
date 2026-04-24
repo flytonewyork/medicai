@@ -22,6 +22,10 @@ export const AGENT_IDS: readonly AgentId[] = [
 
 // Tags the deterministic tagger emits from free text. Dad can toggle
 // these in /log before submit; each tag resolves to one or more agents.
+// Legacy-module tags (memory / social / legacy_voice / legacy_session /
+// cooking / practice) route to biographer / orchestrator when those
+// agents land in slices 13 + 15. Until then they route to [] — no
+// clinical fan-out, which is the correct end-state anyway.
 export type LogTag =
   | "diet"
   | "toxicity"
@@ -30,7 +34,13 @@ export type LogTag =
   | "tumour"
   | "mental"
   | "treatment"
-  | "labs";
+  | "labs"
+  | "memory"
+  | "social"
+  | "legacy_voice"
+  | "legacy_session"
+  | "cooking"
+  | "practice";
 
 export const LOG_TAGS: readonly LogTag[] = [
   "diet",
@@ -41,6 +51,12 @@ export const LOG_TAGS: readonly LogTag[] = [
   "mental",
   "treatment",
   "labs",
+  "memory",
+  "social",
+  "legacy_voice",
+  "legacy_session",
+  "cooking",
+  "practice",
 ] as const;
 
 export interface LogInput {

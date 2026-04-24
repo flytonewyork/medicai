@@ -38,6 +38,14 @@ import type {
 } from "~/types/agent";
 import type { Appointment, AppointmentLink } from "~/types/appointment";
 import type { TimelineMedia } from "~/types/timeline";
+import type {
+  BiographicalOutline,
+  MemoryCluster,
+  ProfileAspect,
+  ProfileConsent,
+  ProfileEntry,
+  ProfilePrompt,
+} from "~/types/legacy";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -74,6 +82,13 @@ export class AnchorDB extends Dexie {
   appointment_links!: Table<AppointmentLink, number>;
   care_team!: Table<CareTeamMember, number>;
   timeline_media!: Table<TimelineMedia, number>;
+  // v17: Legacy module tables.
+  profile_entries!: Table<ProfileEntry, number>;
+  profile_prompts!: Table<ProfilePrompt, number>;
+  profile_aspects!: Table<ProfileAspect, number>;
+  biographical_outline!: Table<BiographicalOutline, number>;
+  memory_clusters!: Table<MemoryCluster, number>;
+  profile_consent!: Table<ProfileConsent, number>;
 
   constructor() {
     super("anchor_db");
@@ -220,6 +235,42 @@ export class AnchorDB extends Dexie {
         "++id, event_date, category, is_memory, created_via, source_appointment_id",
       family_notes:
         "++id, created_at, life_event_id, appointment_id",
+    });
+    // v17: Legacy module. Six new tables drive the biographer's corpus
+    // and the cadence engine that surfaces prompts. Indexes are chosen
+    // so the biographer's hot paths (per-author, per-chapter, cluster
+    // lookup, "next prompt for audience X") are all O(k) table scans.
+    //
+    // - profile_entries: the raw captures. Indexed by author for
+    //   per-person threads, prompt_id for "answered?" joins, recorded_at
+    //   for timeline joins, and memory_cluster_id for cluster render.
+    // - profile_prompts: the seeded library. audience + asked_at lets
+    //   the cadence engine pick an unseen prompt per person cheaply;
+    //   pair_id clusters cross-audience prompts on the same theme.
+    // - profile_aspects: derived character sketch facts with citations
+    //   back to entries. Indexed by aspect + chapter.
+    // - biographical_outline: Butler life-review outline. Sparse — one
+    //   row per chapter/sub_chapter. arc_position drives sequencing.
+    // - memory_clusters: cross-perspective memory aggregation. Indexed
+    //   by seed_entry_id for "find my cluster" and approximate_date for
+    //   chronological layering.
+    // - profile_consent: singleton row (id=1). No secondary indexes.
+    this.version(17).stores({
+      profile_entries:
+        "++id, author, kind, entry_mode, visibility, " +
+        "relationship_dyad, memory_cluster_id, prompt_id, " +
+        "recorded_at, [author+recorded_at]",
+      profile_prompts:
+        "++id, audience, depth, source, sensitivity, category, " +
+        "pair_id, asked_at, [audience+asked_at]",
+      profile_aspects:
+        "++id, aspect, chapter, last_updated",
+      biographical_outline:
+        "++id, chapter, arc_position, target_depth, " +
+        "[chapter+sub_chapter]",
+      memory_clusters:
+        "++id, seed_entry_id, created_by, approximate_date, created_at",
+      profile_consent: "&id",
     });
   }
 }
