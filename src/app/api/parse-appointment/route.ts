@@ -9,7 +9,7 @@ import { parsedAppointmentSchema } from "~/lib/appointments/schema";
 // whether to accept the parse.
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 const RequestSchema = z.object({
   text: z.string().optional(),

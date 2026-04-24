@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 // Daily digest fans out push notifications and may iterate households.
 // 60s is the safe ceiling across Vercel paid tiers without Fluid Compute;
 // if fan-out grows past this the cron should paginate.
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 // Vercel Cron entry point. Fires at 21:00 UTC daily (configured in
 // vercel.json), which is 07:00 AEST — Hu Lin's morning in Melbourne.
