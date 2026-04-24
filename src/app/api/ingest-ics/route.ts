@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 // ICS import fetches a remote webcal URL server-side (sometimes slow iCloud
 // feeds with many years of events) and runs regex parsing over the result.
 // 60s is generous for network + parse.
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 // Server-side ICS fetcher. The browser can't fetch a webcal:// URL
 // cross-origin; we do it server-side, normalise the scheme, parse
