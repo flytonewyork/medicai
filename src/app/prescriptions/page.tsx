@@ -315,16 +315,6 @@ function PrescriptionRow({
 
   async function del() {
     if (!med.id) return;
-    if (
-      !window.confirm(
-        L(
-          `Stop ${name}? Past logs are kept; this only deactivates the prescription.`,
-          `停用 ${name}？历史记录保留，仅将处方置为停用。`,
-        ),
-      )
-    ) {
-      return;
-    }
     await db.medications.update(med.id, {
       active: false,
       stopped_on: now(),

@@ -5,7 +5,7 @@ import type { FeedItem } from "~/types/feed";
 import type { Locale } from "~/types/clinical";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 interface RequestBody {
   locale: Locale;

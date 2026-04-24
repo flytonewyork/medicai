@@ -8,7 +8,7 @@ import {
 import type { Locale } from "~/types/clinical";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 interface RequestBody {
   model?: string;

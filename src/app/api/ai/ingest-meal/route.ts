@@ -5,7 +5,7 @@ import { MealSchema, MEAL_SYSTEM } from "~/lib/ingest/meal-vision";
 import type { PreparedImage } from "~/lib/ingest/image";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 interface RequestBody {
   image: PreparedImage;

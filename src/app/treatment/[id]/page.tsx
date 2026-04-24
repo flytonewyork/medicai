@@ -12,6 +12,7 @@ import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { CycleCalendar } from "~/components/treatment/cycle-calendar";
+import { TreatmentCalendar } from "~/components/treatment/treatment-calendar";
 import { CycleDayDetail } from "~/components/treatment/cycle-day-detail";
 import { CycleMedicationsCard } from "~/components/treatment/cycle-medications-card";
 import { NudgeCard } from "~/components/treatment/nudge-card";
@@ -183,6 +184,27 @@ export default function CycleDetailPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
+          <TreatmentCalendar cycle={cycle} protocol={protocol} />
+          {ctx.phase?.description[locale] && (
+            <div className="text-xs text-ink-600">
+              {ctx.phase.description[locale]}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            {locale === "zh" ? "周期阶段" : "Cycle phases at a glance"}
+          </CardTitle>
+          <div className="mt-1 text-[12px] text-ink-500">
+            {locale === "zh"
+              ? "点一下任意一天查看该日详情与建议。"
+              : "Tap any day to see that day's detail and the protocol guidance."}
+          </div>
+        </CardHeader>
+        <CardContent>
           <CycleCalendar
             cycle={cycle}
             protocol={protocol}
@@ -191,18 +213,6 @@ export default function CycleDetailPage() {
               setSelectedDay((prev) => (prev === d ? null : d))
             }
           />
-          {!selectedDay && ctx.phase?.description[locale] && (
-            <div className="text-xs text-ink-600">
-              {ctx.phase.description[locale]}
-            </div>
-          )}
-          {!selectedDay && (
-            <div className="text-[11px] text-ink-400">
-              {locale === "zh"
-                ? "点一下任意一天查看该日详情与日程。"
-                : "Tap any day to see that day's detail and schedule."}
-            </div>
-          )}
         </CardContent>
       </Card>
 

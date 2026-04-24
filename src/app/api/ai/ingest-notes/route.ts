@@ -8,7 +8,7 @@ import {
 import type { PreparedImage } from "~/lib/ingest/image";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 interface RequestBody {
   image: PreparedImage;
