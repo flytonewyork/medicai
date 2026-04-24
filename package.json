@@ -14,7 +14,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "ios:init": "cap add ios",
+    "ios:sync": "cap sync ios",
+    "ios:open": "cap open ios"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",
@@ -48,6 +51,9 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "@capacitor/ios": "^8.3.1",
     "@playwright/test": "^1.43.0",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.2.2",

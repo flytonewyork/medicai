@@ -122,7 +122,10 @@ export function MobileBottomNav() {
   const selected = items === PATIENT_ITEMS ? patientHrefs : caregiverHrefs;
   const mobileItems = items.filter((i) => selected.includes(i.href));
   return (
-    <nav className="a-glass fixed inset-x-3 bottom-3 z-40 flex justify-around rounded-[22px] px-2 py-2.5 shadow-lg md:hidden">
+    <nav
+      className="a-glass pwa-bottom-nav fixed inset-x-3 z-40 flex justify-around rounded-[22px] px-2 py-2.5 shadow-lg md:hidden"
+      style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+    >
       {mobileItems.map((item) => {
         const Icon = item.icon;
         const active = pathname === item.href;

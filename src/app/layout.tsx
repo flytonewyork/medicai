@@ -27,7 +27,10 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    // "black-translucent" lets the WebView draw under the status bar — the
+    // safe-area padding in globals.css keeps touch targets and content out
+    // of the notch. Required for the Capacitor iOS shell to feel native.
+    statusBarStyle: "black-translucent",
     title: "Anchor",
   },
   formatDetection: {
@@ -49,7 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" data-theme="light" style={{ colorScheme: "light" }}>
       <body>
         <Providers>
-          <div className="flex min-h-screen bg-paper">
+          <div className="flex min-h-[100dvh] bg-paper pwa-safe-top">
             <DesktopSidebar />
             <div className="flex min-w-0 flex-1 flex-col">
               <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-ink-100/60 bg-paper-2/70 px-4 backdrop-blur-md md:hidden md:px-6">
@@ -58,7 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </div>
                 <MobileMoreMenu />
               </header>
-              <main className="flex-1 overflow-y-auto pb-28 md:pb-6">
+              <main className="flex-1 overflow-y-auto pb-[calc(7rem+env(safe-area-inset-bottom))] md:pb-6">
                 {children}
               </main>
             </div>
