@@ -59,9 +59,45 @@ export async function applyIngestOp(
         return { op, ok: true, id: target.id };
       }
       case "add_lab_result": {
+        // Dedupe by collection date. A multi-page trend printout emits one op
+        // per collection date; re-uploading the same report would otherwise
+        // build up duplicate rows. When a row for the same `date` already
+        // exists and no conflicting analyte values are present, merge new
+        // analytes into it rather than adding a new row.
+        const incoming = op.data as Partial<LabResult>;
+        if (incoming.date) {
+          const same = await db.labs
+            .where("date")
+            .equals(incoming.date)
+            .toArray();
+          const row = same.length === 1 ? same[0] : undefined;
+          if (row?.id !== undefined) {
+            const rowId = row.id;
+            const patch: Record<string, unknown> = {};
+            for (const [k, v] of Object.entries(incoming)) {
+              if (
+                k === "id" ||
+                k === "date" ||
+                k === "source" ||
+                k === "created_at" ||
+                k === "updated_at"
+              )
+                continue;
+              if (typeof v !== "number") continue;
+              const existing = (row as unknown as Record<string, unknown>)[k];
+              if (typeof existing === "number") continue; // keep the first-recorded value on this date
+              patch[k] = v;
+            }
+            if (Object.keys(patch).length === 0) {
+              return { op, ok: true, id: rowId };
+            }
+            await db.labs.update(rowId, { ...patch, updated_at: ts });
+            return { op, ok: true, id: rowId };
+          }
+        }
         const id = (await db.labs.add({
-          ...(op.data as LabResult),
-          source: op.data.source ?? "external",
+          ...(incoming as LabResult),
+          source: incoming.source ?? "external",
           created_at: ts,
           updated_at: ts,
         })) as number;
