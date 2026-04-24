@@ -637,6 +637,18 @@ function UserTypeStep({
   );
 }
 
+// Supabase's PostgrestError is a plain object, not an Error instance, so the
+// usual `String(err)` fallback produces "[object Object]". Prefer `.message`
+// whenever it's there.
+function errorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === "object" && "message" in err) {
+    const m = (err as { message: unknown }).message;
+    if (typeof m === "string" && m.length > 0) return m;
+  }
+  return typeof err === "string" && err.length > 0 ? err : "Something went wrong.";
+}
+
 function PickPatientStep({
   onJoined,
   onStartFresh,
@@ -671,7 +683,7 @@ function PickPatientStep({
         if (!cancelled) setRows(all);
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : String(err));
+          setError(errorMessage(err));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -692,7 +704,7 @@ function PickPatientStep({
       await joinHouseholdAsFamily(id);
       onJoined();
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err));
     } finally {
       setJoining(null);
     }
@@ -719,7 +731,7 @@ function PickPatientStep({
         </div>
       )}
 
-      {!loading && rows.length === 0 && (
+      {!loading && !error && rows.length === 0 && (
         <div className="rounded-md border border-dashed border-ink-300 bg-paper p-4 text-[12.5px] text-ink-600">
           {L(
             "No patients have set up Anchor yet. Ask the person you're supporting to create their profile first, or set up a fresh patient yourself.",

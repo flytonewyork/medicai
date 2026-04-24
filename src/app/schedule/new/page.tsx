@@ -1,7 +1,8 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { db, now } from "~/lib/db/dexie";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -10,17 +11,21 @@ import { useLocale, useT } from "~/hooks/use-translate";
 import { AppointmentForm } from "~/components/schedule/appointment-form";
 import type { ParsedAppointment } from "~/lib/appointments/schema";
 import type { Appointment } from "~/types/appointment";
-import { Loader2, ImagePlus, Sparkles, FilePen } from "lucide-react";
+import { Loader2, ImagePlus, Sparkles } from "lucide-react";
 
 // One unified "smart entry" surface. The patient can:
 //   1. Paste an email body or free-text ("Chemo Friday 10am with Dr Lee at Epworth")
 //   2. Snap a photo of an appointment card / letter / screenshot
 //   3. Ignore the smart box and fill the form manually
-// Any of the first two routes hit /api/parse-appointment and prefill the
-// form; the form stays editable before save.
+// Parse + photo routes auto-save the appointment and bounce straight to the
+// detail page with ?added=parse so the user sees a "successfully added" state
+// with the populated fields they can review or correct. The parse is best-
+// effort; missing mandatory fields (title/starts_at) fall back to prefilling
+// the form instead of saving.
 function NewAppointmentInner() {
   const t = useT();
   const locale = useLocale();
+  const router = useRouter();
   const params = useSearchParams();
   const prefillDate = params.get("date");
   const prefillTime = params.get("time") ?? "09:00";
@@ -28,10 +33,11 @@ function NewAppointmentInner() {
   const prefillTitle = params.get("title");
   const prefillCycleId = params.get("cycle");
 
-  const [parsed, setParsed] = useState<Partial<Appointment> | null>(null);
+  const [prefillFromParse, setPrefillFromParse] =
+    useState<Partial<Appointment> | null>(null);
 
-  const initial: Partial<Appointment> | undefined = parsed
-    ? parsed
+  const initial: Partial<Appointment> | undefined = prefillFromParse
+    ? prefillFromParse
     : prefillDate || prefillKind || prefillTitle || prefillCycleId
       ? {
           starts_at: prefillDate
@@ -45,6 +51,48 @@ function NewAppointmentInner() {
         }
       : undefined;
 
+  async function handleParsed(p: ParsedAppointment) {
+    const shape = toAppointmentShape(p);
+    // Auto-save when the parse is usable — must have a title and a valid
+    // start timestamp. Anything less-formed falls back to prefilling the
+    // form so the user can complete it by hand.
+    const startsIso = typeof shape.starts_at === "string" ? shape.starts_at : "";
+    const titleTrim = (shape.title ?? "").trim();
+    const parsable =
+      titleTrim.length > 0 &&
+      startsIso.length > 0 &&
+      !Number.isNaN(Date.parse(startsIso));
+    if (!parsable) {
+      setPrefillFromParse(shape);
+      return;
+    }
+    try {
+      const ts = now();
+      const record: Appointment = {
+        kind: shape.kind ?? "other",
+        title: titleTrim,
+        starts_at: new Date(startsIso).toISOString(),
+        ends_at: shape.ends_at,
+        all_day: shape.all_day,
+        location: shape.location,
+        doctor: shape.doctor,
+        phone: shape.phone,
+        notes: shape.notes,
+        status: "scheduled",
+        prep: shape.prep,
+        prep_info_received: shape.prep_info_received,
+        created_at: ts,
+        updated_at: ts,
+      };
+      const id = (await db.appointments.add(record)) as number;
+      router.push(`/schedule/${id}?added=parse`);
+    } catch {
+      // Fall back to prefill if the write fails — the form save path will
+      // surface the real error on retry.
+      setPrefillFromParse(shape);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-5 p-4 md:p-8">
       <PageHeader
@@ -52,19 +100,12 @@ function NewAppointmentInner() {
         title={t("schedule.new.title")}
       />
 
-      <SmartEntry onParsed={setParsed} locale={locale} t={t} />
+      <SmartEntry onParsed={handleParsed} locale={locale} t={t} />
 
-      {parsed && (
-        <Card className="p-3 text-[12.5px] text-ink-700">
-          <div className="mb-1 flex items-center gap-1.5 font-semibold">
-            <FilePen className="h-3.5 w-3.5" />
-            {t("schedule.new.parsed")}
-          </div>
-          <div className="text-ink-500">{t("schedule.new.parsedHint")}</div>
-        </Card>
-      )}
-
-      <AppointmentForm initial={initial} key={parsed ? "parsed" : "blank"} />
+      <AppointmentForm
+        initial={initial}
+        key={prefillFromParse ? "parsed" : "blank"}
+      />
     </div>
   );
 }
@@ -74,7 +115,7 @@ function SmartEntry({
   locale,
   t,
 }: {
-  onParsed: (a: Partial<Appointment>) => void;
+  onParsed: (a: ParsedAppointment) => void | Promise<void>;
   locale: "en" | "zh";
   t: (k: string) => string;
 }) {
@@ -111,7 +152,7 @@ function SmartEntry({
       });
       if (!res.ok) throw new Error(await res.text());
       const data = (await res.json()) as { appointment: ParsedAppointment };
-      onParsed(toAppointmentShape(data.appointment));
+      await onParsed(data.appointment);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -187,6 +228,13 @@ function SmartEntry({
 }
 
 function toAppointmentShape(p: ParsedAppointment): Partial<Appointment> {
+  const prep = (p.prep ?? []).map((x) => ({
+    kind: x.kind,
+    description: x.description,
+    starts_at: x.starts_at,
+    hours_before: x.hours_before,
+    info_source: "email" as const,
+  }));
   return {
     kind: p.kind,
     title: p.title,
@@ -196,6 +244,10 @@ function toAppointmentShape(p: ParsedAppointment): Partial<Appointment> {
     location: p.location,
     doctor: p.doctor,
     phone: p.phone,
+    prep,
+    // If the parser pulled any prep out of the source, the source itself is
+    // the received info — flip the "still waiting for prep details" flag off.
+    prep_info_received: prep.length > 0 ? true : undefined,
     notes:
       p.ambiguities && p.ambiguities.length > 0
         ? [

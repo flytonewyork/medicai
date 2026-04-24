@@ -8,6 +8,7 @@ import { PageHeader } from "~/components/ui/page-header";
 import { PresenceStack } from "~/components/shared/presence-stack";
 import { Button } from "~/components/ui/button";
 import { AppointmentsCalendar } from "~/components/schedule/calendar";
+import { CalendarShare } from "~/components/schedule/calendar-share";
 import { derivePrepTasks } from "~/lib/appointments/prep-tasks";
 import { deriveFollowUpTasks } from "~/lib/appointments/follow-up-tasks";
 import { deriveAwaitingPrepTasks } from "~/lib/appointments/prep";
@@ -141,6 +142,8 @@ export default function SchedulePage() {
       )}
 
       <AppointmentsCalendar appointments={appointments ?? []} />
+
+      <CalendarShare locale={locale} />
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-ink-900">

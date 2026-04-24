@@ -15,6 +15,32 @@ const appointmentKindSchema = z.enum([
   "other",
 ]);
 
+// Mirrors AppointmentPrepKind in ~/types/appointment. Kept duplicated here
+// instead of importing so this schema stays pure zod-v4 with no cross-module
+// enum coupling.
+const prepKindSchema = z.enum([
+  "fast",
+  "medication_hold",
+  "medication_take",
+  "arrive_early",
+  "bring",
+  "sample",
+  "transport",
+  "companion",
+  "consent",
+  "pre_scan_contrast",
+  "other",
+]);
+
+const parsedPrepSchema = z.object({
+  kind: prepKindSchema,
+  description: z.string().min(1),
+  // Absolute cut-off when the letter/email gives one ("no food from 7am")
+  starts_at: z.string().optional(),
+  // Relative offset when only "6 hours before" is stated
+  hours_before: z.number().optional(),
+});
+
 export const parsedAppointmentSchema = z.object({
   kind: appointmentKindSchema,
   title: z.string().min(1),
@@ -25,8 +51,12 @@ export const parsedAppointmentSchema = z.object({
   doctor: z.string().optional(),
   phone: z.string().optional(),
   notes: z.string().optional(),
+  // Structured preparation items ("no food from 7am", "bring overnight bag").
+  // Parser returns [] when the source has no prep instructions.
+  prep: z.array(parsedPrepSchema).optional(),
   confidence: z.enum(["high", "medium", "low"]),
   ambiguities: z.array(z.string()).optional(),
 });
 
 export type ParsedAppointment = z.infer<typeof parsedAppointmentSchema>;
+export type ParsedAppointmentPrep = z.infer<typeof parsedPrepSchema>;

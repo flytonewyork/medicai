@@ -59,10 +59,15 @@ export default function LabsPage() {
           : Math.abs(deltaPct) < 5
       : null;
 
+  // Axis has to fit every plotted point, not just the latest — otherwise an old
+  // outlier (e.g. ALT 283 on induction) renders far off-chart once values
+  // settle back into range. With a ref range, keep that range visible as the
+  // floor so a stable in-range series doesn't flatten against the x-axis.
+  const dataMax = points.length > 0 ? Math.max(...points.map((p) => p.value)) : 0;
   const yMax = def.ref
-    ? Math.max(def.ref[1] * 1.6, latest?.value ?? 0)
-    : latest?.value
-      ? latest.value * 1.4
+    ? Math.max(def.ref[1] * 1.6, dataMax * 1.1)
+    : dataMax > 0
+      ? dataMax * 1.1
       : 100;
 
   // Build "latest value" map keyed by analyte from all labs

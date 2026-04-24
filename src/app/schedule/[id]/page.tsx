@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { PageHeader } from "~/components/ui/page-header";
@@ -19,6 +19,7 @@ import { logTagsForKind } from "~/lib/appointments/follow-up-tasks";
 import {
   ArrowLeft,
   Check,
+  CheckCircle2,
   Link2,
   MessageSquarePlus,
   Pencil,
@@ -37,6 +38,8 @@ import { TextInput } from "~/components/ui/field";
 export default function AppointmentDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const justAdded = searchParams?.get("added") === "parse";
   const id = Number(params?.id);
   const t = useT();
   const locale = useLocale();
@@ -119,6 +122,35 @@ export default function AppointmentDetailPage() {
             eyebrow={t(`schedule.kind.${appt.kind}`)}
             title={appt.title}
           />
+
+          {justAdded && (
+            <Card className="flex items-start gap-2.5 border-[var(--ok)]/40 bg-[var(--ok-soft,oklch(95%_0.05_160))] p-4">
+              <CheckCircle2
+                className="mt-0.5 h-4 w-4 shrink-0"
+                style={{ color: "var(--ok)" }}
+              />
+              <div className="flex-1 text-[12.5px] text-ink-700">
+                <div className="font-semibold text-ink-900">
+                  {locale === "zh"
+                    ? "已添加到日程"
+                    : "Added to your schedule"}
+                </div>
+                <div className="mt-0.5 text-ink-500">
+                  {locale === "zh"
+                    ? "已根据邮件自动填入。请核对时间、地点和准备事项 —— 必要时可编辑。"
+                    : "Pulled from the email you dropped in. Take a moment to check the time, location, and prep — tap edit to fix anything."}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => router.replace(`/schedule/${id}`)}
+                className="rounded-md p-1 text-ink-400 hover:text-ink-700"
+                aria-label={locale === "zh" ? "关闭" : "Dismiss"}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </Card>
+          )}
 
           <AttendeeChips appt={appt} locale={locale} t={t} />
 
