@@ -29,6 +29,15 @@ const TAG_LABELS: Record<LogTag, { en: string; zh: string }> = {
   mental: { en: "mental", zh: "心情" },
   treatment: { en: "treatment", zh: "化疗" },
   labs: { en: "labs", zh: "化验" },
+  // Legacy-module tags (slice 5). These can surface in the /log UI when
+  // the free-text tagger picks them up, but they don't fan out to any
+  // clinical agent — the biographer (slice 13) consumes them separately.
+  memory: { en: "memory", zh: "回忆" },
+  social: { en: "gathering", zh: "聚会" },
+  cooking: { en: "cooking", zh: "做菜" },
+  practice: { en: "practice", zh: "修行" },
+  legacy_voice: { en: "voice memo", zh: "语音" },
+  legacy_session: { en: "legacy session", zh: "传承" },
 };
 
 const AGENT_LABELS: Record<AgentId, { en: string; zh: string }> = {
