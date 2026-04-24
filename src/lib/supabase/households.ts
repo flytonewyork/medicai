@@ -126,6 +126,32 @@ export async function createHousehold(args: {
   return data;
 }
 
+// PostgREST returns PGRST202 when the requested RPC isn't in its schema
+// cache — typically because the caregiver-onboarding migration hasn't been
+// applied (or applied without a cache reload). We surface this as a typed
+// error so the picker UI can fall back to the invite-token flow with
+// actionable copy instead of dumping the raw PostgREST message.
+export class CaregiverPickerUnavailableError extends Error {
+  readonly code = "caregiver_picker_unavailable";
+  constructor(message = "Caregiver patient picker isn't available yet.") {
+    super(message);
+    this.name = "CaregiverPickerUnavailableError";
+  }
+}
+
+function isMissingRpcError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { code?: string; message?: string };
+  if (e.code === "PGRST202" || e.code === "404") return true;
+  const msg = (e.message ?? "").toLowerCase();
+  return (
+    msg.includes("could not find the function") ||
+    msg.includes("schema cache") ||
+    msg.includes("function public.list_all_households") ||
+    msg.includes("function public.join_household_as_family")
+  );
+}
+
 // RPC: list every household as a lightweight summary. Backed by the
 // SECURITY DEFINER function `public.list_all_households` — lets
 // caregiver onboarding show a patient picker without the caller being
@@ -136,7 +162,10 @@ export async function listAllHouseholds(): Promise<HouseholdSummary[]> {
   const sb = getSupabaseBrowser();
   if (!sb) return [];
   const { data, error } = await sb.rpc("list_all_households");
-  if (error) throw error;
+  if (error) {
+    if (isMissingRpcError(error)) throw new CaregiverPickerUnavailableError();
+    throw error;
+  }
   return (data ?? []) as HouseholdSummary[];
 }
 
@@ -150,9 +179,28 @@ export async function joinHouseholdAsFamily(
   const { data, error } = await sb.rpc("join_household_as_family", {
     target_id: householdId,
   });
-  if (error) throw error;
+  if (error) {
+    if (isMissingRpcError(error)) throw new CaregiverPickerUnavailableError();
+    throw error;
+  }
   if (typeof data !== "string") throw new Error("join_household_failed");
   return data;
+}
+
+// Pull the invite token out of a /invite/<token> URL the patient may have
+// shared. Accepts bare tokens too. Returns null when nothing usable is
+// present so the UI can keep the input controlled.
+export function extractInviteToken(input: string): string | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  // Bare uuid (8-4-4-4-12) — accept as-is.
+  if (/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(trimmed)) {
+    return trimmed.toLowerCase();
+  }
+  // /invite/<token> URL — pull the segment after /invite/.
+  const match = trimmed.match(/\/invite\/([0-9a-fA-F-]{8,})/);
+  if (match && match[1]) return match[1].toLowerCase();
+  return null;
 }
 
 // RPC: accept an invite token, atomically creating a membership and
