@@ -18,7 +18,17 @@ export interface ParsedExtraction {
 }
 
 interface LabPattern {
-  key: keyof Omit<LabResult, "id" | "created_at" | "updated_at" | "source" | "notes" | "date">;
+  key: keyof Omit<
+    LabResult,
+    | "id"
+    | "created_at"
+    | "updated_at"
+    | "source"
+    | "notes"
+    | "date"
+    | "source_system"
+    | "source_pdf_id"
+  >;
   patterns: RegExp[];
   normalise?: (n: number, unit: string) => number;
 }

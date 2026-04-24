@@ -266,6 +266,88 @@ describe("applyIngestOps", () => {
     expect(row!.notes).toBe("Amended");
   });
 
+  it("stamps add_* rows with provenance from the draft", async () => {
+    // Simulate the end-to-end flow: a PDF blob is stored, then an
+    // IngestDraft is applied with the resulting blob id as provenance.
+    const ts = new Date().toISOString();
+    const blobId = (await db.pdf_blobs.add({
+      filename: "pathology-2026-04-22.pdf",
+      mime_type: "application/pdf",
+      size_bytes: 1024,
+      blob: new Blob(["dummy bytes"], { type: "application/pdf" }),
+      source_system: "mhr",
+      captured_at: ts,
+      created_at: ts,
+      updated_at: ts,
+    })) as number;
+
+    const results = await applyIngestOps(
+      [
+        {
+          kind: "add_lab_result",
+          data: { date: "2026-04-22", ca199: 120 },
+        },
+        {
+          kind: "add_imaging",
+          data: {
+            date: "2026-04-22",
+            modality: "CT",
+            findings_summary: "Stable disease.",
+          },
+        },
+      ],
+      {
+        provenance: { source_system: "mhr", source_pdf_id: blobId },
+      },
+    );
+    expect(results.every((r) => r.ok)).toBe(true);
+
+    const lab = (await db.labs.toArray())[0];
+    expect(lab!.source_system).toBe("mhr");
+    expect(lab!.source_pdf_id).toBe(blobId);
+
+    const img = (await db.imaging.toArray())[0];
+    expect(img!.source_system).toBe("mhr");
+    expect(img!.source_pdf_id).toBe(blobId);
+  });
+
+  it("does not overwrite provenance already set on an op", async () => {
+    // If a parser already filled in source_system on one op (e.g. the
+    // photo was classified specifically), a stronger draft-level tag
+    // should NOT clobber it.
+    const [r] = await applyIngestOps(
+      [
+        {
+          kind: "add_lab_result",
+          data: { date: "2026-04-20", ca199: 50, source_system: "photo" },
+        },
+      ],
+      { provenance: { source_system: "mhr", source_pdf_id: 999 } },
+    );
+    expect(r!.ok).toBe(true);
+    const row = (await db.labs.toArray())[0];
+    expect(row!.source_system).toBe("photo");
+    expect(row!.source_pdf_id).toBe(999);
+  });
+
+  it("leaves rows un-stamped when no provenance is supplied", async () => {
+    const [r] = await applyIngestOps([
+      {
+        kind: "add_ctdna_result",
+        data: {
+          date: "2026-04-15",
+          platform: "signatera",
+          detected: true,
+          value: 0.5,
+        },
+      },
+    ]);
+    expect(r!.ok).toBe(true);
+    const row = (await db.ctdna_results.toArray())[0];
+    expect(row!.source_system).toBeUndefined();
+    expect(row!.source_pdf_id).toBeUndefined();
+  });
+
   it("stops on first error when stopOnError is set", async () => {
     const ops: IngestOp[] = [
       {

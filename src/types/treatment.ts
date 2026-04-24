@@ -1,4 +1,4 @@
-import type { Locale } from "./clinical";
+import type { Locale, SourceSystem } from "./clinical";
 
 export type ProtocolId =
   | "gnp_weekly"
@@ -120,6 +120,10 @@ export interface TreatmentCycle {
   snoozed_nudge_ids?: string[];
   dismissed_nudge_ids?: string[];
   notes?: string;
+  // Provenance when a cycle was created from an imported document.
+  // See SourceSystem / PdfBlob in ~/types/clinical.
+  source_system?: SourceSystem;
+  source_pdf_id?: number;
   created_at: string;
   updated_at: string;
 }

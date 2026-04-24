@@ -1,3 +1,5 @@
+import type { SourceSystem } from "./clinical";
+
 // Scheduling + appointments module.
 //
 // An Appointment is any anticipated medical event the patient needs to
@@ -146,6 +148,10 @@ export interface Appointment {
   // manually. Each entry is a short plain-language line; optional `source`
   // lets the UI surface provenance ("from Tue's glucose log").
   discussion_items?: AppointmentDiscussionItem[];
+  // Provenance when this row came from an imported document (clinic letter,
+  // MHR appointment PDF). See SourceSystem / PdfBlob in ~/types/clinical.
+  source_system?: SourceSystem;
+  source_pdf_id?: number;
   created_at: string;
   updated_at: string;
 }

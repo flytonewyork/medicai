@@ -19,6 +19,7 @@ import type {
   PendingResult,
   IngestedDocument,
   ComprehensiveAssessment,
+  PdfBlob,
   SignalEventRow,
 } from "~/types/clinical";
 import type { Trial } from "~/types/bridge";
@@ -72,6 +73,7 @@ export class AnchorDB extends Dexie {
   appointments!: Table<Appointment, number>;
   appointment_links!: Table<AppointmentLink, number>;
   care_team!: Table<CareTeamMember, number>;
+  pdf_blobs!: Table<PdfBlob, number>;
 
   constructor() {
     super("anchor_db");
@@ -196,6 +198,18 @@ export class AnchorDB extends Dexie {
     this.version(15).stores({
       appointments:
         "++id, starts_at, kind, status, cycle_id, ics_uid, [kind+starts_at]",
+    });
+    // v16: patient-owned records import (step 2 of docs/RECORDS_IMPORT).
+    // `pdf_blobs` stores the original PDF / CDA XML / image bytes a
+    // clinical row was extracted from, so the "view original" affordance
+    // on feed items resolves offline without re-uploading. Clinical rows
+    // (labs, imaging, ctdna_results, decisions, life_events, medications,
+    // treatments, treatment_cycles, appointments) gained nullable
+    // `source_pdf_id` + `source_system` fields in their type definitions;
+    // unindexed nullable columns do not require a Dexie migration, so
+    // only the new table is declared here.
+    this.version(16).stores({
+      pdf_blobs: "++id, sha256, source_system, captured_at",
     });
   }
 }

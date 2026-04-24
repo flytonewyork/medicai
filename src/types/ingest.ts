@@ -6,6 +6,7 @@ import type {
   LabResult,
   LifeEvent,
   Settings,
+  SourceSystem,
 } from "./clinical";
 import type { Medication } from "./medication";
 import type { PatientTask } from "./task";
@@ -124,6 +125,17 @@ export interface IngestDraft {
   ops: IngestOp[];
   ambiguities: string[];
   confidence: "low" | "medium" | "high";
+  // Origin of the input document — MHR PDF, Epworth portal, emailed
+  // report, camera photo, etc. Optional because most ops still come
+  // from pasted text with no recoverable provenance. When set, the
+  // dispatcher in operations.ts copies it onto every row the draft
+  // writes.
+  source_system?: SourceSystem;
+  // Foreign key into pdf_blobs for the original file (when one was
+  // captured and stored). The dispatcher copies this onto every row
+  // so "view original" affordances can resolve back to the source
+  // regardless of which table the row lives in.
+  source_pdf_id?: number;
 }
 
 // Result of applying one op locally — surfaces the resulting Dexie

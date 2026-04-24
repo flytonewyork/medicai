@@ -13,10 +13,40 @@ import type {
   Imaging,
   LabResult,
   LifeEvent,
+  SourceSystem,
 } from "~/types/clinical";
 import type { Medication } from "~/types/medication";
 import type { PatientTask } from "~/types/task";
 import type { TreatmentCycle } from "~/types/treatment";
+
+// Row-level provenance the caller can attach to every row written by an
+// IngestDraft. Copied onto each add_* op's data before insert unless the
+// op already set its own (which would be unusual — normally the parser
+// doesn't know the source_pdf_id, it's assigned when the caller stores
+// the blob). update_* ops are NOT tagged: updates describe a change to
+// an existing row with its own provenance history, and silently
+// overwriting that would lose information.
+export interface IngestProvenance {
+  source_system?: SourceSystem;
+  source_pdf_id?: number;
+}
+
+function withProvenance<T extends object>(
+  data: T,
+  prov?: IngestProvenance,
+): T {
+  if (!prov || (prov.source_system === undefined && prov.source_pdf_id === undefined)) {
+    return data;
+  }
+  const out = { ...data } as Record<string, unknown>;
+  if (prov.source_system !== undefined && out.source_system === undefined) {
+    out.source_system = prov.source_system;
+  }
+  if (prov.source_pdf_id !== undefined && out.source_pdf_id === undefined) {
+    out.source_pdf_id = prov.source_pdf_id;
+  }
+  return out as T;
+}
 
 // Dispatcher that turns a typed IngestOp into the right Dexie write.
 // Kept as a single exhaustive switch so adding a new op kind requires
@@ -30,13 +60,14 @@ import type { TreatmentCycle } from "~/types/treatment";
 
 export async function applyIngestOp(
   op: IngestOp,
+  provenance?: IngestProvenance,
 ): Promise<IngestApplyResult> {
   const ts = now();
   try {
     switch (op.kind) {
       case "add_appointment": {
         const id = (await db.appointments.add({
-          ...(op.data as Appointment),
+          ...withProvenance(op.data as Appointment, provenance),
           status: op.data.status ?? "scheduled",
           created_at: ts,
           updated_at: ts,
@@ -64,7 +95,10 @@ export async function applyIngestOp(
         // build up duplicate rows. When a row for the same `date` already
         // exists and no conflicting analyte values are present, merge new
         // analytes into it rather than adding a new row.
-        const incoming = op.data as Partial<LabResult>;
+        const incoming = withProvenance(
+          op.data as Partial<LabResult>,
+          provenance,
+        );
         if (incoming.date) {
           const same = await db.labs
             .where("date")
@@ -105,7 +139,7 @@ export async function applyIngestOp(
       }
       case "add_medication": {
         const id = (await db.medications.add({
-          ...(op.data as Medication),
+          ...withProvenance(op.data as Medication, provenance),
           created_at: ts,
           updated_at: ts,
         })) as number;
@@ -135,7 +169,7 @@ export async function applyIngestOp(
       }
       case "add_life_event": {
         const id = (await db.life_events.add({
-          ...(op.data as LifeEvent),
+          ...withProvenance(op.data as LifeEvent, provenance),
           created_at: ts,
           updated_at: ts,
         })) as number;
@@ -155,7 +189,7 @@ export async function applyIngestOp(
       }
       case "add_imaging": {
         const id = (await db.imaging.add({
-          ...(op.data as Imaging),
+          ...withProvenance(op.data as Imaging, provenance),
           created_at: ts,
           updated_at: ts,
         })) as number;
@@ -163,7 +197,7 @@ export async function applyIngestOp(
       }
       case "add_ctdna_result": {
         const id = (await db.ctdna_results.add({
-          ...(op.data as CtdnaResult),
+          ...withProvenance(op.data as CtdnaResult, provenance),
           created_at: ts,
           updated_at: ts,
         })) as number;
@@ -186,7 +220,7 @@ export async function applyIngestOp(
       }
       case "add_treatment_cycle": {
         const id = (await db.treatment_cycles.add({
-          ...(op.data as TreatmentCycle),
+          ...withProvenance(op.data as TreatmentCycle, provenance),
           status: op.data.status ?? "active",
           dose_level: op.data.dose_level ?? 0,
           created_at: ts,
@@ -196,7 +230,7 @@ export async function applyIngestOp(
       }
       case "add_decision": {
         const id = (await db.decisions.add({
-          ...(op.data as Decision),
+          ...withProvenance(op.data as Decision, provenance),
           created_at: ts,
           updated_at: ts,
         })) as number;
@@ -286,13 +320,16 @@ async function resolveLab(
 
 // Apply a list of ops in order. Stops on the first failure when
 // `stopOnError` is true; otherwise records each result and continues.
+// When `provenance` is supplied (typically from the parent IngestDraft)
+// each add_* op's row is tagged with the source_system / source_pdf_id
+// before insert.
 export async function applyIngestOps(
   ops: readonly IngestOp[],
-  options: { stopOnError?: boolean } = {},
+  options: { stopOnError?: boolean; provenance?: IngestProvenance } = {},
 ): Promise<IngestApplyResult[]> {
   const out: IngestApplyResult[] = [];
   for (const op of ops) {
-    const r = await applyIngestOp(op);
+    const r = await applyIngestOp(op, options.provenance);
     out.push(r);
     if (options.stopOnError && !r.ok) break;
   }
