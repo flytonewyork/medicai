@@ -47,7 +47,7 @@ function cy(
     id,
     cycle_number: 1,
     start_date,
-    status: "in_progress",
+    status: "active",
     protocol_id: "GnP",
     ...overrides,
   } as TreatmentCycle;
