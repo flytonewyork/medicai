@@ -127,6 +127,9 @@ Read, in order:
 3. `docs/DATA_SCHEMA.md`
 4. `docs/ZONE_RULES.md`
 5. `docs/BUILD_ORDER.md`
+6. `docs/LEGACY_MODULE.md` — required only when touching family timeline,
+   profile entries, the biographer or orchestrator agents, or any capture
+   modality described in that doc's feature set.
 
 Always prefer to ask a clarifying question if clinical logic is ambiguous. Do not
 invent thresholds or rules not specified in the framework docs.
