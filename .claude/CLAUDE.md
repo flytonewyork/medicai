@@ -14,14 +14,13 @@ RASolute 302 trial (readout April 2026).
 
 - **Patient:** Hu Lin, father of the primary user (Thomas Hu, MBBS, the project owner)
 - **Diagnosis:** confirmed metastatic PDAC
-- **Managing oncologist:** Dr Michael Lee (Melbourne)
+- **Managing oncologist:** A/Prof Sumitra Ananda (Melbourne)
 - **HPB surgeon:** Mark Cullinan (Epworth Richmond)
 - **First-line treatment:** gemcitabine + nab-paclitaxel (GnP), optimised for
   function preservation over maximum response
 - **Patient values:** continued spiritual practice (Qigong, meditation, Chinese
   spiritual traditions), independence, mental stillness, family connection
-- **Strategic goal:** bridge to daraxonrasib via RASolute 303 (1L trial, now
-  enrolling) or RASolute 302 (2L, enrollment closing June 2026) or expanded access
+- **Strategic goal:** bridge to daraxonrasib via FDA Approval or RASolute 302 (2L, enrollment closing June 2026) or expanded access
 
 ## The three-axis framework (CRITICAL conceptual foundation)
 
