@@ -39,8 +39,12 @@ export function QuickCheckinCard() {
   const [feverTemp, setFeverTemp] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [justSaved, setJustSaved] = useState(false);
 
-  if (existing) return null;
+  // After save, the live query picks up `existing` and unmounts this card.
+  // The transient "Saved" flash below bridges the gap so the patient sees
+  // acknowledgment before the card disappears.
+  if (existing && !justSaved) return null;
 
   async function save() {
     setSaving(true);
@@ -86,6 +90,7 @@ export function QuickCheckinCard() {
             : "Saved, but the alert check didn't run.",
         );
       }
+      setJustSaved(true);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("[quick-checkin] save failed", err);
@@ -97,6 +102,37 @@ export function QuickCheckinCard() {
     } finally {
       setSaving(false);
     }
+  }
+
+  if (justSaved) {
+    return (
+      <Card className="p-5">
+        <div className="flex items-start gap-3">
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
+            style={{ background: "var(--ok-soft)", color: "var(--ok)" }}
+          >
+            <Check className="h-4 w-4" strokeWidth={3} />
+          </div>
+          <div className="flex-1">
+            <div className="text-[13px] font-semibold text-ink-900">
+              {locale === "zh" ? "今日已记录" : "Saved for today"}
+            </div>
+            <p className="mt-0.5 text-[12.5px] text-ink-500">
+              {locale === "zh"
+                ? "想补充细节？"
+                : "Want to add detail?"}{" "}
+              <Link
+                href="/daily/new"
+                className="text-[var(--tide-2)] hover:underline"
+              >
+                {locale === "zh" ? "完整日志" : "Full log"}
+              </Link>
+            </p>
+          </div>
+        </div>
+      </Card>
+    );
   }
 
   return (
