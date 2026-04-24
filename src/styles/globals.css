@@ -179,6 +179,23 @@ body {
   border: 0.5px solid color-mix(in oklch, var(--ink-900), transparent 92%);
 }
 
+/* ─── iOS auto-zoom guard ─────────────────────────────────────────────
+ * iOS Safari (including standalone PWA) auto-zooms when a focused
+ * input / textarea / select has a computed font-size below 16px. In
+ * standalone mode the page never unzooms, so the layout stays trapped
+ * at ~1.06× and the home-screen-app illusion breaks.
+ *
+ * Force ≥16px on form controls on coarse-pointer devices. !important
+ * is intentional — this isn't a design preference, it's a platform
+ * constraint that any per-input `text-sm` would silently re-break. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 /* -----------------------------------------------------------------
  * FullCalendar overrides — scoped to .anchor-calendar so FullCalendar's
  * default Bootstrap-ish look is replaced by the Anchor paper/ink/tide
