@@ -187,6 +187,13 @@ function SmartEntry({
 }
 
 function toAppointmentShape(p: ParsedAppointment): Partial<Appointment> {
+  const prep = (p.prep ?? []).map((x) => ({
+    kind: x.kind,
+    description: x.description,
+    starts_at: x.starts_at,
+    hours_before: x.hours_before,
+    info_source: "email" as const,
+  }));
   return {
     kind: p.kind,
     title: p.title,
@@ -196,6 +203,10 @@ function toAppointmentShape(p: ParsedAppointment): Partial<Appointment> {
     location: p.location,
     doctor: p.doctor,
     phone: p.phone,
+    prep,
+    // If the parser pulled any prep out of the source, the source itself is
+    // the received info — flip the "still waiting for prep details" flag off.
+    prep_info_received: prep.length > 0 ? true : undefined,
     notes:
       p.ambiguities && p.ambiguities.length > 0
         ? [
