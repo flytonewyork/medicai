@@ -11,6 +11,7 @@ import { PillarRing } from "~/components/assessment/pillar-card";
 import { formatDate } from "~/lib/utils/date";
 import { ChevronRight, Stethoscope, Clock } from "lucide-react";
 import { useRedirectCaregiverAway } from "~/lib/caregiver/guard";
+import { BaselinesCard } from "~/components/assessment/baselines-card";
 
 export default function AssessmentListPage() {
   useRedirectCaregiverAway();
@@ -70,6 +71,8 @@ export default function AssessmentListPage() {
           }
         />
       )}
+
+      <BaselinesCard />
 
       <ul className="space-y-3">
         {(assessments ?? []).map((a) => (

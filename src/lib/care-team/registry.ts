@@ -9,6 +9,27 @@ export async function listCareTeam(): Promise<CareTeamMember[]> {
   return db.care_team.orderBy("name").toArray();
 }
 
+// Look up the local care-team row that represents a Supabase auth account,
+// either by account_user_id (when previously linked) or by email match.
+export async function findCareTeamMemberForAccount(args: {
+  user_id?: string | null;
+  email?: string | null;
+}): Promise<CareTeamMember | undefined> {
+  const all = await db.care_team.toArray();
+  if (args.user_id) {
+    const byId = all.find((m) => m.account_user_id === args.user_id);
+    if (byId) return byId;
+  }
+  if (args.email) {
+    const e = args.email.trim().toLowerCase();
+    const byEmail = all.find(
+      (m) => (m.email ?? "").trim().toLowerCase() === e,
+    );
+    if (byEmail) return byEmail;
+  }
+  return undefined;
+}
+
 export async function addCareTeamMember(
   input: Omit<CareTeamMember, "id" | "created_at" | "updated_at">,
 ): Promise<number> {

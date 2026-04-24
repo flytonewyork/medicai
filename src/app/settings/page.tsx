@@ -130,41 +130,33 @@ export default function SettingsPage() {
               <option value="zh">{t("settings.locale_zh")}</option>
             </select>
           </Field>
+          <Field label="Home city (weather nudges)">
+            <input
+              className={inputCls}
+              placeholder="Melbourne"
+              {...register("home_city")}
+            />
+          </Field>
         </section>
 
         <section className="space-y-3">
           <h2 className="eyebrow">
-            {locale === "zh" ? "医疗团队与紧急联系" : "Clinical team & emergency"}
+            {locale === "zh" ? "紧急情况" : "Emergency"}
           </h2>
+          <p className="text-xs text-ink-500">
+            {locale === "zh"
+              ? "肿瘤科医生、医院、24 小时联系人请在「护理团队」中维护;此处仅记录何时直接前往急诊。"
+              : "Oncologist, hospital, and 24/7 contacts live in the Care team section above. Use this for the situation-specific guidance the patient should follow when something feels off."}
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label={t("settings.managing_oncologist")}>
-              <input className={inputCls} {...register("managing_oncologist")} />
-            </Field>
-            <Field label="Oncologist phone">
-              <input
-                type="tel"
-                className={inputCls}
-                {...register("managing_oncologist_phone")}
-              />
-            </Field>
-            <Field label="Hospital / centre">
-              <input className={inputCls} {...register("hospital_name")} />
-            </Field>
-            <Field label="Hospital phone">
-              <input
-                type="tel"
-                className={inputCls}
-                {...register("hospital_phone")}
-              />
-            </Field>
-            <Field label="24/7 on-call">
+            <Field label="24/7 on-call (fallback)">
               <input
                 type="tel"
                 className={inputCls}
                 {...register("oncall_phone")}
               />
             </Field>
-            <Field label="Hospital address">
+            <Field label="Hospital address (fallback)">
               <input className={inputCls} {...register("hospital_address")} />
             </Field>
             <div className="sm:col-span-2">
@@ -176,85 +168,6 @@ export default function SettingsPage() {
                 />
               </Field>
             </div>
-            <Field label="Home city (weather nudges)">
-              <input
-                className={inputCls}
-                placeholder="Melbourne"
-                {...register("home_city")}
-              />
-            </Field>
-          </div>
-        </section>
-
-        <section className="space-y-3">
-          <h2 className="eyebrow">{t("settings.baselines")}</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label={t("settings.height_cm")}>
-              <input
-                type="number"
-                step="0.5"
-                className={inputCls}
-                {...register("height_cm", numberOptional)}
-              />
-            </Field>
-            <Field label={t("settings.baseline_weight_kg")}>
-              <input
-                type="number"
-                step="0.1"
-                className={inputCls}
-                {...register("baseline_weight_kg", numberOptional)}
-              />
-            </Field>
-            <Field label={t("settings.baseline_date")}>
-              <input type="date" className={inputCls} {...register("baseline_date")} />
-            </Field>
-            <Field label={t("settings.baseline_grip_dominant_kg")}>
-              <input
-                type="number"
-                step="0.1"
-                className={inputCls}
-                {...register("baseline_grip_dominant_kg", numberOptional)}
-              />
-            </Field>
-            <Field label={t("settings.baseline_grip_nondominant_kg")}>
-              <input
-                type="number"
-                step="0.1"
-                className={inputCls}
-                {...register("baseline_grip_nondominant_kg", numberOptional)}
-              />
-            </Field>
-            <Field label={t("settings.baseline_gait_speed_ms")}>
-              <input
-                type="number"
-                step="0.01"
-                className={inputCls}
-                {...register("baseline_gait_speed_ms", numberOptional)}
-              />
-            </Field>
-            <Field label={t("settings.baseline_sit_to_stand")}>
-              <input
-                type="number"
-                className={inputCls}
-                {...register("baseline_sit_to_stand", numberOptional)}
-              />
-            </Field>
-            <Field label={t("settings.baseline_muac_cm")}>
-              <input
-                type="number"
-                step="0.5"
-                className={inputCls}
-                {...register("baseline_muac_cm", numberOptional)}
-              />
-            </Field>
-            <Field label={t("settings.baseline_calf_cm")}>
-              <input
-                type="number"
-                step="0.5"
-                className={inputCls}
-                {...register("baseline_calf_cm", numberOptional)}
-              />
-            </Field>
           </div>
         </section>
 

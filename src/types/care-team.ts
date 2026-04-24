@@ -19,6 +19,15 @@ export type CareTeamRole =
   | "allied_health"  // physio, dietitian, psychologist
   | "other";
 
+// Account-linkage status for a care-team member who also signs in to
+// Anchor. "none" = local contact only (most clinicians fall here);
+// "invited" = a Supabase invite has been created and is pending
+// acceptance; "active" = the invitee has joined and now has a
+// household_membership row of their own. The Settings care-team list
+// renders one row per member with this badge so a single contact can
+// represent both the call-list entry and the Anchor account.
+export type CareTeamAccountStatus = "none" | "invited" | "active";
+
 export interface CareTeamMember {
   id?: number;
   name: string;
@@ -36,6 +45,13 @@ export interface CareTeamMember {
   // given kinds by default. For now we don't act on this; the flag is
   // captured so a future pass can default-populate attendees.
   default_attendee?: boolean;
+  // Optional Anchor-account linkage. Populated when the member also
+  // signs in (e.g. a family member invited via household_invites).
+  // Settings UI renders the row as one entry, not two.
+  account_user_id?: string;            // Supabase auth.uid when linked
+  account_status?: CareTeamAccountStatus;
+  pending_invite_id?: string;          // Supabase household_invites.id while pending
+  pending_invite_token?: string;       // copy-link target while pending
   created_at: string;
   updated_at: string;
 }
