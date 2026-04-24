@@ -341,6 +341,13 @@ export interface LifeEvent {
   notes?: string;
   pre_event_buffer_days?: number;
   post_event_buffer_days?: number;
+  // Timeline / legacy fields (v16). Additive — existing rows default to
+  // manual-created non-memory events authored by the household's primary
+  // record-keeper.
+  author?: EnteredBy;
+  created_via?: "manual" | "auto_appointment" | "import";
+  is_memory?: boolean;                 // diary entry vs tracked planning event
+  source_appointment_id?: number;      // set when created_via = auto_appointment
   created_at: string;
   updated_at: string;
 }
@@ -382,6 +389,11 @@ export interface FamilyNote {
   updated_at: string;
   author: EnteredBy;
   body: string;
+  // Optional threading onto a timeline anchor (v16). A note can hang off a
+  // life event (family moment) or an appointment (clinical milestone), so
+  // the timeline view can render it as a reply under that anchor.
+  life_event_id?: number;
+  appointment_id?: number;
 }
 
 export interface Settings {

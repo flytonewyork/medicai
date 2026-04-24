@@ -37,6 +37,7 @@ import type {
   LogEventRow,
 } from "~/types/agent";
 import type { Appointment, AppointmentLink } from "~/types/appointment";
+import type { TimelineMedia } from "~/types/timeline";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -72,6 +73,7 @@ export class AnchorDB extends Dexie {
   appointments!: Table<Appointment, number>;
   appointment_links!: Table<AppointmentLink, number>;
   care_team!: Table<CareTeamMember, number>;
+  timeline_media!: Table<TimelineMedia, number>;
 
   constructor() {
     super("anchor_db");
@@ -196,6 +198,28 @@ export class AnchorDB extends Dexie {
     this.version(15).stores({
       appointments:
         "++id, starts_at, kind, status, cycle_id, ics_uid, [kind+starts_at]",
+    });
+    // v16: family timeline foundations. `timeline_media` is the single
+    // blob store for photos / short video clips / voice memos attached
+    // to a timeline-visible anchor (life event, family note, or
+    // appointment). Composite [owner_type+owner_id] lets the timeline
+    // renderer pull all media for one anchor in O(k); `taken_at` is
+    // indexed so the chronological stream can merge blobs with events
+    // without a table scan.
+    //
+    // `life_events` and `family_notes` gain optional columns (author,
+    // created_via, is_memory, source_appointment_id on life events;
+    // life_event_id and appointment_id on notes). These are additive —
+    // Dexie only re-declares the stores whose *indexes* change, so we
+    // re-state existing tables only where we want a new index, and
+    // leave the rest to live as schemaless extra fields.
+    this.version(16).stores({
+      timeline_media:
+        "++id, owner_type, owner_id, taken_at, created_at, [owner_type+owner_id]",
+      life_events:
+        "++id, event_date, category, is_memory, created_via, source_appointment_id",
+      family_notes:
+        "++id, created_at, life_event_id, appointment_id",
     });
   }
 }
