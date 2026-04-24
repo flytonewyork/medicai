@@ -76,6 +76,25 @@ body {
   overscroll-behavior: none;
 }
 
+/* ─── Safari standalone PWA + Capacitor iOS full-screen ───────────── */
+/* `apple-mobile-web-app-status-bar-style: black-translucent` lets the
+ * WebView paint under the status bar and the home-indicator area. These
+ * insets push chrome out of the unsafe zones on the notch / home bar
+ * without shifting content on viewports that don't expose insets. */
+.pwa-safe-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+.pwa-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+/* Mobile bottom nav already floats — nudge its bottom by the home-indicator
+ * inset so labels aren't clipped in standalone / Capacitor mode. */
+@supports (padding: max(0px)) {
+  .pwa-bottom-nav {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+}
+
 /* ─── Utilities used directly in components ──────────────────────── */
 .serif {
   font-family: var(--serif);
