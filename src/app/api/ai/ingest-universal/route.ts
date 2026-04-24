@@ -15,7 +15,7 @@ export const runtime = "nodejs";
 // complex multi-page clinic letters that still time out should be
 // split or downgraded to Sonnet per-route rather than pushing the
 // platform cap higher.
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 interface RequestBody {
   text?: string;
