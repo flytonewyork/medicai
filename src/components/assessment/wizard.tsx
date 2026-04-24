@@ -13,6 +13,7 @@ import {
 } from "~/lib/assessment/catalog";
 import { todayISO } from "~/lib/utils/date";
 import type { ComprehensiveAssessment } from "~/types/clinical";
+import { Alert } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
 import { CoachDrawer } from "~/components/assessment/coach-drawer";
@@ -500,9 +501,9 @@ function ReviewView({
             </Button>
           </div>
           {aiError && (
-            <div className="mt-3 rounded-lg border border-red-300 bg-red-50 p-2 text-xs text-red-800 dark:bg-red-950/40">
+            <Alert variant="warn" dense className="mt-3">
               {aiError}
-            </div>
+            </Alert>
           )}
         </CardContent>
       </Card>

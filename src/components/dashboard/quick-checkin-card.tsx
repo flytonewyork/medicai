@@ -235,7 +235,7 @@ function FeverRow({
         className="flex h-8 w-8 items-center justify-center rounded-md"
         style={{
           background: fever ? "var(--warn)" : "var(--paper-2)",
-          color: fever ? "#fff" : "var(--ink-500)",
+          color: fever ? "var(--paper)" : "var(--ink-500)",
         }}
       >
         <Thermometer className="h-4 w-4" />

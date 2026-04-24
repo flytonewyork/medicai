@@ -9,6 +9,7 @@ import { useLocale, useT } from "~/hooks/use-translate";
 import { weekStartISO, weekDates, formatWeekRange } from "~/lib/utils/week";
 import { weeklyAssessmentSchema } from "~/lib/validators/schemas";
 import { runEngineAndPersist } from "~/lib/rules/engine";
+import { Alert } from "~/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils/cn";
@@ -337,11 +338,7 @@ export function WeeklyForm({ entryId }: { entryId?: number }) {
         </CardContent>
       </Card>
 
-      {error && (
-        <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-          {error}
-        </div>
-      )}
+      {error && <Alert variant="warn">{error}</Alert>}
 
       <div className="flex items-center justify-between gap-2">
         <Button variant="ghost" onClick={() => router.push("/weekly")}>
