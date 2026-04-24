@@ -15,6 +15,7 @@ import {
   latestTreatmentCycles,
 } from "~/lib/db/queries";
 import { useLocale } from "~/hooks/use-translate";
+import { useSettings } from "~/hooks/use-settings";
 import { useWeather } from "~/hooks/use-weather";
 import { Sparkline } from "~/components/ui/sparkline";
 import { PROTOCOL_BY_ID } from "~/config/protocols";
@@ -59,14 +60,14 @@ export function PillarTiles() {
   const dailies = useLiveQuery(() => latestDailyEntries(7));
   const labs = useLiveQuery(() => latestLabs(7));
   const cycles = useLiveQuery(() => latestTreatmentCycles(1));
-  const settings = useLiveQuery(() => db.settings.toArray());
+  const settings = useSettings();
 
   const ordered = (dailies ?? []).slice().reverse();
   const todayISO = format(new Date(), "yyyy-MM-dd");
   const todayEntry = ordered.find((d) => d.date === todayISO);
   const recentCycle = (cycles ?? [])[0];
   const latestLab = (labs ?? [])[0];
-  const baselineWeight = settings?.[0]?.baseline_weight_kg;
+  const baselineWeight = settings?.baseline_weight_kg;
 
   // -- Symptoms 7d -------------------------------------------------------
   const symptomSeries = useMemo(

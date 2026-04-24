@@ -18,6 +18,9 @@ import {
   revokeInvite,
 } from "~/lib/supabase/households";
 import { useHousehold } from "~/hooks/use-household";
+import { useSettings } from "~/hooks/use-settings";
+import { pickL, useBilingual } from "~/hooks/use-bilingual";
+import { useLocale } from "~/hooks/use-translate";
 import type {
   CareTeamMember,
   CareTeamRole,
@@ -27,7 +30,6 @@ import type {
   HouseholdMemberWithProfile,
   HouseholdRole,
 } from "~/types/household";
-import { useLocale } from "~/hooks/use-translate";
 import { Field, TextInput } from "~/components/ui/field";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -92,10 +94,10 @@ const EMPTY_DRAFT: DraftMember = {
 
 export function CareTeamSection() {
   const locale = useLocale();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useBilingual();
 
   const members = useLiveQuery(() => db.care_team.toArray(), []);
-  const settings = useLiveQuery(() => db.settings.toArray(), []);
+  const settings = useSettings();
 
   const { membership } = useHousehold();
   const householdId = membership?.household_id ?? null;
@@ -112,7 +114,7 @@ export function CareTeamSection() {
   // One-time hydrate from legacy managing_oncologist / hospital_name once
   // settings are loaded and the registry is empty.
   useEffect(() => {
-    const s = settings?.[0];
+    const s = settings;
     if (!s || members === undefined) return;
     if (members.length > 0) return;
     void hydrateFromLegacySettings({
@@ -169,7 +171,7 @@ export function CareTeamSection() {
           }
         } else {
           await addCareTeamMember({
-            name: m.profile.display_name?.trim() || L("Family member", "家庭成员"),
+            name: m.profile.display_name?.trim() || pickL(locale, "Family member", "家庭成员"),
             role: householdRoleToCareTeamRole(m.role),
             notes: m.profile.care_role_label?.trim() || undefined,
             account_user_id: m.user_id,
@@ -178,7 +180,7 @@ export function CareTeamSection() {
         }
       }
     })();
-  }, [supaMembers, members]);
+  }, [supaMembers, members, locale]);
 
   const grouped = useMemo(() => {
     const byRole = new Map<CareTeamRole, CareTeamMember[]>();
@@ -603,7 +605,7 @@ function AccountStatusBadge({
   locale: "en" | "zh";
 }) {
   if (!status || status === "none") return null;
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = (en: string, zh: string) => pickL(locale, en, zh);
   if (status === "invited") {
     return (
       <span className="rounded-full bg-[var(--sand)] px-1.5 py-0.5 text-[9.5px] font-medium uppercase tracking-[0.08em] text-ink-900">
@@ -635,7 +637,7 @@ function DraftEditor({
   locale: "en" | "zh";
   canInvite: boolean;
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = (en: string, zh: string) => pickL(locale, en, zh);
   const isFamily = draft.role === "family";
   return (
     <Card>

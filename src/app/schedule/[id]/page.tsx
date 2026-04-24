@@ -13,6 +13,7 @@ import { AttendanceControls } from "~/components/schedule/attendance-controls";
 import { LinkedRecords } from "~/components/schedule/linked-records";
 import { PrepPanel } from "~/components/schedule/prep-panel";
 import { useLocale, useT } from "~/hooks/use-translate";
+import { useBilingual } from "~/hooks/use-bilingual";
 import { useState } from "react";
 import type { Appointment, AppointmentLink } from "~/types/appointment";
 import { logTagsForKind } from "~/lib/appointments/follow-up-tasks";
@@ -261,7 +262,7 @@ function DiscussionItemsPanel({
   appt: Appointment;
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useBilingual();
   const [draft, setDraft] = useState("");
   const items = appt.discussion_items ?? [];
 

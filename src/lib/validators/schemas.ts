@@ -2,6 +2,12 @@ import { z } from "zod";
 
 const scale0to10 = z.number().min(0).max(10);
 
+// `entered_by` is the household member who logged the entry. The full
+// EnteredBy type in ~/types/clinical also includes "clinician" and
+// "jonalyn", but those identities don't enter data through the wizard,
+// so the schema accepts only the three household roles.
+const householdEnteredBy = z.enum(["hulin", "catherine", "thomas"]);
+
 // Every field except date + entered_by is optional. The picker-style
 // wizard in /daily/new only records categories the patient actually
 // touched; "skipped" categories leave their fields undefined rather than
@@ -9,7 +15,7 @@ const scale0to10 = z.number().min(0).max(10);
 // symptoms" rather than "didn't say").
 export const dailyEntrySchema = z.object({
   date: z.string(),
-  entered_by: z.enum(["hulin", "catherine", "thomas"]),
+  entered_by: householdEnteredBy,
   entered_by_user_id: z.string().uuid().optional(),
   energy: scale0to10.optional(),
   sleep_quality: scale0to10.optional(),
@@ -95,7 +101,7 @@ export type SettingsInput = z.infer<typeof settingsSchema>;
 
 export const fortnightlyAssessmentSchema = z.object({
   assessment_date: z.string(),
-  entered_by: z.enum(["hulin", "catherine", "thomas"]),
+  entered_by: householdEnteredBy,
   ecog_self: z.union([
     z.literal(0),
     z.literal(1),
@@ -142,7 +148,7 @@ export type FortnightlyAssessmentInput = z.infer<
 
 export const weeklyAssessmentSchema = z.object({
   week_start: z.string(),
-  entered_by: z.enum(["hulin", "catherine", "thomas"]),
+  entered_by: householdEnteredBy,
   practice_full_days: z.number().int().min(0).max(7),
   practice_reduced_days: z.number().int().min(0).max(7),
   practice_skipped_days: z.number().int().min(0).max(7),

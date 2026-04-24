@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
-import { useLocale } from "~/hooks/use-translate";
+import { useBilingual } from "~/hooks/use-bilingual";
+import { useSettings } from "~/hooks/use-settings";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Field, TextInput, Textarea } from "~/components/ui/field";
@@ -20,8 +19,7 @@ export function CalendarSubscribe({
 }: {
   onDraft: (draft: IngestDraft) => void;
 }) {
-  const locale = useLocale();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useBilingual();
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -29,8 +27,7 @@ export function CalendarSubscribe({
 
   // Pull the patient's home timezone so floating ICS times (no TZID) are
   // resolved to the right wall clock. Falls back to the browser zone.
-  const settings = useLiveQuery(() => db.settings.toArray(), []);
-  const homeTz = settings?.[0]?.home_timezone;
+  const homeTz = useSettings()?.home_timezone;
 
   async function fetchAndParse() {
     const canUrl = url.trim().length > 0;

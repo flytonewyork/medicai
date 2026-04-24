@@ -10,6 +10,7 @@ import {
   updateMyProfile,
 } from "~/lib/supabase/households";
 import { useHousehold } from "~/hooks/use-household";
+import { pickL } from "~/hooks/use-bilingual";
 import { useUIStore } from "~/stores/ui-store";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent } from "~/components/ui/card";
@@ -129,7 +130,7 @@ export default function InviteWelcomePage() {
   const stepIdx = STEPS.indexOf(step);
   const progress = ((stepIdx + 1) / STEPS.length) * 100;
 
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = (en: string, zh: string) => pickL(locale, en, zh);
 
   function pickRelationship(id: string, label: string) {
     setRelationship(label);

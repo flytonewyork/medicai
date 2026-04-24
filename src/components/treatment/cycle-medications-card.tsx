@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
+import { useBilingual } from "~/hooks/use-bilingual";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { DRUGS_BY_ID } from "~/config/drug-registry";
 import { scheduleSummary } from "~/lib/medication/practices";
@@ -19,7 +20,7 @@ import { ChevronRight, Pencil, Pill, Plus, Zap } from "lucide-react";
 
 export function CycleMedicationsCard({ cycleId }: { cycleId?: number }) {
   const locale = useLocale();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useBilingual();
 
   const meds = useLiveQuery(async () => {
     const all = await db.medications.toArray();

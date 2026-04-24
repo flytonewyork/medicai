@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
 import { useTodayFeed } from "~/hooks/use-today-feed";
 import { useWeather } from "~/hooks/use-weather";
 import { useLocale, useT } from "~/hooks/use-translate";
+import { useSettings } from "~/hooks/use-settings";
 import { generateNarrative } from "~/lib/nudges/ai-narrative";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -93,8 +92,7 @@ export function TodayFeed({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [rawFeed, excludeKey],
   );
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const model = settings?.[0]?.default_ai_model ?? "claude-opus-4-7";
+  const model = useSettings()?.default_ai_model ?? "claude-opus-4-7";
 
   const [expanded, setExpanded] = useState(false);
   const [narrative, setNarrative] = useState<string | null>(null);

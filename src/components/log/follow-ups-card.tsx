@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
+import { useBilingual } from "~/hooks/use-bilingual";
 import { generateFollowUps, type FollowUpItem } from "~/lib/log/follow-ups";
 import { addDiscussionItem } from "~/lib/appointments/discussion-items";
 import type { DirectFileResult } from "~/lib/log/direct-file";
@@ -58,7 +59,7 @@ const SEVERITY_STYLES: Record<
 
 export function FollowUpsCard({ filed }: { filed: DirectFileResult }) {
   const locale = useLocale();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useBilingual();
 
   const team = useLiveQuery(() => db.care_team.toArray(), []);
   const nextClinic = useLiveQuery(async () => {
@@ -119,7 +120,7 @@ function FollowUpRow({
   item: FollowUpItem;
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useBilingual();
   const style = SEVERITY_STYLES[item.severity];
   return (
     <div
@@ -186,7 +187,7 @@ function ActionChip({
   action: FollowUpItem["actions"][number];
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useBilingual();
   const [status, setStatus] =
     useState<"idle" | "working" | "done" | "error">("idle");
 

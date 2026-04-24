@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
+import { useBilingual } from "~/hooks/use-bilingual";
 import {
   ensureCycleMedications,
   getActiveMedications,
@@ -77,7 +78,7 @@ function Inner() {
     seeded,
   ]);
 
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useBilingual();
 
   const grouped = useMemo(() => {
     const protocolMeds: Medication[] = [];
@@ -205,7 +206,7 @@ function NewPrescriptionForm({ locale }: { locale: "en" | "zh" }) {
   const [dose, setDose] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useBilingual();
 
   async function save() {
     if (!name.trim()) return;
@@ -291,7 +292,7 @@ function PrescriptionRow({
     (locale === "zh" ? catalogue?.name.zh : catalogue?.name.en) ??
     med.display_name ??
     med.drug_id;
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useBilingual();
 
   const [editing, setEditing] = useState(false);
   const [dose, setDose] = useState(med.dose ?? "");

@@ -6,7 +6,7 @@ import { useCan } from "~/hooks/use-can";
 import { useHousehold } from "~/hooks/use-household";
 import { listInvites } from "~/lib/supabase/households";
 import type { HouseholdInvite } from "~/types/household";
-import { useLocale } from "~/hooks/use-translate";
+import { useBilingual } from "~/hooks/use-bilingual";
 import { Card, CardContent } from "~/components/ui/card";
 import { Clock, ChevronRight } from "lucide-react";
 
@@ -16,7 +16,7 @@ import { Clock, ChevronRight } from "lucide-react";
 // pending invites.
 
 export function PendingInvitesCard() {
-  const locale = useLocale();
+  const L = useBilingual();
   const canSee = useCan("see_pending_invites");
   const { membership } = useHousehold();
   const [pending, setPending] = useState<HouseholdInvite[] | null>(null);
@@ -47,7 +47,6 @@ export function PendingInvitesCard() {
 
   if (!canSee || !pending || pending.length === 0) return null;
 
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
   return (
     <Card>
       <CardContent className="flex items-center justify-between gap-3 pt-4">

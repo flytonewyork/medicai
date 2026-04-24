@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useLocale } from "~/hooks/use-translate";
+import { useBilingual } from "~/hooks/use-bilingual";
 import { PageHeader } from "~/components/ui/page-header";
 import { ChevronRight, NotebookPen, Utensils } from "lucide-react";
 
@@ -11,8 +11,7 @@ import { ChevronRight, NotebookPen, Utensils } from "lucide-react";
 // on medical-document intake; the AddFab routes both flows directly.
 
 export default function CapturePage() {
-  const locale = useLocale();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useBilingual();
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4 md:p-8">

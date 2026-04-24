@@ -1,8 +1,9 @@
 "use client";
 
-import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
+import { useBilingual } from "~/hooks/use-bilingual";
+import { useSettings } from "~/hooks/use-settings";
 import {
   SYMPTOM_CATALOG,
   defaultTrackedSymptomIds,
@@ -30,11 +31,9 @@ const TAG_LABEL: Record<SymptomTag, { en: string; zh: string }> = {
 
 export function TrackedSymptomsSection() {
   const locale = useLocale();
-  const settings = useLiveQuery(() => db.settings.toArray(), []);
-  const s = settings?.[0];
+  const L = useBilingual();
+  const s = useSettings();
   const tracked = new Set(s?.tracked_symptoms ?? defaultTrackedSymptomIds());
-
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
 
   async function toggle(id: string) {
     if (!s?.id) return;

@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
+import { useBilingual } from "~/hooks/use-bilingual";
 import type { CareTeamMember, CareTeamRole } from "~/types/care-team";
 import { Phone, Mail, Star } from "lucide-react";
 
@@ -52,7 +53,7 @@ export function CallList() {
     return map;
   }, [members]);
 
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useBilingual();
 
   if (members === undefined) return null;
 

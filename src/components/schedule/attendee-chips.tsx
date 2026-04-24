@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
+import { pickL } from "~/hooks/use-bilingual";
 import { X, Plus } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 
@@ -25,7 +26,7 @@ export function AttendeeChips({
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = (en: string, zh: string) => pickL(locale, en, zh);
 
   const suggestions = useMemo(() => {
     const names = new Set(value.map((v) => v.trim().toLowerCase()));

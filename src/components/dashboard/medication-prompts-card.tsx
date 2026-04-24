@@ -6,6 +6,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
 import { useActiveCycleContext } from "~/hooks/use-active-cycle";
+import { useSettings } from "~/hooks/use-settings";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { DRUGS_BY_ID } from "~/config/drug-registry";
@@ -244,9 +245,9 @@ function CallClinicAction({
   variant: "primary" | "tide";
   onAck: () => void | Promise<void>;
 }) {
-  const settings = useLiveQuery(() => db.settings.toArray());
+  const settings = useSettings();
   const phone =
-    settings?.[0]?.oncall_phone ?? settings?.[0]?.managing_oncologist_phone;
+    settings?.oncall_phone ?? settings?.managing_oncologist_phone;
   if (phone) {
     return (
       <a href={`tel:${phone.replace(/\s/g, "")}`} onClick={() => void onAck()}>

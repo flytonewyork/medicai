@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
+import { useSettings } from "~/hooks/use-settings";
 import { useUIStore } from "~/stores/ui-store";
 import {
   TEST_CATALOG,
@@ -80,8 +81,7 @@ export function AssessmentWizard({ assessmentId }: WizardProps) {
     () => db.comprehensive_assessments.get(assessmentId),
     [assessmentId],
   );
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const baseline = settings?.[0] ?? null;
+  const baseline = useSettings() ?? null;
 
   const [draft, setDraft] = useState<AssessmentDraft>({});
   const [tests, setTests] = useState<TestId[]>([]);

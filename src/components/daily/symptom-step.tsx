@@ -1,7 +1,7 @@
 "use client";
 
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
+import { useSettings } from "~/hooks/use-settings";
+import { pickL } from "~/hooks/use-bilingual";
 import type { DailyEntry } from "~/types/clinical";
 import {
   SYMPTOM_CATALOG,
@@ -42,12 +42,11 @@ export function SymptomStep({
   locale: "en" | "zh";
   inChemoWindow: boolean;
 }) {
-  const settings = useLiveQuery(() => db.settings.toArray(), []);
   const trackedIds =
-    settings?.[0]?.tracked_symptoms ?? defaultTrackedSymptomIds();
+    useSettings()?.tracked_symptoms ?? defaultTrackedSymptomIds();
   const rows = rankTrackedSymptoms(trackedIds, { inChemoWindow });
 
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = (en: string, zh: string) => pickL(locale, en, zh);
 
   if (rows.length === 0) {
     return (

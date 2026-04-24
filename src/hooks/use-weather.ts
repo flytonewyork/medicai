@@ -1,18 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
 import {
   fetchCurrentWeather,
   type CurrentWeather,
 } from "~/lib/weather/open-meteo";
+import { useSettings } from "~/hooks/use-settings";
 
 const CACHE_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
 
 export function useWeather(): CurrentWeather | null {
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const s = settings?.[0];
+  const s = useSettings();
   const city = s?.home_city;
   const lat = s?.home_lat;
   const lon = s?.home_lon;

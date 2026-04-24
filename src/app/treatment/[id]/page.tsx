@@ -8,6 +8,7 @@ import { db, now } from "~/lib/db/dexie";
 import { latestDailyEntries } from "~/lib/db/queries";
 import { buildCycleContext } from "~/lib/treatment/engine";
 import { useLocale } from "~/hooks/use-translate";
+import { useBilingual } from "~/hooks/use-bilingual";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -389,7 +390,7 @@ function CycleQuickActions({
   protocol: { dose_days: number[]; cycle_length_days: number };
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useBilingual();
 
   const today = new Date();
   const startMs = parseISO(cycle.start_date).getTime();

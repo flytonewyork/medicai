@@ -14,6 +14,7 @@ import { composeTodayFeed } from "~/lib/nudges/compose";
 import { PROTOCOL_BY_ID } from "~/config/protocols";
 import { NUDGE_LIBRARY } from "~/config/treatment-nudges";
 import { todayISO } from "~/lib/utils/date";
+import { useSettings } from "~/hooks/use-settings";
 import type { FeedItem } from "~/types/feed";
 import type { CycleContext, NudgeTemplate } from "~/types/treatment";
 import type { CurrentWeather } from "~/lib/weather/open-meteo";
@@ -23,7 +24,7 @@ export function useTodayFeed({
 }: {
   weather: CurrentWeather | null;
 }): FeedItem[] {
-  const settings = useLiveQuery(() => db.settings.toArray());
+  const settings = useSettings();
   const dailies = useLiveQuery(() => latestDailyEntries(28));
   const labs = useLiveQuery(() => latestLabs(10));
   const tasks = useLiveQuery(() => db.patient_tasks.toArray());
@@ -32,7 +33,7 @@ export function useTodayFeed({
   const agentRuns = useLiveQuery(() => latestAgentRuns(40));
 
   return useMemo(() => {
-    const s = settings?.[0] ?? null;
+    const s = settings ?? null;
     const orderedDailies = (dailies ?? []).slice().reverse();
     const orderedLabs = (labs ?? []).slice().reverse();
     const openAlerts = (alerts ?? []).filter((a) => !a.resolved);

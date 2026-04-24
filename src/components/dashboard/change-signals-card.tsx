@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
+import { useSettings } from "~/hooks/use-settings";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import {
@@ -57,7 +58,7 @@ const TONE_BY_SEVERITY: Record<
 
 export function ChangeSignalsCard() {
   const locale = useLocale();
-  const settings = useLiveQuery(() => db.settings.toArray(), []);
+  const settings = useSettings();
   const dailies = useLiveQuery(
     () => db.daily_entries.orderBy("date").toArray(),
     [],
@@ -87,7 +88,7 @@ export function ChangeSignalsCard() {
     const asOf = new Date().toISOString();
     const inputs = {
       as_of: asOf,
-      settings: settings?.[0] ?? null,
+      settings: settings ?? null,
       dailies,
       fortnightlies,
       labs,

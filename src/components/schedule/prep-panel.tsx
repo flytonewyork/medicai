@@ -11,6 +11,7 @@ import {
 } from "~/lib/appointments/prep";
 import type { Appointment, AppointmentPrep } from "~/types/appointment";
 import { useLocale } from "~/hooks/use-translate";
+import { useBilingual } from "~/hooks/use-bilingual";
 import { Card, CardContent } from "~/components/ui/card";
 import { PrepEditor } from "./prep-editor";
 import { Button } from "~/components/ui/button";
@@ -31,7 +32,7 @@ import { cn } from "~/lib/utils/cn";
 
 export function PrepPanel({ appt }: { appt: Appointment }) {
   const locale = useLocale();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useBilingual();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<AppointmentPrep[]>(appt.prep ?? []);
   const [saving, setSaving] = useState(false);

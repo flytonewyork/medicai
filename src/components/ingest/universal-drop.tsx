@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { prepareImageForVision } from "~/lib/ingest/image";
 import { useLocale } from "~/hooks/use-translate";
+import { useBilingual } from "~/hooks/use-bilingual";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Field, Textarea } from "~/components/ui/field";
@@ -24,7 +25,7 @@ export function UniversalDrop({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useBilingual();
 
   async function parseText() {
     if (!text.trim()) return;
