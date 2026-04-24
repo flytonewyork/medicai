@@ -15,11 +15,11 @@ export function Disclosure({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40">
+    <div className="rounded-md border border-ink-200 bg-paper/60">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs font-medium text-slate-700 dark:text-slate-300"
+        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs font-medium text-ink-700 transition-colors hover:bg-ink-100/40"
         aria-expanded={open}
       >
         <span className="flex items-center gap-1.5">{label}</span>
@@ -31,7 +31,7 @@ export function Disclosure({
         />
       </button>
       {open && (
-        <div className="border-t border-slate-200 dark:border-slate-800 px-3 py-3 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+        <div className="border-t border-ink-100 px-3 py-3 text-xs leading-relaxed text-ink-500">
           {children}
         </div>
       )}

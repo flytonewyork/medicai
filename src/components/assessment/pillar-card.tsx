@@ -16,12 +16,12 @@ export function PillarRing({
   const offset = circumference * (1 - score / 100);
   const tone =
     score >= 75
-      ? "text-emerald-600 dark:text-emerald-400"
+      ? "text-[var(--ok)]"
       : score >= 50
-        ? "text-amber-600 dark:text-amber-400"
+        ? "text-[var(--sand-2)]"
         : score >= 30
-          ? "text-orange-600 dark:text-orange-400"
-          : "text-red-600 dark:text-red-400";
+          ? "text-[var(--warn)]"
+          : "text-[var(--warn)]";
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
@@ -29,7 +29,7 @@ export function PillarRing({
           cx={size / 2}
           cy={size / 2}
           r={r}
-          className="stroke-slate-200 dark:stroke-slate-800"
+          className="stroke-ink-200"
           strokeWidth={stroke}
           fill="none"
         />
@@ -47,7 +47,7 @@ export function PillarRing({
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-sm font-semibold tabular-nums">
+        <span className="serif text-sm tabular-nums text-ink-900">
           {Math.round(score)}
         </span>
       </div>
@@ -65,14 +65,12 @@ export function PillarTile({
   note?: string;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+    <div className="a-card p-4">
       <div className="flex items-center gap-3">
         <PillarRing score={score} />
         <div>
-          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            {label}
-          </div>
-          <div className="mt-0.5 text-sm text-slate-700 dark:text-slate-300">
+          <div className="eyebrow">{label}</div>
+          <div className="mt-0.5 text-sm text-ink-700">
             {note}
           </div>
         </div>

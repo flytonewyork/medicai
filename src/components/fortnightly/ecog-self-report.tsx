@@ -76,19 +76,19 @@ export function EcogSelfReport({
             type="button"
             onClick={() => onChange(level)}
             className={cn(
-              "flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-all",
+              "flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors",
               active
-                ? "border-slate-900 bg-slate-900 text-white shadow-sm dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900"
-                : "border-slate-200 bg-white hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-600",
+                ? "border-ink-900 bg-ink-900 text-paper"
+                : "border-ink-200 bg-paper-2 hover:border-ink-300",
             )}
             aria-pressed={active}
           >
             <span
               className={cn(
-                "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
+                "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums",
                 active
-                  ? "bg-white text-slate-900 dark:bg-slate-900 dark:text-white"
-                  : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+                  ? "bg-paper text-ink-900"
+                  : "bg-ink-100 text-ink-700",
               )}
               aria-hidden
             >
@@ -99,7 +99,7 @@ export function EcogSelfReport({
               <span
                 className={cn(
                   "block text-xs leading-relaxed",
-                  active ? "text-slate-100 dark:text-slate-700" : "text-slate-500",
+                  active ? "text-paper/80" : "text-ink-500",
                 )}
               >
                 {detail}

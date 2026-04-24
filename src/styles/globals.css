@@ -8,6 +8,7 @@
 :root {
   --ink-900: oklch(22% 0.015 250);
   --ink-700: oklch(35% 0.015 250);
+  --ink-600: oklch(44% 0.014 250);
   --ink-500: oklch(52% 0.012 250);
   --ink-400: oklch(65% 0.010 250);
   --ink-300: oklch(78% 0.008 250);
@@ -53,6 +54,7 @@ html[data-theme="dark"] :root,
   --ink-300: oklch(44% 0.010 250);
   --ink-400: oklch(60% 0.010 250);
   --ink-500: oklch(72% 0.010 250);
+  --ink-600: oklch(80% 0.009 250);
   --ink-700: oklch(88% 0.008 250);
   --ink-900: oklch(96% 0.006 250);
   --tide-soft: oklch(32% 0.05 210);

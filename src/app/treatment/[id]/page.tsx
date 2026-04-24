@@ -232,7 +232,7 @@ export default function CycleDetailPage() {
             {protocol.description[locale]}
           </p>
           <div className="space-y-1">
-            <div className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+            <div className="eyebrow">
               {locale === "zh" ? "药物" : "Agents"}
             </div>
             <ul className="space-y-1">
@@ -247,7 +247,7 @@ export default function CycleDetailPage() {
             </ul>
           </div>
           <div className="space-y-1">
-            <div className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+            <div className="eyebrow">
               {locale === "zh" ? "预用药" : "Premeds"}
             </div>
             <p className="text-xs text-ink-600">
@@ -255,7 +255,7 @@ export default function CycleDetailPage() {
             </p>
           </div>
           <div className="space-y-1">
-            <div className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+            <div className="eyebrow">
               {locale === "zh" ? "典型副作用谱" : "Side effect profile"}
             </div>
             <p className="text-xs text-ink-600">
