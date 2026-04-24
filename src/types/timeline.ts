@@ -1,13 +1,14 @@
 import type { EnteredBy } from "./clinical";
 
 // Owner of a media blob. Media is attached to a timeline-visible anchor:
-// a life event (family moment), a family note (commentary), or an
-// appointment (clinical milestone). The profile / legacy module will
-// extend this union in v17 when it lands; keep it narrow for now.
+// a life event (family moment), a family note (commentary), an
+// appointment (clinical milestone), or — in v17 — a profile entry
+// (Legacy module: a voice memo or video in the biographer's corpus).
 export type TimelineMediaOwnerType =
   | "life_event"
   | "family_note"
-  | "appointment";
+  | "appointment"
+  | "profile_entry";
 
 export type TimelineMediaKind = "photo" | "video" | "voice";
 
