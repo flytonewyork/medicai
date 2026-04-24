@@ -9,13 +9,8 @@ import {
   Plus,
   X,
   CalendarDays,
-  CalendarRange,
   CalendarClock,
-  Stethoscope,
-  Utensils,
-  NotebookPen,
   ListTodo,
-  Camera,
   Pill,
   MessageSquarePlus,
   Sparkles,
@@ -79,13 +74,19 @@ const CAREGIVER_ITEMS: FabItem[] = [
   },
 ];
 
+// Patient FAB — one capture channel, one check-in, one appointment verb,
+// one medication quick-log. Everything else (weekly / fortnightly /
+// handwritten notes / meal photos / lab uploads) funnels through Smart
+// capture or gets prompted from the feed when it's due. Keeps the
+// first-touch surface to what the patient actually reaches for on a
+// tired day.
 const ITEMS: FabItem[] = [
   {
     action: "ingest",
     label: { en: "Smart capture", zh: "智能导入" },
     hint: {
-      en: "Phone note, photo, paste — Claude classifies and previews",
-      zh: "电话记录、照片、粘贴 —— Claude 分类并预览",
+      en: "Photo, paste, voice — Claude files it",
+      zh: "照片 / 粘贴 / 语音 —— Claude 自动归档",
     },
     icon: Sparkles,
     tone: "tide",
@@ -99,16 +100,6 @@ const ITEMS: FabItem[] = [
     },
     icon: MessageSquarePlus,
     tone: "sand",
-  },
-  {
-    href: "/schedule/new",
-    label: { en: "New appointment", zh: "新建预约" },
-    hint: {
-      en: "Clinic / chemo / scan / blood test",
-      zh: "门诊 / 化疗 / 检查 / 化验",
-    },
-    icon: CalendarClock,
-    tone: "tide",
   },
   {
     href: "/daily/new",
@@ -125,44 +116,15 @@ const ITEMS: FabItem[] = [
       zh: "已服、漏服、副作用",
     },
     icon: Pill,
-    tone: "tide",
   },
   {
-    href: "/ingest/meal",
-    label: { en: "Meal photo", zh: "餐食照片" },
+    href: "/schedule/new",
+    label: { en: "New appointment", zh: "新建预约" },
     hint: {
-      en: "Protein + PERT estimate",
-      zh: "蛋白与胰酶建议",
+      en: "Clinic / chemo / scan / blood test",
+      zh: "门诊 / 化疗 / 检查 / 化验",
     },
-    icon: Utensils,
-    tone: "tide",
-  },
-  {
-    href: "/ingest/notes",
-    label: { en: "Handwritten notes", zh: "手写笔记" },
-    hint: { en: "Photo → daily log", zh: "照片 → 每日日志" },
-    icon: NotebookPen,
-  },
-  {
-    href: "/ingest",
-    label: { en: "Upload report", zh: "上传报告" },
-    hint: { en: "Lab / imaging / referral", zh: "化验 / 影像 / 转诊" },
-    icon: Camera,
-  },
-  {
-    href: "/weekly/new",
-    label: { en: "Weekly reflection", zh: "每周回顾" },
-    hint: { en: "Sunday evening, ~5 min", zh: "周日晚约 5 分钟" },
-    icon: CalendarRange,
-  },
-  {
-    href: "/fortnightly/new",
-    label: { en: "Functional tests", zh: "两周功能评估" },
-    hint: {
-      en: "Grip, gait, SARC-F",
-      zh: "握力、步速、SARC-F",
-    },
-    icon: Stethoscope,
+    icon: CalendarClock,
   },
   {
     href: "/tasks/new",

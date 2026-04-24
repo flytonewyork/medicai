@@ -38,6 +38,14 @@ export function NextClinicCard() {
   }, [appointments]);
 
   if (!next) return null;
+  // ScheduleCard already shows today + tomorrow appointments. Suppress this
+  // dedicated card when the next clinic is already in that window so the
+  // dashboard doesn't surface the same appointment twice.
+  const startToday = new Date();
+  startToday.setHours(0, 0, 0, 0);
+  const endTomorrow = startToday.getTime() + 2 * 24 * 60 * 60 * 1000;
+  const nextStart = new Date(next.starts_at).getTime();
+  if (Number.isFinite(nextStart) && nextStart < endTomorrow) return null;
 
   const when = new Date(next.starts_at);
   const dateLabel = isToday(when)
