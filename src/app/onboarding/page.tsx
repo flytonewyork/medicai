@@ -670,7 +670,14 @@ function PickPatientStep({
   >([]);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState<string | null>(null);
+  const [joinedName, setJoinedName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // When the discovery RPC isn't installed (typically because the carer-
+  // onboarding migration hasn't been applied), we fall back to an
+  // invite-token paste box so the user can still complete onboarding.
+  const [pickerUnavailable, setPickerUnavailable] = useState(false);
+  const [inviteInput, setInviteInput] = useState("");
+  const [acceptingInvite, setAcceptingInvite] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -682,7 +689,14 @@ function PickPatientStep({
         const all = await listAllHouseholds();
         if (!cancelled) setRows(all);
       } catch (err) {
-        if (!cancelled) {
+        if (cancelled) return;
+        if (
+          err &&
+          typeof err === "object" &&
+          (err as { code?: string }).code === "caregiver_picker_unavailable"
+        ) {
+          setPickerUnavailable(true);
+        } else {
           setError(errorMessage(err));
         }
       } finally {
@@ -694,7 +708,7 @@ function PickPatientStep({
     };
   }, []);
 
-  async function join(id: string) {
+  async function join(id: string, displayName: string) {
     setJoining(id);
     setError(null);
     try {
@@ -702,7 +716,10 @@ function PickPatientStep({
         "~/lib/supabase/households"
       );
       await joinHouseholdAsFamily(id);
-      onJoined();
+      setJoinedName(displayName);
+      // Brief celebratory beat so the carer sees the join landed before
+      // the wizard pushes them onto the profile step.
+      setTimeout(() => onJoined(), 700);
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -710,13 +727,37 @@ function PickPatientStep({
     }
   }
 
+  async function acceptPastedInvite() {
+    setError(null);
+    const { extractInviteToken, acceptInvite } = await import(
+      "~/lib/supabase/households"
+    );
+    const token = extractInviteToken(inviteInput);
+    if (!token) {
+      setError(
+        L(
+          "That doesn't look like an Anchor invite link. Paste the full URL or just the token.",
+          "这不像是 Anchor 邀请链接。请粘贴完整网址或令牌。",
+        ),
+      );
+      return;
+    }
+    setAcceptingInvite(true);
+    try {
+      await acceptInvite(token);
+      setJoinedName(L("the care team", "护理团队"));
+      setTimeout(() => onJoined(), 700);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setAcceptingInvite(false);
+    }
+  }
+
   return (
     <Card className="p-6 space-y-4">
       <div className="serif text-[22px] leading-tight">
-        {L(
-          "Who are you supporting?",
-          "您要支持的是哪位患者?",
-        )}
+        {L("Who are you supporting?", "您要支持的是哪位患者?")}
       </div>
       <p className="text-[13px] text-ink-500">
         {L(
@@ -725,13 +766,27 @@ function PickPatientStep({
         )}
       </p>
 
-      {loading && (
+      {joinedName && (
+        <div className="flex items-start gap-2 rounded-md border border-[var(--ok)]/40 bg-[var(--ok-soft)] p-3 text-[12.5px] text-ink-700">
+          <Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--ok)]" />
+          <div>
+            <div className="font-semibold text-ink-900">
+              {L("You're in.", "已加入。")}
+            </div>
+            <div className="text-ink-500">
+              {L(`Joined ${joinedName}'s care team.`, `已加入 ${joinedName} 的护理团队。`)}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {loading && !joinedName && (
         <div className="rounded-md border border-ink-200 bg-paper-2 p-3 text-[12.5px] text-ink-500">
           {L("Loading patients…", "加载中…")}
         </div>
       )}
 
-      {!loading && !error && rows.length === 0 && (
+      {!loading && !joinedName && !pickerUnavailable && !error && rows.length === 0 && (
         <div className="rounded-md border border-dashed border-ink-300 bg-paper p-4 text-[12.5px] text-ink-600">
           {L(
             "No patients have set up Anchor yet. Ask the person you're supporting to create their profile first, or set up a fresh patient yourself.",
@@ -740,57 +795,93 @@ function PickPatientStep({
         </div>
       )}
 
-      {!loading && rows.length > 0 && (
+      {!loading && !joinedName && rows.length > 0 && (
         <ul className="space-y-2">
-          {rows.map((h) => (
-            <li key={h.id}>
-              <button
-                type="button"
-                onClick={() => void join(h.id)}
-                disabled={joining !== null}
-                className={cn(
-                  "flex w-full items-center justify-between gap-3 rounded-xl border p-4 text-left transition-colors",
-                  joining === h.id
-                    ? "border-[var(--tide-2)] bg-[var(--tide-soft)]"
-                    : "border-ink-200 bg-paper-2 hover:border-ink-400",
-                )}
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="text-[14.5px] font-semibold text-ink-900">
-                    {h.patient_display_name || h.name}
+          {rows.map((h) => {
+            const display = h.patient_display_name || h.name;
+            return (
+              <li key={h.id}>
+                <button
+                  type="button"
+                  onClick={() => void join(h.id, display)}
+                  disabled={joining !== null}
+                  className={cn(
+                    "flex w-full items-center justify-between gap-3 rounded-xl border p-4 text-left transition-colors",
+                    joining === h.id
+                      ? "border-[var(--tide-2)] bg-[var(--tide-soft)]"
+                      : "border-ink-200 bg-paper-2 hover:border-ink-400",
+                  )}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[14.5px] font-semibold text-ink-900">
+                      {display}
+                    </div>
+                    <div className="mt-0.5 text-[11.5px] text-ink-500">
+                      {h.member_count}{" "}
+                      {h.member_count === 1
+                        ? L("member", "位成员")
+                        : L("members", "位成员")}
+                    </div>
                   </div>
-                  <div className="mt-0.5 text-[11.5px] text-ink-500">
-                    {h.member_count}{" "}
-                    {h.member_count === 1
-                      ? L("member", "位成员")
-                      : L("members", "位成员")}
-                  </div>
-                </div>
-                <span className="mono text-[10px] uppercase tracking-[0.12em] text-ink-400">
-                  {joining === h.id ? L("Joining…", "加入中…") : L("Join", "加入")}
-                </span>
-              </button>
-            </li>
-          ))}
+                  <span className="mono text-[10px] uppercase tracking-[0.12em] text-ink-400">
+                    {joining === h.id ? L("Joining…", "加入中…") : L("Join", "加入")}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
 
-      {error && (
+      {!loading && !joinedName && pickerUnavailable && (
+        <div className="space-y-3 rounded-md border border-ink-200 bg-paper-2 p-4">
+          <div className="text-[12.5px] text-ink-700">
+            {L(
+              "Browsing every patient isn't enabled on this server yet. If the patient already has Anchor set up, paste the invite link they sent you.",
+              "本服务器尚未开启患者浏览功能。如对方已在使用 Anchor,请粘贴 ta 发来的邀请链接。",
+            )}
+          </div>
+          <div className="flex gap-2">
+            <TextInput
+              value={inviteInput}
+              onChange={(e) => setInviteInput(e.target.value)}
+              placeholder={L(
+                "https://anchor.app/invite/…",
+                "https://anchor.app/invite/…",
+              )}
+              disabled={acceptingInvite}
+            />
+            <Button
+              onClick={() => void acceptPastedInvite()}
+              disabled={acceptingInvite || inviteInput.trim().length === 0}
+            >
+              {acceptingInvite ? L("Joining…", "加入中…") : L("Join", "加入")}
+            </Button>
+          </div>
+          <p className="text-[11.5px] text-ink-400">
+            {L(
+              "Server admin: apply migration 2026_04_24_slice_p_caregiver_onboarding_reload.sql in Supabase to enable the picker.",
+              "服务器管理员:在 Supabase 中应用迁移 2026_04_24_slice_p_caregiver_onboarding_reload.sql 即可启用选择器。",
+            )}
+          </p>
+        </div>
+      )}
+
+      {error && !joinedName && (
         <div className="rounded-md border border-[var(--warn)]/40 bg-[var(--warn-soft)] p-2.5 text-[12px] text-[var(--warn)]">
           {error}
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={onStartFresh}
-        className="text-[12px] text-ink-500 underline-offset-2 hover:text-ink-900 hover:underline"
-      >
-        {L(
-          "I'm setting up a new patient instead",
-          "我要新建一位患者",
-        )}
-      </button>
+      {!joinedName && (
+        <button
+          type="button"
+          onClick={onStartFresh}
+          className="text-[12px] text-ink-500 underline-offset-2 hover:text-ink-900 hover:underline"
+        >
+          {L("I'm setting up a new patient instead", "我要新建一位患者")}
+        </button>
+      )}
     </Card>
   );
 }
