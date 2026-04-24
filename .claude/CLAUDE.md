@@ -76,8 +76,7 @@ not predetermined.
 
 ## Design principles
 
-1. Local-first always. IndexedDB via Dexie. No cloud, no server, no PHI leaves
-   the device for MVP. Phase 2 may add encrypted sync.
+1. Local-first then sync to cloud DB. IndexedDB via Dexie.
 2. Bilingual (English + Simplified Chinese). All patient-facing copy. Clinical
    terminology may remain English in reports.
 3. Mobile-first for daily tracking. Desktop-first for analytical dashboards.
