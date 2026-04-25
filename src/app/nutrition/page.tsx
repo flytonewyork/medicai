@@ -8,6 +8,7 @@ import { PageHeader } from "~/components/ui/page-header";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { DailyTotals } from "~/components/nutrition/daily-totals";
+import { HydrationCard } from "~/components/nutrition/hydration-card";
 import { MealTimeline } from "~/components/nutrition/meal-timeline";
 import { MealList } from "~/components/nutrition/meal-list";
 import { WeeklySummary } from "~/components/nutrition/weekly-summary";
@@ -42,6 +43,8 @@ export default function NutritionPage() {
       />
 
       <DailyTotals date={date} />
+
+      <HydrationCard date={date} />
 
       <MealTimeline date={date} />
 

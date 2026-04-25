@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Trash2, ChevronDown } from "lucide-react";
+import { Trash2, ChevronDown, BookmarkPlus, Repeat } from "lucide-react";
 import {
   listMealsForDate,
   listItemsForMeal,
   deleteMeal,
 } from "~/lib/nutrition/queries";
+import { relogMeal, saveMealAsTemplate } from "~/lib/nutrition/templates";
+import { todayISO } from "~/lib/utils/date";
 import { Card } from "~/components/ui/card";
 import { cn } from "~/lib/utils/cn";
 import { useLocale } from "~/hooks/use-translate";
@@ -140,7 +142,42 @@ function MealCard({ mealId }: { mealId: number }) {
               </li>
             ))}
           </ul>
-          <div className="flex justify-end pt-1">
+          <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={async () => {
+                await relogMeal({
+                  source_meal_id: mealId,
+                  date: todayISO(),
+                  entered_by: "hulin",
+                });
+              }}
+              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-ink-500 hover:bg-ink-100 hover:text-ink-900"
+            >
+              <Repeat className="h-3 w-3" />
+              {locale === "zh" ? "再来一次" : "Log again"}
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const name = prompt(
+                  locale === "zh"
+                    ? "给这一餐起个名字 (例如：常吃的早餐)"
+                    : "Save this meal as… (e.g. My usual breakfast)",
+                  meal.notes ?? "",
+                );
+                if (name && name.trim()) {
+                  await saveMealAsTemplate({
+                    meal_entry_id: mealId,
+                    name: name.trim(),
+                  });
+                }
+              }}
+              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-ink-500 hover:bg-ink-100 hover:text-ink-900"
+            >
+              <BookmarkPlus className="h-3 w-3" />
+              {locale === "zh" ? "保存常吃" : "Save as template"}
+            </button>
             <button
               type="button"
               onClick={async () => {

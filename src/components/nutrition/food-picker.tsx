@@ -1,9 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search, Plus, X } from "lucide-react";
+import { Search, Plus, X, Sparkles } from "lucide-react";
 import { searchFoods } from "~/lib/nutrition/queries";
 import { foodHint, scaleByGrams } from "~/lib/nutrition/calculator";
+import {
+  loadSymptomContext,
+  SYMPTOM_LABEL,
+  type NutritionSymptomContext,
+} from "~/lib/nutrition/symptom-context";
 import { cn } from "~/lib/utils/cn";
 import { useLocale } from "~/hooks/use-translate";
 import type { FoodItem } from "~/types/nutrition";
@@ -42,16 +47,40 @@ export function FoodPicker({
   const [results, setResults] = useState<FoodItem[]>([]);
   const [selected, setSelected] = useState<FoodItem | null>(null);
   const [grams, setGrams] = useState(100);
+  const [symptomCtx, setSymptomCtx] =
+    useState<NutritionSymptomContext | null>(null);
+  const [symptomFilterEnabled, setSymptomFilterEnabled] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    searchFoods(query, { limit: 30, ketoOnly, easyDigestOnly }).then((rows) => {
+    void loadSymptomContext().then((ctx) => {
+      if (!cancelled) setSymptomCtx(ctx);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Bias picker to easy-digest foods when today's symptoms suggest the
+  // patient is fragile (nausea, mucositis, diarrhea, low appetite).
+  // Manual `easyDigestOnly` prop still wins; this is the soft default.
+  const effectiveEasyDigest =
+    easyDigestOnly ||
+    (symptomFilterEnabled && symptomCtx?.recommendEasyDigest === true);
+
+  useEffect(() => {
+    let cancelled = false;
+    searchFoods(query, {
+      limit: 30,
+      ketoOnly,
+      easyDigestOnly: effectiveEasyDigest,
+    }).then((rows) => {
       if (!cancelled) setResults(rows);
     });
     return () => {
       cancelled = true;
     };
-  }, [query, ketoOnly, easyDigestOnly]);
+  }, [query, ketoOnly, effectiveEasyDigest]);
 
   useEffect(() => {
     if (selected?.default_serving_g) setGrams(selected.default_serving_g);
@@ -64,6 +93,36 @@ export function FoodPicker({
 
   return (
     <div className={cn("space-y-3", className)}>
+      {symptomCtx?.recommendEasyDigest && !easyDigestOnly && (
+        <div className="flex items-start gap-2 rounded-md bg-[var(--sand)]/30 px-3 py-2 text-[11px] text-ink-700">
+          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--tide-2)]" />
+          <div className="flex-1">
+            <div>
+              {locale === "zh"
+                ? `今天有 ${symptomCtx.flags
+                    .map((f) => SYMPTOM_LABEL[f].zh)
+                    .join("、")} — 优先显示易消化的食物。`
+                : `Today: ${symptomCtx.flags
+                    .map((f) => SYMPTOM_LABEL[f].en)
+                    .join(", ")} — showing easy-digest first.`}
+            </div>
+            <button
+              type="button"
+              onClick={() => setSymptomFilterEnabled((v) => !v)}
+              className="mt-0.5 text-[10px] text-ink-500 underline-offset-2 hover:text-ink-900 hover:underline"
+            >
+              {symptomFilterEnabled
+                ? locale === "zh"
+                  ? "显示全部"
+                  : "Show all"
+                : locale === "zh"
+                ? "重新启用筛选"
+                : "Re-enable filter"}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
         <TextInput
