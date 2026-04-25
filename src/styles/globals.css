@@ -99,21 +99,26 @@ body {
 
 /* Mobile sticky header height + padding.
  *
- * Default (non-standalone Safari / Chrome): a constant 3.5rem. We do NOT
- * add `env(safe-area-inset-top)` here, because in iOS Safari with
- * `viewport-fit=cover` the inset is reported as 0 while the URL bar is
- * visible and as the notch height (~47px) once the URL bar collapses on
- * scroll — which used to make the header grow mid-scroll. The browser's
- * own URL bar is the safe-area chrome in that mode, so we don't need to
- * pad for the status bar ourselves.
+ * Default (non-standalone Safari / Chrome): a constant 3.5rem (h-14, 56px).
+ * We do NOT add `env(safe-area-inset-top)` here, because in iOS Safari
+ * with `viewport-fit=cover` the inset is reported as 0 while the URL bar
+ * is visible and as the notch height (~47px) once the URL bar collapses
+ * on scroll — which used to make the header grow mid-scroll. The
+ * browser's own URL bar is the safe-area chrome in that mode, so we
+ * don't need to pad for the status bar ourselves.
  *
  * Standalone (PWA + Capacitor iOS): the inset is constant for the
  * lifetime of the session — the WebView paints under the status bar
  * because of `apple-mobile-web-app-status-bar-style: black-translucent`.
- * Bake the inset into both height and padding so the header always
- * covers the status-bar zone. The `display-mode: standalone` guard is
- * the standard PWA detection; Capacitor's WebView reports standalone
- * as well, so it covers iOS shell + browser-installed PWA.
+ * The nav-row content is sized at 2.75rem (44px) to match iOS native
+ * navigation-bar height; the inset is added on top as `padding-top` so
+ * the header background still covers the status-bar zone. Total visual
+ * height on a notched iPhone is ~91px (47 inset + 44 nav), matching
+ * what users expect from a native iOS app.
+ *
+ * The `display-mode: standalone` guard is the standard PWA detection;
+ * Capacitor's WebView reports standalone as well, so it covers iOS
+ * shell + browser-installed PWA.
  */
 .mobile-header {
   height: 3.5rem;
@@ -121,7 +126,7 @@ body {
 }
 @media all and (display-mode: standalone) {
   .mobile-header {
-    height: calc(3.5rem + env(safe-area-inset-top));
+    height: calc(2.75rem + env(safe-area-inset-top));
     padding-top: env(safe-area-inset-top);
   }
 }
