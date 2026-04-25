@@ -50,6 +50,8 @@ import type {
   FoodItem,
   MealEntry,
   MealItem,
+  FluidLog,
+  MealTemplate,
 } from "~/types/nutrition";
 
 export class AnchorDB extends Dexie {
@@ -98,6 +100,9 @@ export class AnchorDB extends Dexie {
   foods!: Table<FoodItem, number>;
   meal_entries!: Table<MealEntry, number>;
   meal_items!: Table<MealItem, number>;
+  // v19: Nutrition enhancements.
+  fluid_logs!: Table<FluidLog, number>;
+  meal_templates!: Table<MealTemplate, number>;
 
   constructor() {
     super("anchor_db");
@@ -304,6 +309,22 @@ export class AnchorDB extends Dexie {
         "[date+meal_type]",
       meal_items:
         "++id, meal_entry_id, food_id, created_at",
+    });
+    // v19: Nutrition enhancements — hydration tracking + meal templates.
+    //
+    // - fluid_logs: one row per swallow event. Indexed by `date` for
+    //   the daily total and `logged_at` for the day-clock view. The
+    //   compound `[date+kind]` lets the dashboard slice "water vs.
+    //   electrolyte vs. broth" cheaply for the 7-day trend.
+    // - meal_templates: saved-meal definitions. Items are stored as a
+    //   JSON-shaped property in the row (not a separate table) since
+    //   templates are immutable snapshots. Indexed by `last_used_at`
+    //   for the recent-templates list and `use_count` for "favourites".
+    this.version(19).stores({
+      fluid_logs:
+        "++id, date, kind, logged_at, [date+kind]",
+      meal_templates:
+        "++id, name, meal_type, last_used_at, use_count, updated_at",
     });
   }
 }

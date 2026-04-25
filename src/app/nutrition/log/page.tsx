@@ -15,6 +15,7 @@ import {
   type PreviewItem,
 } from "~/components/nutrition/parsed-preview";
 import { FoodPicker } from "~/components/nutrition/food-picker";
+import { TemplatesPicker } from "~/components/nutrition/templates-picker";
 import { createMeal } from "~/lib/nutrition/queries";
 import { sumItems } from "~/lib/nutrition/calculator";
 import type {
@@ -166,6 +167,11 @@ export default function LogMealPage() {
         />
       ) : (
         <>
+          <TemplatesPicker
+            date={todayISO()}
+            onLogged={() => router.push("/nutrition")}
+          />
+
           <MealIngest
             onParsed={(result, src, photo) => {
               setParsed(result);

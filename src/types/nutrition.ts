@@ -169,4 +169,68 @@ export interface FoodPickerHint {
   label: LocalizedString;
 }
 
+// ─── Hydration ───────────────────────────────────────────────────────
+//
+// Fluid intake is the nutrition agent's third remit (`role.md`). PDAC +
+// chemo dehydration risk is real — especially during gemcitabine
+// infusion days. We store one row per swallow event so the dashboard
+// can sum a daily total and the timeline can show clustering.
+
+export type FluidKind =
+  | "water"
+  | "tea"
+  | "coffee"
+  | "broth"
+  | "electrolyte"
+  | "soup"
+  | "other";
+
+export interface FluidLog {
+  id?: number;
+  date: string;                    // YYYY-MM-DD (local day)
+  logged_at: string;               // ISO datetime
+  kind: FluidKind;
+  volume_ml: number;
+  notes?: string;
+  entered_by: EnteredBy;
+  entered_by_user_id?: string;
+  created_at: string;
+}
+
+// ─── Meal templates ──────────────────────────────────────────────────
+//
+// "My usual breakfast" — the small-frequent-meal pattern produces
+// repetitive eating, especially on low-appetite days. A template
+// snapshots the items so a one-tap re-log is possible. Items are
+// stored as JSON since they're immutable per template snapshot.
+
+export interface MealTemplateItem {
+  food_id?: number;
+  food_name: string;
+  food_name_zh?: string;
+  serving_grams: number;
+  // Per-item macros (already scaled to serving_grams), stored so a
+  // template logs identically even if the source food row is later
+  // edited.
+  calories: number;
+  protein_g: number;
+  fat_g: number;
+  carbs_total_g: number;
+  fiber_g: number;
+  net_carbs_g: number;
+}
+
+export interface MealTemplate {
+  id?: number;
+  name: string;
+  name_zh?: string;
+  meal_type?: MealType;
+  items: MealTemplateItem[];
+  notes?: string;
+  use_count: number;
+  last_used_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export type { Locale };

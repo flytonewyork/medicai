@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Camera, Loader2, Sparkles, Type, Mic } from "lucide-react";
+import { Camera, Loader2, Sparkles, Type, Mic, MicOff } from "lucide-react";
 import { prepareImageForVision } from "~/lib/ingest/image";
+import { useSpeechRecognition } from "~/hooks/use-speech-recognition";
 import {
   parseMealPhoto,
   parseMealText,
@@ -26,6 +27,13 @@ export function MealIngest({
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Voice dictation streams interim words into the textarea so the
+  // patient can see what was heard before tapping Parse. Mandarin
+  // routes through `zh-CN`; everything else uses en-US.
+  const speech = useSpeechRecognition({
+    lang: locale === "zh" ? "zh-CN" : "en-US",
+    onFinal: (chunk) => setText((cur) => `${cur} ${chunk}`.trim()),
+  });
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function handleFile(file: File) {
@@ -129,7 +137,30 @@ export function MealIngest({
               }
               disabled={busy}
             />
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between gap-2">
+              {speech ? (
+                <Button
+                  type="button"
+                  variant={speech.listening ? "danger" : "secondary"}
+                  size="sm"
+                  onClick={speech.toggle}
+                  disabled={busy}
+                >
+                  {speech.listening ? (
+                    <>
+                      <MicOff className="h-3.5 w-3.5" />
+                      {locale === "zh" ? "停止" : "Stop"}
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="h-3.5 w-3.5" />
+                      {locale === "zh" ? "说话" : "Speak"}
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <span />
+              )}
               <Button onClick={handleText} disabled={busy || !text.trim()}>
                 {busy ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
