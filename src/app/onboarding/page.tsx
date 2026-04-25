@@ -22,18 +22,22 @@ import {
 import { cn } from "~/lib/utils/cn";
 
 // Order is load-bearing: welcome + profile + preferences is the "core" path
-// that gets every user onto the dashboard quickly. Team / baselines /
-// treatment are optional detail — skippable via "Finish setup later" so the
-// patient isn't gated behind data they don't have on hand.
-// Patient onboarding walks the full path: profile + team + baselines +
-// treatment are all about the patient's own situation.
+// that gets every user onto the dashboard quickly. Team / treatment are
+// optional detail — skippable via "Finish setup later" so the patient
+// isn't gated behind data they don't have on hand.
+//
+// Baselines (weight, grip, gait speed, sit-to-stand, MUAC, calf) are
+// deliberately NOT collected here. They belong in the first
+// comprehensive assessment, where they are taken with proper
+// instruments and form part of the pillar baseline that subsequent
+// assessments compare against. Onboarding's job is to get the patient
+// onto the dashboard fast; clinical measurements come later.
 const PATIENT_STEPS = [
   "welcome",
   "user_type",
   "profile",
   "preferences",
   "team",
-  "baselines",
   "treatment",
   "done",
 ] as const;
@@ -60,7 +64,6 @@ const CAN_SKIP_FROM: StepKey[] = [
   "profile",
   "preferences",
   "team",
-  "baselines",
   "treatment",
   "pick_patient",
 ];
@@ -72,7 +75,6 @@ const STEP_LABELS: Record<Locale, Record<StepKey, string>> = {
     pick_patient: "Pick a patient",
     profile: "About you",
     team: "Clinical team",
-    baselines: "Baselines",
     treatment: "Treatment",
     preferences: "Preferences",
     done: "All set",
@@ -83,7 +85,6 @@ const STEP_LABELS: Record<Locale, Record<StepKey, string>> = {
     pick_patient: "选择患者",
     profile: "基本信息",
     team: "医疗团队",
-    baselines: "基线数据",
     treatment: "治疗方案",
     preferences: "偏好设置",
     done: "完成",
@@ -104,14 +105,6 @@ interface FormState {
   oncall_phone: string;
   emergency_instructions: string;
   height_cm: string;
-  baseline_weight_kg: string;
-  baseline_grip_dominant_kg: string;
-  baseline_gait_speed_ms: string;
-  baseline_sit_to_stand: string;       // 30-second count
-  baseline_sts_5x_seconds: string;     // 5× STS time
-  baseline_tug_seconds: string;        // Timed Up-and-Go seconds
-  baseline_muac_cm: string;
-  baseline_calf_cm: string;
   start_cycle: boolean;
   protocol_id: ProtocolId;
   cycle_start_date: string;
@@ -133,14 +126,6 @@ const EMPTY: FormState = {
   oncall_phone: "",
   emergency_instructions: "",
   height_cm: "",
-  baseline_weight_kg: "",
-  baseline_grip_dominant_kg: "",
-  baseline_gait_speed_ms: "",
-  baseline_sit_to_stand: "",
-  baseline_sts_5x_seconds: "",
-  baseline_tug_seconds: "",
-  baseline_muac_cm: "",
-  baseline_calf_cm: "",
   start_cycle: false,
   protocol_id: "gnp_weekly",
   cycle_start_date: todayISO(),
@@ -187,26 +172,6 @@ export default function OnboardingPage() {
         oncall_phone: s.oncall_phone ?? "",
         emergency_instructions: s.emergency_instructions ?? "",
         height_cm: s.height_cm ? String(s.height_cm) : "",
-        baseline_weight_kg: s.baseline_weight_kg
-          ? String(s.baseline_weight_kg)
-          : "",
-        baseline_grip_dominant_kg: s.baseline_grip_dominant_kg
-          ? String(s.baseline_grip_dominant_kg)
-          : "",
-        baseline_gait_speed_ms: s.baseline_gait_speed_ms
-          ? String(s.baseline_gait_speed_ms)
-          : "",
-        baseline_sit_to_stand: s.baseline_sit_to_stand
-          ? String(s.baseline_sit_to_stand)
-          : "",
-        baseline_sts_5x_seconds: s.baseline_sts_5x_seconds
-          ? String(s.baseline_sts_5x_seconds)
-          : "",
-        baseline_tug_seconds: s.baseline_tug_seconds
-          ? String(s.baseline_tug_seconds)
-          : "",
-        baseline_muac_cm: s.baseline_muac_cm ? String(s.baseline_muac_cm) : "",
-        baseline_calf_cm: s.baseline_calf_cm ? String(s.baseline_calf_cm) : "",
         locale: s.locale,
         home_city: s.home_city ?? "",
       }));
@@ -287,26 +252,11 @@ export default function OnboardingPage() {
         dob: isCaregiver ? undefined : form.dob || undefined,
         diagnosis_date: isCaregiver ? undefined : form.diagnosis_date || undefined,
         height_cm: isCaregiver ? undefined : toNum(form.height_cm),
-        baseline_weight_kg: isCaregiver ? undefined : toNum(form.baseline_weight_kg),
-        baseline_date:
-          isCaregiver || !form.baseline_weight_kg ? undefined : todayISO(),
-        baseline_grip_dominant_kg: isCaregiver
-          ? undefined
-          : toNum(form.baseline_grip_dominant_kg),
-        baseline_gait_speed_ms: isCaregiver
-          ? undefined
-          : toNum(form.baseline_gait_speed_ms),
-        baseline_sit_to_stand: isCaregiver
-          ? undefined
-          : toNum(form.baseline_sit_to_stand),
-        baseline_sts_5x_seconds: isCaregiver
-          ? undefined
-          : toNum(form.baseline_sts_5x_seconds),
-        baseline_tug_seconds: isCaregiver
-          ? undefined
-          : toNum(form.baseline_tug_seconds),
-        baseline_muac_cm: isCaregiver ? undefined : toNum(form.baseline_muac_cm),
-        baseline_calf_cm: isCaregiver ? undefined : toNum(form.baseline_calf_cm),
+        // Baselines are deliberately NOT collected during onboarding —
+        // they belong in the first comprehensive assessment, where the
+        // measurements can be taken with proper instruments and form
+        // the pillar baseline. The settings row will pick them up the
+        // first time the patient runs through /assessment.
         locale: form.locale,
         managing_oncologist: isCaregiver
           ? undefined
@@ -445,9 +395,6 @@ export default function OnboardingPage() {
       )}
       {step === "team" && (
         <TeamStep form={form} update={update} locale={locale} />
-      )}
-      {step === "baselines" && (
-        <BaselinesStep form={form} update={update} locale={locale} />
       )}
       {step === "treatment" && (
         <TreatmentStep form={form} update={update} locale={locale} />
@@ -1031,133 +978,6 @@ function TeamStep({
   );
 }
 
-function BaselinesStep({
-  form,
-  update,
-  locale,
-}: {
-  form: FormState;
-  update: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
-  locale: Locale;
-}) {
-  return (
-    <Card className="p-6 space-y-4">
-      <div>
-        <div className="serif text-[22px] leading-tight">
-          {locale === "zh" ? "基线数据" : "Baselines"}
-        </div>
-        <p className="mt-1 text-xs text-ink-500">
-          {locale === "zh"
-            ? "用于后续的体重、握力、步速等对比。没有测量过的可以先跳过。"
-            : "Used to compare weight / grip / gait over time. Skip any you haven't measured."}
-        </p>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label={locale === "zh" ? "身高 (cm)" : "Height (cm)"}>
-          <TextInput
-            type="number"
-            step="0.5"
-            value={form.height_cm}
-            onChange={(e) => update("height_cm", e.target.value)}
-          />
-        </Field>
-        <Field label={locale === "zh" ? "体重 (kg)" : "Weight (kg)"}>
-          <TextInput
-            type="number"
-            step="0.1"
-            value={form.baseline_weight_kg}
-            onChange={(e) => update("baseline_weight_kg", e.target.value)}
-          />
-        </Field>
-        <Field
-          label={
-            locale === "zh"
-              ? "握力 — 惯用手 (kg)"
-              : "Grip — dominant (kg)"
-          }
-        >
-          <TextInput
-            type="number"
-            step="0.5"
-            value={form.baseline_grip_dominant_kg}
-            onChange={(e) =>
-              update("baseline_grip_dominant_kg", e.target.value)
-            }
-          />
-        </Field>
-        <Field
-          label={locale === "zh" ? "4 米步速 (m/s)" : "4 m gait speed (m/s)"}
-        >
-          <TextInput
-            type="number"
-            step="0.05"
-            value={form.baseline_gait_speed_ms}
-            onChange={(e) => update("baseline_gait_speed_ms", e.target.value)}
-          />
-        </Field>
-        <Field
-          label={
-            locale === "zh"
-              ? "30 秒坐立次数"
-              : "30 s sit-to-stand (count)"
-          }
-        >
-          <TextInput
-            type="number"
-            step="1"
-            value={form.baseline_sit_to_stand}
-            onChange={(e) => update("baseline_sit_to_stand", e.target.value)}
-          />
-        </Field>
-        <Field
-          label={
-            locale === "zh" ? "5 次坐立 (秒)" : "5× sit-to-stand (s)"
-          }
-        >
-          <TextInput
-            type="number"
-            step="0.1"
-            value={form.baseline_sts_5x_seconds}
-            onChange={(e) =>
-              update("baseline_sts_5x_seconds", e.target.value)
-            }
-          />
-        </Field>
-        <Field
-          label={
-            locale === "zh" ? "起立行走 TUG (秒)" : "Timed Up-and-Go (s)"
-          }
-        >
-          <TextInput
-            type="number"
-            step="0.1"
-            value={form.baseline_tug_seconds}
-            onChange={(e) => update("baseline_tug_seconds", e.target.value)}
-          />
-        </Field>
-        <Field
-          label={locale === "zh" ? "上臂围 MUAC (cm)" : "Upper arm (MUAC, cm)"}
-        >
-          <TextInput
-            type="number"
-            step="0.5"
-            value={form.baseline_muac_cm}
-            onChange={(e) => update("baseline_muac_cm", e.target.value)}
-          />
-        </Field>
-        <Field label={locale === "zh" ? "小腿围 (cm)" : "Calf (cm)"}>
-          <TextInput
-            type="number"
-            step="0.5"
-            value={form.baseline_calf_cm}
-            onChange={(e) => update("baseline_calf_cm", e.target.value)}
-          />
-        </Field>
-      </div>
-    </Card>
-  );
-}
-
 function TreatmentStep({
   form,
   update,
@@ -1312,14 +1132,6 @@ function DoneStep({ form, locale }: { form: FormState; locale: Locale }) {
     [
       locale === "zh" ? "24 小时值班" : "24/7 on-call",
       form.oncall_phone || (locale === "zh" ? "未填" : "Not set"),
-    ],
-    [
-      locale === "zh" ? "体重基线" : "Weight baseline",
-      form.baseline_weight_kg
-        ? `${form.baseline_weight_kg} kg`
-        : locale === "zh"
-          ? "未填"
-          : "Not set",
     ],
     [
       locale === "zh" ? "方案" : "Protocol",
