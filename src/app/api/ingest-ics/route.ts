@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { icsEventsToOps, parseIcs } from "~/lib/ingest/ics";
+import { readJsonBody } from "~/lib/anthropic/route-helpers";
 import type { IngestDraft } from "~/types/ingest";
 
 export const runtime = "nodejs";
@@ -34,12 +35,9 @@ function normaliseUrl(raw: string): string {
 }
 
 export async function POST(req: Request) {
-  let body: RequestBody;
-  try {
-    body = (await req.json()) as RequestBody;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
+  const parsed = await readJsonBody<RequestBody>(req);
+  if (parsed.error) return parsed.error;
+  const body = parsed.body;
 
   let raw: string | null = null;
   let sourceHint = "pasted ICS text";

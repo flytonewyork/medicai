@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
 import { useLocale, useT } from "~/hooks/use-translate";
+import { useSettings } from "~/hooks/use-settings";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -18,7 +19,7 @@ export default function ReportsPage() {
   const [generating, setGenerating] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  const settings = useLiveQuery(() => db.settings.toArray());
+  const settings = useSettings();
   const dailyCount = useLiveQuery(() => db.daily_entries.count());
   const fortnightlyCount = useLiveQuery(() =>
     db.fortnightly_assessments.count(),
@@ -142,7 +143,7 @@ export default function ReportsPage() {
                 ? "生成 PDF"
                 : "Generate PDF"}
           </Button>
-          {settings && settings.length === 0 && (
+          {settings === null && (
             <div className="mt-3 text-xs text-[oklch(45%_0.09_70)]">
               {locale === "zh"
                 ? "先在设置里填写基本信息，生成的小结会更完整。"

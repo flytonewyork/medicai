@@ -3,10 +3,10 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { settingsSchema, type SettingsInput } from "~/lib/validators/schemas";
 import { useLocale, useT } from "~/hooks/use-translate";
+import { useSettings } from "~/hooks/use-settings";
 import { useUIStore } from "~/stores/ui-store";
 import { AccountButton } from "~/components/shared/account-button";
 import { HouseholdSection } from "~/components/settings/household-section";
@@ -18,8 +18,7 @@ export default function SettingsPage() {
   const t = useT();
   const locale = useLocale();
   const setLocale = useUIStore((s) => s.setLocale);
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const current = settings?.[0];
+  const current = useSettings();
 
   const { register, handleSubmit, reset, formState } = useForm<SettingsInput>({
     resolver: zodResolver(settingsSchema),

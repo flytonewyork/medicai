@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { todayISO } from "~/lib/utils/date";
 import { useLocale, useT } from "~/hooks/use-translate";
+import { useSettings } from "~/hooks/use-settings";
 import { useUIStore } from "~/stores/ui-store";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -145,7 +145,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const setUILocale = useUIStore((s) => s.setLocale);
   const setEnteredBy = useUIStore((s) => s.setEnteredBy);
-  const existingSettings = useLiveQuery(() => db.settings.toArray());
+  const existingSettings = useSettings();
 
   const [form, setForm] = useState<FormState>({ ...EMPTY, locale });
   const [step, setStep] = useState<StepKey>("welcome");
@@ -153,7 +153,7 @@ export default function OnboardingPage() {
 
   // If already onboarded, bounce back to dashboard.
   useEffect(() => {
-    const s = existingSettings?.[0];
+    const s = existingSettings;
     if (s?.onboarded_at) {
       router.replace("/");
     } else if (s) {
@@ -284,10 +284,10 @@ export default function OnboardingPage() {
         home_lon,
         home_timezone,
         onboarded_at: ts,
-        created_at: existingSettings?.[0]?.created_at ?? ts,
+        created_at: existingSettings?.created_at ?? ts,
         updated_at: ts,
       };
-      const existing = existingSettings?.[0];
+      const existing = existingSettings;
       if (existing?.id) {
         await db.settings.put({ ...payload, id: existing.id });
       } else {

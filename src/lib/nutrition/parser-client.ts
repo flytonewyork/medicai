@@ -2,6 +2,7 @@
 
 import type { PreparedImage } from "~/lib/ingest/image";
 import type { ParsedMealResult } from "./parser-schema";
+import { DEFAULT_AI_MODEL } from "~/lib/anthropic/model";
 
 // Client-side shims around the /api/ai/parse-meal route. The route holds
 // the server-side ANTHROPIC_API_KEY; the parsers below are the only thing
@@ -9,7 +10,7 @@ import type { ParsedMealResult } from "./parser-schema";
 
 export async function parseMealPhoto({
   image,
-  model = "claude-opus-4-7",
+  model = DEFAULT_AI_MODEL,
   locale = "en",
 }: {
   image: PreparedImage;
@@ -28,7 +29,7 @@ export async function parseMealPhoto({
 
 export async function parseMealText({
   text,
-  model = "claude-opus-4-7",
+  model = DEFAULT_AI_MODEL,
   locale = "en",
 }: {
   text: string;

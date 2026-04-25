@@ -1,18 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils/cn";
 import { useLocale } from "~/hooks/use-translate";
+import { useDefaultAiModel } from "~/hooks/use-settings";
 import { askCoach, type CoachContext, type CoachMessage } from "~/lib/ai/coach";
 import { Sparkles, X, Send, Loader2 } from "lucide-react";
 
 export function CoachDrawer({ context }: { context: CoachContext }) {
   const locale = useLocale();
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const model = settings?.[0]?.default_ai_model ?? "claude-opus-4-7";
+  const model = useDefaultAiModel();
 
   const [open, setOpen] = useState(false);
   const [history, setHistory] = useState<CoachMessage[]>([]);

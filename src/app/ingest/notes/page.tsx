@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
+import { useDefaultAiModel } from "~/hooks/use-settings";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -23,8 +23,7 @@ type DailyPatch = NonNullable<NotesStructure["daily_patch"]>;
 
 export default function NotesIngestPage() {
   const locale = useLocale();
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const model = settings?.[0]?.default_ai_model ?? "claude-opus-4-7";
+  const model = useDefaultAiModel();
 
   const [prepared, setPrepared] = useState<PreparedImage | null>(null);
   const [preview, setPreview] = useState<string | null>(null);

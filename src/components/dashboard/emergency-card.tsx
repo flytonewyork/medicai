@@ -1,10 +1,9 @@
 "use client";
 
-import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
-import { db } from "~/lib/db/dexie";
 import { useZoneStatus } from "~/hooks/use-zone-status";
 import { useT } from "~/hooks/use-translate";
+import { useSettings } from "~/hooks/use-settings";
 import { Phone, AlertOctagon, MapPin, ChevronDown, ChevronUp } from "lucide-react";
 
 // Only rendered when zone is red/orange — on green/yellow days this stays
@@ -12,8 +11,7 @@ import { Phone, AlertOctagon, MapPin, ChevronDown, ChevronUp } from "lucide-reac
 // /settings; the feed surfaces them when zone changes trigger a review.
 export function EmergencyCard() {
   const t = useT();
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const s = settings?.[0];
+  const s = useSettings();
   const { zone } = useZoneStatus();
 
   const hasAnyContact =

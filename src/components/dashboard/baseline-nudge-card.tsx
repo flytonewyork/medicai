@@ -6,6 +6,7 @@ import { Stethoscope, ChevronRight } from "lucide-react";
 import { db } from "~/lib/db/dexie";
 import { Card, CardContent } from "~/components/ui/card";
 import { useLocale } from "~/hooks/use-translate";
+import { useSettings } from "~/hooks/use-settings";
 
 // Surfaced when the patient has finished onboarding but hasn't done a
 // first comprehensive assessment yet. Baselines (weight, grip, gait,
@@ -21,7 +22,7 @@ import { useLocale } from "~/hooks/use-translate";
 //   - any complete comprehensive_assessment exists in history
 export function BaselineNudgeCard() {
   const locale = useLocale();
-  const settings = useLiveQuery(() => db.settings.toArray());
+  const s = useSettings();
   const hasComplete = useLiveQuery(async () => {
     const rows = await db.comprehensive_assessments
       .orderBy("assessment_date")
@@ -31,9 +32,8 @@ export function BaselineNudgeCard() {
     return rows.some((r) => r.status === "complete");
   });
 
-  if (!settings || settings.length === 0) return null;
-  const s = settings[0];
-  if (!s?.onboarded_at) return null;
+  if (!s) return null;
+  if (!s.onboarded_at) return null;
   if (s.baseline_weight_kg) return null;
   if (hasComplete) return null;
 

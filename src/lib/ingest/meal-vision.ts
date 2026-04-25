@@ -1,5 +1,6 @@
 import { z } from "zod/v4";
 import type { PreparedImage } from "./image";
+import { DEFAULT_AI_MODEL } from "~/lib/anthropic/model";
 
 export const MealSchema = z.object({
   description: z
@@ -45,7 +46,7 @@ Rules:
 // the server-side ANTHROPIC_API_KEY. Kept as a named export with the
 // same signature as before, minus the apiKey parameter.
 export async function estimateMeal({
-  model = "claude-opus-4-7",
+  model = DEFAULT_AI_MODEL,
   image,
 }: {
   model?: string;
