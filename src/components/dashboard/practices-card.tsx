@@ -6,7 +6,6 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
 import { Card } from "~/components/ui/card";
-import { Button } from "~/components/ui/button";
 import { DRUGS_BY_ID } from "~/config/drug-registry";
 import {
   isCustomPractice,
@@ -15,7 +14,7 @@ import {
 import { logMedicationEvent } from "~/lib/medication/log";
 import { expectedDosesToday } from "~/lib/medication/log";
 import type { Medication } from "~/types/medication";
-import { Check, ChevronRight, Pause, Play, Plus, Sparkles, X } from "lucide-react";
+import { Check, ChevronRight, Pause, Play, Sparkles, X } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 import { todayISO } from "~/lib/utils/date";
 
@@ -88,8 +87,13 @@ export function PracticesCard() {
 
   // Hide the card entirely when nothing is scheduled or logged today — keeps
   // the dashboard quiet until the user has set up at least one practice.
+  // We also drop the card on days where the user has practices configured
+  // but none are due today and none have been logged: a placeholder "no
+  // practices scheduled" panel is dead UI on the dashboard, and the
+  // /practices route + FAB still let the patient add one.
   if (meds === undefined || todaysEvents === undefined) return null;
   if ((meds?.length ?? 0) === 0) return null;
+  if (rows.length === 0) return null;
 
   return (
     <Card className="p-4">
@@ -113,33 +117,17 @@ export function PracticesCard() {
         </Link>
       </div>
 
-      {rows.length === 0 ? (
-        <div className="mt-3 flex items-center justify-between rounded-[var(--r-md)] bg-paper-2 p-3 text-[12px] text-ink-600">
-          <span>
-            {locale === "zh"
-              ? "今日没有已排程的修习。"
-              : "No practices scheduled for today."}
-          </span>
-          <Link href="/practices/new">
-            <Button variant="ghost" size="sm" className="gap-1">
-              <Plus className="h-3.5 w-3.5" />
-              {locale === "zh" ? "添加" : "Add"}
-            </Button>
-          </Link>
-        </div>
-      ) : (
-        <ul className="mt-3 space-y-1.5">
-          {rows.map(({ med, due, logged }) => (
-            <PracticeRow
-              key={med.id}
-              med={med}
-              due={due}
-              logged={logged}
-              locale={locale}
-            />
-          ))}
-        </ul>
-      )}
+      <ul className="mt-3 space-y-1.5">
+        {rows.map(({ med, due, logged }) => (
+          <PracticeRow
+            key={med.id}
+            med={med}
+            due={due}
+            logged={logged}
+            locale={locale}
+          />
+        ))}
+      </ul>
     </Card>
   );
 }
@@ -169,15 +157,21 @@ function PracticeRow({
   const [paused, setPaused] = useState(false);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Single interval keyed on running/paused state, not on `remaining` —
+  // the previous version re-created the interval every tick, which on
+  // slow renders briefly let two intervals overlap and double-decrement.
+  const isRunning = remaining !== null;
   useEffect(() => {
-    if (remaining === null || paused) return;
-    tickRef.current = setInterval(() => {
+    if (!isRunning || paused) return;
+    const id = setInterval(() => {
       setRemaining((r) => (r === null ? r : r - 1));
     }, 1000);
+    tickRef.current = id;
     return () => {
-      if (tickRef.current) clearInterval(tickRef.current);
+      clearInterval(id);
+      if (tickRef.current === id) tickRef.current = null;
     };
-  }, [remaining, paused]);
+  }, [isRunning, paused]);
 
   useEffect(() => {
     if (remaining !== null && remaining <= 0) {

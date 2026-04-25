@@ -425,7 +425,15 @@ function ActionRow({
 function safeDeserialize(row: ChangeSignalRow): ChangeSignal | null {
   try {
     return deserializeSignal(row);
-  } catch {
+  } catch (err) {
+    // Schema drift / corrupt persistence would otherwise silently
+    // drop a clinically relevant signal from the dashboard. Log it
+    // so the issue is visible in dev tooling.
+    // eslint-disable-next-line no-console
+    console.warn(
+      "[change-signals] failed to deserialize signal row",
+      { id: row.id, detector: row.detector, err },
+    );
     return null;
   }
 }

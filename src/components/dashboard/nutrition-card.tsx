@@ -18,6 +18,12 @@ import { useLocale } from "~/hooks/use-translate";
 // Compact one-card surface for the dashboard. Surfaces protein progress
 // + net carbs against the patient's target. Tapping the card opens
 // the full nutrition surface.
+//
+// Hidden until the patient has logged at least one meal — on a fresh
+// install the "Log a meal" prompt is the FAB / Smart capture, not a
+// dashboard placeholder. Once any meal is logged the card stays
+// visible from then on (today's-meals empty state then becomes a
+// useful "log another" CTA rather than dead UI).
 export function NutritionCard() {
   const locale = useLocale();
   const today = todayISO();
@@ -25,6 +31,7 @@ export function NutritionCard() {
     async () => listMealsForDate(today),
     [today],
   );
+  const totalMealCount = useLiveQuery(() => db.meal_entries.count(), []);
   const meals = useMemo(() => mealsRaw ?? [], [mealsRaw]);
   const settings = useLiveQuery(() => db.settings.toCollection().first(), []);
   const target = useMemo(
@@ -34,6 +41,11 @@ export function NutritionCard() {
   const totals = useMemo(() => sumEntries(meals), [meals]);
   const proteinPct = (totals.total_protein_g / target.protein_g) * 100;
   const carbPct = (totals.total_net_carbs_g / target.net_carbs_g_max) * 100;
+
+  // Wait for the count query so the card doesn't flicker into a
+  // placeholder state before history is known.
+  if (totalMealCount === undefined) return null;
+  if (meals.length === 0 && totalMealCount === 0) return null;
 
   return (
     <Card>

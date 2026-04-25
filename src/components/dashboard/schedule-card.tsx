@@ -61,13 +61,13 @@ export function ScheduleCard() {
     [],
   );
 
-  const { upcoming, followUps } = useMemo(() => {
+  const { upcoming, followUps, totalUpcoming, totalFollowUps } = useMemo(() => {
     const list = appointments ?? [];
     const now = new Date();
     const startToday = startOfDay(now).getTime();
     const endTomorrow = startToday + 2 * 24 * 60 * 60 * 1000;
 
-    const upcoming = list
+    const upcomingAll = list
       .filter((a) => {
         const t = new Date(a.starts_at).getTime();
         return (
@@ -80,19 +80,34 @@ export function ScheduleCard() {
       .sort(
         (a, b) =>
           new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
-      )
-      .slice(0, 3);
+      );
 
-    const followUps = deriveFollowUpTasks({ appointments: list, now }).slice(
-      0,
-      3,
-    );
+    const followUpsAll = deriveFollowUpTasks({ appointments: list, now });
 
-    return { upcoming, followUps };
+    return {
+      upcoming: upcomingAll.slice(0, 3),
+      followUps: followUpsAll.slice(0, 3),
+      totalUpcoming: upcomingAll.length,
+      totalFollowUps: followUpsAll.length,
+    };
   }, [appointments]);
 
   if (!appointments) return null;
   if (upcoming.length === 0 && followUps.length === 0) return null;
+
+  // Surface a "+N more" hint when the visible slice is truncated, so
+  // the patient knows the day list isn't already exhaustive without
+  // having to navigate to /schedule to find out.
+  const hiddenUpcoming = Math.max(0, totalUpcoming - upcoming.length);
+  const hiddenFollowUps = Math.max(0, totalFollowUps - followUps.length);
+  const allLabel =
+    locale === "zh"
+      ? totalUpcoming > 3
+        ? `全部 (${totalUpcoming})`
+        : "全部"
+      : totalUpcoming > 3
+        ? `All (${totalUpcoming})`
+        : "All";
 
   return (
     <Card>
@@ -108,7 +123,7 @@ export function ScheduleCard() {
             href="/schedule"
             className="text-[12px] text-ink-500 hover:text-ink-900"
           >
-            {locale === "zh" ? "全部" : "All"}
+            {allLabel}
             <ChevronRight className="ml-0.5 inline h-3 w-3" />
           </Link>
         </div>
@@ -120,6 +135,18 @@ export function ScheduleCard() {
                 <UpcomingRow appt={a} locale={locale} />
               </li>
             ))}
+            {hiddenUpcoming > 0 && (
+              <li>
+                <Link
+                  href="/schedule"
+                  className="block rounded-md px-2.5 py-1 text-[11.5px] text-ink-500 hover:text-ink-900"
+                >
+                  {locale === "zh"
+                    ? `还有 ${hiddenUpcoming} 项 →`
+                    : `+${hiddenUpcoming} more →`}
+                </Link>
+              </li>
+            )}
           </ul>
         )}
 
@@ -145,6 +172,18 @@ export function ScheduleCard() {
                   </Link>
                 </li>
               ))}
+              {hiddenFollowUps > 0 && (
+                <li>
+                  <Link
+                    href="/schedule"
+                    className="block rounded-md px-2.5 py-1 text-[11.5px] text-ink-500 hover:text-ink-900"
+                  >
+                    {locale === "zh"
+                      ? `还有 ${hiddenFollowUps} 项 →`
+                      : `+${hiddenFollowUps} more →`}
+                  </Link>
+                </li>
+              )}
             </ul>
           </div>
         )}

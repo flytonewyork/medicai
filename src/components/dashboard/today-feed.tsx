@@ -144,7 +144,12 @@ export function TodayFeed({
         } catch {
           // ignore
         }
-      } catch {
+      } catch (err) {
+        // Narrative is best-effort — log so we know when the API
+        // gateway / rate limit is biting, but never block the feed
+        // on it.
+        // eslint-disable-next-line no-console
+        console.warn("[today-feed] narrative fetch failed", err);
         setNarrative(null);
       } finally {
         setNarrativeLoading(false);
@@ -184,7 +189,21 @@ export function TodayFeed({
       )}
 
       {narrativeLoading && !narrative && (
-        <div className="eyebrow px-1">{t("todayFeed.aiLoading")}</div>
+        <Card className="p-5" aria-busy="true">
+          <div className="flex items-start gap-3">
+            <div
+              className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+              style={{ background: "var(--tide-soft)", color: "var(--tide-2)" }}
+            >
+              <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+            </div>
+            <div className="flex-1 space-y-2">
+              <div className="eyebrow">{t("todayFeed.aiLoading")}</div>
+              <div className="h-3 w-3/4 animate-pulse rounded bg-ink-100" />
+              <div className="h-3 w-1/2 animate-pulse rounded bg-ink-100" />
+            </div>
+          </div>
+        </Card>
       )}
 
       <ul className="space-y-2">
