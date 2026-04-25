@@ -97,6 +97,21 @@ body {
   }
 }
 
+/* Floating add button: clears the mobile bottom nav (which is itself
+ * anchored at max(0.75rem, env(safe-area-inset-bottom)) and includes
+ * its own internal home-indicator padding). On iOS PWA the nav is
+ * ~110px tall once the home-indicator inset is included; the FAB needs
+ * to sit above that, otherwise it disappears behind the nav. Desktop
+ * (≥md) drops it back to 1.5rem from the viewport bottom. */
+.add-fab {
+  bottom: calc(5rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  .add-fab {
+    bottom: 1.5rem;
+  }
+}
+
 /* Mobile sticky header height + padding.
  *
  * Default (non-standalone Safari / Chrome): a constant 3.5rem (h-14, 56px).

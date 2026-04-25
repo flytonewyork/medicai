@@ -165,10 +165,16 @@ export function AddFab() {
 
   if (pathname === "/login" || pathname?.startsWith("/auth/")) return null;
 
+  // Mobile: float above the bottom nav. The nav itself is anchored at
+  // `max(0.75rem, env(safe-area-inset-bottom))` from the viewport with
+  // internal padding for the home indicator, so the FAB has to clear
+  // ~64px of nav + the iOS home-indicator inset; otherwise the nav
+  // hides the button on iOS PWA. Desktop keeps a flat 1.5rem from
+  // the viewport bottom — see `.add-fab` in globals.css.
   return (
     <div
       ref={ref}
-      className="fixed bottom-24 right-4 z-50 md:bottom-6 md:right-6"
+      className="add-fab fixed right-4 z-50 md:right-6"
     >
       {open && (
         <div className="mb-3 w-[280px] overflow-hidden rounded-[var(--r-lg)] border border-ink-100/80 bg-paper-2 shadow-xl">

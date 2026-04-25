@@ -10,6 +10,7 @@ import {
   getCurrentProfile,
   isProfileComplete,
 } from "~/lib/supabase/households";
+import { useLocale } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -37,7 +38,9 @@ export default function InvitePage() {
   const params = useParams<{ token: string }>();
   const token = params?.token;
   const router = useRouter();
+  const locale = useLocale();
   const [phase, setPhase] = useState<Phase>({ kind: "checking" });
+  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
 
   useEffect(() => {
     if (!token) return;
@@ -49,7 +52,10 @@ export default function InvitePage() {
         if (!cancelled)
           setPhase({
             kind: "error",
-            message: "Supabase is not configured on this build.",
+            message: L(
+              "Supabase is not configured on this build.",
+              "本版本未配置 Supabase。",
+            ),
           });
         return;
       }
@@ -79,16 +85,19 @@ export default function InvitePage() {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, router]);
 
   return (
     <div className="mx-auto max-w-md space-y-5 p-6 pt-16">
       <PageHeader
-        eyebrow="CARE TEAM"
-        title="Joining the family"
+        eyebrow={L("CARE TEAM", "护理团队")}
+        title={L("Joining the family", "加入家庭")}
       />
 
-      {phase.kind === "checking" && <Spinner label="Checking invite…" />}
+      {phase.kind === "checking" && (
+        <Spinner label={L("Checking invite…", "正在检查邀请…")} />
+      )}
 
       {phase.kind === "needs_signin" && (
         <Card>
@@ -96,25 +105,29 @@ export default function InvitePage() {
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-[var(--tide-2)]" />
               <div className="text-[14px] font-semibold text-ink-900">
-                You&rsquo;ve been invited
+                {L("You've been invited", "您收到了一份邀请")}
               </div>
             </div>
             <p className="text-[13px] text-ink-500">
-              Sign in or create your account to join this family. After
-              signing in you&rsquo;ll land straight on the family view.
+              {L(
+                "Sign in or create your account to join this family. After signing in you'll land straight on the family view.",
+                "请登录或注册账户以加入这个家庭。登录后会直接进入家庭视图。",
+              )}
             </p>
             <Link
               href={`/login?next=${encodeURIComponent(`/invite/${token}`)}`}
             >
               <Button size="lg" className="w-full">
-                Sign in to accept
+                {L("Sign in to accept", "登录以接受邀请")}
               </Button>
             </Link>
           </CardContent>
         </Card>
       )}
 
-      {phase.kind === "accepting" && <Spinner label="Accepting invite…" />}
+      {phase.kind === "accepting" && (
+        <Spinner label={L("Accepting invite…", "正在加入…")} />
+      )}
 
       {phase.kind === "accepted" && (
         <Card>
@@ -122,10 +135,10 @@ export default function InvitePage() {
             <Check className="mt-0.5 h-5 w-5 text-[var(--ok)]" />
             <div>
               <div className="text-[14px] font-semibold text-ink-900">
-                Welcome to the team
+                {L("Welcome to the team", "欢迎加入")}
               </div>
               <p className="mt-1 text-[13px] text-ink-500">
-                Taking you to the family view&hellip;
+                {L("Taking you to the family view…", "正在打开家庭视图…")}
               </p>
             </div>
           </CardContent>
@@ -138,17 +151,20 @@ export default function InvitePage() {
             <AlertCircle className="mt-0.5 h-5 w-5 text-[var(--warn)]" />
             <div className="flex-1">
               <div className="text-[14px] font-semibold text-ink-900">
-                Can&rsquo;t accept invite
+                {L("Can't accept invite", "无法接受邀请")}
               </div>
               <p className="mt-1 text-[13px] text-ink-500">{phase.message}</p>
               <p className="mt-3 text-[12px] text-ink-500">
-                Ask the primary carer to send you a new invite link.
+                {L(
+                  "Ask the primary carer to send you a new invite link.",
+                  "请联系主要看护者重新发送邀请链接。",
+                )}
               </p>
               <Link
                 href="/"
                 className="mt-3 inline-block text-[12px] text-ink-500 underline-offset-2 hover:underline"
               >
-                Go to dashboard
+                {L("Go to dashboard", "返回主页")}
               </Link>
             </div>
           </CardContent>
