@@ -55,16 +55,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="flex min-h-[100dvh] bg-paper md:pt-[env(safe-area-inset-top)]">
             <DesktopSidebar />
             <div className="flex min-w-0 flex-1 flex-col">
-              {/* Mobile header bakes the safe-area inset into its own height
-               * (rather than letting the outer wrapper pad above it) so the
-               * navbar's background always covers the status-bar zone. With
-               * the older outer-padding setup the sticky header would
-               * visually grow on scroll once the wrapper's padding scrolled
-               * away and the translucent status bar exposed the page
-               * underneath. */}
+              {/* Mobile header height is fixed at 3.5rem in normal browser
+               * mode and grows by the safe-area inset only when the page is
+               * launched as a PWA / Capacitor standalone app — see
+               * `.mobile-header` in globals.css for the rationale. Adding
+               * the inset unconditionally caused the header to elongate
+               * on scroll in mobile Safari, because Safari with
+               * viewport-fit=cover reports the inset as 0 while the URL
+               * bar is visible and as the notch height once the URL bar
+               * collapses. */}
               <header
-                className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-ink-100/60 bg-paper-2/70 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-md md:hidden md:px-6"
-                style={{ height: "calc(3.5rem + env(safe-area-inset-top))" }}
+                className="mobile-header sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-ink-100/60 bg-paper-2/70 px-4 backdrop-blur-md md:hidden md:px-6"
               >
                 <div className="serif text-[17px] tracking-tight text-ink-900">
                   Anchor

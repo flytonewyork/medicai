@@ -97,6 +97,35 @@ body {
   }
 }
 
+/* Mobile sticky header height + padding.
+ *
+ * Default (non-standalone Safari / Chrome): a constant 3.5rem. We do NOT
+ * add `env(safe-area-inset-top)` here, because in iOS Safari with
+ * `viewport-fit=cover` the inset is reported as 0 while the URL bar is
+ * visible and as the notch height (~47px) once the URL bar collapses on
+ * scroll — which used to make the header grow mid-scroll. The browser's
+ * own URL bar is the safe-area chrome in that mode, so we don't need to
+ * pad for the status bar ourselves.
+ *
+ * Standalone (PWA + Capacitor iOS): the inset is constant for the
+ * lifetime of the session — the WebView paints under the status bar
+ * because of `apple-mobile-web-app-status-bar-style: black-translucent`.
+ * Bake the inset into both height and padding so the header always
+ * covers the status-bar zone. The `display-mode: standalone` guard is
+ * the standard PWA detection; Capacitor's WebView reports standalone
+ * as well, so it covers iOS shell + browser-installed PWA.
+ */
+.mobile-header {
+  height: 3.5rem;
+  padding-top: 0;
+}
+@media all and (display-mode: standalone) {
+  .mobile-header {
+    height: calc(3.5rem + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
 /* iOS Safari auto-zooms the layout viewport whenever a focused input has
  * a computed font-size below 16px, which breaks the standalone /
  * full-screen feel in both the PWA and the Capacitor WebView. Lock form
