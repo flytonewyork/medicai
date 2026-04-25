@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Sparkles, Clock } from "lucide-react";
 import { todayISO } from "~/lib/utils/date";
 import { useLocale } from "~/hooks/use-translate";
 import { Card } from "~/components/ui/card";
@@ -38,6 +38,21 @@ export default function LogMealPage() {
   const [manualItems, setManualItems] = useState<PendingItem[]>([]);
   const [manualNotes, setManualNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  // Approximate time the meal was eaten. Defaults to "now" so the
+  // common case (logging right after eating) stays one tap; the user
+  // can edit it for after-the-fact logging (e.g. logging breakfast
+  // at 11 am after eating it at 7). Stored as a `HH:MM` string
+  // so the <input type="time"> binding is straightforward; we
+  // assemble the full ISO datetime at save time using the date for
+  // the meal (today by default).
+  const [mealTime, setMealTime] = useState<string>(currentHHMM());
+
+  // Whenever the chosen meal-type changes through the auto-detector
+  // (e.g. user opens this page in the morning vs. evening) we keep
+  // mealTime in sync with current time. Manual edits are preserved.
+  function handleMealTypeChange(t: MealType) {
+    setManualMeal(t);
+  }
 
   async function saveFromPreview(data: {
     items: PreviewItem[];
@@ -52,6 +67,7 @@ export default function LogMealPage() {
       await createMeal({
         date: todayISO(),
         meal_type: data.meal_type,
+        logged_at: assembleLoggedAt(todayISO(), mealTime),
         notes: data.description,
         photo_data_url: data.photo_data_url,
         source: parsedSource,
@@ -95,6 +111,7 @@ export default function LogMealPage() {
       await createMeal({
         date: todayISO(),
         meal_type: manualMeal,
+        logged_at: assembleLoggedAt(todayISO(), mealTime),
         notes: manualNotes || undefined,
         source: "manual",
         entered_by: "hulin",
@@ -153,6 +170,32 @@ export default function LogMealPage() {
             : "Snap a photo or describe it. We'll do the math."
         }
       />
+
+      {/* Time of meal. Defaults to "now" so the common case (logging
+       * immediately after eating) is one tap. Editable for after-the-
+       * fact logging — eating breakfast at 7 and logging at 11, for
+       * example. The picker is light-weight on mobile (native
+       * <input type="time">) so the patient doesn't have to scroll
+       * a wheel. */}
+      <div className="flex items-center gap-3 rounded-md border border-ink-100 bg-paper-2/40 px-3 py-2.5 text-[12px] text-ink-700">
+        <Clock className="h-4 w-4 text-ink-400" />
+        <span className="text-ink-500">
+          {locale === "zh" ? "进餐时间" : "Time eaten"}
+        </span>
+        <input
+          type="time"
+          value={mealTime}
+          onChange={(e) => setMealTime(e.target.value)}
+          className="ml-auto h-9 rounded-md border border-ink-200 bg-paper px-2 text-[13px] text-ink-900 focus:border-ink-900 focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={() => setMealTime(currentHHMM())}
+          className="text-[11px] text-ink-500 underline-offset-2 hover:text-ink-900 hover:underline"
+        >
+          {locale === "zh" ? "现在" : "Now"}
+        </button>
+      </div>
 
       {parsed ? (
         <ParsedPreview
@@ -298,4 +341,23 @@ function mealLabel(m: MealType, locale: string): string {
 
 function round1(n: number): number {
   return Math.round(n * 10) / 10;
+}
+
+// Current local time as "HH:MM" — the value the <input type="time">
+// expects. Padded to two digits in each segment.
+function currentHHMM(): string {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+// Combine a YYYY-MM-DD day and a HH:MM time into a local-zone ISO
+// datetime. We avoid `new Date('2026-04-25T21:40')` because that
+// gets interpreted as UTC in some browsers — instead build a Date
+// in the user's zone and call toISOString() so the stored value
+// round-trips correctly through Dexie + Supabase.
+function assembleLoggedAt(date: string, hhmm: string): string {
+  const [y, m, d] = date.split("-").map((s) => Number(s));
+  const [hh, mm] = hhmm.split(":").map((s) => Number(s));
+  const dt = new Date(y, (m ?? 1) - 1, d ?? 1, hh ?? 0, mm ?? 0, 0, 0);
+  return dt.toISOString();
 }

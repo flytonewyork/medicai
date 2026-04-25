@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Trash2, ChevronDown, BookmarkPlus, Repeat } from "lucide-react";
+import Link from "next/link";
+import { Trash2, ChevronDown, BookmarkPlus, Repeat, Pencil } from "lucide-react";
 import {
   listMealsForDate,
   listItemsForMeal,
@@ -143,6 +144,13 @@ function MealCard({ mealId }: { mealId: number }) {
             ))}
           </ul>
           <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+            <Link
+              href={`/nutrition/${mealId}`}
+              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-ink-500 hover:bg-ink-100 hover:text-ink-900"
+            >
+              <Pencil className="h-3 w-3" />
+              {locale === "zh" ? "编辑" : "Edit"}
+            </Link>
             <button
               type="button"
               onClick={async () => {

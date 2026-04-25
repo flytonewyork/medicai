@@ -109,20 +109,29 @@ function DayClock({
           );
         })}
       </div>
-      <div className="mono flex justify-between text-[9px] uppercase tracking-wider text-ink-400">
-        <span>00</span>
-        <span className="inline-flex items-center gap-1">
-          <Sunrise className="h-3 w-3" /> 06
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <Sun className="h-3 w-3" /> 12
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <Sunset className="h-3 w-3" /> 18
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <Moon className="h-3 w-3" /> 24
-        </span>
+      {/* Hour-axis labels positioned absolutely at the same percentages
+       * the ticks above use, so each label's centre lines up with its
+       * tick. The earlier `flex justify-between` distributed by box
+       * edges, which gives unequal-width children (the icons) different
+       * apparent positions than the ticks they label — visually
+       * misaligned at 06 and 18. */}
+      <div className="mono relative h-3.5 text-[9px] uppercase tracking-wider text-ink-400">
+        {([
+          { hour: 0, label: "00", icon: null },
+          { hour: 6, label: "06", icon: Sunrise },
+          { hour: 12, label: "12", icon: Sun },
+          { hour: 18, label: "18", icon: Sunset },
+          { hour: 24, label: "24", icon: Moon },
+        ] as const).map(({ hour, label, icon: Icon }) => (
+          <span
+            key={hour}
+            className="absolute top-0 inline-flex -translate-x-1/2 items-center gap-1 whitespace-nowrap"
+            style={{ left: `${(hour / 24) * 100}%` }}
+          >
+            {Icon && <Icon className="h-3 w-3" />}
+            {label}
+          </span>
+        ))}
       </div>
     </div>
   );
