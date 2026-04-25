@@ -18,7 +18,8 @@ import { Card } from "~/components/ui/card";
 import { Field, Textarea } from "~/components/ui/field";
 import { PageHeader } from "~/components/ui/page-header";
 import { cn } from "~/lib/utils/cn";
-import { Send, Sparkles, Check, Loader2, ArrowLeft } from "lucide-react";
+import { Send, Sparkles, Check, Loader2, ArrowLeft, Mic, MicOff } from "lucide-react";
+import { useSpeechRecognition } from "~/hooks/use-speech-recognition";
 
 const TAG_LABELS: Record<LogTag, { en: string; zh: string }> = {
   diet: { en: "diet", zh: "饮食" },
@@ -74,6 +75,16 @@ export default function LogPage() {
   const [run, setRun] = useState<RunState>({ kind: "idle" });
 
   const enteredBy = useUIStore((s) => s.enteredBy);
+
+  // Voice dictation streams interim words into the textarea so the
+  // patient can correct what was heard before submitting. Mandarin
+  // uses zh-CN; everything else en-US. The hook returns null on
+  // browsers that don't expose SpeechRecognition (older Firefox,
+  // some webviews) so the button is hidden cleanly when unsupported.
+  const speech = useSpeechRecognition({
+    lang: locale === "zh" ? "zh-CN" : "en-US",
+    onFinal: (chunk) => setText((cur) => `${cur} ${chunk}`.trim()),
+  });
 
   const autoTags = useMemo(() => new Set(tagInput(text)), [text]);
   const tags = overrideTags ?? autoTags;
@@ -197,18 +208,48 @@ export default function LogPage() {
 
       <Card className="p-5">
         <Field label={locale === "zh" ? "记录" : "Log"}>
-          <Textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={5}
-            disabled={run.kind === "saving" || run.kind === "running"}
-            placeholder={
-              locale === "zh"
-                ? "例如：早餐吃了两个鸡蛋，约 16 克蛋白；右手指尖比昨天更麻"
-                : "e.g. two eggs at breakfast, ~16 g protein; right fingertips more numb than yesterday"
-            }
-            className="min-h-[140px] text-base"
-          />
+          <div className="relative">
+            <Textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={5}
+              disabled={run.kind === "saving" || run.kind === "running"}
+              placeholder={
+                locale === "zh"
+                  ? "例如：早餐吃了两个鸡蛋，约 16 克蛋白；右手指尖比昨天更麻"
+                  : "e.g. two eggs at breakfast, ~16 g protein; right fingertips more numb than yesterday"
+              }
+              className="min-h-[140px] pr-12 text-base"
+            />
+            {speech && (
+              <button
+                type="button"
+                onClick={speech.toggle}
+                disabled={run.kind === "saving" || run.kind === "running"}
+                className={cn(
+                  "absolute bottom-2 right-2 inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors",
+                  speech.listening
+                    ? "bg-[var(--warn,#d97706)] text-white"
+                    : "bg-ink-100 text-ink-700 hover:bg-ink-200",
+                )}
+                aria-label={
+                  speech.listening
+                    ? locale === "zh"
+                      ? "停止录音"
+                      : "Stop dictation"
+                    : locale === "zh"
+                      ? "开始录音"
+                      : "Start dictation"
+                }
+              >
+                {speech.listening ? (
+                  <MicOff className="h-4 w-4" />
+                ) : (
+                  <Mic className="h-4 w-4" />
+                )}
+              </button>
+            )}
+          </div>
         </Field>
 
         <div className="mt-4">
@@ -375,8 +416,8 @@ export default function LogPage() {
 
       <p className="text-center text-[11px] text-ink-400">
         {locale === "zh"
-          ? "可拍照、语音记录将在后续推出。今天先用文字。"
-          : "Photo and voice coming soon. Text for now."}
+          ? "也支持语音输入。需要拍照/上传文件请到「智能识别」。"
+          : "Voice dictation works. For photos or document uploads, use Smart Ingest."}
       </p>
     </div>
   );

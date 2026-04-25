@@ -52,26 +52,21 @@ export function QuickCheckinCard() {
     try {
       const ts = now();
       const tempNum = Number.parseFloat(feverTemp);
+      // Only write the three scales the patient actually touched +
+      // fever (which has its own toggle). Per CLINICAL_FRAMEWORK.md,
+      // every clinical field is optional — undefined means "not
+      // entered today", which is the correct semantic when the
+      // patient took the 30-second card path. Hardcoding 5s for
+      // sleep / appetite / mood would lie to the rule engine and
+      // pollute trends.
       await db.daily_entries.add({
         date: today,
         entered_at: ts,
         entered_by: enteredBy,
         energy: values.energy,
-        sleep_quality: 5,
-        appetite: 5,
         pain_worst: values.pain,
         pain_current: values.pain,
-        mood_clarity: 5,
         nausea: values.nausea,
-        practice_morning_completed: false,
-        practice_evening_completed: false,
-        cold_dysaesthesia: false,
-        neuropathy_hands: 0,
-        neuropathy_feet: 0,
-        mouth_sores: false,
-        diarrhoea_count: 0,
-        new_bruising: false,
-        dyspnoea: false,
         fever,
         fever_temp: fever && Number.isFinite(tempNum) ? tempNum : undefined,
         created_at: ts,
