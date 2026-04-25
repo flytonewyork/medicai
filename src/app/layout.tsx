@@ -52,10 +52,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" data-theme="light" style={{ colorScheme: "light" }}>
       <body>
         <Providers>
-          <div className="flex min-h-[100dvh] bg-paper pwa-safe-top">
+          <div className="flex min-h-[100dvh] bg-paper md:pt-[env(safe-area-inset-top)]">
             <DesktopSidebar />
             <div className="flex min-w-0 flex-1 flex-col">
-              <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-ink-100/60 bg-paper-2/70 px-4 backdrop-blur-md md:hidden md:px-6">
+              {/* Mobile header bakes the safe-area inset into its own height
+               * (rather than letting the outer wrapper pad above it) so the
+               * navbar's background always covers the status-bar zone. With
+               * the older outer-padding setup the sticky header would
+               * visually grow on scroll once the wrapper's padding scrolled
+               * away and the translucent status bar exposed the page
+               * underneath. */}
+              <header
+                className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-ink-100/60 bg-paper-2/70 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-md md:hidden md:px-6"
+                style={{ height: "calc(3.5rem + env(safe-area-inset-top))" }}
+              >
                 <div className="serif text-[17px] tracking-tight text-ink-900">
                   Anchor
                 </div>

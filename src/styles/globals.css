@@ -97,6 +97,19 @@ body {
   }
 }
 
+/* iOS Safari auto-zooms the layout viewport whenever a focused input has
+ * a computed font-size below 16px, which breaks the standalone /
+ * full-screen feel in both the PWA and the Capacitor WebView. Lock form
+ * fields to 16px on touch devices so the page stops shifting on focus.
+ * Desktop keeps the smaller 14px scale set by component classes. */
+@media (hover: none) and (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 /* ─── Utilities used directly in components ──────────────────────── */
 .serif {
   font-family: var(--serif);
