@@ -46,6 +46,11 @@ import type {
   ProfileEntry,
   ProfilePrompt,
 } from "~/types/legacy";
+import type {
+  FoodItem,
+  MealEntry,
+  MealItem,
+} from "~/types/nutrition";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -89,6 +94,10 @@ export class AnchorDB extends Dexie {
   biographical_outline!: Table<BiographicalOutline, number>;
   memory_clusters!: Table<MemoryCluster, number>;
   profile_consent!: Table<ProfileConsent, number>;
+  // v18: Nutrition module.
+  foods!: Table<FoodItem, number>;
+  meal_entries!: Table<MealEntry, number>;
+  meal_items!: Table<MealItem, number>;
 
   constructor() {
     super("anchor_db");
@@ -271,6 +280,30 @@ export class AnchorDB extends Dexie {
       memory_clusters:
         "++id, seed_entry_id, created_by, approximate_date, created_at",
       profile_consent: "&id",
+    });
+    // v18: Nutrition module. Three tables drive food search, per-meal
+    // line items, and a snapshot of meal-level totals.
+    //
+    // - foods: a searchable catalogue of foods with PDAC / keto flags.
+    //   Indexed on `name` for prefix lookups, `category` for filtering,
+    //   `keto_friendly` and `pdac_easy_digest` so the picker can show
+    //   "good choices first" without scanning the whole table. `source`
+    //   lets us segment seed vs. user vs. AI-generated rows for QA.
+    // - meal_entries: one row per logged meal. `[date+meal_type]` is
+    //   the hot index — the daily dashboard pulls all of today's
+    //   meals, in meal-type order, in O(k).
+    // - meal_items: line items inside a meal. Indexed on
+    //   meal_entry_id for the obvious join; on food_id so "where have
+    //   I eaten this before" lookups are cheap.
+    this.version(18).stores({
+      foods:
+        "++id, name, name_zh, category, source, keto_friendly, " +
+        "pdac_easy_digest, updated_at",
+      meal_entries:
+        "++id, date, meal_type, logged_at, source, " +
+        "[date+meal_type]",
+      meal_items:
+        "++id, meal_entry_id, food_id, created_at",
     });
   }
 }
