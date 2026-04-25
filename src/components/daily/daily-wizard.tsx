@@ -510,12 +510,21 @@ function PickScreen({
         >
           {locale === "zh" ? "取消" : t("common.cancel")}
         </Link>
-        <Button onClick={onStart} disabled={picked.length === 0} size="lg">
-          {locale === "zh"
-            ? `开始（${picked.length}）`
-            : `Start (${picked.length})`}
-          <ArrowRight className="ml-1 h-4 w-4" />
-        </Button>
+        <div className="flex flex-col items-end gap-1">
+          {picked.length === 0 && (
+            <p className="text-[11.5px] text-ink-400">
+              {locale === "zh"
+                ? "请先选择至少一项"
+                : "Select at least one category above"}
+            </p>
+          )}
+          <Button onClick={onStart} disabled={picked.length === 0} size="lg">
+            {locale === "zh"
+              ? `开始（${picked.length}）`
+              : `Start (${picked.length})`}
+            <ArrowRight className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

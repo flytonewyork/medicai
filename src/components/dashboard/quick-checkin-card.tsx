@@ -14,9 +14,36 @@ import { cn } from "~/lib/utils/cn";
 import { Check, Thermometer } from "lucide-react";
 
 const SCALES = [
-  { key: "energy", good: "high" as const, labelEn: "Energy", labelZh: "精力" },
-  { key: "pain", good: "low" as const, labelEn: "Pain", labelZh: "疼痛" },
-  { key: "nausea", good: "low" as const, labelEn: "Nausea", labelZh: "恶心" },
+  {
+    key: "energy",
+    good: "high" as const,
+    labelEn: "Energy",
+    labelZh: "精力",
+    anchorLoEn: "none",
+    anchorHiEn: "full",
+    anchorLoZh: "无",
+    anchorHiZh: "充沛",
+  },
+  {
+    key: "pain",
+    good: "low" as const,
+    labelEn: "Pain",
+    labelZh: "疼痛",
+    anchorLoEn: "none",
+    anchorHiEn: "worst",
+    anchorLoZh: "无",
+    anchorHiZh: "最痛",
+  },
+  {
+    key: "nausea",
+    good: "low" as const,
+    labelEn: "Nausea",
+    labelZh: "恶心",
+    anchorLoEn: "none",
+    anchorHiEn: "severe",
+    anchorLoZh: "无",
+    anchorHiZh: "严重",
+  },
 ] as const;
 
 type ScaleKey = (typeof SCALES)[number]["key"];
@@ -156,6 +183,8 @@ export function QuickCheckinCard() {
           <ScaleRow
             key={s.key}
             label={locale === "zh" ? s.labelZh : s.labelEn}
+            anchorLo={locale === "zh" ? s.anchorLoZh : s.anchorLoEn}
+            anchorHi={locale === "zh" ? s.anchorHiZh : s.anchorHiEn}
             value={values[s.key]}
             onChange={(v) =>
               setValues((prev) => ({ ...prev, [s.key]: v }))
@@ -199,10 +228,14 @@ export function QuickCheckinCard() {
 
 function ScaleRow({
   label,
+  anchorLo,
+  anchorHi,
   value,
   onChange,
 }: {
   label: string;
+  anchorLo?: string;
+  anchorHi?: string;
   value: number;
   onChange: (v: number) => void;
 }) {
@@ -217,7 +250,21 @@ function ScaleRow({
           </span>
         </span>
       </div>
-      <div className="mt-2 grid grid-cols-11 gap-1.5">
+      {(anchorLo || anchorHi) && (
+        <div className="mt-1 flex justify-between">
+          {anchorLo && (
+            <span className="mono text-[9.5px] uppercase tracking-wider text-ink-400">
+              0 = {anchorLo}
+            </span>
+          )}
+          {anchorHi && (
+            <span className="mono text-[9.5px] uppercase tracking-wider text-ink-400">
+              10 = {anchorHi}
+            </span>
+          )}
+        </div>
+      )}
+      <div className="mt-1.5 grid grid-cols-11 gap-1.5">
         {Array.from({ length: 11 }, (_, n) => {
           const on = n === value;
           return (
