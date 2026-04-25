@@ -138,6 +138,10 @@ function LoginForm() {
             ? t("login.toggleToSignup")
             : t("login.toggleToSignin")}
         </button>
+
+        <p className="border-t border-ink-100/60 pt-4 text-center text-xs text-ink-500">
+          {t("login.inviteHint")}
+        </p>
       </form>
     </div>
   );

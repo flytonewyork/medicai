@@ -87,7 +87,8 @@
     "signupCta": "Create account",
     "pleaseWait": "Please wait…",
     "toggleToSignup": "No account? Create one",
-    "toggleToSignin": "Already have an account? Sign in"
+    "toggleToSignin": "Already have an account? Sign in",
+    "inviteHint": "Joining a family member's care plan? Open the invite link they sent you on this device — it works after you sign in."
   },
   "emergencyCard": {
     "alertActive": "Alert active — call if needed",

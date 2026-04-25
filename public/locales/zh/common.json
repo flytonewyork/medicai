@@ -87,7 +87,8 @@
     "signupCta": "创建账户",
     "pleaseWait": "请稍候…",
     "toggleToSignup": "还没有账户？创建一个",
-    "toggleToSignin": "已有账户？登录"
+    "toggleToSignin": "已有账户？登录",
+    "inviteHint": "要加入家人的护理计划？请在这台设备上打开对方发给您的邀请链接 — 登录后即可生效。"
   },
   "emergencyCard": {
     "alertActive": "警示激活 —— 如有需要请立即拨打",

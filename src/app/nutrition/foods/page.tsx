@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { ArrowLeft, Filter, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, Camera, Filter, Plus, Search, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { FoodThumb } from "~/components/nutrition/food-thumb";
+import { prepareImageForVision } from "~/lib/ingest/image";
 import { db } from "~/lib/db/dexie";
 import { deleteFood, upsertFood } from "~/lib/nutrition/queries";
 import { foodHint, recalcNetCarbs } from "~/lib/nutrition/calculator";
@@ -157,9 +159,7 @@ export default function FoodsPage() {
             <li key={f.id}>
               <Card className="px-4 py-3">
                 <div className="flex items-start gap-3">
-                  <span className="text-2xl leading-none" aria-hidden>
-                    {f.emoji ?? "🍽"}
-                  </span>
+                  <FoodThumb food={f} />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline gap-x-2">
                       <span className="text-sm font-medium text-ink-900">
@@ -326,6 +326,10 @@ function FoodEditor({
         </div>
 
         <div className="mt-4 space-y-3">
+          <PhotoField
+            value={draft.image_url}
+            onChange={(v) => set("image_url", v)}
+          />
           <Field label={locale === "zh" ? "名称 (英文)" : "Name (English)"}>
             <TextInput
               value={draft.name ?? ""}
@@ -518,5 +522,84 @@ function Toggle({
     >
       {label}
     </button>
+  );
+}
+
+// Photo upload for a food row. Stored as a resized data URL so it
+// roundtrips through Dexie / Supabase without a separate blob store.
+// The resize caps the long edge at 480 px, which is sufficient for
+// thumbnails in the picker without bloating IndexedDB.
+function PhotoField({
+  value,
+  onChange,
+}: {
+  value?: string;
+  onChange: (v: string | undefined) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function handleFile(file: File) {
+    setBusy(true);
+    try {
+      const prepared = await prepareImageForVision(file, {
+        maxEdge: 480,
+        quality: 0.78,
+      });
+      onChange(`data:${prepared.mediaType};base64,${prepared.base64}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      {value ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={value}
+          alt=""
+          className="h-16 w-16 shrink-0 rounded-md object-cover"
+        />
+      ) : (
+        <span className="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-md border border-dashed border-ink-200 bg-paper-2/40 text-ink-400">
+          <Camera className="h-5 w-5" />
+        </span>
+      )}
+      <div className="flex flex-col gap-1.5">
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          disabled={busy}
+          onClick={() => ref.current?.click()}
+        >
+          <Camera className="h-3.5 w-3.5" />
+          {value ? "Replace photo" : "Add photo"}
+        </Button>
+        {value && (
+          <button
+            type="button"
+            onClick={() => onChange(undefined)}
+            className="inline-flex items-center gap-1 text-[11px] text-ink-400 hover:text-[var(--warn,#d97706)]"
+          >
+            <X className="h-3 w-3" />
+            Remove
+          </button>
+        )}
+      </div>
+      <input
+        ref={ref}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void handleFile(f);
+          e.target.value = "";
+        }}
+      />
+    </div>
   );
 }
