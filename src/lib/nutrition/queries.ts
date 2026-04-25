@@ -262,6 +262,94 @@ export async function recomputeMealTotals(meal_entry_id: number): Promise<void> 
   });
 }
 
+// Mutate a meal_entry in place. Used by the edit screen to change
+// `logged_at` (the approximate time the food was eaten — distinct
+// from `created_at`, which is when the row was written), `meal_type`,
+// `notes`, `pert_taken` / `pert_units`, and the day stamp `date` if
+// the meal was actually eaten on a different day. Items are edited
+// through their own helpers; this function never touches them.
+export interface UpdateMealInput {
+  meal_entry_id: number;
+  date?: string;
+  meal_type?: MealEntry["meal_type"];
+  logged_at?: string;
+  notes?: string | null;
+  pert_taken?: boolean;
+  pert_units?: number | null;
+}
+
+export async function updateMeal(input: UpdateMealInput): Promise<void> {
+  const patch: Partial<MealEntry> = {
+    updated_at: now(),
+  };
+  if (input.date !== undefined) patch.date = input.date;
+  if (input.meal_type !== undefined) patch.meal_type = input.meal_type;
+  if (input.logged_at !== undefined) patch.logged_at = input.logged_at;
+  if (input.notes !== undefined) patch.notes = input.notes ?? undefined;
+  if (input.pert_taken !== undefined) patch.pert_taken = input.pert_taken;
+  if (input.pert_units !== undefined) {
+    patch.pert_units = input.pert_units ?? undefined;
+  }
+  await db.meal_entries.update(input.meal_entry_id, patch);
+}
+
+// Replace a single item's serving size + recompute its macros from
+// the linked food row. Falls back to scaling the item's stored
+// macros when the food row is gone (food was deleted after the
+// meal was logged). Recomputes the parent meal totals.
+export async function updateMealItemServing(args: {
+  meal_item_id: number;
+  serving_grams: number;
+}): Promise<void> {
+  const item = await db.meal_items.get(args.meal_item_id);
+  if (!item) throw new Error("Meal item not found");
+  const newServing = Math.max(0, args.serving_grams);
+
+  let next: Partial<MealItem>;
+  if (item.food_id) {
+    const food = await db.foods.get(item.food_id);
+    if (food) {
+      const factor = newServing / 100;
+      next = {
+        serving_grams: newServing,
+        calories: round0(food.calories * factor),
+        protein_g: round1(food.protein_g * factor),
+        fat_g: round1(food.fat_g * factor),
+        carbs_total_g: round1(food.carbs_total_g * factor),
+        fiber_g: round1(food.fiber_g * factor),
+        net_carbs_g: round1(food.net_carbs_g * factor),
+      };
+    } else {
+      next = scaleItemFromCurrent(item, newServing);
+    }
+  } else {
+    next = scaleItemFromCurrent(item, newServing);
+  }
+
+  await db.meal_items.update(args.meal_item_id, next);
+  await recomputeMealTotals(item.meal_entry_id);
+}
+
+export async function deleteMealItem(meal_item_id: number): Promise<void> {
+  const item = await db.meal_items.get(meal_item_id);
+  if (!item) return;
+  await db.meal_items.delete(meal_item_id);
+  await recomputeMealTotals(item.meal_entry_id);
+}
+
+function scaleItemFromCurrent(item: MealItem, newServing: number) {
+  const factor = newServing / Math.max(1, item.serving_grams);
+  return {
+    serving_grams: newServing,
+    calories: round0(item.calories * factor),
+    protein_g: round1(item.protein_g * factor),
+    fat_g: round1(item.fat_g * factor),
+    carbs_total_g: round1(item.carbs_total_g * factor),
+    fiber_g: round1(item.fiber_g * factor),
+    net_carbs_g: round1(item.net_carbs_g * factor),
+  };
+}
+
 function round0(n: number): number {
   return Math.round(n);
 }
