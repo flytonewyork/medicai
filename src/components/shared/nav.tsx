@@ -25,11 +25,13 @@ import { useT, useLocale } from "~/hooks/use-translate";
 import { useAppPerspective } from "~/lib/caregiver/scope";
 
 // Patient nav: everything. Patient owns self-reporting, treatment,
-// assessment, bridge strategy, reports.
+// assessment, bridge strategy, reports. The "/family" surface is the
+// caregiver-perspective landing page — patients land on "/" instead and
+// reach household / invites through Settings → Care team, so it's
+// excluded here to avoid a confusing duplicate view.
 const PATIENT_ITEMS = [
   { href: "/", key: "nav.dashboard", icon: LayoutDashboard },
   { href: "/schedule", key: "nav.schedule", icon: CalendarDays },
-  { href: "/family", key: "nav.family", icon: Users },
   { href: "/assessment", key: "nav.assessment", icon: Compass },
   { href: "/treatment", key: "nav.treatment", icon: Syringe },
   { href: "/labs", key: "nav.labs", icon: FlaskConical },

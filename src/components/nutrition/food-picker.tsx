@@ -9,6 +9,7 @@ import { useLocale } from "~/hooks/use-translate";
 import type { FoodItem } from "~/types/nutrition";
 import { Button } from "~/components/ui/button";
 import { TextInput } from "~/components/ui/field";
+import { FoodThumb } from "./food-thumb";
 
 const HINT_TONE_CLS: Record<string, string> = {
   good: "bg-[var(--tide-2)]/15 text-[var(--tide-2)]",
@@ -85,9 +86,7 @@ export function FoodPicker({
                   onClick={() => setSelected(f)}
                   className="flex w-full items-center gap-3 rounded-md border border-ink-100 bg-paper-2/40 px-3 py-2.5 text-left transition-colors hover:border-ink-300"
                 >
-                  <span className="text-xl leading-none" aria-hidden>
-                    {f.emoji ?? "🍽"}
-                  </span>
+                  <FoodThumb food={f} size="md" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-ink-900">
                       {locale === "zh" && f.name_zh ? f.name_zh : f.name}

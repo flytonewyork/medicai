@@ -104,6 +104,8 @@ export default function SettingsPage() {
 
       <AccountButton />
 
+      <div id="care-team" />
+
       <HouseholdSection />
 
       <NotificationsSection />
