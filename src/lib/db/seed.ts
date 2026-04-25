@@ -1,5 +1,6 @@
 import { db, now } from "./dexie";
 import trialWatchlist from "~/config/trial-watchlist.json";
+import { ensureFoodsSeeded } from "~/lib/nutrition/queries";
 
 export async function ensureSeeded(): Promise<void> {
   // Settings row is created by the onboarding wizard on first run.
@@ -37,4 +38,8 @@ export async function ensureSeeded(): Promise<void> {
       });
     }
   }
+
+  // Nutrition catalogue. Idempotent — bails out if any rows already
+  // exist, so user-edited catalogues aren't clobbered.
+  await ensureFoodsSeeded();
 }

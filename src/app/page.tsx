@@ -14,6 +14,7 @@ import { ScheduleCard } from "~/components/dashboard/schedule-card";
 import { ChangeSignalsCard } from "~/components/dashboard/change-signals-card";
 import { MedicationPromptsCard } from "~/components/dashboard/medication-prompts-card";
 import { PracticesCard } from "~/components/dashboard/practices-card";
+import { NutritionCard } from "~/components/dashboard/nutrition-card";
 import { TodayFeed } from "~/components/dashboard/today-feed";
 import { SyncPromptCard } from "~/components/dashboard/sync-prompt-card";
 import { useLocale, useT } from "~/hooks/use-translate";
@@ -115,6 +116,8 @@ export default function DashboardPage() {
       <MedicationPromptsCard />
 
       <PracticesCard />
+
+      <NutritionCard />
 
       <PillarTiles />
 
