@@ -33,27 +33,37 @@ export default function DashboardPage() {
   const profileName = settings?.[0]?.profile_name;
   const { membership } = useHousehold();
 
+  // Single redirect effect with a clear precedence ladder so two
+  // racing useEffects can't both call router.replace on the same
+  // render. Order:
+  //   1. Settings still loading (undefined) → wait.
+  //   2. No settings row OR no onboarded_at → /onboarding (everyone
+  //      finishes onboarding before any role-based routing).
+  //   3. Caregiver / clinician (per Dexie settings.user_type) →
+  //      /family. Set during onboarding before any sign-in.
+  //   4. Authenticated household member with a non-patient,
+  //      non-primary-carer role (per Supabase) → /family. We wait
+  //      for the household hook to resolve (membership === undefined)
+  //      before acting on this branch so we don't route a
+  //      yet-to-load primary_carer to the family view by accident.
+  //   5. Otherwise (patient / primary carer) → stay on dashboard.
   useEffect(() => {
-    // First-run gate: no settings row (or no onboarded_at) → onboarding.
-    if (settings && !settings[0]?.onboarded_at) {
+    if (!settings) return;
+    const s = settings[0];
+    if (!s?.onboarded_at) {
       router.replace("/onboarding");
+      return;
     }
-  }, [router, settings]);
-
-  // Anyone who isn't acting as the patient sees /family by default —
-  // the clinician-heavy dashboard would overwhelm a visiting carer.
-  // Primary carers keep the full dashboard (they proxy for the patient).
-  // Checks both the Supabase household membership (authoritative once
-  // joined) AND the local Dexie settings.user_type (set during first-
-  // session onboarding before any sign-in).
-  useEffect(() => {
-    const type = settings?.[0]?.user_type;
-    if (type === "caregiver" || type === "clinician") {
+    if (s.user_type === "caregiver" || s.user_type === "clinician") {
       router.replace("/family");
       return;
     }
-    if (!membership) return;
-    if (membership.role !== "primary_carer" && membership.role !== "patient") {
+    if (membership === undefined) return; // hook still resolving
+    if (
+      membership !== null &&
+      membership.role !== "primary_carer" &&
+      membership.role !== "patient"
+    ) {
       router.replace("/family");
     }
   }, [membership, router, settings]);
@@ -80,6 +90,17 @@ export default function DashboardPage() {
   }, [locale]);
 
   const firstName = profileName?.split(" ").slice(-1)[0] ?? "";
+
+  // While the redirect effect is deciding (settings still loading, or
+  // an explicit perspective bounce in flight), render nothing rather
+  // than flash the patient dashboard at a caregiver who's about to be
+  // routed to /family. The app-level loading.tsx covers the visual.
+  if (!settings) return null;
+  const s0 = settings[0];
+  if (!s0?.onboarded_at) return null;
+  if (s0.user_type === "caregiver" || s0.user_type === "clinician") {
+    return null;
+  }
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-8">
