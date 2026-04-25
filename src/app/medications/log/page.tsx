@@ -244,7 +244,7 @@ function MedRow({
     <Card
       className={cn(
         "transition-colors",
-        allLogged && "bg-paper-1 opacity-80",
+        allLogged && "bg-ink-100/40 opacity-80",
       )}
     >
       <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4">
@@ -260,7 +260,7 @@ function MedRow({
                   <span
                     className={cn(
                       logged_count >= due_count
-                        ? "text-green-600"
+                        ? "text-[var(--ok)]"
                         : "text-ink-600",
                     )}
                   >
@@ -424,7 +424,7 @@ function SideEffectSheet({
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder={locale === "zh" ? "备注（可选）" : "Note (optional)"}
-          className="mb-4 w-full rounded border border-ink-200 bg-paper-1 p-2 text-sm"
+          className="mb-4 w-full rounded-[var(--r-sm)] border border-ink-200 bg-paper px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400 focus:border-ink-900 focus:outline-none focus:ring-2 focus:ring-ink-900/10"
           rows={2}
         />
 

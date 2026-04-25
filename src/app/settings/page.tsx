@@ -13,6 +13,9 @@ import { HouseholdSection } from "~/components/settings/household-section";
 import { NotificationsSection } from "~/components/settings/notifications-section";
 import { CareTeamSection } from "~/components/settings/care-team-section";
 import { TrackedSymptomsSection } from "~/components/settings/tracked-symptoms-section";
+import { PageHeader } from "~/components/ui/page-header";
+import { Button } from "~/components/ui/button";
+import { Field, TextInput, Textarea } from "~/components/ui/field";
 
 export default function SettingsPage() {
   const t = useT();
@@ -96,11 +99,7 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl mx-auto p-4 md:p-8 space-y-6">
-      <div>
-        <h1 className="serif text-2xl tracking-tight text-ink-900">
-          {t("settings.title")}
-        </h1>
-      </div>
+      <PageHeader title={t("settings.title")} />
 
       <AccountButton />
 
@@ -118,26 +117,28 @@ export default function SettingsPage() {
         <section className="space-y-3">
           <h2 className="eyebrow">{t("settings.profile")}</h2>
           <Field label={t("settings.profile_name")}>
-            <input className={inputCls} {...register("profile_name")} />
+            <TextInput {...register("profile_name")} />
           </Field>
           <Field label={t("settings.dob")}>
-            <input type="date" className={inputCls} {...register("dob")} />
+            <TextInput type="date" {...register("dob")} />
           </Field>
           <Field label={t("settings.diagnosis_date")}>
-            <input type="date" className={inputCls} {...register("diagnosis_date")} />
+            <TextInput type="date" {...register("diagnosis_date")} />
           </Field>
           <Field label={t("settings.locale")}>
-            <select className={inputCls} {...register("locale")}>
+            <select className={selectCls} {...register("locale")}>
               <option value="en">{t("settings.locale_en")}</option>
               <option value="zh">{t("settings.locale_zh")}</option>
             </select>
           </Field>
-          <Field label="Home city (weather nudges)">
-            <input
-              className={inputCls}
-              placeholder="Melbourne"
-              {...register("home_city")}
-            />
+          <Field
+            label={
+              locale === "zh"
+                ? "居住城市（用于天气提醒）"
+                : "Home city (weather nudges)"
+            }
+          >
+            <TextInput placeholder="Melbourne" {...register("home_city")} />
           </Field>
         </section>
 
@@ -151,38 +152,51 @@ export default function SettingsPage() {
               : "Oncologist, hospital, and 24/7 contacts live in the Care team section above. Use this for the situation-specific guidance the patient should follow when something feels off."}
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="24/7 on-call (fallback)">
-              <input
-                type="tel"
-                className={inputCls}
-                {...register("oncall_phone")}
-              />
+            <Field
+              label={
+                locale === "zh"
+                  ? "24 小时值班电话（备用）"
+                  : "24/7 on-call (fallback)"
+              }
+            >
+              <TextInput type="tel" {...register("oncall_phone")} />
             </Field>
-            <Field label="Hospital address (fallback)">
-              <input className={inputCls} {...register("hospital_address")} />
+            <Field
+              label={
+                locale === "zh" ? "医院地址（备用）" : "Hospital address (fallback)"
+              }
+            >
+              <TextInput {...register("hospital_address")} />
             </Field>
             <div className="sm:col-span-2">
-              <Field label="When to go straight to hospital">
-                <textarea
-                  rows={3}
-                  className={inputCls}
-                  {...register("emergency_instructions")}
-                />
+              <Field
+                label={
+                  locale === "zh"
+                    ? "什么时候直接去急诊"
+                    : "When to go straight to hospital"
+                }
+              >
+                <Textarea rows={3} {...register("emergency_instructions")} />
               </Field>
             </div>
           </div>
         </section>
 
         <section className="space-y-3">
-          <h2 className="eyebrow">AI model</h2>
+          <h2 className="eyebrow">{locale === "zh" ? "AI 模型" : "AI model"}</h2>
           <p className="text-xs text-ink-500">
-            Claude calls run through Anchor&rsquo;s server (the shared
-            ANTHROPIC_API_KEY configured in Vercel) — no per-device key
-            needed. This field lets you override the default model.
+            {locale === "zh"
+              ? "Claude 调用通过 Anchor 服务器(在 Vercel 中配置的共享 ANTHROPIC_API_KEY)进行 —— 无需每台设备单独配置密钥。此字段用于覆盖默认模型。"
+              : "Claude calls run through Anchor’s server (the shared ANTHROPIC_API_KEY configured in Vercel) — no per-device key needed. This field lets you override the default model."}
           </p>
-          <Field label="Model (default claude-opus-4-7)">
-            <input
-              className={inputCls}
+          <Field
+            label={
+              locale === "zh"
+                ? "模型(默认 claude-opus-4-7)"
+                : "Model (default claude-opus-4-7)"
+            }
+          >
+            <TextInput
               placeholder="claude-opus-4-7"
               {...register("default_ai_model")}
             />
@@ -190,13 +204,9 @@ export default function SettingsPage() {
         </section>
 
         <div className="flex items-center gap-3">
-          <button
-            type="submit"
-            disabled={formState.isSubmitting}
-            className="inline-flex items-center rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-paper hover:brightness-110 disabled:opacity-50"
-          >
+          <Button type="submit" disabled={formState.isSubmitting}>
             {formState.isSubmitting ? t("common.saving") : t("common.save")}
-          </button>
+          </Button>
           {formState.isSubmitSuccessful && (
             <span className="text-xs text-ink-500">{t("common.saved")}</span>
           )}
@@ -206,22 +216,5 @@ export default function SettingsPage() {
   );
 }
 
-const inputCls =
-  "w-full rounded-md border border-ink-200 bg-paper-2 px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-ink-900/10 focus:border-ink-900";
-
-const numberOptional = {
-  setValueAs: (v: unknown) => {
-    if (v === "" || v === null || v === undefined) return undefined;
-    const n = Number(v);
-    return Number.isNaN(n) ? undefined : n;
-  },
-};
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block space-y-1">
-      <span className="text-sm text-ink-700">{label}</span>
-      {children}
-    </label>
-  );
-}
+const selectCls =
+  "h-11 w-full rounded-md border border-ink-200 bg-paper px-3 text-sm text-ink-900 focus:border-ink-900 focus:outline-none focus:ring-2 focus:ring-ink-900/10";

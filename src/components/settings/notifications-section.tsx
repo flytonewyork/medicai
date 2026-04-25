@@ -161,10 +161,13 @@ export function NotificationsSection() {
                     onClick={onTest}
                     disabled={busy !== null}
                   >
+                    {testedOk && busy !== "test" && (
+                      <Check className="h-4 w-4" aria-hidden />
+                    )}
                     {busy === "test"
                       ? L("Sending…", "发送中…")
                       : testedOk
-                        ? L("Sent ✓", "已发送 ✓")
+                        ? L("Sent", "已发送")
                         : L("Send test", "测试一下")}
                   </Button>
                   <Button

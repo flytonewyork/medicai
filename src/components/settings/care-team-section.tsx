@@ -542,7 +542,7 @@ export function CareTeamSection() {
                       <button
                         type="button"
                         onClick={() => m.id && remove(m.id)}
-                        className="rounded-md p-1.5 text-ink-500 hover:bg-ink-100/40 hover:text-red-700"
+                        className="rounded-md p-1.5 text-ink-500 hover:bg-[var(--warn-soft)] hover:text-[var(--warn)]"
                         aria-label={L("Remove", "移除")}
                       >
                         <Trash2 className="h-3.5 w-3.5" />

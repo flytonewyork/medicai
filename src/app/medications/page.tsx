@@ -98,13 +98,11 @@ export default function MedicationsPage() {
 
           return (
             <div key={cat}>
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-500">
-                {catLabel}
-              </h2>
+              <h2 className="eyebrow mb-3">{catLabel}</h2>
               <div className="space-y-2">
                 {drugs.map((drug) => (
                   <Link key={drug.id} href={`/medications/${drug.id}`}>
-                    <Card className="transition-colors hover:bg-paper-1">
+                    <Card className="transition-colors hover:bg-ink-100/40">
                       <CardContent className="flex items-center justify-between p-4">
                         <div className="flex-1">
                           <div className="font-medium text-ink-900">
