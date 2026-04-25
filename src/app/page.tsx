@@ -10,6 +10,7 @@ import { EmergencyCard } from "~/components/dashboard/emergency-card";
 import { QuickCheckinCard } from "~/components/dashboard/quick-checkin-card";
 import { PendingInvitesCard } from "~/components/dashboard/pending-invites-card";
 import { InviteFamilyCard } from "~/components/dashboard/invite-family-card";
+import { BaselineNudgeCard } from "~/components/dashboard/baseline-nudge-card";
 import { NextClinicCard } from "~/components/dashboard/next-clinic-card";
 import { ScheduleCard } from "~/components/dashboard/schedule-card";
 import { ChangeSignalsCard } from "~/components/dashboard/change-signals-card";
@@ -109,6 +110,8 @@ export default function DashboardPage() {
       <PendingInvitesCard />
 
       <InviteFamilyCard />
+
+      <BaselineNudgeCard />
 
       <NextClinicCard />
 
