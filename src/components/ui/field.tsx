@@ -3,6 +3,7 @@ import type {
   InputHTMLAttributes,
   LabelHTMLAttributes,
   ReactNode,
+  SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from "react";
 import { forwardRef } from "react";
@@ -70,3 +71,16 @@ export function Textarea({
     />
   );
 }
+
+// Select shares the height, border, focus halo, and typography of TextInput so
+// dropdowns line up cleanly when mixed with text fields in the same form. Uses
+// the same INPUT_CLASSES baseline as TextInput.
+export const Select = forwardRef<
+  HTMLSelectElement,
+  SelectHTMLAttributes<HTMLSelectElement>
+>(({ className, children, ...props }, ref) => (
+  <select ref={ref} className={cn(INPUT_CLASSES, "pr-8", className)} {...props}>
+    {children}
+  </select>
+));
+Select.displayName = "Select";

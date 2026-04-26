@@ -10,6 +10,7 @@ import { useUIStore } from "~/stores/ui-store";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Field, TextInput, Textarea } from "~/components/ui/field";
+import { Alert } from "~/components/ui/alert";
 import { PROTOCOL_LIBRARY, PROTOCOL_BY_ID } from "~/config/protocols";
 import type { ProtocolId } from "~/types/treatment";
 import type { Locale, Settings } from "~/types/clinical";
@@ -714,17 +715,13 @@ function PickPatientStep({
       </p>
 
       {joinedName && (
-        <div className="flex items-start gap-2 rounded-md border border-[var(--ok)]/40 bg-[var(--ok-soft)] p-3 text-[12.5px] text-ink-700">
-          <Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--ok)]" />
-          <div>
-            <div className="font-semibold text-ink-900">
-              {L("You're in.", "已加入。")}
-            </div>
-            <div className="text-ink-500">
-              {L(`Joined ${joinedName}'s care team.`, `已加入 ${joinedName} 的护理团队。`)}
-            </div>
-          </div>
-        </div>
+        <Alert
+          variant="ok"
+          title={L("You're in.", "已加入。")}
+          dense
+        >
+          {L(`Joined ${joinedName}'s care team.`, `已加入 ${joinedName} 的护理团队。`)}
+        </Alert>
       )}
 
       {loading && !joinedName && (
@@ -815,9 +812,9 @@ function PickPatientStep({
       )}
 
       {error && !joinedName && (
-        <div className="rounded-md border border-[var(--warn)]/40 bg-[var(--warn-soft)] p-2.5 text-[12px] text-[var(--warn)]">
+        <Alert variant="warn" dense>
           {error}
-        </div>
+        </Alert>
       )}
 
       {!joinedName && (

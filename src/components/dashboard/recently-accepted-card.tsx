@@ -128,7 +128,7 @@ export function RecentlyAcceptedCard() {
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
           <Link
-            href="/household"
+            href="/carers"
             onClick={dismiss}
             className="inline-flex items-center gap-0.5 text-[12px] text-ink-700 hover:text-ink-900"
           >

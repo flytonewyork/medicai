@@ -10,6 +10,7 @@ import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Field, TextInput } from "~/components/ui/field";
+import { Alert } from "~/components/ui/alert";
 import { cn } from "~/lib/utils/cn";
 import { PROTOCOL_LIBRARY, PROTOCOL_BY_ID } from "~/config/protocols";
 import { DRUGS_BY_ID } from "~/config/drug-registry";
@@ -265,12 +266,9 @@ export default function NewTreatmentCyclePage() {
       )}
 
       {error && (
-        <div
-          role="alert"
-          className="rounded-md border border-[var(--warn)]/40 bg-[var(--warn)]/10 p-3 text-[12.5px] text-[var(--warn)]"
-        >
+        <Alert variant="warn" role="alert" dense>
           {error}
-        </div>
+        </Alert>
       )}
 
       <div className="flex items-center justify-between gap-2 pt-2">
