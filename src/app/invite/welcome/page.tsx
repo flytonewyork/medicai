@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLiveQuery } from "dexie-react-hooks";
 import {
   getCurrentProfile,
   getHousehold,
@@ -18,12 +17,18 @@ import { Field, TextInput } from "~/components/ui/field";
 import type { Household, Profile } from "~/types/household";
 import type { Locale } from "~/types/clinical";
 import {
+  ACTION_LABEL,
+  actionsFor,
+  ROLE_LABEL,
+} from "~/lib/auth/permissions";
+import {
   ChevronRight,
   ChevronLeft,
   Check,
   Heart,
   Loader2,
   Users,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 
@@ -33,9 +38,20 @@ import { cn } from "~/lib/utils/cn";
 // before they're dropped into /family. Skippable by design — anything left
 // blank falls back to sensible defaults and can be edited later from
 // Settings → Household → Your profile.
+//
+// New in the carer-invite-flow PR: a role-specific "what you can do here"
+// step (after preferences). Pulls from the permission matrix so the new
+// member knows which surfaces are theirs to use and which are read-only,
+// without having to discover it by hitting a disabled button.
 
-type Step = "welcome" | "about" | "preferences" | "done";
-const STEPS: Step[] = ["welcome", "about", "preferences", "done"];
+type Step = "welcome" | "about" | "preferences" | "permissions" | "done";
+const STEPS: Step[] = [
+  "welcome",
+  "about",
+  "preferences",
+  "permissions",
+  "done",
+];
 
 const RELATIONSHIP_SUGGESTIONS: Array<{ id: string; en: string; zh: string }> = [
   { id: "son", en: "Son", zh: "儿子" },
@@ -270,6 +286,10 @@ export default function InviteWelcomePage() {
         </Card>
       )}
 
+      {step === "permissions" && membership && (
+        <PermissionsStep role={membership.role} locale={locale} />
+      )}
+
       {step === "preferences" && (
         <Card>
           <CardContent className="space-y-4 pt-5">
@@ -362,7 +382,7 @@ export default function InviteWelcomePage() {
             {L("Skip and finish later", "跳过，稍后再填")}
           </button>
         )}
-        {step === "preferences" ? (
+        {step === "permissions" ? (
           <Button onClick={() => void finish()} disabled={saving} size="lg">
             {saving ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -386,5 +406,93 @@ export default function InviteWelcomePage() {
         )}
       </div>
     </div>
+  );
+}
+
+// Role-specific "what you can do here" step. Pulls labels from the
+// permission matrix so the screen stays in sync with the actual
+// authorisation rules — adding a new action only needs the matrix
+// row + label, this component picks it up automatically.
+//
+// Splits actions into "you can" (the role's allow-list) and "you
+// won't" (notable actions explicitly denied) so the new member knows
+// both their capability and their limits. We deliberately don't
+// show every denied action — only ones a person could reasonably
+// expect to be able to do (editing the treatment plan, inviting
+// people, logging clinical notes).
+function PermissionsStep({
+  role,
+  locale,
+}: {
+  role: import("~/types/household").HouseholdRole;
+  locale: Locale;
+}) {
+  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const allowed = actionsFor(role);
+  const allActions = Object.keys(ACTION_LABEL) as Array<
+    keyof typeof ACTION_LABEL
+  >;
+  // The handful of "you'd reasonably expect to be able to" actions
+  // worth calling out when a role doesn't have them. Listing every
+  // disabled action would be exhausting; this curated list covers
+  // the cases where surprise would feel like a bug.
+  const noteworthyDenials: Array<keyof typeof ACTION_LABEL> = [
+    "edit_treatment_plan",
+    "edit_medications",
+    "log_clinical_note",
+    "invite_members",
+  ];
+  const denied = allActions.filter(
+    (a) => !allowed.includes(a) && noteworthyDenials.includes(a),
+  );
+
+  return (
+    <Card>
+      <CardContent className="space-y-4 pt-5">
+        <div>
+          <div className="eyebrow flex items-center gap-1.5">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            {L("What you can do here", "您能做什么")}
+          </div>
+          <p className="mt-1.5 text-[12.5px] text-ink-500">
+            {L(
+              `As ${ROLE_LABEL[role].en.toLowerCase()}, here's what you can — and can't — do. The primary carer can change your role later.`,
+              `作为${ROLE_LABEL[role].zh}，您可以做以下事项。日后由主要照护者调整角色。`,
+            )}
+          </p>
+        </div>
+
+        <ul className="space-y-1.5">
+          {allowed.map((a) => (
+            <li
+              key={`allow-${a}`}
+              className="flex items-start gap-2 text-[12.5px]"
+            >
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--ok)]" />
+              <span className="text-ink-900">{ACTION_LABEL[a][locale]}</span>
+            </li>
+          ))}
+        </ul>
+
+        {denied.length > 0 && (
+          <div>
+            <div className="eyebrow text-ink-400">
+              {L("Not yours to change", "无修改权限")}
+            </div>
+            <ul className="mt-1.5 space-y-1.5">
+              {denied.map((a) => (
+                <li
+                  key={`deny-${a}`}
+                  className="flex items-start gap-2 text-[12.5px] text-ink-500"
+                >
+                  <span className="mt-0.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-ink-200" />
+                  <span>{ACTION_LABEL[a][locale]}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

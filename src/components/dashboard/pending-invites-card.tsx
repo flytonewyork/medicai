@@ -71,7 +71,7 @@ export function PendingInvitesCard() {
           </div>
         </div>
         <Link
-          href="/settings#care-team"
+          href="/household"
           className="inline-flex items-center gap-0.5 text-[12px] text-ink-500 hover:text-ink-900"
         >
           {L("Manage", "管理")}
