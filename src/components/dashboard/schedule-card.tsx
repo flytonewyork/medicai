@@ -18,6 +18,8 @@ import {
   Stethoscope,
   ClipboardList,
   Sparkles,
+  Check,
+  HelpCircle,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 
@@ -238,12 +240,16 @@ function UpcomingRow({
           {chip && (
             <span
               className={
-                "inline-flex shrink-0 items-center rounded-full px-1.5 py-px text-[10px] font-medium " +
+                "inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-px text-[10px] font-medium " +
                 chipTone
               }
             >
-              {chip.status === "confirmed" && "✓ "}
-              {chip.status === "tentative" && "? "}
+              {chip.status === "confirmed" && (
+                <Check className="h-2.5 w-2.5" aria-hidden />
+              )}
+              {chip.status === "tentative" && (
+                <HelpCircle className="h-2.5 w-2.5" aria-hidden />
+              )}
               {chip.label}
             </span>
           )}

@@ -16,6 +16,8 @@ import {
   Sparkles,
   ChevronRight,
   MapPin,
+  Check,
+  HelpCircle,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 
@@ -180,21 +182,23 @@ function Row({ appt, locale }: { appt: Appointment; locale: "en" | "zh" }) {
                       : c.status === "declined"
                         ? "bg-ink-100 text-ink-400 line-through"
                         : "bg-ink-100 text-ink-700";
-                const prefix =
+                const StatusIcon =
                   c.status === "confirmed"
-                    ? "✓ "
+                    ? Check
                     : c.status === "tentative"
-                      ? "? "
-                      : "";
+                      ? HelpCircle
+                      : null;
                 return (
                   <span
                     key={`${c.label}-${i}`}
                     className={
-                      "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] " +
+                      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] " +
                       tone
                     }
                   >
-                    {prefix}
+                    {StatusIcon && (
+                      <StatusIcon className="h-3 w-3" aria-hidden />
+                    )}
                     {c.label}
                   </span>
                 );

@@ -175,9 +175,9 @@ export function CycleDayDetail({
                 variant={record?.administered ? "secondary" : "primary"}
                 onClick={() => void toggleAdministered()}
               >
-                <Check className="h-3.5 w-3.5" />
+                <Check className="h-3.5 w-3.5" aria-hidden />
                 {record?.administered
-                  ? L("Administered ✓", "已给药 ✓")
+                  ? L("Administered", "已给药")
                   : L("Mark administered", "标记已给药")}
               </Button>
               <Button

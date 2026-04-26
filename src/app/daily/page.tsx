@@ -9,7 +9,7 @@ import { Button } from "~/components/ui/button";
 import { PageHeader } from "~/components/ui/page-header";
 import { EmptyState } from "~/components/ui/empty-state";
 import { Attribution } from "~/components/shared/attribution";
-import { ChevronRight, CalendarDays } from "lucide-react";
+import { ChevronRight, CalendarDays, Check } from "lucide-react";
 
 export default function DailyPage() {
   const t = useT();
@@ -82,8 +82,9 @@ export default function DailyPage() {
                     <span>{e.walking_minutes} min walk</span>
                   )}
                   {e.resistance_training && (
-                    <span className="text-[var(--ok)]">
-                      {locale === "zh" ? "阻力 ✓" : "resistance ✓"}
+                    <span className="inline-flex items-center gap-1 text-[var(--ok)]">
+                      <Check className="h-3 w-3" aria-hidden />
+                      {locale === "zh" ? "阻力" : "resistance"}
                     </span>
                   )}
                 </div>
