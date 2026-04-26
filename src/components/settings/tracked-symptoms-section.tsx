@@ -2,13 +2,14 @@
 
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, useL } from "~/hooks/use-translate";
 import {
   SYMPTOM_CATALOG,
   defaultTrackedSymptomIds,
   type SymptomTag,
 } from "~/lib/daily/symptom-catalog";
 import { cn } from "~/lib/utils/cn";
+import { localeTag } from "~/lib/utils/date";
 import { Card, CardContent } from "~/components/ui/card";
 import { Stethoscope, RotateCcw } from "lucide-react";
 
@@ -34,7 +35,7 @@ export function TrackedSymptomsSection() {
   const s = settings?.[0];
   const tracked = new Set(s?.tracked_symptoms ?? defaultTrackedSymptomIds());
 
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
 
   async function toggle(id: string) {
     if (!s?.id) return;
@@ -159,7 +160,7 @@ export function TrackedSymptomsSection() {
         <p className="text-[11px] text-ink-400">
           {L("Baseline set on ", "基线记录于 ")}
           {new Date(s.symptoms_baseline_set_at).toLocaleDateString(
-            locale === "zh" ? "zh-CN" : "en-AU",
+            localeTag(locale),
             { dateStyle: "medium" },
           )}
         </p>

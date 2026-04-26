@@ -5,7 +5,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { Stethoscope, ChevronRight } from "lucide-react";
 import { db } from "~/lib/db/dexie";
 import { Card, CardContent } from "~/components/ui/card";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, pickL } from "~/hooks/use-translate";
 import { useSettings } from "~/hooks/use-settings";
 
 // Surfaced when the patient has finished onboarding but hasn't done a
@@ -37,7 +37,7 @@ export function BaselineNudgeCard() {
   if (s.baseline_weight_kg) return null;
   if (hasComplete) return null;
 
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = pickL(locale);
 
   return (
     <Card>

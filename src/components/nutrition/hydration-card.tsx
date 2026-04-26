@@ -14,7 +14,7 @@ import {
 } from "~/lib/nutrition/hydration";
 import { Card, CardContent } from "~/components/ui/card";
 import { TargetBar } from "./macro-bar";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, useL } from "~/hooks/use-translate";
 import { cn } from "~/lib/utils/cn";
 import type { FluidKind } from "~/types/nutrition";
 
@@ -34,7 +34,7 @@ export function HydrationCard({ date }: { date: string }) {
   const [customKind, setCustomKind] = useState<FluidKind>("water");
 
   const pct = (totals.total_ml / DEFAULT_FLUID_TARGET_ML) * 100;
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
 
   return (
     <Card>

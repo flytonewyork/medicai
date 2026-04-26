@@ -1,5 +1,6 @@
 import { db, now } from "~/lib/db/dexie";
 import { attachMedia } from "~/lib/db/timeline-media";
+import { todayISO } from "~/lib/utils/date";
 import type { CapturedPhoto } from "~/types/capture";
 import type { EnteredBy, LifeEvent } from "~/types/clinical";
 
@@ -37,7 +38,7 @@ export interface DiaryIngestResult {
 export async function ingestDiaryPage(
   input: DiaryIngestInput,
 ): Promise<DiaryIngestResult> {
-  const entry_date = input.entry_date ?? today();
+  const entry_date = input.entry_date ?? todayISO();
   const title = input.title ?? `Diary — ${entry_date}`;
   const createdAt = now();
 
@@ -83,6 +84,3 @@ export async function ingestDiaryPage(
   return { life_event_id, media_id, ocr_text, ocr_confidence };
 }
 
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}

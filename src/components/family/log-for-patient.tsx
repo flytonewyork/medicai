@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, useL } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
 import { parseDirectFile, type DirectFileResult } from "~/lib/log/direct-file";
 import { applyDirectFile } from "~/lib/log/direct-file-apply";
@@ -21,7 +21,7 @@ import { FollowUpsCard } from "~/components/log/follow-ups-card";
 export function LogForPatient() {
   const locale = useLocale();
   const enteredBy = useUIStore((s) => s.enteredBy);
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
 
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);

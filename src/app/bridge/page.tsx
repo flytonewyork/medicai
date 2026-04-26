@@ -2,7 +2,7 @@
 
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
-import { useLocale, useT } from "~/hooks/use-translate";
+import { useLocale, useT, useL } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card } from "~/components/ui/card";
 import { ShieldCheck, Clock, Activity } from "lucide-react";
@@ -10,7 +10,7 @@ import { ShieldCheck, Clock, Activity } from "lucide-react";
 export default function BridgePage() {
   const t = useT();
   const locale = useLocale();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   const trials = useLiveQuery(() =>
     db.trials.orderBy("priority").toArray(),
   );

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { db, now } from "~/lib/db/dexie";
 import { todayISO } from "~/lib/utils/date";
-import { useLocale, useT } from "~/hooks/use-translate";
+import { useLocale, useT, useL } from "~/hooks/use-translate";
 import { useSettings } from "~/hooks/use-settings";
 import { useUIStore } from "~/stores/ui-store";
 import { Card, CardContent } from "~/components/ui/card";
@@ -602,7 +602,7 @@ function PickPatientStep({
   onStartFresh: () => void;
   locale: Locale;
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   const [rows, setRows] = useState<
     Array<{
       id: string;

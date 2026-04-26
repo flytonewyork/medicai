@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import Link from "next/link";
 import { db, now } from "~/lib/db/dexie";
-import { useLocale, useT } from "~/hooks/use-translate";
+import { useLocale, useT, useL } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
 import { runEngineAndPersist } from "~/lib/rules/engine";
 import { Button } from "~/components/ui/button";
@@ -635,7 +635,7 @@ function CategoryFields({
   locale: "en" | "zh";
   inChemoWindow: boolean;
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
 
   if (catId === "feelings") {
     return (
@@ -867,7 +867,7 @@ function PracticeFields({
   patch: <K extends keyof DailyEntry>(k: K, v: DailyEntry[K] | undefined) => void;
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   const practices = useLiveQuery(
     () =>
       db.medications
@@ -988,7 +988,7 @@ function PracticeGroup({
   quality?: number;
   onQuality?: (n: number) => void;
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   return (
     <div className="space-y-2">
       <div className="eyebrow text-ink-500">{title}</div>

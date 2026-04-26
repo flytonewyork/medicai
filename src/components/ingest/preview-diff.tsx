@@ -9,7 +9,7 @@ import type {
   IngestOp,
   IngestOpKind,
 } from "~/types/ingest";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, useL } from "~/hooks/use-translate";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { TextInput, Textarea } from "~/components/ui/field";
@@ -76,7 +76,7 @@ interface Props {
 
 export function PreviewDiff({ draft, onApplied, onDiscard }: Props) {
   const locale = useLocale();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
 
   // Per-op include toggle. Defaults: every op selected, except low-
   // confidence drafts where we let the user opt in deliberately.
@@ -417,7 +417,7 @@ function OpEditor({
   onChange: (next: IngestOp) => void;
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
 
   if (op.kind === "add_appointment") {
     const data = op.data as Record<string, unknown>;

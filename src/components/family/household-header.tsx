@@ -11,7 +11,7 @@ import type {
   Household,
   HouseholdMemberWithProfile,
 } from "~/types/household";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, pickL } from "~/hooks/use-translate";
 import { Users, Settings as SettingsIcon } from "lucide-react";
 
 // Small avatar stack + household name at the top of /family so any
@@ -41,7 +41,7 @@ export function HouseholdHeader() {
   }, [membership]);
 
   if (!membership || !household) return null;
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = pickL(locale);
 
   return (
     <Link

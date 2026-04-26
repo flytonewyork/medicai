@@ -10,7 +10,7 @@ import {
   sortPrepForRender,
 } from "~/lib/appointments/prep";
 import type { Appointment, AppointmentPrep } from "~/types/appointment";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, useL } from "~/hooks/use-translate";
 import { Card, CardContent } from "~/components/ui/card";
 import { PrepEditor } from "./prep-editor";
 import { Button } from "~/components/ui/button";
@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import { localeTag } from "~/lib/utils/date";
 
 // Read-first preparation block for /schedule/[id]. Renders each prep
 // item with a tap-to-complete checkbox, an "active now" highlight
@@ -31,7 +32,7 @@ import { cn } from "~/lib/utils/cn";
 
 export function PrepPanel({ appt }: { appt: Appointment }) {
   const locale = useLocale();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<AppointmentPrep[]>(appt.prep ?? []);
   const [saving, setSaving] = useState(false);
@@ -177,7 +178,7 @@ export function PrepPanel({ appt }: { appt: Appointment }) {
               const startMs = prepStartMs(appt, item);
               const startLabel = startMs
                 ? new Date(startMs).toLocaleString(
-                    locale === "zh" ? "zh-CN" : "en-AU",
+                    localeTag(locale),
                     { weekday: "short", hour: "numeric", minute: "2-digit" },
                   )
                 : null;

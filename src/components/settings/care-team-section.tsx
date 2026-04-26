@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useLocale } from "~/hooks/use-translate";
+import { useL } from "~/hooks/use-translate";
 import { Card, CardContent } from "~/components/ui/card";
 import { UserPlus, ChevronRight, Users } from "lucide-react";
 
@@ -15,8 +15,7 @@ import { UserPlus, ChevronRight, Users } from "lucide-react";
 // (/settings#care-team and /carers) made the "no obvious way to add
 // carers" complaint inevitable. One destination is clearer.
 export function CareTeamSection() {
-  const locale = useLocale();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
 
   return (
     <section className="space-y-3">

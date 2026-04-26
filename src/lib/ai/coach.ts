@@ -1,5 +1,6 @@
 import type { ComprehensiveAssessment } from "~/types/clinical";
 import { DEFAULT_AI_MODEL } from "~/lib/anthropic/model";
+import { postJson } from "~/lib/utils/http";
 
 export interface CoachContext {
   stepKey: string;
@@ -41,13 +42,12 @@ export async function askCoach({
   history: CoachMessage[];
   locale?: "en" | "zh";
 }): Promise<string> {
-  const res = await fetch("/api/ai/coach", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ model, context, history, locale }),
+  const data = await postJson<{ reply: string }>("/api/ai/coach", {
+    model,
+    context,
+    history,
+    locale,
   });
-  if (!res.ok) throw new Error(await res.text());
-  const data = (await res.json()) as { reply: string };
   return data.reply;
 }
 
@@ -65,17 +65,14 @@ export async function summariseAssessment({
   assessment: ComprehensiveAssessment;
   priorAssessment?: ComprehensiveAssessment | null;
 }): Promise<AssessmentSummary> {
-  const res = await fetch("/api/ai/assessment-summary", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
+  const data = await postJson<{ result: AssessmentSummary }>(
+    "/api/ai/assessment-summary",
+    {
       model,
       assessment: compactPayload(assessment),
       prior_assessment: priorAssessment ? compactPayload(priorAssessment) : null,
-    }),
-  });
-  if (!res.ok) throw new Error(await res.text());
-  const data = (await res.json()) as { result: AssessmentSummary };
+    },
+  );
   return data.result;
 }
 

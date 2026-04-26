@@ -11,7 +11,7 @@ import type {
   HouseholdMemberWithProfile,
   HouseholdRole,
 } from "~/types/household";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, useL } from "~/hooks/use-translate";
 import { Card, CardContent } from "~/components/ui/card";
 import {
   Crown,
@@ -50,7 +50,7 @@ export function MembersList({
   onChanged,
 }: Props) {
   const locale = useLocale();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
 
   const [editing, setEditing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -146,7 +146,7 @@ function MemberRow({
   onError: (msg: string) => void;
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   const Icon = ROLE_ICON[member.role];
   const [saving, setSaving] = useState(false);
   const [pendingRole, setPendingRole] = useState<HouseholdRole>(member.role);

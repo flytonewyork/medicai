@@ -6,7 +6,7 @@ import { useCan } from "~/hooks/use-can";
 import { useHousehold } from "~/hooks/use-household";
 import { listInvites } from "~/lib/supabase/households";
 import type { HouseholdInvite } from "~/types/household";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, pickL } from "~/hooks/use-translate";
 import { Card, CardContent } from "~/components/ui/card";
 import { Clock, ChevronRight } from "lucide-react";
 
@@ -47,7 +47,7 @@ export function PendingInvitesCard() {
 
   if (!canSee || !pending || pending.length === 0) return null;
 
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = pickL(locale);
   return (
     <Card>
       <CardContent className="flex items-center justify-between gap-3 pt-4">

@@ -11,7 +11,7 @@ import {
 } from "~/lib/supabase/households";
 import { ROLE_LABEL } from "~/lib/auth/permissions";
 import type { HouseholdInvite } from "~/types/household";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, useL } from "~/hooks/use-translate";
 import { Card, CardContent } from "~/components/ui/card";
 import {
   Clock,
@@ -35,7 +35,7 @@ interface Props {
 // because the issuance UI lives directly above this list.
 export function PendingInvitesList({ invites, onChanged }: Props) {
   const locale = useLocale();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -229,7 +229,7 @@ function ActiveRow({
   onExtend: () => void;
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   const days = daysUntilExpiry(invite.expires_at);
   const nearExpiry = days <= 3;
   return (

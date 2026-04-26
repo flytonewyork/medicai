@@ -13,6 +13,7 @@ import type {
 } from "~/types/clinical";
 import { differenceInCalendarDays, format, parseISO } from "date-fns";
 import { cn } from "~/lib/utils/cn";
+import { todayISO } from "~/lib/utils/date";
 
 const KIND_LABELS: Record<CareTeamContactKind, { en: string; zh: string }> = {
   clinic_visit: { en: "Clinic visit", zh: "门诊" },
@@ -220,7 +221,7 @@ function ContactForm({
   onCancel: () => void;
 }) {
   const [date, setDate] = useState(
-    editing?.date ?? new Date().toISOString().slice(0, 10),
+    editing?.date ?? todayISO(),
   );
   const [kind, setKind] = useState<CareTeamContactKind>(
     editing?.kind ?? "clinic_visit",

@@ -13,7 +13,7 @@ import type {
   HouseholdInvite,
   HouseholdMemberWithProfile,
 } from "~/types/household";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, useL } from "~/hooks/use-translate";
 import { isSupabaseConfigured } from "~/lib/supabase/client";
 import { PageHeader, SectionHeader } from "~/components/ui/page-header";
 import { Card, CardContent } from "~/components/ui/card";
@@ -58,7 +58,7 @@ import {
 
 export default function CarersPage() {
   const locale = useLocale();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   const { membership, profile, loading } = useHousehold();
   const householdId = membership?.household_id ?? null;
   const isPrimary = membership?.role === "primary_carer";

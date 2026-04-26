@@ -1,6 +1,7 @@
 import type { FeedItem } from "~/types/feed";
 import type { Locale } from "~/types/clinical";
 import { DEFAULT_AI_MODEL } from "~/lib/anthropic/model";
+import { postJson } from "~/lib/utils/http";
 
 export const NARRATIVE_SYSTEM = `You write a single 2–3 sentence opening line for Hu Lin's dashboard on a pancreatic cancer tracking app.
 
@@ -23,12 +24,9 @@ export async function generateNarrative({
   locale,
   items,
 }: NarrativeInput): Promise<string> {
-  const res = await fetch("/api/ai/feed-narrative", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ model, locale, items }),
-  });
-  if (!res.ok) throw new Error(await res.text());
-  const data = (await res.json()) as { narrative: string };
+  const data = await postJson<{ narrative: string }>(
+    "/api/ai/feed-narrative",
+    { model, locale, items },
+  );
   return data.narrative;
 }

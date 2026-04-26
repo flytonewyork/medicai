@@ -27,6 +27,7 @@ import {
   ImageIcon,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import { localeTag } from "~/lib/utils/date";
 
 // Chronological, date-grouped, reverse-chrono timeline.
 //
@@ -286,7 +287,7 @@ function formatMonth(yyyymm: string, locale: "en" | "zh"): string {
   const [y, m] = yyyymm.split("-");
   if (!y || !m) return yyyymm;
   const d = new Date(Number(y), Number(m) - 1, 1);
-  return d.toLocaleDateString(locale === "zh" ? "zh-CN" : "en-AU", {
+  return d.toLocaleDateString(localeTag(locale), {
     month: "long",
     year: "numeric",
   });
@@ -295,7 +296,7 @@ function formatMonth(yyyymm: string, locale: "en" | "zh"): string {
 function formatDay(iso: string, locale: "en" | "zh"): string {
   const d = new Date(iso.length === 10 ? `${iso}T12:00:00` : iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(locale === "zh" ? "zh-CN" : "en-AU", {
+  return d.toLocaleDateString(localeTag(locale), {
     day: "numeric",
     month: "short",
   });

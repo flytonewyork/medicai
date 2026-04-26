@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useLocale } from "~/hooks/use-translate";
+import { todayISO } from "~/lib/utils/date";
 import { PROTOCOL_LIBRARY } from "~/config/protocols";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -55,7 +56,7 @@ export function CycleForm({
     initial?.cycle_number ?? 1,
   );
   const [startDate, setStartDate] = useState<string>(
-    initial?.start_date ?? new Date().toISOString().slice(0, 10),
+    initial?.start_date ?? todayISO(),
   );
   const [status, setStatus] = useState<CycleStatus>(initial?.status ?? "active");
   const [doseLevel, setDoseLevel] = useState<number>(initial?.dose_level ?? 0);

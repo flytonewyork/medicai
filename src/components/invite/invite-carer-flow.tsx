@@ -11,7 +11,7 @@ import {
   ROLE_DESCRIPTION,
 } from "~/lib/auth/permissions";
 import type { HouseholdRole, HouseholdInvite } from "~/types/household";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, useL } from "~/hooks/use-translate";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Field, TextInput } from "~/components/ui/field";
@@ -71,7 +71,7 @@ export function InviteCarerFlow({
   onClose,
 }: Props) {
   const locale = useLocale();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
 
   const [step, setStep] = useState<Step>("pick_role");
   const [role, setRole] = useState<HouseholdRole>(defaultRole);
@@ -274,7 +274,7 @@ function RolePicker({
   options: HouseholdRole[];
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   return (
     <div className="space-y-2">
       <p className="text-[12.5px] text-ink-500">
@@ -334,7 +334,7 @@ function DetailsStep({
   onEmail: (v: string) => void;
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   return (
     <div className="space-y-3">
       <div className="rounded-md border border-ink-100 bg-paper-2 p-2.5 text-[12px] text-ink-700">
@@ -392,7 +392,7 @@ function ShareStep({
   onAnother: () => void;
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   const recipientName = name.trim();
   const subject = L(
     "Join the family's Anchor care plan",
