@@ -3,6 +3,7 @@
 import type { PreparedImage } from "~/lib/ingest/image";
 import type { ParsedMealResult } from "./parser-schema";
 import { DEFAULT_AI_MODEL } from "~/lib/anthropic/model";
+import { postJson } from "~/lib/utils/http";
 
 // Client-side shims around the /api/ai/parse-meal route. The route holds
 // the server-side ANTHROPIC_API_KEY; the parsers below are the only thing
@@ -17,13 +18,10 @@ export async function parseMealPhoto({
   model?: string;
   locale?: "en" | "zh";
 }): Promise<ParsedMealResult> {
-  const res = await fetch("/api/ai/parse-meal", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ kind: "photo", image, model, locale }),
-  });
-  if (!res.ok) throw new Error(await res.text());
-  const data = (await res.json()) as { result: ParsedMealResult };
+  const data = await postJson<{ result: ParsedMealResult }>(
+    "/api/ai/parse-meal",
+    { kind: "photo", image, model, locale },
+  );
   return data.result;
 }
 
@@ -36,12 +34,9 @@ export async function parseMealText({
   model?: string;
   locale?: "en" | "zh";
 }): Promise<ParsedMealResult> {
-  const res = await fetch("/api/ai/parse-meal", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ kind: "text", text, model, locale }),
-  });
-  if (!res.ok) throw new Error(await res.text());
-  const data = (await res.json()) as { result: ParsedMealResult };
+  const data = await postJson<{ result: ParsedMealResult }>(
+    "/api/ai/parse-meal",
+    { kind: "text", text, model, locale },
+  );
   return data.result;
 }

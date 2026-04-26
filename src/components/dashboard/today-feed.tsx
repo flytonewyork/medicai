@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useTodayFeed } from "~/hooks/use-today-feed";
 import { useWeather } from "~/hooks/use-weather";
+import { todayISO } from "~/lib/utils/date";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { useDefaultAiModel } from "~/hooks/use-settings";
 import { generateNarrative } from "~/lib/nudges/ai-narrative";
@@ -111,7 +112,7 @@ export function TodayFeed({
   // ANTHROPIC_API_KEY via /api/ai/feed-narrative; no per-user key needed.
   useEffect(() => {
     if (feed.length === 0) return;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayISO();
     const cacheTag = `${today}_${locale}`;
     try {
       const raw = localStorage.getItem(CACHE_KEY);

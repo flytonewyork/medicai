@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { prepareImageForVision } from "~/lib/ingest/image";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, useL } from "~/hooks/use-translate";
+import { todayISO } from "~/lib/utils/date";
+import { postJson } from "~/lib/utils/http";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Field, Textarea } from "~/components/ui/field";
@@ -24,7 +26,7 @@ export function UniversalDrop({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
 
   async function parseText() {
     if (!text.trim()) return;
@@ -70,19 +72,16 @@ export function UniversalDrop({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/ai/ingest-universal", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
+      const data = await postJson<{ draft: IngestDraft }>(
+        "/api/ai/ingest-universal",
+        {
           text: args.text,
           image: args.image,
           source: args.source,
-          today: new Date().toISOString().slice(0, 10),
+          today: todayISO(),
           locale,
-        }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const data = (await res.json()) as { draft: IngestDraft };
+        },
+      );
       onDraft(data.draft);
       setText("");
     } catch (err) {

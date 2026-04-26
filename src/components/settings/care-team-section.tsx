@@ -27,7 +27,7 @@ import type {
   HouseholdMemberWithProfile,
   HouseholdRole,
 } from "~/types/household";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, pickL } from "~/hooks/use-translate";
 import { Field, TextInput } from "~/components/ui/field";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -92,7 +92,7 @@ const EMPTY_DRAFT: DraftMember = {
 
 export function CareTeamSection() {
   const locale = useLocale();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = pickL(locale);
 
   const members = useLiveQuery(() => db.care_team.toArray(), []);
   const settings = useLiveQuery(() => db.settings.toArray(), []);
@@ -169,7 +169,9 @@ export function CareTeamSection() {
           }
         } else {
           await addCareTeamMember({
-            name: m.profile.display_name?.trim() || L("Family member", "家庭成员"),
+            name:
+              m.profile.display_name?.trim() ||
+              (locale === "zh" ? "家庭成员" : "Family member"),
             role: householdRoleToCareTeamRole(m.role),
             notes: m.profile.care_role_label?.trim() || undefined,
             account_user_id: m.user_id,
@@ -178,7 +180,7 @@ export function CareTeamSection() {
         }
       }
     })();
-  }, [supaMembers, members]);
+  }, [supaMembers, members, locale]);
 
   const grouped = useMemo(() => {
     const byRole = new Map<CareTeamRole, CareTeamMember[]>();
@@ -603,7 +605,7 @@ function AccountStatusBadge({
   locale: "en" | "zh";
 }) {
   if (!status || status === "none") return null;
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = pickL(locale);
   if (status === "invited") {
     return (
       <span className="rounded-full bg-[var(--sand)] px-1.5 py-0.5 text-[9.5px] font-medium uppercase tracking-[0.08em] text-ink-900">
@@ -635,7 +637,7 @@ function DraftEditor({
   locale: "en" | "zh";
   canInvite: boolean;
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = pickL(locale);
   const isFamily = draft.role === "family";
   return (
     <Card>

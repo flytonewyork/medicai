@@ -2,7 +2,7 @@
 
 import { useHouseholdPresence } from "~/hooks/use-household-presence";
 import { useHousehold } from "~/hooks/use-household";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, pickL } from "~/hooks/use-translate";
 import { cn } from "~/lib/utils/cn";
 
 // Who else in the household has this surface open right now. Shows up
@@ -33,7 +33,7 @@ export function PresenceStack({
 
   const shown = others.slice(0, 4);
   const overflow = others.length - shown.length;
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = pickL(locale);
 
   return (
     <div

@@ -3,6 +3,7 @@
 import { useHouseholdProfiles } from "~/hooks/use-household-profiles";
 import { useLocale } from "~/hooks/use-translate";
 import { cn } from "~/lib/utils/cn";
+import { localeTag } from "~/lib/utils/date";
 
 // Small inline chip: "Thomas · 2h ago" when a profile exists for the
 // given auth uid; falls back to the legacy `entered_by` label for rows
@@ -69,8 +70,8 @@ function formatRelative(iso: string, locale: "en" | "zh"): string {
   }
   const d = Math.floor(abs / 86400);
   if (d < 7) return locale === "zh" ? `${d} 天前` : `${d}d ago`;
-  return new Date(iso).toLocaleDateString(
-    locale === "zh" ? "zh-CN" : "en-AU",
-    { month: "short", day: "numeric" },
-  );
+  return new Date(iso).toLocaleDateString(localeTag(locale), {
+    month: "short",
+    day: "numeric",
+  });
 }

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, useL } from "~/hooks/use-translate";
 import { todayISO } from "~/lib/utils/date";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -65,7 +65,7 @@ interface WizardState {
 export default function NewTreatmentCyclePage() {
   const locale = useLocale();
   const router = useRouter();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
 
   const prior = useLiveQuery(() =>
     db.treatment_cycles.orderBy("cycle_number").reverse().limit(1).first(),
@@ -421,7 +421,7 @@ function ScheduleStep({
   computedNumber: number;
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   return (
     <Card>
       <CardHeader>
@@ -515,7 +515,7 @@ function ReviewStep({
   previewAppointments: ReturnType<typeof deriveCycleAppointments>;
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   const protocol = PROTOCOL_BY_ID[state.protocol_id];
   if (!protocol) return null;
 

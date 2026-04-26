@@ -13,6 +13,7 @@ import { derivePrepTasks } from "~/lib/appointments/prep-tasks";
 import { deriveFollowUpTasks } from "~/lib/appointments/follow-up-tasks";
 import { deriveAwaitingPrepTasks } from "~/lib/appointments/prep";
 import { Plus, AlertTriangle, ClipboardList } from "lucide-react";
+import { localeTag } from "~/lib/utils/date";
 import type { Appointment } from "~/types/appointment";
 
 export default function SchedulePage() {
@@ -185,11 +186,11 @@ export default function SchedulePage() {
 function formatRange(a: Appointment, locale: "en" | "zh"): string {
   const start = new Date(a.starts_at);
   if (Number.isNaN(start.getTime())) return a.starts_at;
-  const datePart = start.toLocaleString(locale === "zh" ? "zh-CN" : "en-AU", {
+  const datePart = start.toLocaleString(localeTag(locale), {
     dateStyle: "medium",
   });
   if (a.all_day) return datePart;
-  const timePart = start.toLocaleString(locale === "zh" ? "zh-CN" : "en-AU", {
+  const timePart = start.toLocaleString(localeTag(locale), {
     timeStyle: "short",
   });
   return `${datePart} · ${timePart}`;
