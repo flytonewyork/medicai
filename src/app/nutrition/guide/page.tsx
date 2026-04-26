@@ -86,7 +86,7 @@ function ContentEN() {
             <li>
               <strong>Energy density.</strong> Olive oil, avocado, fatty fish,
               eggs, full-cream milk. In energy-dense mode, also cream, honey,
-              cheese, milky desserts (the JPCC "adding principle").
+              cheese, milky desserts (the JPCC &ldquo;adding principle&rdquo;).
               <Cite source="jpcc_2021" page={21} />
             </li>
             <li>
