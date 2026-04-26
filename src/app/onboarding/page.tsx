@@ -414,13 +414,9 @@ export default function OnboardingPage() {
             </Button>
           )}
           {CAN_SKIP_FROM.includes(step) && (
-            <button
-              type="button"
-              onClick={skipToEnd}
-              className="text-[12px] text-ink-500 underline-offset-2 hover:text-ink-800 hover:underline"
-            >
+            <Button variant="ghost" onClick={skipToEnd} className="text-ink-500 hover:text-ink-800">
               {locale === "zh" ? "其余稍后再填" : "Finish setup later"}
-            </button>
+            </Button>
           )}
         </div>
         {step === "done" ? (
@@ -781,8 +777,8 @@ function PickPatientStep({
         <div className="space-y-3 rounded-md border border-ink-200 bg-paper-2 p-4">
           <div className="text-[12.5px] text-ink-700">
             {L(
-              "Browsing every patient isn't enabled on this server yet. If the patient already has Anchor set up, paste the invite link they sent you.",
-              "本服务器尚未开启患者浏览功能。如对方已在使用 Anchor,请粘贴 ta 发来的邀请链接。",
+              "Paste the invite link the patient sent you to join their care team.",
+              "请粘贴患者发来的邀请链接加入其护理团队。",
             )}
           </div>
           <div className="flex gap-2">
@@ -802,12 +798,6 @@ function PickPatientStep({
               {acceptingInvite ? L("Joining…", "加入中…") : L("Join", "加入")}
             </Button>
           </div>
-          <p className="text-[11.5px] text-ink-400">
-            {L(
-              "Server admin: apply migration 2026_04_24_slice_p_caregiver_onboarding_reload.sql in Supabase to enable the picker.",
-              "服务器管理员:在 Supabase 中应用迁移 2026_04_24_slice_p_caregiver_onboarding_reload.sql 即可启用选择器。",
-            )}
-          </p>
         </div>
       )}
 

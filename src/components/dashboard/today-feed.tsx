@@ -159,7 +159,26 @@ export function TodayFeed({
 
   if (feed.length === 0) {
     return (
-      <Card className="p-5 text-sm text-ink-500">{t("todayFeed.empty")}</Card>
+      <Card className="p-5">
+        <div className="flex items-start gap-3">
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
+            style={{ background: "var(--tide-soft)", color: "var(--tide-2)" }}
+          >
+            <Sparkles className="h-4 w-4" />
+          </div>
+          <div className="space-y-1">
+            <div className="text-[13px] font-semibold text-ink-900">
+              {locale === "zh" ? "今天的动态会显示在这里" : "Your feed will appear here"}
+            </div>
+            <p className="text-[12.5px] text-ink-500 leading-relaxed">
+              {locale === "zh"
+                ? "完成今日记录后，这里会显示摘要、提醒和趋势。先从上方的快速记录开始。"
+                : "After you log today's check-in, this feed will show your summary, alerts, and trends. Start with the quick check-in above."}
+            </p>
+          </div>
+        </div>
+      </Card>
     );
   }
 

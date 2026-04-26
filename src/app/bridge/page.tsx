@@ -42,6 +42,49 @@ export default function BridgePage() {
     },
   ];
 
+  const ecogLevels = [
+    {
+      grade: "0",
+      label: L("Fully active", "完全活跃"),
+      description: L(
+        "You can carry out all normal activity without restriction.",
+        "可以毫无限制地进行所有日常活动。",
+      ),
+      color: "var(--ok)",
+      soft: "var(--ok-soft)",
+    },
+    {
+      grade: "1",
+      label: L("Restricted but ambulatory", "轻度受限，可自理"),
+      description: L(
+        "You have some restriction in physical activity but can walk and carry out light work. You can care for yourself.",
+        "体力活动有所受限，但可以走动、做轻体力工作，生活可以自理。",
+      ),
+      color: "var(--tide-2)",
+      soft: "var(--tide-soft)",
+    },
+    {
+      grade: "2",
+      label: L("Ambulatory, self-care only", "可走动，仅能自理"),
+      description: L(
+        "You can walk and care for yourself but can't do work. Up and about more than 50% of waking hours.",
+        "可以走动和自我照顾，但无法工作。清醒时间超过 50% 可以起床活动。",
+      ),
+      color: "var(--caution)",
+      soft: "var(--caution-soft)",
+    },
+    {
+      grade: "3–4",
+      label: L("Limited self-care", "自理受限"),
+      description: L(
+        "Limited ability to care for yourself. Confined to bed or chair more than 50% of waking hours.",
+        "自理能力受限。清醒时间超过 50% 需卧床或坐轮椅。",
+      ),
+      color: "var(--warn)",
+      soft: "var(--warn-soft)",
+    },
+  ];
+
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-8">
       <PageHeader
@@ -53,6 +96,48 @@ export default function BridgePage() {
           )
         }
       />
+
+      {/* ECOG plain-language explainer */}
+      <div className="rounded-[var(--r-lg)] border border-ink-100 bg-paper-2 p-5 space-y-3">
+        <div className="flex items-baseline gap-2">
+          <div className="text-[13px] font-semibold text-ink-900">
+            {L("What is ECOG?", "什么是 ECOG？")}
+          </div>
+          <div className="mono text-[10px] uppercase tracking-wider text-ink-400">
+            {L("Performance Status", "功能状态评分")}
+          </div>
+        </div>
+        <p className="text-[12.5px] text-ink-600 leading-relaxed">
+          {L(
+            "ECOG is a 0–4 scale that describes how much a person's daily activities are affected by their illness. Daraxonrasib requires ECOG 0 or 1 — meaning you are largely independent and mobile. Preserving this is the goal of the bridge strategy.",
+            "ECOG 是一个 0–4 分的量表，描述疾病对日常活动的影响程度。Daraxonrasib 要求 ECOG 0 或 1 分——即基本独立、可以走动。维持这一状态是过渡策略的目标。",
+          )}
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {ecogLevels.map((level) => (
+            <div
+              key={level.grade}
+              className="flex items-start gap-3 rounded-[var(--r-md)] p-3"
+              style={{ background: level.soft }}
+            >
+              <div
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[12px] font-bold text-paper"
+                style={{ background: level.color }}
+              >
+                {level.grade}
+              </div>
+              <div className="min-w-0">
+                <div className="text-[12.5px] font-semibold text-ink-900">
+                  {level.label}
+                </div>
+                <div className="mt-0.5 text-[11.5px] text-ink-600 leading-relaxed">
+                  {level.description}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Always-visible strategy explainer */}
       <div className="grid gap-4 md:grid-cols-3">
