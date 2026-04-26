@@ -2,31 +2,44 @@ import { db } from "~/lib/db/dexie";
 import { todayISO } from "~/lib/utils/date";
 import type { DailyEntry } from "~/types/clinical";
 
-// Symptom-aware context for the food picker. Reads today's
-// DailyEntry (and yesterday's as a fallback so a freshly-loaded picker
-// before the morning check-in still has signal) and decides whether
-// to bias picker results toward easy-digest options.
+// Symptom-aware context for the food picker and JPCC playbooks.
+// Reads today's DailyEntry (and yesterday's as a fallback so a
+// freshly-loaded picker before the morning check-in still has
+// signal) and decides whether to bias picker results toward
+// easy-digest options. Also exposes the active taste-issue so the
+// taste-tweak suggester can render the right quadrant.
 //
 // The bar is intentionally permissive — we recommend the easy-digest
 // filter rather than enforce it, because the patient may want to log
-// what they actually ate even on a bad day. Visualised as a soft
-// banner with "Showing easy-digest first" + "Show all" override.
+// what they actually ate even on a bad day.
 
 export type SymptomFlag =
   | "nausea"
   | "mucositis"
   | "diarrhoea"
-  | "low_appetite";
+  | "low_appetite"
+  | "dry_mouth"
+  | "early_satiety"
+  | "taste_change";
+
+export type TasteIssue =
+  | "too_sweet"
+  | "too_salty"
+  | "too_bland"
+  | "metallic"
+  | "normal";
 
 export interface NutritionSymptomContext {
   flags: SymptomFlag[];
-  source_date?: string;        // YYYY-MM-DD the context was derived from
+  source_date?: string;
   recommendEasyDigest: boolean;
+  taste_issue?: TasteIssue;
 }
 
-const NAUSEA_THRESHOLD = 4;          // 0–10 scale
-const APPETITE_LOW_THRESHOLD = 4;    // 0–10 scale (lower = worse)
-const DIARRHOEA_THRESHOLD = 2;       // count/day
+const NAUSEA_THRESHOLD = 4;
+const APPETITE_LOW_THRESHOLD = 4;
+const DIARRHOEA_THRESHOLD = 2;
+const TASTE_CHANGES_THRESHOLD = 3;
 
 export async function loadSymptomContext(
   date = todayISO(),
@@ -42,6 +55,7 @@ export async function loadSymptomContext(
     flags,
     source_date: entry.date,
     recommendEasyDigest: flags.length > 0,
+    taste_issue: entry.taste_issue,
   };
 }
 
@@ -55,6 +69,15 @@ export function deriveFlags(entry: DailyEntry): SymptomFlag[] {
     entry.appetite <= APPETITE_LOW_THRESHOLD
   ) {
     flags.push("low_appetite");
+  }
+  if (entry.dry_mouth) flags.push("dry_mouth");
+  if (entry.early_satiety) flags.push("early_satiety");
+  if (
+    (entry.taste_issue && entry.taste_issue !== "normal") ||
+    (typeof entry.taste_changes === "number" &&
+      entry.taste_changes >= TASTE_CHANGES_THRESHOLD)
+  ) {
+    flags.push("taste_change");
   }
   return flags;
 }
@@ -80,4 +103,7 @@ export const SYMPTOM_LABEL: Record<
   mucositis: { en: "mouth sores", zh: "口腔溃疡" },
   diarrhoea: { en: "diarrhoea", zh: "腹泻" },
   low_appetite: { en: "low appetite", zh: "食欲不振" },
+  dry_mouth: { en: "dry mouth", zh: "口干" },
+  early_satiety: { en: "early satiety", zh: "易饱" },
+  taste_change: { en: "taste change", zh: "味觉改变" },
 };

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Check, X, Pencil, Trash2 } from "lucide-react";
 import { searchFoods } from "~/lib/nutrition/queries";
 import { caloriesFromMacros } from "~/lib/nutrition/calculator";
+import { evaluatePert } from "~/lib/nutrition/pert-engine";
 import type {
   ParsedMealResult,
 } from "~/lib/nutrition/parser-schema";
@@ -52,11 +53,17 @@ export function ParsedPreview({
   onCancel: () => void;
 }) {
   const locale = useLocale();
+  // Serving sizes are quantised to 100 g — the patient's "rough
+  // weight" is more honest than a precise-looking AI number, and 100 g
+  // is the canonical reference frame for our per-100 g macros. We
+  // snap on intake; macros stay at the parser's per-serving estimate
+  // because the ratio (per-serving / serving_grams) won't change much
+  // for a small grams nudge.
   const [items, setItems] = useState<PreviewItem[]>(() =>
     parsed.items.map((it) => ({
       name: it.name,
       name_zh: it.name_zh ?? undefined,
-      serving_grams: it.serving_grams,
+      serving_grams: snapTo100(it.serving_grams),
       serving_label: it.serving_label ?? undefined,
       calories: it.calories,
       protein_g: it.protein_g,
@@ -204,19 +211,33 @@ export function ParsedPreview({
               : `Note: macros imply ~${macroCal} kcal, AI said ${totalCal}. Worth a sanity check.`}
           </div>
         )}
-        {parsed.pert_suggestion && (
-          <div className="rounded-md bg-[var(--warn,#d97706)]/10 px-3 py-2 text-[12px] text-[var(--warn,#d97706)]">
-            {parsed.pert_suggestion}
-            <label className="ml-2 inline-flex items-center gap-1.5 text-[11px]">
-              <input
-                type="checkbox"
-                checked={pertTaken}
-                onChange={(e) => setPertTaken(e.target.checked)}
-              />
-              {locale === "zh" ? "已服胰酶" : "PERT taken"}
-            </label>
-          </div>
-        )}
+        {(() => {
+          // JPCC PERT rule (engine, not the AI's free-text suggestion).
+          // Engine returns required + recommendation + reason. We only
+          // surface the prompt when PERT is required.
+          const pert = evaluatePert({
+            items: items.map((it) => ({
+              food_name: it.name,
+              protein_g: it.protein_g,
+              fat_g: it.fat_g,
+            })),
+            meal_type: mealType,
+          });
+          if (!pert.required) return null;
+          return (
+            <div className="rounded-md bg-[var(--warn,#d97706)]/10 px-3 py-2 text-[12px] text-[var(--warn,#d97706)]">
+              {pert.reason[locale]}
+              <label className="ml-2 inline-flex items-center gap-1.5 text-[11px]">
+                <input
+                  type="checkbox"
+                  checked={pertTaken}
+                  onChange={(e) => setPertTaken(e.target.checked)}
+                />
+                {locale === "zh" ? "已服胰酶" : "PERT taken"}
+              </label>
+            </div>
+          );
+        })()}
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onCancel}>
             {locale === "zh" ? "取消" : "Cancel"}
@@ -298,8 +319,15 @@ function ItemRow({
       </div>
       {editing && (
         <div className="mt-3 grid grid-cols-3 gap-2 rounded-md bg-paper p-2">
-          <Cell label="g" value={value.serving_grams} step={5}
-            onChange={(v) => onChange({ ...value, serving_grams: v })} />
+          <Cell
+            label="g"
+            value={value.serving_grams}
+            step={100}
+            min={100}
+            onChange={(v) =>
+              onChange({ ...value, serving_grams: snapTo100(v) })
+            }
+          />
           <Cell label="P" value={value.protein_g}
             onChange={(v) => onChange({ ...value, protein_g: v })} />
           <Cell label="F" value={value.fat_g}
@@ -320,11 +348,13 @@ function Cell({
   label,
   value,
   step = 0.5,
+  min,
   onChange,
 }: {
   label: string;
   value: number;
   step?: number;
+  min?: number;
   onChange: (v: number) => void;
 }) {
   return (
@@ -335,12 +365,21 @@ function Cell({
       <input
         type="number"
         step={step}
+        min={min}
         value={value}
         onChange={(e) => onChange(Number(e.target.value) || 0)}
         className="mt-0.5 h-8 w-full rounded-md border border-ink-200 bg-paper px-1.5 text-xs text-ink-900 focus:border-ink-900 focus:outline-none"
       />
     </label>
   );
+}
+
+// Snap a serving to the nearest 100 g, with a 100 g floor. Used at
+// initial load (parser estimate → quantised) and on every grams edit
+// in the preview.
+function snapTo100(g: number): number {
+  if (!Number.isFinite(g) || g <= 0) return 100;
+  return Math.max(100, Math.round(g / 100) * 100);
 }
 
 function Total({ label, value }: { label: string; value: string }) {

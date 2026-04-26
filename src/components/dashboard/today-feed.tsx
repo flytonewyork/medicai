@@ -309,6 +309,7 @@ function categoryLabel(
     body: { en: "Body", zh: "身体" },
     trend: { en: "Trend", zh: "趋势" },
     encouragement: { en: "Going well", zh: "进展良好" },
+    nutrition: { en: "Nutrition", zh: "营养" },
     memory: { en: "Memory", zh: "回忆" },
     invitation: { en: "Gathering", zh: "聚会" },
   };

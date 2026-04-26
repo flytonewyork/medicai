@@ -9,6 +9,10 @@ export type FeedCategory =
   | "body"
   | "trend"
   | "encouragement"
+  // Nutrition-policy / JPCC-derived items. Sits between `body` (raw
+  // physical signal) and `trend` (statistical drift) — these carry
+  // dietitian-grade recommendations with explicit citations.
+  | "nutrition"
   // Legacy-module categories. `memory` resurfaces anniversary items at
   // low priority; `invitation` carries orchestrator event suggestions
   // (slice 15). Both are always lower-priority than clinical items.
