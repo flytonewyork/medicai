@@ -138,7 +138,7 @@ export function sumEntries(entries: ReadonlyArray<MealEntry>): {
 // Default targets. Protein at 1.2 g/kg/day per the nutrition agent's
 // remit. Net carb cap defaults to 50 g/day for a relaxed-keto / low-
 // carb pattern that's compatible with the patient values document
-// (PDAC patients can tolerate ketogenic patterns; strict <20 g is
+// (mPDAC-patients can tolerate ketogenic patterns; strict <20 g is
 // rarely sustainable during chemo).
 //
 // `mode` lets the caller request the JPCC-style energy-dense pattern

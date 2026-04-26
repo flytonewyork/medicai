@@ -21,14 +21,14 @@ export type ProfileEntryKind =
   | "quote";
 
 export type ProfileEntryMode =
-  | "first_person_subject" // Hu Lin speaking about Hu Lin
+  | "first_person_subject" // the patient speaking about themselves
   | "first_person_family" // family member's own reflection (their experience)
-  | "observational" // family member speaking about Hu Lin
+  | "observational" // family member speaking about the patient
   | "shared"; // recorded together
 
 export type ProfileVisibility =
   | "family" // default — whole household sees
-  | "author_and_hulin" // only author + Hu Lin
+  | "author_and_hulin" // only author + the patient
   | "private"; // author-only, no propagation
 
 export type RelationshipDyad =
@@ -166,10 +166,10 @@ export interface MemoryCluster {
 }
 
 /**
- * Singleton row (id=1) bounding the future use of Hu Lin's corpus. Each
- * mode is a separate opt-in captured while Hu Lin can authorise it
- * himself. Refusal is honoured permanently — export bundle omits
- * material for refused modes. See docs/LEGACY_MODULE.md
+ * Singleton row (id=1) bounding the future use of the patient's corpus.
+ * Each mode is a separate opt-in captured while the patient can
+ * authorise it themselves. Refusal is honoured permanently — export
+ * bundle omits material for refused modes. See docs/LEGACY_MODULE.md
  * §"Companion consent framework".
  */
 export interface ProfileConsent {

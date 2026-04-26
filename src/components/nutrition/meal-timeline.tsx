@@ -10,7 +10,7 @@ import { cn } from "~/lib/utils/cn";
 import type { MealEntry, MealType } from "~/types/nutrition";
 
 // Visual day-clock for meal timing. Designed for "small frequent meals"
-// patterns common in PDAC patients (5–6/day): a horizontal 24h ribbon
+// patterns common in mPDAC-patients (5–6/day): a horizontal 24h ribbon
 // with one dot per logged meal. Tap a dot to see what was eaten.
 //
 // Why this matters clinically: gemcitabine + nab-paclitaxel patients

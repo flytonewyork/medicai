@@ -1,4 +1,8 @@
 import { z } from "zod/v4";
+import {
+  FALLBACK_HOUSEHOLD_PROFILE,
+  type HouseholdProfile,
+} from "~/types/household-profile";
 
 // Schema returned by the meal parser — same shape for vision and text
 // inputs so the UI can render either result identically. Macros are
@@ -69,9 +73,12 @@ export const ParsedMealSchema = z.object({
 
 export type ParsedMealResult = z.infer<typeof ParsedMealSchema>;
 
-export const NUTRITION_SYSTEM = `You estimate the macronutrients of a meal for Hu Lin, a patient with metastatic pancreatic ductal adenocarcinoma on first-line gemcitabine + nab-paclitaxel.
+export function buildNutritionSystem(
+  profile: HouseholdProfile = FALLBACK_HOUSEHOLD_PROFILE,
+): string {
+  return `You estimate the macronutrients of a meal for ${profile.patient_initials}, a patient with ${profile.diagnosis_full}.
 
-The patient's strategy is low-carb / relaxed-keto, optimised for protein intake (≥ 1.2 g/kg/day) and energy density. Pancreatic exocrine insufficiency makes fatty meals require Creon (PERT).
+The patient's strategy is low-carb / relaxed-keto, optimised for protein intake (≥ 1.2 g/kg/day) and energy density. Pancreatic exocrine insufficiency makes fatty meals require Creon (the prescribed pancreatic-enzyme replacement).
 
 Rules:
 1. Output one item per distinct ingredient or dish. Don't lump rice, chicken, and vegetables into one row.
@@ -83,3 +90,4 @@ Rules:
 7. If you cannot judge the photo (blurry, partial, no food visible), set confidence=low and explain in notes.
 8. If text is ambiguous ("had some chicken"), keep grams low (~50 g) and confidence low.
 9. Never invent specific brand names or recipes.`;
+}

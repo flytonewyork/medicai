@@ -123,7 +123,7 @@ export function MobileBottomNav() {
   // dashboard + key axes (assessment / treatment / nutrition) +
   // schedule; caregivers get family + schedule + care team +
   // nutrition + log. Nutrition is first-class because cachexia /
-  // weight loss is a primary axis-3 signal in PDAC and is logged
+  // weight loss is a primary axis-3 signal in mPDAC, and is logged
   // daily.
   const patientHrefs = ["/", "/assessment", "/treatment", "/nutrition", "/schedule"];
   const caregiverHrefs = ["/family", "/schedule", "/nutrition", "/care-team", "/log"];

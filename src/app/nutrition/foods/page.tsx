@@ -87,7 +87,7 @@ export default function FoodsPage() {
         subtitle={
           locale === "zh"
             ? "按 100g 计算的宏量。挑选时看色块。"
-            : "Macros per 100 g. Tap a colour to scan PDAC fit."
+            : "Macros per 100 g. Tap a colour to scan mPDAC-fit."
         }
         action={
           <Button
@@ -384,7 +384,7 @@ function FoodEditor({
             />
           </Field>
 
-          <Field label="PDAC notes (en)">
+          <Field label="mPDAC-notes (en)">
             <Textarea
               rows={2}
               value={draft.pdac_notes ?? ""}

@@ -11,7 +11,7 @@ import { TargetBar } from "./macro-bar";
 import { todayISO } from "~/lib/utils/date";
 
 // 7-day rolling protein and net carbs trend. The numbers that matter
-// most for PDAC + chemo function preservation.
+// most for mPDAC+chemo function preservation.
 export function WeeklySummary() {
   const locale = useLocale();
   const today = todayISO();

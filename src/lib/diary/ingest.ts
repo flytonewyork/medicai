@@ -3,7 +3,7 @@ import { attachMedia } from "~/lib/db/timeline-media";
 import type { CapturedPhoto } from "~/types/capture";
 import type { EnteredBy, LifeEvent } from "~/types/clinical";
 
-// Diary page ingestion. Hu Lin is writing a hand-written diary during
+// Diary page ingestion. The patient is writing a hand-written diary during
 // the bridge period; each page not captured is lost. This orchestrator
 // takes a photo of a page and produces:
 //   1. a `life_events` row (category: "diary", is_memory: true)

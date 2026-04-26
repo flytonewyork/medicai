@@ -328,7 +328,7 @@ export function friendlyInviteError(err: unknown): string {
 }
 
 // RPC: fetch a public preview of an invite token. Used by /invite/<token>
-// to render trust copy ("You've been invited to Hu Lin's care team as
+// to render trust copy ("You've been invited to the patient's care team as
 // Family by Thomas") BEFORE bouncing an unauthenticated visitor to
 // /login. Falls back to a not_found preview when Supabase isn't
 // configured so the UI can still render an error state instead of

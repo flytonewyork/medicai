@@ -6,8 +6,8 @@ import type { LocalizedString } from "~/types/feed";
 // forward. Jewish 'tzava'a' and Chinese 家训/家書 are the two closest
 // antecedents. Modern secular guides borrow from both.
 //
-// This module provides the section structure used by the UI. Hu Lin
-// composes; the app never generates ethical-will content. Sections
+// This module provides the section structure used by the UI. The
+// patient composes; the app never generates ethical-will content. Sections
 // are presented one at a time with a gentle prompt; responses become
 // the body of a sealed entry (see sealed.ts).
 //

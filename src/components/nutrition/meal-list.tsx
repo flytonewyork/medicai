@@ -124,6 +124,9 @@ function MealCard({ mealId }: { mealId: number }) {
       {open && (
         <div className="space-y-2 border-t border-ink-100/60 bg-paper-2/40 px-4 py-3">
           {meal.photo_data_url && (
+            // `photo_data_url` is a data URL stored in Dexie — next/image
+            // can't optimise it, so a plain <img> is correct here.
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={meal.photo_data_url}
               alt="Meal"

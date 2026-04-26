@@ -1,9 +1,12 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   ACTION_LABEL,
   PERMISSIONS,
   ROLE_DESCRIPTION,
   ROLE_LABEL,
+  TABLE_WRITE_ACTION,
   actionsFor,
   can,
   type PermissionAction,
@@ -117,6 +120,44 @@ describe("label / description coverage", () => {
   it("every action has a label", () => {
     for (const action of Object.keys(PERMISSIONS) as PermissionAction[]) {
       expect(ACTION_LABEL[action]?.en.length ?? 0).toBeGreaterThan(0);
+    }
+  });
+});
+
+// Parity check: the SQL `can_write` function must list the same set
+// of actions as the TypeScript matrix. If a new action is added to
+// PERMISSIONS without updating the migration, this test fires.
+describe("SQL ↔ TS permission parity", () => {
+  it("every PermissionAction appears in the can_write SQL function", () => {
+    const sqlPath = join(
+      __dirname,
+      "..",
+      "..",
+      "supabase",
+      "migrations",
+      "2026_04_26_slice_m_role_writes.sql",
+    );
+    const sql = readFileSync(sqlPath, "utf8");
+    for (const action of Object.keys(PERMISSIONS) as PermissionAction[]) {
+      // Each action key is matched by a `WHEN '<action>' THEN` arm.
+      const expected = `WHEN '${action}' THEN`;
+      expect(sql).toContain(expected);
+    }
+  });
+
+  it("every TABLE_WRITE_ACTION mapping is present in action_for_table", () => {
+    const sqlPath = join(
+      __dirname,
+      "..",
+      "..",
+      "supabase",
+      "migrations",
+      "2026_04_26_slice_m_role_writes.sql",
+    );
+    const sql = readFileSync(sqlPath, "utf8");
+    for (const [table, action] of Object.entries(TABLE_WRITE_ACTION)) {
+      const expected = `WHEN '${table}' THEN '${action}'`;
+      expect(sql).toContain(expected);
     }
   });
 });

@@ -1,6 +1,6 @@
 // Lightweight pattern matcher for short, structured log entries. The /log
 // surface normally tags free-text and fans it out to the specialist agents
-// so the super-brain can react. But a lot of what Hu Lin actually types is
+// so the super-brain can react. But a lot of what the patient actually types is
 // a single vital or lab value — "blood sugar 7.9 this morning", "weight
 // 64.5 kg", "walked 20 min". Running the full agent fan-out on those
 // wastes latency and tokens; they're just data points.

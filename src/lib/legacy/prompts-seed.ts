@@ -427,8 +427,8 @@ export const PROMPTS_SEED: PromptSeed[] = [
     "medium",
     0.7,
     {
-      en: "What have you learned about Hu Lin in the last year that you didn't know before?",
-      zh: "最近一年,您对胡林有了哪些过去不知道的新认识?",
+      en: "What have you learned about him in the last year that you didn't know before?",
+      zh: "最近一年,您对他有了哪些过去不知道的新认识?",
     },
   ),
   p(
@@ -501,8 +501,8 @@ export const PROMPTS_SEED: PromptSeed[] = [
     "low",
     0.7,
     {
-      en: "What's a small habit of Hu Lin's that always makes you smile?",
-      zh: "胡林的哪个小习惯,总是让您会心一笑?",
+      en: "What's a small habit of his that always makes you smile?",
+      zh: "他的哪个小习惯,总是让您会心一笑?",
     },
   ),
   p(

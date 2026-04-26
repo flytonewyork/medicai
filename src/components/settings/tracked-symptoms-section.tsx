@@ -65,8 +65,8 @@ export function TrackedSymptomsSection() {
           </h2>
           <p className="mt-1 text-xs text-ink-500">
             {L(
-              "Pick the PDAC- and GnP-specific symptoms the daily check-in should ask about. Your first full entry becomes the baseline for trend detection.",
-              "选择每日记录要询问的 PDAC 与 GnP 相关症状。首次完整记录将作为趋势对比的基线。",
+              "Pick the mPDAC- and GnP-specific symptoms the daily check-in should ask about. Your first full entry becomes the baseline for trend detection.",
+              "选择每日记录要询问的 mPDAC、GnP 相关症状。首次完整记录将作为趋势对比的基线。",
             )}
           </p>
         </div>

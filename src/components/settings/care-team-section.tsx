@@ -169,7 +169,9 @@ export function CareTeamSection() {
           }
         } else {
           await addCareTeamMember({
-            name: m.profile.display_name?.trim() || L("Family member", "家庭成员"),
+            name:
+              m.profile.display_name?.trim() ||
+              (locale === "zh" ? "家庭成员" : "Family member"),
             role: householdRoleToCareTeamRole(m.role),
             notes: m.profile.care_role_label?.trim() || undefined,
             account_user_id: m.user_id,
@@ -178,7 +180,7 @@ export function CareTeamSection() {
         }
       }
     })();
-  }, [supaMembers, members]);
+  }, [supaMembers, members, locale]);
 
   const grouped = useMemo(() => {
     const byRole = new Map<CareTeamRole, CareTeamMember[]>();

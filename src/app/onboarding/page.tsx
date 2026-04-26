@@ -365,10 +365,29 @@ export default function OnboardingPage() {
           <Anchor className="h-5 w-5 text-[var(--tide-2)]" />
           <div className="serif text-lg tracking-tight">Anchor</div>
         </div>
-        <div className="eyebrow">
+        <div
+          className="eyebrow"
+          aria-current="step"
+          aria-label={
+            locale === "zh"
+              ? `${STEP_LABELS[locale][step]} · 第 ${stepIdx + 1} 步，共 ${steps.length} 步`
+              : `${STEP_LABELS[locale][step]} · step ${stepIdx + 1} of ${steps.length}`
+          }
+        >
           {STEP_LABELS[locale][step]} · {stepIdx + 1}/{steps.length}
         </div>
-        <div className="h-1 w-full overflow-hidden rounded-full bg-ink-100">
+        <div
+          className="h-1 w-full overflow-hidden rounded-full bg-ink-100"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(progress)}
+          aria-label={
+            locale === "zh"
+              ? `第 ${stepIdx + 1} 步，共 ${steps.length} 步`
+              : `Step ${stepIdx + 1} of ${steps.length}`
+          }
+        >
           <div
             className="h-full bg-ink-900 transition-all duration-300"
             style={{ width: `${progress}%` }}
@@ -851,7 +870,7 @@ function ProfileStep({
         <TextInput
           value={form.profile_name}
           onChange={(e) => update("profile_name", e.target.value)}
-          placeholder={locale === "zh" ? "例如：胡林" : "e.g. Hu Lin"}
+          placeholder={locale === "zh" ? "您的姓名" : "Your name"}
           autoFocus
         />
       </Field>

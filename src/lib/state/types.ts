@@ -4,7 +4,7 @@
 // Axes map to the four-pillar clinical thesis: every metric is assigned to
 // exactly one axis so axis-level scoring is well-defined. Signals that
 // legitimately span axes (nausea, fatigue) are assigned to the most likely
-// *driver* axis for the current patient context (mPDAC on chemo) — future
+// *driver* axis for the current patient context (mPDAC, on chemo) — future
 // work can support multi-axis contributions.
 
 export type Axis = "individual" | "external" | "tumour" | "drug";

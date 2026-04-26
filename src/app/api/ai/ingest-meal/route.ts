@@ -6,7 +6,9 @@ import {
   readJsonBody,
   withAnthropicErrorBoundary,
 } from "~/lib/anthropic/route-helpers";
-import { MealSchema, MEAL_SYSTEM } from "~/lib/ingest/meal-vision";
+import { MealSchema, buildMealSystem } from "~/lib/ingest/meal-vision";
+import { requireSession } from "~/lib/auth/require-session";
+import { loadHouseholdProfile } from "~/lib/household/profile";
 import type { PreparedImage } from "~/lib/ingest/image";
 
 export const runtime = "nodejs";
@@ -18,6 +20,9 @@ interface RequestBody {
 }
 
 export async function POST(req: Request) {
+  const auth = await requireSession();
+  if (!auth.ok) return auth.error;
+
   const gate = getAnthropicClient();
   if (gate.error) return gate.error;
 
@@ -29,12 +34,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "image required" }, { status: 400 });
   }
 
+  const profile = await loadHouseholdProfile(auth.session.household_id);
+
   const result = await withAnthropicErrorBoundary(() =>
     gate.client.messages.parse({
       model: body.model ?? DEFAULT_AI_MODEL,
       max_tokens: 1024,
       system: [
-        { type: "text", text: MEAL_SYSTEM, cache_control: { type: "ephemeral" } },
+        {
+          type: "text",
+          text: buildMealSystem(profile),
+          cache_control: { type: "ephemeral" },
+        },
       ],
       output_config: { format: jsonOutputFormat(MealSchema) },
       messages: [
