@@ -9,6 +9,7 @@ import { EmergencyCard } from "~/components/dashboard/emergency-card";
 import { QuickCheckinCard } from "~/components/dashboard/quick-checkin-card";
 import { PendingInvitesCard } from "~/components/dashboard/pending-invites-card";
 import { InviteFamilyCard } from "~/components/dashboard/invite-family-card";
+import { RecentlyAcceptedCard } from "~/components/dashboard/recently-accepted-card";
 import { BaselineNudgeCard } from "~/components/dashboard/baseline-nudge-card";
 import { NextClinicCard } from "~/components/dashboard/next-clinic-card";
 import { ScheduleCard } from "~/components/dashboard/schedule-card";
@@ -149,6 +150,8 @@ export default function DashboardPage() {
       <TodayFeed excludeIds={EXCLUDE_IDS} />
 
       <BaselineNudgeCard />
+
+      <RecentlyAcceptedCard />
 
       <PendingInvitesCard />
 

@@ -6,6 +6,8 @@ import type {
   HouseholdMemberWithProfile,
   HouseholdRole,
   HouseholdSummary,
+  InvitePreview,
+  InvitePreviewStatus,
   Profile,
 } from "~/types/household";
 
@@ -308,5 +310,156 @@ export function friendlyInviteError(err: unknown): string {
     return "This invite has already been accepted.";
   if (msg.includes("invite_expired")) return "This invite has expired.";
   if (msg.includes("not_signed_in")) return "Please sign in first.";
+  if (msg.includes("not_authenticated")) return "Please sign in first.";
+  if (msg.includes("not_authorised"))
+    return "Only the primary carer can do that.";
+  // target_not_a_member is checked BEFORE not_a_member because the
+  // latter is a substring of the former — flipping the order
+  // misclassifies "the invitee" errors as "the caller" errors.
+  if (msg.includes("target_not_a_member"))
+    return "That person isn't a member of this household.";
+  if (msg.includes("not_a_member"))
+    return "You're not a member of this household.";
+  if (msg.includes("last_primary_carer"))
+    return "You can't change the role of the last primary carer — promote someone else first.";
+  if (msg.includes("invalid_extension"))
+    return "Invite extension must be between 1 and 90 days.";
   return msg;
+}
+
+// RPC: fetch a public preview of an invite token. Used by /invite/<token>
+// to render trust copy ("You've been invited to Hu Lin's care team as
+// Family by Thomas") BEFORE bouncing an unauthenticated visitor to
+// /login. Falls back to a not_found preview when Supabase isn't
+// configured so the UI can still render an error state instead of
+// blank-screening.
+export async function getInvitePreview(
+  token: string,
+): Promise<InvitePreview> {
+  const sb = getSupabaseBrowser();
+  if (!sb) {
+    return {
+      status: "not_found",
+      household_name: null,
+      patient_display_name: null,
+      role: null,
+      invited_by_name: null,
+      expires_at: null,
+      accepted_at: null,
+      revoked_at: null,
+    };
+  }
+  const { data, error } = await sb.rpc("get_invite_preview", {
+    invite_token: token,
+  });
+  if (error) throw error;
+  // Supabase returns rows from a SETOF / TABLE function as an array.
+  // We expect zero or one row; pull the first or surface not_found.
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row || typeof row !== "object") {
+    return {
+      status: "not_found",
+      household_name: null,
+      patient_display_name: null,
+      role: null,
+      invited_by_name: null,
+      expires_at: null,
+      accepted_at: null,
+      revoked_at: null,
+    };
+  }
+  const r = row as {
+    status: string;
+    household_name: string | null;
+    patient_display_name: string | null;
+    role: HouseholdRole | null;
+    invited_by_name: string | null;
+    expires_at: string | null;
+    accepted_at: string | null;
+    revoked_at: string | null;
+  };
+  const status: InvitePreviewStatus =
+    r.status === "active" ||
+    r.status === "expired" ||
+    r.status === "revoked" ||
+    r.status === "accepted"
+      ? r.status
+      : "not_found";
+  return {
+    status,
+    household_name: r.household_name,
+    patient_display_name: r.patient_display_name,
+    role: r.role,
+    invited_by_name: r.invited_by_name,
+    expires_at: r.expires_at,
+    accepted_at: r.accepted_at,
+    revoked_at: r.revoked_at,
+  };
+}
+
+// RPC: change a member's role inside a household. Primary-carer-only.
+// Refuses to demote the last primary_carer so the household can never
+// be left without an admin.
+export async function updateMemberRole(args: {
+  household_id: string;
+  user_id: string;
+  new_role: HouseholdRole;
+}): Promise<HouseholdRole> {
+  const sb = getSupabaseBrowser();
+  if (!sb) throw new Error("supabase_not_configured");
+  const { data, error } = await sb.rpc("update_member_role", {
+    target_household: args.household_id,
+    target_user: args.user_id,
+    new_role: args.new_role,
+  });
+  if (error) throw error;
+  return data as HouseholdRole;
+}
+
+// RPC: extend an invite's expires_at by N days (default 14). Useful
+// when a relative drags their feet — saves the carer from having to
+// revoke + recreate + reshare a fresh URL.
+export async function extendInviteExpiry(args: {
+  invite_id: string;
+  days?: number;
+}): Promise<string> {
+  const sb = getSupabaseBrowser();
+  if (!sb) throw new Error("supabase_not_configured");
+  const { data, error } = await sb.rpc("extend_invite_expiry", {
+    target_invite: args.invite_id,
+    days_to_add: args.days ?? 14,
+  });
+  if (error) throw error;
+  if (typeof data !== "string") throw new Error("extend_invite_failed");
+  return data;
+}
+
+// Bucket an invite's lifecycle for UI rendering. Single source of
+// truth — keep CSS / copy keyed off this rather than scattering the
+// `accepted_at && !revoked_at && expires_at > now` checks across a
+// dozen components.
+export type InviteStatusBucket =
+  | "active"
+  | "expired"
+  | "accepted"
+  | "revoked";
+
+export function inviteStatusBucket(
+  invite: Pick<HouseholdInvite, "accepted_at" | "revoked_at" | "expires_at">,
+  now: Date = new Date(),
+): InviteStatusBucket {
+  if (invite.revoked_at) return "revoked";
+  if (invite.accepted_at) return "accepted";
+  if (new Date(invite.expires_at).getTime() <= now.getTime()) return "expired";
+  return "active";
+}
+
+// Days until an invite expires, rounded down. Negative for already-
+// expired invites. Used in the "expires in 12 days" hint copy.
+export function daysUntilExpiry(
+  expiresAt: string,
+  now: Date = new Date(),
+): number {
+  const ms = new Date(expiresAt).getTime() - now.getTime();
+  return Math.floor(ms / (24 * 60 * 60 * 1000));
 }
