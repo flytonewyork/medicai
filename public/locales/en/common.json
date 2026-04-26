@@ -23,7 +23,8 @@
     "settings": "Settings",
     "practices": "Practices",
     "history": "History",
-    "care_team": "Care team",
+    "care_team": "Visit log",
+    "carers": "Carers",
     "log": "Log",
     "nutrition": "Nutrition"
   },
