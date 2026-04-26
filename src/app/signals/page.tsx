@@ -69,7 +69,7 @@ export default function SignalsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-5 p-4 md:p-8">
       <PageHeader
-        eyebrow={locale === "zh" ? "历史" : "History"}
+        eyebrow={locale === "zh" ? "信号" : "Signals"}
         title={
           locale === "zh"
             ? "变化信号与行动"
