@@ -18,6 +18,7 @@ import { FoodPicker } from "~/components/nutrition/food-picker";
 import { TemplatesPicker } from "~/components/nutrition/templates-picker";
 import { createMeal } from "~/lib/nutrition/queries";
 import { sumItems } from "~/lib/nutrition/calculator";
+import { parsedItemToInline } from "~/lib/nutrition/parser-to-meal";
 import type {
   ParsedMealResult,
 } from "~/lib/nutrition/parser-schema";
@@ -81,20 +82,10 @@ export default function LogMealPage() {
         confidence: result.confidence,
         pert_taken: false,
         entered_by: "hulin",
-        items: result.items.map((it) => ({
-          kind: "inline" as const,
-          name: it.name,
-          name_zh: it.name_zh ?? undefined,
-          serving_grams: it.serving_grams,
-          macros: {
-            calories: it.calories,
-            protein_g: it.protein_g,
-            fat_g: it.fat_g,
-            carbs_total_g: it.carbs_total_g,
-            fiber_g: it.fiber_g,
-          },
-          notes: it.notes ?? undefined,
-        })),
+        // Parser emits per-eaten-serving macros; createMeal expects
+        // per-100 g. Bridge through parsedItemToInline so the values
+        // round-trip into meal_items at the right magnitude.
+        items: result.items.map((it) => parsedItemToInline(it)),
       });
       router.push(`/nutrition/${newId}?fresh=1`);
     } finally {
@@ -122,29 +113,30 @@ export default function LogMealPage() {
         confidence: data.confidence,
         pert_taken: data.pert_taken,
         entered_by: "hulin",
-        items: data.items.map((it) =>
-          it.food_id && it.food_match
-            ? {
-                kind: "food" as const,
-                food: it.food_match,
-                serving_grams: it.serving_grams,
-                notes: it.notes,
-              }
-            : {
-                kind: "inline" as const,
-                name: it.name,
-                name_zh: it.name_zh,
-                serving_grams: it.serving_grams,
-                macros: {
-                  calories: it.calories,
-                  protein_g: it.protein_g,
-                  fat_g: it.fat_g,
-                  carbs_total_g: it.carbs_total_g,
-                  fiber_g: it.fiber_g,
-                },
-                notes: it.notes,
-              },
-        ),
+        items: data.items.map((it) => {
+          if (it.food_id && it.food_match) {
+            return {
+              kind: "food" as const,
+              food: it.food_match,
+              serving_grams: it.serving_grams,
+              notes: it.notes,
+            };
+          }
+          // PreviewItem holds per-serving macros (parser convention).
+          // Reuse the parser-to-inline bridge so saved meals match the
+          // per-100 g schema convention used by `createMeal`.
+          return parsedItemToInline({
+            name: it.name,
+            name_zh: it.name_zh,
+            serving_grams: it.serving_grams,
+            calories: it.calories,
+            protein_g: it.protein_g,
+            fat_g: it.fat_g,
+            carbs_total_g: it.carbs_total_g,
+            fiber_g: it.fiber_g,
+            notes: it.notes,
+          });
+        }),
       });
       router.push("/nutrition");
     } finally {

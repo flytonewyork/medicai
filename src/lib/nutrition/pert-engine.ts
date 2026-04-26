@@ -164,3 +164,46 @@ function isNoDoseItem(item: PertEvaluationItem): boolean {
   }
   return false;
 }
+
+// Convenience wrapper for the dashboard / meal-list which only have
+// a `MealEntry` totals snapshot to work with. Synthesises a single
+// item from the totals and routes through `evaluatePert`.
+
+export interface MealPertSnapshot {
+  total_protein_g: number;
+  total_fat_g: number;
+  meal_type?: MealType;
+  duration_min?: number;
+}
+
+export function evaluateMealPert(meal: MealPertSnapshot): PertEvaluation {
+  // Short-circuit: a meal with zero protein and zero fat totals
+  // (e.g. just water, black coffee, or fruit) does not need PERT,
+  // even for "main meal" types. Bypasses the engine's safe-default
+  // path which assumes every named meal contains some macros.
+  if (
+    num(meal.total_protein_g) === 0 &&
+    num(meal.total_fat_g) === 0
+  ) {
+    return {
+      required: false,
+      recommendation: "skip",
+      reason: {
+        en: "Meal has no protein or fat — JPCC says no PERT needed.",
+        zh: "此餐无蛋白或脂肪 —— 按 JPCC 不需要补酶。",
+      },
+      citations: [{ source_id: "jpcc_2021", page: 19 }],
+    };
+  }
+  return evaluatePert({
+    items: [
+      {
+        food_name: "meal-totals",
+        protein_g: meal.total_protein_g,
+        fat_g: meal.total_fat_g,
+      },
+    ],
+    meal_type: meal.meal_type,
+    duration_min: meal.duration_min,
+  });
+}
