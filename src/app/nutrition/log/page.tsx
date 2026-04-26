@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, Sparkles, Clock } from "lucide-react";
+import { ArrowLeft, Check, Sparkles, Clock, Loader2 } from "lucide-react";
 import { todayISO } from "~/lib/utils/date";
 import { useLocale } from "~/hooks/use-translate";
 import { Card } from "~/components/ui/card";
@@ -38,6 +38,11 @@ export default function LogMealPage() {
   const [manualItems, setManualItems] = useState<PendingItem[]>([]);
   const [manualNotes, setManualNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  // Photo path is auto-save: as soon as the vision parse comes back we
+  // write meal_entries + meal_items + totals and route to the detail
+  // screen for review. `autoSaving` shows a transient overlay during
+  // that round-trip so the patient knows the photo landed.
+  const [autoSaving, setAutoSaving] = useState(false);
   // Approximate time the meal was eaten. Defaults to "now" so the
   // common case (logging right after eating) stays one tap; the user
   // can edit it for after-the-fact logging (e.g. logging breakfast
@@ -52,6 +57,49 @@ export default function LogMealPage() {
   // mealTime in sync with current time. Manual edits are preserved.
   function handleMealTypeChange(t: MealType) {
     setManualMeal(t);
+  }
+
+  // Photo path: skip the preview confirm step and write straight to
+  // the nutrition tables. The patient lands on /nutrition/[id] where
+  // every field (per-item grams, macros, meal type, time, PERT) is
+  // editable, so corrections still happen — just inverted (edit-
+  // after rather than confirm-before). Honours the "single channel
+  // in" principle: photo → state, no intermediate forms.
+  async function autoSaveFromPhoto(
+    result: ParsedMealResult,
+    photoDataUrl: string | undefined,
+  ) {
+    setAutoSaving(true);
+    try {
+      const newId = await createMeal({
+        date: todayISO(),
+        meal_type: result.meal_type ?? autoMealType(),
+        logged_at: assembleLoggedAt(todayISO(), mealTime),
+        notes: result.description,
+        photo_data_url: photoDataUrl,
+        source: "photo",
+        confidence: result.confidence,
+        pert_taken: false,
+        entered_by: "hulin",
+        items: result.items.map((it) => ({
+          kind: "inline" as const,
+          name: it.name,
+          name_zh: it.name_zh ?? undefined,
+          serving_grams: it.serving_grams,
+          macros: {
+            calories: it.calories,
+            protein_g: it.protein_g,
+            fat_g: it.fat_g,
+            carbs_total_g: it.carbs_total_g,
+            fiber_g: it.fiber_g,
+          },
+          notes: it.notes ?? undefined,
+        })),
+      });
+      router.push(`/nutrition/${newId}?fresh=1`);
+    } finally {
+      setAutoSaving(false);
+    }
   }
 
   async function saveFromPreview(data: {
@@ -197,6 +245,15 @@ export default function LogMealPage() {
         </button>
       </div>
 
+      {autoSaving && (
+        <Card className="flex items-center gap-3 px-4 py-3 text-[13px] text-ink-700">
+          <Loader2 className="h-4 w-4 animate-spin text-ink-400" />
+          {locale === "zh"
+            ? "正在保存到营养记录…"
+            : "Saving to your nutrition log…"}
+        </Card>
+      )}
+
       {parsed ? (
         <ParsedPreview
           parsed={parsed}
@@ -217,6 +274,12 @@ export default function LogMealPage() {
 
           <MealIngest
             onParsed={(result, src, photo) => {
+              if (src === "photo") {
+                // Photo input goes straight into the nutrition tables.
+                // The detail screen handles any review / edits.
+                void autoSaveFromPhoto(result, photo);
+                return;
+              }
               setParsed(result);
               setParsedSource(src);
               setPhotoUrl(photo);
