@@ -119,14 +119,14 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const items = useNavItems();
   if (isAuthRoute(pathname)) return null;
-  // Mobile bottom nav keeps 4–5 most-used slots. Patients get the
-  // dashboard + schedule + key axes; caregivers get family + schedule +
-  // care team + log.
-  // Daily is the primary patient interaction — replaces /labs which is
-  // read-only and rarely visited on mobile. Labs remain in the sidebar
-  // and the "more" menu.
-  const patientHrefs = ["/", "/daily", "/assessment", "/treatment", "/schedule"];
-  const caregiverHrefs = ["/family", "/schedule", "/care-team", "/log"];
+  // Mobile bottom nav keeps the most-used slots. Patients get the
+  // dashboard + key axes (assessment / treatment / nutrition) +
+  // schedule; caregivers get family + schedule + care team +
+  // nutrition + log. Nutrition is first-class because cachexia /
+  // weight loss is a primary axis-3 signal in PDAC and is logged
+  // daily.
+  const patientHrefs = ["/", "/assessment", "/treatment", "/nutrition", "/schedule"];
+  const caregiverHrefs = ["/family", "/schedule", "/nutrition", "/care-team", "/log"];
   const selected = items === PATIENT_ITEMS ? patientHrefs : caregiverHrefs;
   const mobileItems = items.filter((i) => selected.includes(i.href));
   return (
