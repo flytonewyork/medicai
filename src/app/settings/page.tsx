@@ -13,9 +13,9 @@ import { HouseholdSection } from "~/components/settings/household-section";
 import { NotificationsSection } from "~/components/settings/notifications-section";
 import { CareTeamSection } from "~/components/settings/care-team-section";
 import { TrackedSymptomsSection } from "~/components/settings/tracked-symptoms-section";
-import { PageHeader } from "~/components/ui/page-header";
+import { PageHeader, SectionHeader } from "~/components/ui/page-header";
 import { Button } from "~/components/ui/button";
-import { Field, TextInput, Textarea } from "~/components/ui/field";
+import { Field, Select, TextInput, Textarea } from "~/components/ui/field";
 
 export default function SettingsPage() {
   const t = useT();
@@ -114,7 +114,7 @@ export default function SettingsPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <section className="space-y-3">
-          <h2 className="eyebrow">{t("settings.profile")}</h2>
+          <SectionHeader title={t("settings.profile")} />
           <Field label={t("settings.profile_name")}>
             <TextInput {...register("profile_name")} />
           </Field>
@@ -125,10 +125,10 @@ export default function SettingsPage() {
             <TextInput type="date" {...register("diagnosis_date")} />
           </Field>
           <Field label={t("settings.locale")}>
-            <select className={selectCls} {...register("locale")}>
+            <Select {...register("locale")}>
               <option value="en">{t("settings.locale_en")}</option>
               <option value="zh">{t("settings.locale_zh")}</option>
-            </select>
+            </Select>
           </Field>
           <Field
             label={
@@ -142,14 +142,14 @@ export default function SettingsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="eyebrow">
-            {locale === "zh" ? "紧急情况" : "Emergency"}
-          </h2>
-          <p className="text-xs text-ink-500">
-            {locale === "zh"
-              ? "肿瘤科医生、医院、24 小时联系人请在「护理团队」中维护;此处仅记录何时直接前往急诊。"
-              : "Oncologist, hospital, and 24/7 contacts live in the Care team section above. Use this for the situation-specific guidance the patient should follow when something feels off."}
-          </p>
+          <SectionHeader
+            title={locale === "zh" ? "紧急情况" : "Emergency"}
+            description={
+              locale === "zh"
+                ? "肿瘤科医生、医院、24 小时联系人请在「护理团队」中维护;此处仅记录何时直接前往急诊。"
+                : "Oncologist, hospital, and 24/7 contacts live in the Care team section above. Use this for the situation-specific guidance the patient should follow when something feels off."
+            }
+          />
           <div className="grid gap-3 sm:grid-cols-2">
             <Field
               label={
@@ -182,12 +182,14 @@ export default function SettingsPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="eyebrow">{locale === "zh" ? "AI 模型" : "AI model"}</h2>
-          <p className="text-xs text-ink-500">
-            {locale === "zh"
-              ? "Claude 调用通过 Anchor 服务器(在 Vercel 中配置的共享 ANTHROPIC_API_KEY)进行 —— 无需每台设备单独配置密钥。此字段用于覆盖默认模型。"
-              : "Claude calls run through Anchor’s server (the shared ANTHROPIC_API_KEY configured in Vercel) — no per-device key needed. This field lets you override the default model."}
-          </p>
+          <SectionHeader
+            title={locale === "zh" ? "AI 模型" : "AI model"}
+            description={
+              locale === "zh"
+                ? "Claude 调用通过 Anchor 服务器(在 Vercel 中配置的共享 ANTHROPIC_API_KEY)进行 —— 无需每台设备单独配置密钥。此字段用于覆盖默认模型。"
+                : "Claude calls run through Anchor’s server (the shared ANTHROPIC_API_KEY configured in Vercel) — no per-device key needed. This field lets you override the default model."
+            }
+          />
           <Field
             label={
               locale === "zh"
@@ -214,6 +216,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-const selectCls =
-  "h-11 w-full rounded-md border border-ink-200 bg-paper px-3 text-sm text-ink-900 focus:border-ink-900 focus:outline-none focus:ring-2 focus:ring-ink-900/10";
