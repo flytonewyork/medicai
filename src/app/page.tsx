@@ -122,25 +122,26 @@ export default function DashboardPage() {
         }
       />
 
+      {/* Order = priority. Clinical (zone alert, change signals,
+        medication prompts) sits first because acting on them is
+        time-sensitive. Today's check-in / schedule come next as
+        the "what's now" layer. Behavioural cards (practices,
+        nutrition) and the data overview (PillarTiles, TodayFeed)
+        follow. Setup nudges (invites, baseline, sync) live at the
+        bottom so they never push a clinical alert below the fold
+        — they're low-stakes housekeeping, not the reason the
+        patient opened the app. */}
       <EmergencyCard />
-
-      <SyncPromptCard />
-
-      <QuickCheckinCard />
-
-      <PendingInvitesCard />
-
-      <InviteFamilyCard />
-
-      <BaselineNudgeCard />
-
-      <NextClinicCard />
-
-      <ScheduleCard />
 
       <ChangeSignalsCard />
 
       <MedicationPromptsCard />
+
+      <QuickCheckinCard />
+
+      <NextClinicCard />
+
+      <ScheduleCard />
 
       <PracticesCard />
 
@@ -149,6 +150,14 @@ export default function DashboardPage() {
       <PillarTiles />
 
       <TodayFeed excludeIds={EXCLUDE_IDS} />
+
+      <BaselineNudgeCard />
+
+      <PendingInvitesCard />
+
+      <InviteFamilyCard />
+
+      <SyncPromptCard />
 
       <footer className="pt-6 text-center text-xs text-ink-400">
         {t("common.localOnly")}

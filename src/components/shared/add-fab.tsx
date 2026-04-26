@@ -64,10 +64,10 @@ const CAREGIVER_ITEMS: FabItem[] = [
   },
   {
     action: "ingest",
-    label: { en: "Upload clinic letter", zh: "上传就诊函" },
+    label: { en: "Add a photo or document", zh: "导入照片或文档" },
     hint: {
-      en: "Photo or paste — the team sees it too",
-      zh: "拍照或粘贴 —— 团队也可看到",
+      en: "Clinic letter, lab report, scan result",
+      zh: "就诊函、化验单、影像报告",
     },
     icon: Sparkles,
     tone: "tide",
@@ -82,24 +82,24 @@ const CAREGIVER_ITEMS: FabItem[] = [
 // tired day.
 const ITEMS: FabItem[] = [
   {
-    action: "ingest",
-    label: { en: "Smart capture", zh: "智能导入" },
-    hint: {
-      en: "Photo, paste, voice — Claude files it",
-      zh: "照片 / 粘贴 / 语音 —— Claude 自动归档",
-    },
-    icon: Sparkles,
-    tone: "tide",
-  },
-  {
     href: "/log",
-    label: { en: "Tell the team", zh: "告诉团队" },
+    label: { en: "Say what's happening", zh: "说说现在的情况" },
     hint: {
-      en: "Free text — agents file it",
-      zh: "随手写 —— 智能体整理",
+      en: "Type or speak — agents file it for you",
+      zh: "随手写或语音 —— 智能体整理",
     },
     icon: MessageSquarePlus,
     tone: "sand",
+  },
+  {
+    action: "ingest",
+    label: { en: "Add a photo or document", zh: "导入照片或文档" },
+    hint: {
+      en: "Lab report, clinic letter, scan result",
+      zh: "化验单、就诊函、影像报告",
+    },
+    icon: Sparkles,
+    tone: "tide",
   },
   {
     href: "/daily/new",
