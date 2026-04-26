@@ -55,6 +55,22 @@ export interface DailyEntry {
   anorexia?: number;
   abdominal_pain?: number;
   taste_changes?: number;
+  // JPCC p. 16 quadrants: which way is taste off? Optional —
+  // captured only when `taste_changes` is non-zero. Drives the
+  // taste-tweak suggester and the food-picker filter.
+  taste_issue?:
+    | "too_sweet"
+    | "too_salty"
+    | "too_bland"
+    | "metallic"
+    | "normal";
+  // JPCC p. 14 / 17: additional symptoms with their own playbook.
+  // Both optional booleans — captured only on days where the patient
+  // ticks the corresponding chip on the daily wizard. No Dexie
+  // schema bump needed (not indexed); legacy rows load with these
+  // as undefined.
+  dry_mouth?: boolean;
+  early_satiety?: boolean;
   steatorrhoea?: boolean;
   reflection?: string;
   reflection_lang?: Locale;

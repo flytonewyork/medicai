@@ -16,6 +16,7 @@ import {
   Salad,
   CalendarDays,
   Users,
+  UserPlus,
   Menu,
   X,
   History as HistoryIcon,
@@ -37,7 +38,7 @@ const PATIENT_ITEMS = [
   { href: "/labs", key: "nav.labs", icon: FlaskConical },
   { href: "/nutrition", key: "nav.nutrition", icon: Salad },
   { href: "/practices", key: "nav.practices", icon: Sparkles },
-  { href: "/care-team", key: "nav.care_team", icon: Users },
+  { href: "/carers", key: "nav.carers", icon: UserPlus },
   { href: "/bridge", key: "nav.bridge", icon: Route },
   { href: "/history", key: "nav.history", icon: HistoryIcon },
   { href: "/ingest", key: "nav.ingest", icon: ScanLine },
@@ -53,7 +54,7 @@ const PATIENT_ITEMS = [
 const CAREGIVER_ITEMS = [
   { href: "/family", key: "nav.family", icon: Users },
   { href: "/schedule", key: "nav.schedule", icon: CalendarDays },
-  { href: "/care-team", key: "nav.care_team", icon: Users },
+  { href: "/carers", key: "nav.carers", icon: UserPlus },
   { href: "/nutrition", key: "nav.nutrition", icon: Salad },
   { href: "/log", key: "nav.log", icon: Sparkles },
   { href: "/history", key: "nav.history", icon: HistoryIcon },
@@ -126,7 +127,7 @@ export function MobileBottomNav() {
   // weight loss is a primary axis-3 signal in PDAC and is logged
   // daily.
   const patientHrefs = ["/", "/assessment", "/treatment", "/nutrition", "/schedule"];
-  const caregiverHrefs = ["/family", "/schedule", "/nutrition", "/care-team", "/log"];
+  const caregiverHrefs = ["/family", "/schedule", "/nutrition", "/carers", "/log"];
   const selected = items === PATIENT_ITEMS ? patientHrefs : caregiverHrefs;
   const mobileItems = items.filter((i) => selected.includes(i.href));
   return (

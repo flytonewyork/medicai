@@ -45,7 +45,7 @@ export function HouseholdHeader() {
 
   return (
     <Link
-      href="/settings"
+      href="/carers"
       className="flex items-center gap-3 rounded-[var(--r-md)] border border-ink-100 bg-paper-2 px-3 py-2.5 hover:border-ink-300"
     >
       <Users className="h-4 w-4 shrink-0 text-[var(--tide-2)]" />

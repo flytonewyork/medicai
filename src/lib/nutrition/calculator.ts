@@ -140,13 +140,34 @@ export function sumEntries(entries: ReadonlyArray<MealEntry>): {
 // carb pattern that's compatible with the patient values document
 // (PDAC patients can tolerate ketogenic patterns; strict <20 g is
 // rarely sustainable during chemo).
-export function defaultTargets(weight_kg?: number): DailyNutritionTarget {
-  const proteinTarget = weight_kg ? Math.round(weight_kg * 1.2) : 84;
-  const calorieTarget = weight_kg ? Math.round(weight_kg * 30) : 2100;
+//
+// `mode` lets the caller request the JPCC-style energy-dense pattern
+// when cachexia is the bigger threat than glycaemia — calories per kg
+// rise from 30 → 35 and the net-carb cap effectively lifts (set high
+// enough that the dashboard stops scoring against it). See
+// `lib/nutrition/policy.ts` for the selector that picks a mode from
+// the patient's recent trajectory.
+export function defaultTargets(
+  weight_kg?: number,
+  mode: "low_carb" | "energy_dense" | "transitional" = "low_carb",
+): DailyNutritionTarget {
+  const proteinPerKg = mode === "energy_dense" ? 1.5 : 1.2;
+  const proteinTarget = weight_kg
+    ? Math.round(weight_kg * proteinPerKg)
+    : Math.round(70 * proteinPerKg);
+  const calorieMultiplier = mode === "energy_dense" ? 35 : 30;
+  const calorieTarget = weight_kg
+    ? Math.round(weight_kg * calorieMultiplier)
+    : Math.round(70 * calorieMultiplier);
+  // Energy-dense mode lifts the cap effectively to "uncapped" by
+  // setting it high enough that nothing realistic trips it. We keep
+  // the field populated so existing UI components don't have to
+  // handle null.
+  const netCarbCap = mode === "energy_dense" ? 250 : 50;
   return {
     calories_kcal: calorieTarget,
     protein_g: proteinTarget,
-    net_carbs_g_max: 50,
+    net_carbs_g_max: netCarbCap,
     fluids_ml: 2000,
   };
 }

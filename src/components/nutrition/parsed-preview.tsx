@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Check, X, Pencil, Trash2 } from "lucide-react";
 import { searchFoods } from "~/lib/nutrition/queries";
 import { caloriesFromMacros } from "~/lib/nutrition/calculator";
+import { evaluatePert } from "~/lib/nutrition/pert-engine";
 import type {
   ParsedMealResult,
 } from "~/lib/nutrition/parser-schema";
@@ -52,19 +53,29 @@ export function ParsedPreview({
   onCancel: () => void;
 }) {
   const locale = useLocale();
+  // Serving sizes snap to 100 g on intake — clean baseline for the
+  // per-100 g reference frame. Macros scale with the snap so the
+  // absolute grams and macros stay internally consistent. The patient
+  // then refines in 50/100 g increments; every grams change re-scales
+  // the macro row.
   const [items, setItems] = useState<PreviewItem[]>(() =>
-    parsed.items.map((it) => ({
-      name: it.name,
-      name_zh: it.name_zh ?? undefined,
-      serving_grams: it.serving_grams,
-      serving_label: it.serving_label ?? undefined,
-      calories: it.calories,
-      protein_g: it.protein_g,
-      fat_g: it.fat_g,
-      carbs_total_g: it.carbs_total_g,
-      fiber_g: it.fiber_g,
-      notes: it.notes ?? undefined,
-    })),
+    parsed.items.map((it) =>
+      scalePreviewItemToGrams(
+        {
+          name: it.name,
+          name_zh: it.name_zh ?? undefined,
+          serving_grams: it.serving_grams,
+          serving_label: it.serving_label ?? undefined,
+          calories: it.calories,
+          protein_g: it.protein_g,
+          fat_g: it.fat_g,
+          carbs_total_g: it.carbs_total_g,
+          fiber_g: it.fiber_g,
+          notes: it.notes ?? undefined,
+        },
+        snapTo100(it.serving_grams),
+      ),
+    ),
   );
   const [mealType, setMealType] = useState<MealType>(
     parsed.meal_type ?? autoMealType(),
@@ -204,19 +215,33 @@ export function ParsedPreview({
               : `Note: macros imply ~${macroCal} kcal, AI said ${totalCal}. Worth a sanity check.`}
           </div>
         )}
-        {parsed.pert_suggestion && (
-          <div className="rounded-md bg-[var(--warn,#d97706)]/10 px-3 py-2 text-[12px] text-[var(--warn,#d97706)]">
-            {parsed.pert_suggestion}
-            <label className="ml-2 inline-flex items-center gap-1.5 text-[11px]">
-              <input
-                type="checkbox"
-                checked={pertTaken}
-                onChange={(e) => setPertTaken(e.target.checked)}
-              />
-              {locale === "zh" ? "已服胰酶" : "PERT taken"}
-            </label>
-          </div>
-        )}
+        {(() => {
+          // JPCC PERT rule (engine, not the AI's free-text suggestion).
+          // Engine returns required + recommendation + reason. We only
+          // surface the prompt when PERT is required.
+          const pert = evaluatePert({
+            items: items.map((it) => ({
+              food_name: it.name,
+              protein_g: it.protein_g,
+              fat_g: it.fat_g,
+            })),
+            meal_type: mealType,
+          });
+          if (!pert.required) return null;
+          return (
+            <div className="rounded-md bg-[var(--warn,#d97706)]/10 px-3 py-2 text-[12px] text-[var(--warn,#d97706)]">
+              {pert.reason[locale]}
+              <label className="ml-2 inline-flex items-center gap-1.5 text-[11px]">
+                <input
+                  type="checkbox"
+                  checked={pertTaken}
+                  onChange={(e) => setPertTaken(e.target.checked)}
+                />
+                {locale === "zh" ? "已服胰酶" : "PERT taken"}
+              </label>
+            </div>
+          );
+        })()}
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onCancel}>
             {locale === "zh" ? "取消" : "Cancel"}
@@ -329,7 +354,7 @@ function ItemRow({
             <input
               type="number"
               min={0}
-              step={5}
+              step={50}
               value={value.serving_grams}
               onChange={(e) => setGrams(Number(e.target.value) || 0)}
               className="h-8 w-16 rounded-md border border-ink-200 bg-paper px-1.5 text-center text-xs text-ink-900 focus:border-ink-900 focus:outline-none"
@@ -419,11 +444,13 @@ function Cell({
   label,
   value,
   step = 0.5,
+  min,
   onChange,
 }: {
   label: string;
   value: number;
   step?: number;
+  min?: number;
   onChange: (v: number) => void;
 }) {
   return (
@@ -434,12 +461,21 @@ function Cell({
       <input
         type="number"
         step={step}
+        min={min}
         value={value}
         onChange={(e) => onChange(Number(e.target.value) || 0)}
         className="mt-0.5 h-8 w-full rounded-md border border-ink-200 bg-paper px-1.5 text-xs text-ink-900 focus:border-ink-900 focus:outline-none"
       />
     </label>
   );
+}
+
+// Snap a serving to the nearest 100 g, with a 100 g floor. Used at
+// initial load (parser estimate → quantised) and on every grams edit
+// in the preview.
+function snapTo100(g: number): number {
+  if (!Number.isFinite(g) || g <= 0) return 100;
+  return Math.max(100, Math.round(g / 100) * 100);
 }
 
 function Total({ label, value }: { label: string; value: string }) {

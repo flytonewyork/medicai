@@ -9,6 +9,7 @@ import {
   listItemsForMeal,
   deleteMeal,
 } from "~/lib/nutrition/queries";
+import { evaluateMealPert } from "~/lib/nutrition/pert-engine";
 import { relogMeal, saveMealAsTemplate } from "~/lib/nutrition/templates";
 import { todayISO } from "~/lib/utils/date";
 import { Card } from "~/components/ui/card";
@@ -102,11 +103,16 @@ function MealCard({ mealId }: { mealId: number }) {
             {meal.total_protein_g}g P · {meal.total_fat_g}g F ·{" "}
             {meal.total_net_carbs_g}g net C · {meal.total_calories} kcal
           </div>
-          {meal.pert_taken === false && meal.total_fat_g >= 15 && (
-            <div className="mt-1 inline-block rounded-full bg-[var(--warn,#d97706)]/10 px-2 py-0.5 text-[10px] text-[var(--warn,#d97706)]">
-              {locale === "zh" ? "未服胰酶" : "PERT not taken"}
-            </div>
-          )}
+          {meal.pert_taken === false &&
+            evaluateMealPert({
+              total_protein_g: meal.total_protein_g,
+              total_fat_g: meal.total_fat_g,
+              meal_type: meal.meal_type,
+            }).required && (
+              <div className="mt-1 inline-block rounded-full bg-[var(--warn,#d97706)]/10 px-2 py-0.5 text-[10px] text-[var(--warn,#d97706)]">
+                {locale === "zh" ? "未服胰酶" : "PERT not taken"}
+              </div>
+            )}
         </div>
         <ChevronDown
           className={cn(
