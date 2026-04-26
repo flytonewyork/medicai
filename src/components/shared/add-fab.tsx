@@ -32,7 +32,7 @@ interface FabItem {
 
 // Caregiver-friendly FAB — only the verbs a supporting family member
 // reaches for. Patient-authored captures (daily wizard, weekly / fort.
-// assessments, meal photo, practice toggle) are hidden.
+// assessments, practice toggle) are hidden.
 const CAREGIVER_ITEMS: FabItem[] = [
   {
     href: "/log",
@@ -86,11 +86,11 @@ const CAREGIVER_ITEMS: FabItem[] = [
 ];
 
 // Patient FAB — one capture channel, one check-in, one appointment verb,
-// one medication quick-log. Everything else (weekly / fortnightly /
-// handwritten notes / meal photos / lab uploads) funnels through Smart
-// capture or gets prompted from the feed when it's due. Keeps the
-// first-touch surface to what the patient actually reaches for on a
-// tired day.
+// one medication quick-log. The free-text/voice "Say what's happening"
+// stays primary so anything that can be spoken or typed funnels through
+// it; structured shortcuts (daily check-in, meal log, medication log)
+// stay first-class because the patient reaches for them on a tired day
+// without wanting to compose a sentence.
 const ITEMS: FabItem[] = [
   {
     href: "/log",

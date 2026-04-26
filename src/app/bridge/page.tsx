@@ -4,8 +4,8 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
-import { Card, CardContent } from "~/components/ui/card";
-import { Route, ShieldCheck, Clock, Activity } from "lucide-react";
+import { Card } from "~/components/ui/card";
+import { ShieldCheck, Clock, Activity } from "lucide-react";
 
 export default function BridgePage() {
   const t = useT();
@@ -109,27 +109,9 @@ export default function BridgePage() {
         </div>
       )}
 
-      {/* Placeholder when no trial data has been loaded yet */}
-      {trials && trials.length === 0 && (
-        <Card>
-          <CardContent className="py-6">
-            <div className="flex items-start gap-3">
-              <Route className="h-5 w-5 shrink-0 text-[var(--tide-2)] mt-0.5" />
-              <div className="space-y-1">
-                <div className="text-[13px] font-semibold text-ink-900">
-                  {L("No trial pathways loaded yet", "暂无试验通道数据")}
-                </div>
-                <p className="text-[12.5px] text-ink-500 leading-relaxed">
-                  {L(
-                    "Trial data (RASolute 302, expanded access timelines) will appear here once loaded. Your clinician or the app's care team can add entries via Settings.",
-                    "试验数据（RASolute 302、扩展访问时间线）加载后将显示在这里。您的医生或护理团队可通过「设置」添加条目。",
-                  )}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* No-trial state — the strategy explainer above is the bridge
+          page's primary content; trial cards are an optional overlay
+          when concrete pathway data has been loaded into Dexie. */}
     </div>
   );
 }
