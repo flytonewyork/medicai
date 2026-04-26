@@ -61,12 +61,14 @@ export default function AssessmentListPage() {
           }
           description={
             locale === "zh"
-              ? "第一次评估会建立基线，后续的变化都以此为参照。"
-              : "Your first assessment becomes the baseline. Everything after compares against it."
+              ? "第一次评估建立基线——体重、握力、步速、症状等——之后每次比较都以此为参照。约需 15 分钟，可中途暂停。"
+              : "Your first assessment captures baselines — weight, grip, gait speed, symptoms — that everything after compares against. Takes about 15 minutes; you can pause and return."
           }
           actions={
             <Link href="/assessment/new">
-              <Button>{locale === "zh" ? "开始" : "Begin"}</Button>
+              <Button>
+                {locale === "zh" ? "建立基线（约 15 分钟）" : "Establish baseline (~15 min)"}
+              </Button>
             </Link>
           }
         />

@@ -1115,7 +1115,26 @@ function PreferencesStep({
   );
 }
 
+const MONTH_SHORT_EN = [
+  "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec",
+] as const;
+
+function formatCycleDate(iso: string, locale: Locale): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return locale === "zh"
+    ? `${y} 年 ${m} 月 ${d} 日`
+    : `${d} ${MONTH_SHORT_EN[(m - 1) as keyof typeof MONTH_SHORT_EN] ?? ""} ${y}`;
+}
+
 function DoneStep({ form, locale }: { form: FormState; locale: Locale }) {
+  const protocolLabel = (() => {
+    if (!form.start_cycle) return locale === "zh" ? "暂未开始" : "Not started";
+    const proto = PROTOCOL_BY_ID[form.protocol_id];
+    const name = proto?.short_name ?? form.protocol_id;
+    return `${name} · ${formatCycleDate(form.cycle_start_date, locale)}`;
+  })();
+
   const rows: Array<[string, string]> = [
     [
       locale === "zh" ? "姓名" : "Name",
@@ -1133,14 +1152,7 @@ function DoneStep({ form, locale }: { form: FormState; locale: Locale }) {
       locale === "zh" ? "24 小时值班" : "24/7 on-call",
       form.oncall_phone || (locale === "zh" ? "未填" : "Not set"),
     ],
-    [
-      locale === "zh" ? "方案" : "Protocol",
-      form.start_cycle
-        ? `${form.protocol_id} · ${form.cycle_start_date}`
-        : locale === "zh"
-          ? "暂未开始"
-          : "Not started",
-    ],
+    [locale === "zh" ? "方案" : "Protocol", protocolLabel],
   ];
 
   return (

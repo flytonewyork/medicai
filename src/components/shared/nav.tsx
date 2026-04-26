@@ -122,7 +122,10 @@ export function MobileBottomNav() {
   // Mobile bottom nav keeps 4–5 most-used slots. Patients get the
   // dashboard + schedule + key axes; caregivers get family + schedule +
   // care team + log.
-  const patientHrefs = ["/", "/schedule", "/assessment", "/treatment", "/labs"];
+  // Daily is the primary patient interaction — replaces /labs which is
+  // read-only and rarely visited on mobile. Labs remain in the sidebar
+  // and the "more" menu.
+  const patientHrefs = ["/", "/daily", "/assessment", "/treatment", "/schedule"];
   const caregiverHrefs = ["/family", "/schedule", "/care-team", "/log"];
   const selected = items === PATIENT_ITEMS ? patientHrefs : caregiverHrefs;
   const mobileItems = items.filter((i) => selected.includes(i.href));

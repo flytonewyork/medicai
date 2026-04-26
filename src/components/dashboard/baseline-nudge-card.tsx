@@ -52,8 +52,8 @@ export function BaselineNudgeCard() {
             </div>
             <p className="mt-0.5 text-[11.5px] text-ink-500">
               {L(
-                "Weight, grip, gait — the comparison points the rule engine watches for drift.",
-                "体重、握力、步速 — 后续比对、监测变化的起点。",
+                "Weight, grip, gait speed — so we can spot any changes early.",
+                "体重、握力、步速 — 便于及早发现变化。",
               )}
             </p>
           </div>
