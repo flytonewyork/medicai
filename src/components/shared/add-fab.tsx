@@ -14,6 +14,7 @@ import {
   Pill,
   MessageSquarePlus,
   Sparkles,
+  Salad,
 } from "lucide-react";
 import { useIngestModal } from "~/components/ingest/ingest-modal";
 import { useAppPerspective } from "~/lib/caregiver/scope";
@@ -63,6 +64,16 @@ const CAREGIVER_ITEMS: FabItem[] = [
     icon: ListTodo,
   },
   {
+    href: "/nutrition/log",
+    label: { en: "Log a meal", zh: "记录用餐" },
+    hint: {
+      en: "What dad ate or drank",
+      zh: "记录用餐或饮水",
+    },
+    icon: Salad,
+    tone: "sand",
+  },
+  {
     action: "ingest",
     label: { en: "Add a photo or document", zh: "导入照片或文档" },
     hint: {
@@ -107,6 +118,16 @@ const ITEMS: FabItem[] = [
     hint: { en: "Symptoms, weight, practice", zh: "症状、体重、修习" },
     icon: CalendarDays,
     tone: "tide",
+  },
+  {
+    href: "/nutrition/log",
+    label: { en: "Log a meal", zh: "记录用餐" },
+    hint: {
+      en: "What you ate, drank, or couldn't finish",
+      zh: "用餐、饮水或没吃完的情况",
+    },
+    icon: Salad,
+    tone: "sand",
   },
   {
     href: "/medications/log",
