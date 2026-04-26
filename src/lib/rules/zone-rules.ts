@@ -30,6 +30,9 @@ const latestAlbumin = (s: ClinicalSnapshot): number | undefined =>
 const FN = thresholds.function;
 const PSY = thresholds.psychological;
 const NUT = thresholds.nutrition;
+const DIS = thresholds.disease;
+
+const MS_PER_DAY = 24 * 3600 * 1000;
 
 export const ZONE_RULES: ZoneRule[] = [
   {
@@ -250,7 +253,7 @@ export const ZONE_RULES: ZoneRule[] = [
     category: "function",
     triggersReview: true,
     evaluator: ({ latestFortnightly }) =>
-      gte(latestFortnightly?.sarc_f_total ?? 0, 4),
+      gte(latestFortnightly?.sarc_f_total ?? 0, FN.sarc_f_yellow_total),
     recommendation:
       "Sarcopenia screen positive. Confirm with grip + calf + gait; refer to exercise physiology; ensure protein intake ≥ 1.2 g/kg/day.",
     recommendationZh:
@@ -269,7 +272,7 @@ export const ZONE_RULES: ZoneRule[] = [
     category: "function",
     triggersReview: true,
     evaluator: ({ latestFortnightly }) =>
-      (latestFortnightly?.tug_seconds ?? 0) > 14,
+      (latestFortnightly?.tug_seconds ?? 0) > FN.tug_yellow_seconds,
     recommendation:
       "Elevated fall risk. Exercise physiology referral; review home fall hazards.",
     recommendationZh: "跌倒风险升高。转介运动生理学家；排查居家跌倒隐患。",
@@ -282,7 +285,7 @@ export const ZONE_RULES: ZoneRule[] = [
     category: "function",
     triggersReview: true,
     evaluator: ({ latestFortnightly }) =>
-      (latestFortnightly?.sts_5x_seconds ?? 0) > 15,
+      (latestFortnightly?.sts_5x_seconds ?? 0) > FN.sts_5x_yellow_seconds,
     recommendation:
       "Lower-body strength low. Resistance training 2–3×/week, oncology exercise physiology referral.",
     recommendationZh:
@@ -300,7 +303,8 @@ export const ZONE_RULES: ZoneRule[] = [
         if (p.received) return false;
         const expectedByMs = p.expected_by
           ? Date.parse(p.expected_by)
-          : Date.parse(p.ordered_date) + 14 * 24 * 3600 * 1000;
+          : Date.parse(p.ordered_date) +
+            DIS.pending_result_default_days * MS_PER_DAY;
         return !Number.isNaN(expectedByMs) && now.getTime() - expectedByMs > 0;
       }),
     recommendation:

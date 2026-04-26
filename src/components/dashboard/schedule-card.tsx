@@ -22,6 +22,8 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import { localeTag } from "~/lib/utils/date";
+import { upcomingAppointments } from "~/lib/appointments/upcoming";
 
 const KIND_ICON: Record<AppointmentKind, React.ComponentType<{ className?: string }>> = {
   clinic: Stethoscope,
@@ -69,20 +71,10 @@ export function ScheduleCard() {
     const startToday = startOfDay(now).getTime();
     const endTomorrow = startToday + 2 * 24 * 60 * 60 * 1000;
 
-    const upcomingAll = list
-      .filter((a) => {
-        const t = new Date(a.starts_at).getTime();
-        return (
-          Number.isFinite(t) &&
-          t >= startToday &&
-          t < endTomorrow &&
-          a.status !== "cancelled"
-        );
-      })
-      .sort(
-        (a, b) =>
-          new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
-      );
+    const upcomingAll = upcomingAppointments(list, {
+      from: startToday,
+      until: endTomorrow,
+    });
 
     const followUpsAll = deriveFollowUpTasks({ appointments: list, now });
 
@@ -300,7 +292,7 @@ function formatWhen(appt: Appointment, locale: "en" | "zh"): string {
   } else if (apptDay.getTime() === tomorrow.getTime()) {
     dayLabel = locale === "zh" ? "明天" : "Tomorrow";
   } else {
-    dayLabel = date.toLocaleDateString(locale === "zh" ? "zh-CN" : "en-AU", {
+    dayLabel = date.toLocaleDateString(localeTag(locale), {
       weekday: "short",
       day: "numeric",
       month: "short",
@@ -308,7 +300,7 @@ function formatWhen(appt: Appointment, locale: "en" | "zh"): string {
   }
 
   if (appt.all_day) return `${kindLabel} · ${dayLabel}`;
-  const timeLabel = date.toLocaleTimeString(locale === "zh" ? "zh-CN" : "en-AU", {
+  const timeLabel = date.toLocaleTimeString(localeTag(locale), {
     hour: "numeric",
     minute: "2-digit",
   });

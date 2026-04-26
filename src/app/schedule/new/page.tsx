@@ -12,6 +12,8 @@ import { AppointmentForm } from "~/components/schedule/appointment-form";
 import type { ParsedAppointment } from "~/lib/appointments/schema";
 import type { Appointment } from "~/types/appointment";
 import { Loader2, ImagePlus, Sparkles } from "lucide-react";
+import { todayISO } from "~/lib/utils/date";
+import { postJson } from "~/lib/utils/http";
 
 // One unified "smart entry" surface. The patient can:
 //   1. Paste an email body or free-text ("Chemo Friday 10am with Dr Lee at Epworth")
@@ -142,16 +144,10 @@ function SmartEntry({
     setError(null);
     setBusy(true);
     try {
-      const res = await fetch("/api/parse-appointment", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          ...body,
-          today: new Date().toISOString().slice(0, 10),
-        }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const data = (await res.json()) as { appointment: ParsedAppointment };
+      const data = await postJson<{ appointment: ParsedAppointment }>(
+        "/api/parse-appointment",
+        { ...body, today: todayISO() },
+      );
       await onParsed(data.appointment);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

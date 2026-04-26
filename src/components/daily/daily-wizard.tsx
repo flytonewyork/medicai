@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import Link from "next/link";
 import { db, now } from "~/lib/db/dexie";
-import { useLocale, useT } from "~/hooks/use-translate";
+import { useLocale, useT, useL } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
 import { runEngineAndPersist } from "~/lib/rules/engine";
 import { Button } from "~/components/ui/button";
@@ -422,8 +422,8 @@ function PickScreen({
         </h1>
         <p className="mt-1 text-sm text-ink-500">
           {locale === "zh"
-            ? "只选今天真正相关的。没有的项目就不用填。"
-            : "Pick only what actually applies today. Anything you don't tap stays unrecorded."}
+            ? "点选今天真正有的项目，然后按「开始」逐一填写。没有的项目不用选。"
+            : "Tap the cards that apply today, then press Start to fill them in one by one. Skip anything that doesn't apply."}
         </p>
         {inChemoWindow && (
           <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[var(--tide-soft)] px-2.5 py-1 text-[11px] text-[var(--tide-2)]">
@@ -503,28 +503,34 @@ function PickScreen({
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <Link
           href="/daily"
           className="text-[12px] text-ink-500 hover:text-ink-800"
         >
           {locale === "zh" ? "取消" : t("common.cancel")}
         </Link>
-        <div className="flex flex-col items-end gap-1">
-          {picked.length === 0 && (
-            <p className="text-[11.5px] text-ink-400">
-              {locale === "zh"
-                ? "请先选择至少一项"
-                : "Select at least one category above"}
-            </p>
-          )}
-          <Button onClick={onStart} disabled={picked.length === 0} size="lg">
-            {locale === "zh"
+        <Button
+          onClick={onStart}
+          disabled={picked.length === 0}
+          size="lg"
+          title={
+            picked.length === 0
+              ? locale === "zh"
+                ? "请先点选至少一个类别"
+                : "Tap at least one card above to continue"
+              : undefined
+          }
+        >
+          {picked.length === 0
+            ? locale === "zh"
+              ? "选好后点这里"
+              : "Select cards above"
+            : locale === "zh"
               ? `开始（${picked.length}）`
-              : `Start (${picked.length})`}
-            <ArrowRight className="ml-1 h-4 w-4" />
-          </Button>
-        </div>
+              : `Start (${picked.length} selected)`}
+          <ArrowRight className="ml-1 h-4 w-4" />
+        </Button>
       </div>
     </div>
   );
@@ -641,7 +647,7 @@ function CategoryFields({
   locale: "en" | "zh";
   inChemoWindow: boolean;
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
 
   if (catId === "feelings") {
     return (
@@ -873,7 +879,7 @@ function PracticeFields({
   patch: <K extends keyof DailyEntry>(k: K, v: DailyEntry[K] | undefined) => void;
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   const practices = useLiveQuery(
     () =>
       db.medications
@@ -994,7 +1000,7 @@ function PracticeGroup({
   quality?: number;
   onQuality?: (n: number) => void;
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   return (
     <div className="space-y-2">
       <div className="eyebrow text-ink-500">{title}</div>

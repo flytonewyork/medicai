@@ -8,6 +8,7 @@ import { db } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
 import { Card } from "~/components/ui/card";
 import { activeFast, hasActivePrep } from "~/lib/appointments/prep";
+import { nextAppointment } from "~/lib/appointments/upcoming";
 import { Stethoscope, ChevronRight, Clock, MapPin, UserRound } from "lucide-react";
 
 // Dedicated "NEXT CLINIC APPOINTMENT" card. Separate from the broader
@@ -28,13 +29,9 @@ export function NextClinicCard() {
 
   const next = useMemo(() => {
     if (!appointments) return null;
-    const now = Date.now();
-    const upcoming = appointments
-      .filter((a) => a.status !== "cancelled" && a.status !== "missed")
-      .map((a) => ({ a, t: new Date(a.starts_at).getTime() }))
-      .filter(({ t }) => Number.isFinite(t) && t >= now)
-      .sort((x, y) => x.t - y.t);
-    return upcoming[0]?.a ?? null;
+    return nextAppointment(appointments, {
+      excludeStatuses: ["cancelled", "missed"],
+    });
   }, [appointments]);
 
   if (!next) return null;

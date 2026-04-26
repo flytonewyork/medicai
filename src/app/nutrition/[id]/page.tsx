@@ -13,7 +13,7 @@ import {
   updateMealItemServing,
 } from "~/lib/nutrition/queries";
 import { sumItems } from "~/lib/nutrition/calculator";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, pickL } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -86,7 +86,7 @@ export default function EditMealPage() {
   }
 
   const totals = sumItems(items);
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = pickL(locale);
 
   async function save() {
     if (!Number.isFinite(id) || !meal) return;
@@ -277,10 +277,10 @@ export default function EditMealPage() {
   );
 }
 
-function ItemRow({ item, locale }: { item: MealItem; locale: string }) {
+function ItemRow({ item, locale }: { item: MealItem; locale: "en" | "zh" }) {
   const [editing, setEditing] = useState(false);
   const [grams, setGrams] = useState<string>(String(item.serving_grams));
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = pickL(locale);
   return (
     <div className="rounded-md border border-ink-100 bg-paper-2/40 p-3">
       <div className="flex items-baseline gap-2">

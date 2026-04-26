@@ -5,6 +5,7 @@ import {
   FALLBACK_HOUSEHOLD_PROFILE,
   type HouseholdProfile,
 } from "~/types/household-profile";
+import { postJson } from "~/lib/utils/http";
 
 export const NotesStructureSchema = z.object({
   transcription: z
@@ -67,12 +68,9 @@ export async function structureNotes({
   model?: string;
   image: PreparedImage;
 }): Promise<NotesStructure> {
-  const res = await fetch("/api/ai/ingest-notes", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ image, model }),
-  });
-  if (!res.ok) throw new Error(await res.text());
-  const data = (await res.json()) as { result: NotesStructure };
+  const data = await postJson<{ result: NotesStructure }>(
+    "/api/ai/ingest-notes",
+    { image, model },
+  );
   return data.result;
 }

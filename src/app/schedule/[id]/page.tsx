@@ -12,10 +12,11 @@ import { AppointmentForm } from "~/components/schedule/appointment-form";
 import { AttendanceControls } from "~/components/schedule/attendance-controls";
 import { LinkedRecords } from "~/components/schedule/linked-records";
 import { PrepPanel } from "~/components/schedule/prep-panel";
-import { useLocale, useT } from "~/hooks/use-translate";
+import { useLocale, useT, useL } from "~/hooks/use-translate";
 import { useState } from "react";
 import type { Appointment, AppointmentLink } from "~/types/appointment";
 import { logTagsForKind } from "~/lib/appointments/follow-up-tasks";
+import { localeTag } from "~/lib/utils/date";
 import {
   ArrowLeft,
   Check,
@@ -261,7 +262,7 @@ function DiscussionItemsPanel({
   appt: Appointment;
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   const [draft, setDraft] = useState("");
   const items = appt.discussion_items ?? [];
 
@@ -435,7 +436,7 @@ function formatDateTime(
 ): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString(locale === "zh" ? "zh-CN" : "en-AU", {
+  return d.toLocaleString(localeTag(locale), {
     dateStyle: "medium",
     ...(allDay ? {} : { timeStyle: "short" }),
   });

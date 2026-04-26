@@ -19,6 +19,7 @@ import { useWeather } from "~/hooks/use-weather";
 import { Sparkline } from "~/components/ui/sparkline";
 import { PROTOCOL_BY_ID } from "~/config/protocols";
 import { cn } from "~/lib/utils/cn";
+import { todayISO as getTodayISO } from "~/lib/utils/date";
 import {
   ArrowDown,
   ChevronRight,
@@ -62,7 +63,7 @@ export function PillarTiles() {
   const settings = useSettings();
 
   const ordered = (dailies ?? []).slice().reverse();
-  const todayISO = format(new Date(), "yyyy-MM-dd");
+  const todayISO = getTodayISO();
   const todayEntry = ordered.find((d) => d.date === todayISO);
   const recentCycle = (cycles ?? [])[0];
   const latestLab = (labs ?? [])[0];

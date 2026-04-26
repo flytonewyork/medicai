@@ -16,6 +16,7 @@ import {
   Salad,
   CalendarDays,
   Users,
+  UserPlus,
   Menu,
   X,
   History as HistoryIcon,
@@ -30,19 +31,19 @@ import { useAppPerspective } from "~/lib/caregiver/scope";
 // reach household / invites through Settings → Care team, so it's
 // excluded here to avoid a confusing duplicate view.
 const PATIENT_ITEMS = [
-  { href: "/", key: "nav.dashboard", icon: LayoutDashboard },
-  { href: "/schedule", key: "nav.schedule", icon: CalendarDays },
-  { href: "/assessment", key: "nav.assessment", icon: Compass },
-  { href: "/treatment", key: "nav.treatment", icon: Syringe },
-  { href: "/labs", key: "nav.labs", icon: FlaskConical },
-  { href: "/nutrition", key: "nav.nutrition", icon: Salad },
-  { href: "/practices", key: "nav.practices", icon: Sparkles },
-  { href: "/care-team", key: "nav.care_team", icon: Users },
-  { href: "/bridge", key: "nav.bridge", icon: Route },
-  { href: "/history", key: "nav.history", icon: HistoryIcon },
-  { href: "/ingest", key: "nav.ingest", icon: ScanLine },
-  { href: "/reports", key: "nav.reports", icon: FileText },
-  { href: "/settings", key: "nav.settings", icon: SettingsIcon },
+  { href: "/", key: "nav.dashboard", icon: LayoutDashboard, descKey: "nav.desc.dashboard" },
+  { href: "/schedule", key: "nav.schedule", icon: CalendarDays, descKey: "nav.desc.schedule" },
+  { href: "/assessment", key: "nav.assessment", icon: Compass, descKey: "nav.desc.assessment" },
+  { href: "/treatment", key: "nav.treatment", icon: Syringe, descKey: "nav.desc.treatment" },
+  { href: "/labs", key: "nav.labs", icon: FlaskConical, descKey: "nav.desc.labs" },
+  { href: "/nutrition", key: "nav.nutrition", icon: Salad, descKey: "nav.desc.nutrition" },
+  { href: "/practices", key: "nav.practices", icon: Sparkles, descKey: "nav.desc.practices" },
+  { href: "/carers", key: "nav.carers", icon: UserPlus, descKey: "nav.desc.carers" },
+  { href: "/bridge", key: "nav.bridge", icon: Route, descKey: "nav.desc.bridge" },
+  { href: "/history", key: "nav.history", icon: HistoryIcon, descKey: "nav.desc.history" },
+  { href: "/ingest", key: "nav.ingest", icon: ScanLine, descKey: "nav.desc.ingest" },
+  { href: "/reports", key: "nav.reports", icon: FileText, descKey: "nav.desc.reports" },
+  { href: "/settings", key: "nav.settings", icon: SettingsIcon, descKey: "nav.desc.settings" },
 ] as const;
 
 // Caregiver nav: the things a supporting family member actually uses
@@ -51,13 +52,13 @@ const PATIENT_ITEMS = [
 // wizard, weekly/fortnightly, treatment cycle, assessment, bridge,
 // reports) are hidden.
 const CAREGIVER_ITEMS = [
-  { href: "/family", key: "nav.family", icon: Users },
-  { href: "/schedule", key: "nav.schedule", icon: CalendarDays },
-  { href: "/care-team", key: "nav.care_team", icon: Users },
-  { href: "/nutrition", key: "nav.nutrition", icon: Salad },
-  { href: "/log", key: "nav.log", icon: Sparkles },
-  { href: "/history", key: "nav.history", icon: HistoryIcon },
-  { href: "/settings", key: "nav.settings", icon: SettingsIcon },
+  { href: "/family", key: "nav.family", icon: Users, descKey: "nav.desc.family" },
+  { href: "/schedule", key: "nav.schedule", icon: CalendarDays, descKey: "nav.desc.schedule" },
+  { href: "/carers", key: "nav.carers", icon: UserPlus, descKey: "nav.desc.carers" },
+  { href: "/nutrition", key: "nav.nutrition", icon: Salad, descKey: "nav.desc.nutrition" },
+  { href: "/log", key: "nav.log", icon: Sparkles, descKey: "nav.desc.log" },
+  { href: "/history", key: "nav.history", icon: HistoryIcon, descKey: "nav.desc.history" },
+  { href: "/settings", key: "nav.settings", icon: SettingsIcon, descKey: "nav.desc.settings" },
 ] as const;
 
 type NavItem = (typeof PATIENT_ITEMS)[number] | (typeof CAREGIVER_ITEMS)[number];
@@ -87,12 +88,13 @@ export function DesktopSidebar() {
         {items.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href;
+          const desc = "descKey" in item ? t(item.descKey) : "";
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-[13px] transition-colors",
+                "flex items-start gap-3 rounded-md px-3 py-2 transition-colors",
                 active
                   ? "bg-ink-100/80 text-ink-900"
                   : "text-ink-500 hover:bg-ink-100/40 hover:text-ink-700",
@@ -100,12 +102,22 @@ export function DesktopSidebar() {
             >
               <Icon
                 className={cn(
-                  "h-4 w-4",
+                  "mt-0.5 h-4 w-4 shrink-0",
                   active ? "text-[var(--tide-2)]" : "",
                 )}
                 aria-hidden
               />
-              <span>{t(item.key)}</span>
+              <div className="min-w-0 flex-1">
+                <div className="text-[13px]">{t(item.key)}</div>
+                {desc && desc !== item.descKey && (
+                  <div className={cn(
+                    "text-[10.5px] leading-tight",
+                    active ? "text-ink-500" : "text-ink-400",
+                  )}>
+                    {desc}
+                  </div>
+                )}
+              </div>
             </Link>
           );
         })}
@@ -126,7 +138,7 @@ export function MobileBottomNav() {
   // weight loss is a primary axis-3 signal in mPDAC, and is logged
   // daily.
   const patientHrefs = ["/", "/assessment", "/treatment", "/nutrition", "/schedule"];
-  const caregiverHrefs = ["/family", "/schedule", "/nutrition", "/care-team", "/log"];
+  const caregiverHrefs = ["/family", "/schedule", "/nutrition", "/carers", "/log"];
   const selected = items === PATIENT_ITEMS ? patientHrefs : caregiverHrefs;
   const mobileItems = items.filter((i) => selected.includes(i.href));
   return (

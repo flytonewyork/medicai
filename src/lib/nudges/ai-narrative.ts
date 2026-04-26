@@ -5,6 +5,7 @@ import {
   FALLBACK_HOUSEHOLD_PROFILE,
   type HouseholdProfile,
 } from "~/types/household-profile";
+import { postJson } from "~/lib/utils/http";
 
 export function buildNarrativeSystem(
   profile: HouseholdProfile = FALLBACK_HOUSEHOLD_PROFILE,
@@ -31,12 +32,9 @@ export async function generateNarrative({
   locale,
   items,
 }: NarrativeInput): Promise<string> {
-  const res = await fetch("/api/ai/feed-narrative", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ model, locale, items }),
-  });
-  if (!res.ok) throw new Error(await res.text());
-  const data = (await res.json()) as { narrative: string };
+  const data = await postJson<{ narrative: string }>(
+    "/api/ai/feed-narrative",
+    { model, locale, items },
+  );
   return data.narrative;
 }

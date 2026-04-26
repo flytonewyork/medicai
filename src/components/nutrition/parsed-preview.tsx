@@ -53,25 +53,29 @@ export function ParsedPreview({
   onCancel: () => void;
 }) {
   const locale = useLocale();
-  // Serving sizes are quantised to 100 g — the patient's "rough
-  // weight" is more honest than a precise-looking AI number, and 100 g
-  // is the canonical reference frame for our per-100 g macros. We
-  // snap on intake; macros stay at the parser's per-serving estimate
-  // because the ratio (per-serving / serving_grams) won't change much
-  // for a small grams nudge.
+  // Serving sizes snap to 100 g on intake — clean baseline for the
+  // per-100 g reference frame. Macros scale with the snap so the
+  // absolute grams and macros stay internally consistent. The patient
+  // then refines in 50/100 g increments; every grams change re-scales
+  // the macro row.
   const [items, setItems] = useState<PreviewItem[]>(() =>
-    parsed.items.map((it) => ({
-      name: it.name,
-      name_zh: it.name_zh ?? undefined,
-      serving_grams: snapTo100(it.serving_grams),
-      serving_label: it.serving_label ?? undefined,
-      calories: it.calories,
-      protein_g: it.protein_g,
-      fat_g: it.fat_g,
-      carbs_total_g: it.carbs_total_g,
-      fiber_g: it.fiber_g,
-      notes: it.notes ?? undefined,
-    })),
+    parsed.items.map((it) =>
+      scalePreviewItemToGrams(
+        {
+          name: it.name,
+          name_zh: it.name_zh ?? undefined,
+          serving_grams: it.serving_grams,
+          serving_label: it.serving_label ?? undefined,
+          calories: it.calories,
+          protein_g: it.protein_g,
+          fat_g: it.fat_g,
+          carbs_total_g: it.carbs_total_g,
+          fiber_g: it.fiber_g,
+          notes: it.notes ?? undefined,
+        },
+        snapTo100(it.serving_grams),
+      ),
+    ),
   );
   const [mealType, setMealType] = useState<MealType>(
     parsed.meal_type ?? autoMealType(),
@@ -267,6 +271,12 @@ export function ParsedPreview({
   );
 }
 
+// Serving-size presets, multiples of 100g. Stepper buttons add +/- 50g
+// or +/- 100g for fine adjustment. Any change to grams scales all macros
+// by the new/old ratio so the patient only has to correct one number.
+const SERVING_PRESETS_G = [100, 200, 300] as const;
+const GRAM_STEPS_G = [-100, -50, 50, 100] as const;
+
 function ItemRow({
   value,
   onChange,
@@ -278,6 +288,13 @@ function ItemRow({
 }) {
   const locale = useLocale();
   const [editing, setEditing] = useState(false);
+
+  const setGrams = (raw: number) => {
+    const next = Math.max(0, Math.round(raw));
+    if (next === value.serving_grams) return;
+    onChange(scalePreviewItemToGrams(value, next));
+  };
+
   return (
     <div>
       <div className="flex items-start gap-2">
@@ -321,30 +338,109 @@ function ItemRow({
         </div>
       </div>
       {editing && (
-        <div className="mt-3 grid grid-cols-3 gap-2 rounded-md bg-paper p-2">
-          <Cell
-            label="g"
-            value={value.serving_grams}
-            step={100}
-            min={100}
-            onChange={(v) =>
-              onChange({ ...value, serving_grams: snapTo100(v) })
-            }
-          />
-          <Cell label="P" value={value.protein_g}
-            onChange={(v) => onChange({ ...value, protein_g: v })} />
-          <Cell label="F" value={value.fat_g}
-            onChange={(v) => onChange({ ...value, fat_g: v })} />
-          <Cell label="C" value={value.carbs_total_g}
-            onChange={(v) => onChange({ ...value, carbs_total_g: v })} />
-          <Cell label="Fib" value={value.fiber_g}
-            onChange={(v) => onChange({ ...value, fiber_g: v })} />
-          <Cell label="kcal" value={value.calories} step={5}
-            onChange={(v) => onChange({ ...value, calories: v })} />
+        <div className="mt-3 space-y-2 rounded-md bg-paper p-2">
+          <div className="flex items-center gap-1">
+            <span className="mono w-4 shrink-0 text-[10px] uppercase tracking-wide text-ink-400">
+              g
+            </span>
+            {GRAM_STEPS_G.slice(0, 2).map((delta) => (
+              <button
+                key={delta}
+                type="button"
+                onClick={() => setGrams(value.serving_grams + delta)}
+                disabled={value.serving_grams + delta < 0}
+                className="rounded-md border border-ink-200 px-1.5 py-1 text-[11px] text-ink-700 hover:border-ink-300 disabled:opacity-40"
+              >
+                {delta}
+              </button>
+            ))}
+            <input
+              type="number"
+              min={0}
+              step={50}
+              value={value.serving_grams}
+              onChange={(e) => setGrams(Number(e.target.value) || 0)}
+              className="h-8 w-16 rounded-md border border-ink-200 bg-paper px-1.5 text-center text-xs text-ink-900 focus:border-ink-900 focus:outline-none"
+            />
+            {GRAM_STEPS_G.slice(2).map((delta) => (
+              <button
+                key={delta}
+                type="button"
+                onClick={() => setGrams(value.serving_grams + delta)}
+                className="rounded-md border border-ink-200 px-1.5 py-1 text-[11px] text-ink-700 hover:border-ink-300"
+              >
+                +{delta}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {SERVING_PRESETS_G.map((g) => (
+              <button
+                key={g}
+                type="button"
+                onClick={() => setGrams(g)}
+                className={cn(
+                  "rounded-md border px-2 py-1 text-[11px]",
+                  value.serving_grams === g
+                    ? "border-ink-900 bg-ink-900 text-paper"
+                    : "border-ink-200 bg-paper text-ink-700 hover:border-ink-300",
+                )}
+              >
+                {g}g
+              </button>
+            ))}
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <Cell label="P" value={value.protein_g}
+              onChange={(v) => onChange({ ...value, protein_g: v })} />
+            <Cell label="F" value={value.fat_g}
+              onChange={(v) => onChange({ ...value, fat_g: v })} />
+            <Cell label="C" value={value.carbs_total_g}
+              onChange={(v) => onChange({ ...value, carbs_total_g: v })} />
+            <Cell label="Fib" value={value.fiber_g}
+              onChange={(v) => onChange({ ...value, fiber_g: v })} />
+            <Cell label="kcal" value={value.calories} step={5}
+              onChange={(v) => onChange({ ...value, calories: v })} />
+          </div>
         </div>
       )}
     </div>
   );
+}
+
+// Re-scale every macro on a preview item to a new serving weight. Used
+// when the patient corrects grams — the AI's per-gram density is
+// trusted, the absolute weight is what they're refining.
+export function scalePreviewItemToGrams(
+  item: PreviewItem,
+  next_grams: number,
+): PreviewItem {
+  const next = Math.max(0, Math.round(next_grams));
+  if (next === item.serving_grams) return item;
+  if (next === 0) {
+    return {
+      ...item,
+      serving_grams: 0,
+      protein_g: 0,
+      fat_g: 0,
+      carbs_total_g: 0,
+      fiber_g: 0,
+      calories: 0,
+    };
+  }
+  if (item.serving_grams <= 0) {
+    return { ...item, serving_grams: next };
+  }
+  const f = next / item.serving_grams;
+  return {
+    ...item,
+    serving_grams: next,
+    protein_g: round1(item.protein_g * f),
+    fat_g: round1(item.fat_g * f),
+    carbs_total_g: round1(item.carbs_total_g * f),
+    fiber_g: round1(item.fiber_g * f),
+    calories: Math.round(item.calories * f),
+  };
 }
 
 function Cell({

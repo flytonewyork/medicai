@@ -14,6 +14,7 @@ import { requireSession } from "~/lib/auth/require-session";
 import { loadHouseholdProfile } from "~/lib/household/profile";
 import { wrapUserInputBlock } from "~/lib/anthropic/wrap-user-input";
 import type { PreparedImage } from "~/lib/ingest/image";
+import { todayISO } from "~/lib/utils/date";
 import type { IngestDraft, IngestSourceKind } from "~/types/ingest";
 
 export const runtime = "nodejs";
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "source required" }, { status: 400 });
   }
 
-  const today = body.today ?? new Date().toISOString().slice(0, 10);
+  const today = body.today ?? todayISO();
   const locale = body.locale ?? "en";
   const profile = await loadHouseholdProfile(auth.session.household_id);
 

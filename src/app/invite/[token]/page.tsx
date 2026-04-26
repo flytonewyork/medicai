@@ -14,7 +14,7 @@ import {
 } from "~/lib/supabase/households";
 import { ROLE_LABEL, ROLE_DESCRIPTION } from "~/lib/auth/permissions";
 import type { InvitePreview } from "~/types/household";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, useL } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -59,7 +59,7 @@ export default function InvitePage() {
   const token = params?.token;
   const router = useRouter();
   const locale = useLocale();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
 
   const [phase, setPhase] = useState<Phase>(
     token ? { kind: "loading_preview" } : { kind: "no_token" },
@@ -258,7 +258,7 @@ function PreviewCard({
   preview: InvitePreview;
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   const patientName =
     preview.patient_display_name?.trim() ||
     preview.household_name?.trim() ||
@@ -339,7 +339,7 @@ function SignInActions({
   token: string;
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   const next = `/invite/${token}`;
   return (
     <Card>
@@ -373,7 +373,7 @@ function PreviewErrorCard({
   preview: InvitePreview;
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   const message = (() => {
     switch (preview.status) {
       case "expired":

@@ -7,7 +7,7 @@ import { useHousehold } from "~/hooks/use-household";
 import { listInvites } from "~/lib/supabase/households";
 import { ROLE_LABEL } from "~/lib/auth/permissions";
 import type { HouseholdInvite } from "~/types/household";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, pickL } from "~/hooks/use-translate";
 import { Card, CardContent } from "~/components/ui/card";
 import { UserCheck, ChevronRight } from "lucide-react";
 
@@ -78,7 +78,7 @@ export function RecentlyAcceptedCard() {
 
   if (!canSee || !recent || recent.length === 0) return null;
 
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = pickL(locale);
   // Most-recent first.
   const sorted = [...recent].sort(
     (a, b) =>
@@ -128,7 +128,7 @@ export function RecentlyAcceptedCard() {
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
           <Link
-            href="/household"
+            href="/carers"
             onClick={dismiss}
             className="inline-flex items-center gap-0.5 text-[12px] text-ink-700 hover:text-ink-900"
           >

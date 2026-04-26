@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { db, now } from "~/lib/db/dexie";
 import { todayISO } from "~/lib/utils/date";
-import { useLocale, useT } from "~/hooks/use-translate";
+import { useLocale, useT, useL } from "~/hooks/use-translate";
 import { useSettings } from "~/hooks/use-settings";
 import { useUIStore } from "~/stores/ui-store";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Field, TextInput, Textarea } from "~/components/ui/field";
+import { Alert } from "~/components/ui/alert";
 import { PROTOCOL_LIBRARY, PROTOCOL_BY_ID } from "~/config/protocols";
 import type { ProtocolId } from "~/types/treatment";
 import type { Locale, Settings } from "~/types/clinical";
@@ -432,13 +433,9 @@ export default function OnboardingPage() {
             </Button>
           )}
           {CAN_SKIP_FROM.includes(step) && (
-            <button
-              type="button"
-              onClick={skipToEnd}
-              className="text-[12px] text-ink-500 underline-offset-2 hover:text-ink-800 hover:underline"
-            >
+            <Button variant="ghost" onClick={skipToEnd} className="text-ink-500 hover:text-ink-800">
               {locale === "zh" ? "其余稍后再填" : "Finish setup later"}
-            </button>
+            </Button>
           )}
         </div>
         {step === "done" ? (
@@ -624,7 +621,7 @@ function PickPatientStep({
   onStartFresh: () => void;
   locale: Locale;
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   const [rows, setRows] = useState<
     Array<{
       id: string;
@@ -733,17 +730,13 @@ function PickPatientStep({
       </p>
 
       {joinedName && (
-        <div className="flex items-start gap-2 rounded-md border border-[var(--ok)]/40 bg-[var(--ok-soft)] p-3 text-[12.5px] text-ink-700">
-          <Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--ok)]" />
-          <div>
-            <div className="font-semibold text-ink-900">
-              {L("You're in.", "已加入。")}
-            </div>
-            <div className="text-ink-500">
-              {L(`Joined ${joinedName}'s care team.`, `已加入 ${joinedName} 的护理团队。`)}
-            </div>
-          </div>
-        </div>
+        <Alert
+          variant="ok"
+          title={L("You're in.", "已加入。")}
+          dense
+        >
+          {L(`Joined ${joinedName}'s care team.`, `已加入 ${joinedName} 的护理团队。`)}
+        </Alert>
       )}
 
       {loading && !joinedName && (
@@ -803,8 +796,8 @@ function PickPatientStep({
         <div className="space-y-3 rounded-md border border-ink-200 bg-paper-2 p-4">
           <div className="text-[12.5px] text-ink-700">
             {L(
-              "Browsing every patient isn't enabled on this server yet. If the patient already has Anchor set up, paste the invite link they sent you.",
-              "本服务器尚未开启患者浏览功能。如对方已在使用 Anchor,请粘贴 ta 发来的邀请链接。",
+              "Paste the invite link the patient sent you to join their care team.",
+              "请粘贴患者发来的邀请链接加入其护理团队。",
             )}
           </div>
           <div className="flex gap-2">
@@ -824,19 +817,13 @@ function PickPatientStep({
               {acceptingInvite ? L("Joining…", "加入中…") : L("Join", "加入")}
             </Button>
           </div>
-          <p className="text-[11.5px] text-ink-400">
-            {L(
-              "Server admin: apply migration 2026_04_24_slice_p_caregiver_onboarding_reload.sql in Supabase to enable the picker.",
-              "服务器管理员:在 Supabase 中应用迁移 2026_04_24_slice_p_caregiver_onboarding_reload.sql 即可启用选择器。",
-            )}
-          </p>
         </div>
       )}
 
       {error && !joinedName && (
-        <div className="rounded-md border border-[var(--warn)]/40 bg-[var(--warn-soft)] p-2.5 text-[12px] text-[var(--warn)]">
+        <Alert variant="warn" dense>
           {error}
-        </div>
+        </Alert>
       )}
 
       {!joinedName && (

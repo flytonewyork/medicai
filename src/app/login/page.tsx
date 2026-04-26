@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowser, isSupabaseConfigured } from "~/lib/supabase/client";
 import { Button } from "~/components/ui/button";
 import { Field, TextInput } from "~/components/ui/field";
+import { Alert } from "~/components/ui/alert";
 import { PageHeader } from "~/components/ui/page-header";
 import { useT } from "~/hooks/use-translate";
 
@@ -101,20 +102,14 @@ function LoginForm() {
         </Field>
 
         {error && (
-          <div
-            role="alert"
-            className="rounded-md border border-[var(--warn)]/40 bg-[var(--warn)]/10 p-3 text-sm text-[var(--warn)]"
-          >
+          <Alert variant="warn" role="alert">
             {error}
-          </div>
+          </Alert>
         )}
         {info && (
-          <div
-            role="status"
-            className="rounded-md border border-ink-200 bg-paper-2 p-3 text-sm text-ink-700"
-          >
+          <Alert variant="info" role="status">
             {info}
-          </div>
+          </Alert>
         )}
 
         <Button type="submit" size="lg" className="w-full" disabled={loading}>

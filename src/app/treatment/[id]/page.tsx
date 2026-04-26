@@ -7,7 +7,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { latestDailyEntries } from "~/lib/db/queries";
 import { buildCycleContext } from "~/lib/treatment/engine";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, useL } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -15,7 +15,7 @@ import { CycleCalendar } from "~/components/treatment/cycle-calendar";
 import { CycleDayDetail } from "~/components/treatment/cycle-day-detail";
 import { CycleMedicationsCard } from "~/components/treatment/cycle-medications-card";
 import { NudgeCard } from "~/components/treatment/nudge-card";
-import { formatDate } from "~/lib/utils/date";
+import { formatDate, todayISO } from "~/lib/utils/date";
 import { addDays, format, parseISO } from "date-fns";
 import type { NudgeCategory } from "~/types/treatment";
 import type { LabResult } from "~/types/clinical";
@@ -109,7 +109,7 @@ export default function CycleDetailPage() {
     if (!cycle?.id) return;
     await db.treatment_cycles.update(cycle.id, {
       status: "completed",
-      actual_end_date: new Date().toISOString().slice(0, 10),
+      actual_end_date: todayISO(),
       updated_at: now(),
     });
   }
@@ -389,7 +389,7 @@ function CycleQuickActions({
   protocol: { dose_days: number[]; cycle_length_days: number };
   locale: "en" | "zh";
 }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
 
   // `todayMs` stays stable across renders so the useMemo below has
   // stable deps. Recreating `new Date()` on every render would

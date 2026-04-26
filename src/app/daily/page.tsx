@@ -88,37 +88,19 @@ export default function DailyPage() {
                     </span>
                   )}
                 </div>
-                <div className="flex gap-1.5 text-xs">
+                <div className="flex flex-wrap gap-1.5">
                   {e.fever && (
-                    <span
-                      className="rounded-full px-2 py-0.5 text-[11px]"
-                      style={{
-                        background: "var(--warn-soft)",
-                        color: "var(--warn)",
-                      }}
-                    >
+                    <span className="a-chip warn">
                       {locale === "zh" ? "发热" : "fever"}
                     </span>
                   )}
                   {(e.neuropathy_feet || e.neuropathy_hands) && (
-                    <span
-                      className="rounded-full px-2 py-0.5 text-[11px]"
-                      style={{
-                        background: "var(--sand)",
-                        color: "oklch(45% 0.06 70)",
-                      }}
-                    >
+                    <span className="a-chip sand">
                       {locale === "zh" ? "神经病变" : "neuropathy"}
                     </span>
                   )}
                   {e.new_bruising && (
-                    <span
-                      className="rounded-full px-2 py-0.5 text-[11px]"
-                      style={{
-                        background: "var(--sand)",
-                        color: "oklch(45% 0.06 70)",
-                      }}
-                    >
+                    <span className="a-chip sand">
                       {locale === "zh" ? "瘀斑" : "bruising"}
                     </span>
                   )}

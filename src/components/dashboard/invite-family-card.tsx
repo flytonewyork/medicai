@@ -5,7 +5,7 @@ import { Users, ChevronRight } from "lucide-react";
 import { useHousehold } from "~/hooks/use-household";
 import { isSupabaseConfigured } from "~/lib/supabase/client";
 import { Card, CardContent } from "~/components/ui/card";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, pickL } from "~/hooks/use-translate";
 
 // Shows when the user is signed in but has no household yet (so no
 // caregivers / family can see their data). Surfaces a one-tap path
@@ -24,7 +24,7 @@ export function InviteFamilyCard() {
   if (!profile) return null;     // not signed in
   if (membership) return null;   // already in a household
 
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = pickL(locale);
 
   return (
     <Card>
@@ -46,7 +46,7 @@ export function InviteFamilyCard() {
           </div>
         </div>
         <Link
-          href="/household"
+          href="/carers"
           className="inline-flex items-center gap-0.5 text-[12px] text-ink-500 hover:text-ink-900"
         >
           {L("Set up", "开始")}

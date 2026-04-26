@@ -8,7 +8,7 @@ import {
   listTemplates,
   logTemplate,
 } from "~/lib/nutrition/templates";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, pickL } from "~/hooks/use-translate";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils/cn";
@@ -36,7 +36,7 @@ export function TemplatesPicker({
 
   if (templates.length === 0) return null;
 
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = pickL(locale);
   return (
     <Card className="space-y-3 px-4 py-3">
       <div className="flex items-baseline justify-between">
@@ -113,7 +113,7 @@ function TemplateRow({
     }),
     { cal: 0, p: 0, nc: 0 },
   );
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = pickL(locale);
 
   return (
     <div className="flex items-center gap-3 rounded-md border border-ink-100 bg-paper-2/40 px-3 py-2">
