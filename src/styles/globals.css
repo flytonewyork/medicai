@@ -99,12 +99,17 @@ body {
 
 /* Floating add button: clears the mobile bottom nav (which is itself
  * anchored at max(0.75rem, env(safe-area-inset-bottom)) and includes
- * its own internal home-indicator padding). On iOS PWA the nav is
- * ~110px tall once the home-indicator inset is included; the FAB needs
- * to sit above that, otherwise it disappears behind the nav. Desktop
- * (≥md) drops it back to 1.5rem from the viewport bottom. */
+ * its own internal home-indicator padding). The nav's rendered height
+ * is ~74px (icon + label + py-2.5 padding) and its top edge sits
+ * at viewport-bottom + 12px on regular browsers, +34px on iOS PWA
+ * with the home indicator. The FAB needs to clear that with a small
+ * visual gap, otherwise it overlaps the nav rounded corners.
+ *
+ * Math: nav-bottom-offset (max 0.75rem | inset) + nav-height (~74px)
+ *       + visual gap (12px) ≈ 6.5rem + inset.
+ * Desktop (≥md) drops it back to 1.5rem from the viewport bottom. */
 .add-fab {
-  bottom: calc(5rem + env(safe-area-inset-bottom));
+  bottom: calc(6.5rem + env(safe-area-inset-bottom));
 }
 @media (min-width: 768px) {
   .add-fab {
