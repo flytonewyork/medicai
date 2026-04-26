@@ -11,8 +11,10 @@ import {
   CalendarDays,
   CalendarClock,
   ListTodo,
+  Pill,
   MessageSquarePlus,
   Sparkles,
+  Salad,
 } from "lucide-react";
 import { useIngestModal } from "~/components/ingest/ingest-modal";
 import { useAppPerspective } from "~/lib/caregiver/scope";
@@ -29,8 +31,8 @@ interface FabItem {
 }
 
 // Caregiver-friendly FAB — only the verbs a supporting family member
-// reaches for. Meal logging lives on /nutrition (in the caregiver
-// nav); /log is the unified channel for everything else.
+// reaches for. Patient-authored captures (daily wizard, weekly / fort.
+// assessments, practice toggle) are hidden.
 const CAREGIVER_ITEMS: FabItem[] = [
   {
     href: "/log",
@@ -43,16 +45,6 @@ const CAREGIVER_ITEMS: FabItem[] = [
     tone: "sand",
   },
   {
-    action: "ingest",
-    label: { en: "Add a photo or document", zh: "导入照片或文档" },
-    hint: {
-      en: "Clinic letter, lab report, scan result",
-      zh: "就诊函、化验单、影像报告",
-    },
-    icon: Sparkles,
-    tone: "tide",
-  },
-  {
     href: "/schedule/new",
     label: { en: "New appointment", zh: "新建预约" },
     hint: {
@@ -60,6 +52,7 @@ const CAREGIVER_ITEMS: FabItem[] = [
       zh: "门诊 / 化疗 / 检查 / 化验",
     },
     icon: CalendarClock,
+    tone: "tide",
   },
   {
     href: "/tasks/new",
@@ -70,15 +63,34 @@ const CAREGIVER_ITEMS: FabItem[] = [
     },
     icon: ListTodo,
   },
+  {
+    href: "/nutrition/log",
+    label: { en: "Log a meal", zh: "记录用餐" },
+    hint: {
+      en: "What dad ate or drank",
+      zh: "记录用餐或饮水",
+    },
+    icon: Salad,
+    tone: "sand",
+  },
+  {
+    action: "ingest",
+    label: { en: "Add a photo or document", zh: "导入照片或文档" },
+    hint: {
+      en: "Clinic letter, lab report, scan result",
+      zh: "就诊函、化验单、影像报告",
+    },
+    icon: Sparkles,
+    tone: "tide",
+  },
 ];
 
-// Patient FAB — the single-channel-in surface. Most captures flow
-// through "Say what's happening" (free text + voice) or "Add a photo
-// or document" (OCR ingest); structured nudges (meal log, medication
-// log) live on their own pages and surface in the feed when due, so
-// they don't need a duplicate FAB shortcut. The remaining FAB verbs
-// are the ones a tired patient reaches for at the top of the screen
-// without context: today's check-in, a new appointment, or a task.
+// Patient FAB — one capture channel, one check-in, one appointment verb,
+// one medication quick-log. The free-text/voice "Say what's happening"
+// stays primary so anything that can be spoken or typed funnels through
+// it; structured shortcuts (daily check-in, meal log, medication log)
+// stay first-class because the patient reaches for them on a tired day
+// without wanting to compose a sentence.
 const ITEMS: FabItem[] = [
   {
     href: "/log",
@@ -106,6 +118,25 @@ const ITEMS: FabItem[] = [
     hint: { en: "Symptoms, weight, practice", zh: "症状、体重、修习" },
     icon: CalendarDays,
     tone: "tide",
+  },
+  {
+    href: "/nutrition/log",
+    label: { en: "Log a meal", zh: "记录用餐" },
+    hint: {
+      en: "What you ate, drank, or couldn't finish",
+      zh: "用餐、饮水或没吃完的情况",
+    },
+    icon: Salad,
+    tone: "sand",
+  },
+  {
+    href: "/medications/log",
+    label: { en: "Log medication", zh: "记录服药" },
+    hint: {
+      en: "Taken, missed, side effects",
+      zh: "已服、漏服、副作用",
+    },
+    icon: Pill,
   },
   {
     href: "/schedule/new",
