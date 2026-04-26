@@ -1,5 +1,6 @@
 import { z } from "zod/v4";
 import type { PreparedImage } from "~/lib/ingest/image";
+import { DEFAULT_AI_MODEL } from "~/lib/anthropic/model";
 
 const LabsSchema = z.object({
   // Tumour markers
@@ -112,7 +113,7 @@ Your job is to extract structured fields into the given schema. Rules:
 export async function extractWithClaude({
   text,
   image,
-  model = "claude-opus-4-7",
+  model = DEFAULT_AI_MODEL,
 }: {
   text?: string;
   image?: PreparedImage;

@@ -9,6 +9,7 @@ import type {
 } from "~/types/agent";
 import type { Locale } from "~/types/clinical";
 import { AgentOutputSchema } from "./schema";
+import { DEFAULT_AI_MODEL } from "~/lib/anthropic/model";
 
 // Server-side runtime for one specialist invocation. Takes the batch of
 // log events that routed to this agent (a day's worth, typically) plus the
@@ -18,7 +19,7 @@ import { AgentOutputSchema } from "./schema";
 // The caller is responsible for reading state.md from Dexie before, and
 // writing the returned `state_diff` + persisting the AgentRunRow after.
 
-const MODEL = process.env.ANTHROPIC_LOG_MODEL || "claude-opus-4-7";
+const MODEL = process.env.ANTHROPIC_LOG_MODEL || DEFAULT_AI_MODEL;
 
 function roleFor(id: AgentId): string {
   // Role files are committed to the repo. We resolve them relative to the

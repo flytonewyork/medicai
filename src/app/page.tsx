@@ -2,9 +2,8 @@
 
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useLiveQuery } from "dexie-react-hooks";
 import { format } from "date-fns";
-import { db } from "~/lib/db/dexie";
+import { useSettings } from "~/hooks/use-settings";
 import { PillarTiles } from "~/components/dashboard/pillar-tiles";
 import { EmergencyCard } from "~/components/dashboard/emergency-card";
 import { QuickCheckinCard } from "~/components/dashboard/quick-checkin-card";
@@ -30,8 +29,8 @@ export default function DashboardPage() {
   const t = useT();
   const locale = useLocale();
   const router = useRouter();
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const profileName = settings?.[0]?.profile_name;
+  const settings = useSettings();
+  const profileName = settings?.profile_name;
   const { membership } = useHousehold();
 
   // Single redirect effect with a clear precedence ladder so two
@@ -49,13 +48,12 @@ export default function DashboardPage() {
   //      yet-to-load primary_carer to the family view by accident.
   //   5. Otherwise (patient / primary carer) → stay on dashboard.
   useEffect(() => {
-    if (!settings) return;
-    const s = settings[0];
-    if (!s?.onboarded_at) {
+    if (settings === undefined) return; // still loading
+    if (!settings?.onboarded_at) {
       router.replace("/onboarding");
       return;
     }
-    if (s.user_type === "caregiver" || s.user_type === "clinician") {
+    if (settings.user_type === "caregiver" || settings.user_type === "clinician") {
       router.replace("/family");
       return;
     }
@@ -96,10 +94,9 @@ export default function DashboardPage() {
   // an explicit perspective bounce in flight), render nothing rather
   // than flash the patient dashboard at a caregiver who's about to be
   // routed to /family. The app-level loading.tsx covers the visual.
-  if (!settings) return null;
-  const s0 = settings[0];
-  if (!s0?.onboarded_at) return null;
-  if (s0.user_type === "caregiver" || s0.user_type === "clinician") {
+  if (settings === undefined) return null;
+  if (!settings?.onboarded_at) return null;
+  if (settings.user_type === "caregiver" || settings.user_type === "clinician") {
     return null;
   }
 

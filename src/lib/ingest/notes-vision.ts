@@ -1,5 +1,6 @@
 import { z } from "zod/v4";
 import type { PreparedImage } from "./image";
+import { DEFAULT_AI_MODEL } from "~/lib/anthropic/model";
 
 export const NotesStructureSchema = z.object({
   transcription: z
@@ -52,7 +53,7 @@ Rules:
 7. Put any free-text reflection (non-metric sentences) into the 'reflection' field.`;
 
 export async function structureNotes({
-  model = "claude-opus-4-7",
+  model = DEFAULT_AI_MODEL,
   image,
 }: {
   model?: string;

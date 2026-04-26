@@ -1,4 +1,5 @@
 import type { ComprehensiveAssessment } from "~/types/clinical";
+import { DEFAULT_AI_MODEL } from "~/lib/anthropic/model";
 
 export interface CoachContext {
   stepKey: string;
@@ -30,7 +31,7 @@ export const SUMMARY_SYSTEM = `You summarise a single comprehensive baseline ass
 Respond ONLY with JSON: {"patient": "...", "clinician": "..."}`;
 
 export async function askCoach({
-  model = "claude-opus-4-7",
+  model = DEFAULT_AI_MODEL,
   context,
   history,
   locale = "en",
@@ -56,7 +57,7 @@ export interface AssessmentSummary {
 }
 
 export async function summariseAssessment({
-  model = "claude-opus-4-7",
+  model = DEFAULT_AI_MODEL,
   assessment,
   priorAssessment,
 }: {

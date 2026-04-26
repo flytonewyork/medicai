@@ -4,8 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
+import { getSettings } from "~/lib/db/queries";
 import { useLocale } from "~/hooks/use-translate";
+import { useSettings } from "~/hooks/use-settings";
 import { useUIStore } from "~/stores/ui-store";
+import { DEFAULT_AI_MODEL } from "~/lib/anthropic/model";
 import {
   TEST_CATALOG,
   testById,
@@ -80,8 +83,7 @@ export function AssessmentWizard({ assessmentId }: WizardProps) {
     () => db.comprehensive_assessments.get(assessmentId),
     [assessmentId],
   );
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const baseline = settings?.[0] ?? null;
+  const baseline = useSettings() ?? null;
 
   const [draft, setDraft] = useState<AssessmentDraft>({});
   const [tests, setTests] = useState<TestId[]>([]);
@@ -349,9 +351,11 @@ function ReviewView({
     setSaving(true);
     try {
       const { computePillars } = await import("~/lib/calculations/pillars");
-      const settings = await db.settings.toArray();
-      const baselineWeight = settings[0]?.baseline_weight_kg;
-      const scores = computePillars(assessment, baselineWeight);
+      const existingSettings = await getSettings();
+      const scores = computePillars(
+        assessment,
+        existingSettings?.baseline_weight_kg,
+      );
       await db.comprehensive_assessments.update(assessmentId, {
         ...scores,
         status: "complete",
@@ -359,7 +363,6 @@ function ReviewView({
         updated_at: now(),
       });
       // Populate baselines on first comprehensive assessment
-      const existingSettings = settings[0];
       if (existingSettings && existingSettings.id) {
         const patches: Record<string, number | undefined> = {};
         if (!existingSettings.baseline_weight_kg && assessment.weight_kg) {
@@ -413,7 +416,7 @@ function ReviewView({
   }
 
   async function generateAiSummary() {
-    const settings = await db.settings.toArray();
+    const settings = await getSettings();
     setAiBusy(true);
     setAiError(null);
     try {
@@ -421,13 +424,9 @@ function ReviewView({
         import("~/lib/ai/coach"),
         import("~/lib/calculations/pillars"),
       ]);
-      const scores = computePillars(
-        assessment,
-        settings[0]?.baseline_weight_kg,
-      );
+      const scores = computePillars(assessment, settings?.baseline_weight_kg);
       const filled: ComprehensiveAssessment = { ...assessment, ...scores };
-      const model =
-        settings[0]?.default_ai_model ?? "claude-opus-4-7";
+      const model = settings?.default_ai_model ?? DEFAULT_AI_MODEL;
       const summary = await summariseAssessment({
         model,
         assessment: filled,

@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import { jsonOutputFormat } from "~/lib/anthropic/json-output";
+import {
+  DEFAULT_AI_MODEL,
+  getAnthropicClient,
+  readJsonBody,
+  withAnthropicErrorBoundary,
+} from "~/lib/anthropic/route-helpers";
 import { MealSchema, MEAL_SYSTEM } from "~/lib/ingest/meal-vision";
 import type { PreparedImage } from "~/lib/ingest/image";
 
@@ -13,28 +18,20 @@ interface RequestBody {
 }
 
 export async function POST(req: Request) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "ANTHROPIC_API_KEY is not configured on the server." },
-      { status: 503 },
-    );
-  }
+  const gate = getAnthropicClient();
+  if (gate.error) return gate.error;
 
-  let body: RequestBody;
-  try {
-    body = (await req.json()) as RequestBody;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
+  const parsed = await readJsonBody<RequestBody>(req);
+  if (parsed.error) return parsed.error;
+  const body = parsed.body;
+
   if (!body?.image?.base64 || !body.image.mediaType) {
     return NextResponse.json({ error: "image required" }, { status: 400 });
   }
 
-  const client = new Anthropic({ apiKey });
-  try {
-    const response = await client.messages.parse({
-      model: body.model ?? "claude-opus-4-7",
+  const result = await withAnthropicErrorBoundary(() =>
+    gate.client.messages.parse({
+      model: body.model ?? DEFAULT_AI_MODEL,
       max_tokens: 1024,
       system: [
         { type: "text", text: MEAL_SYSTEM, cache_control: { type: "ephemeral" } },
@@ -59,16 +56,15 @@ export async function POST(req: Request) {
           ],
         },
       ],
-    });
-    if (!response.parsed_output) {
-      return NextResponse.json(
-        { error: "No meal estimate returned" },
-        { status: 502 },
-      );
-    }
-    return NextResponse.json({ result: response.parsed_output });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message }, { status: 502 });
+    }),
+  );
+  if (result.error) return result.error;
+
+  if (!result.value.parsed_output) {
+    return NextResponse.json(
+      { error: "No meal estimate returned" },
+      { status: 502 },
+    );
   }
+  return NextResponse.json({ result: result.value.parsed_output });
 }

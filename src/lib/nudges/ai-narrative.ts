@@ -1,5 +1,6 @@
 import type { FeedItem } from "~/types/feed";
 import type { Locale } from "~/types/clinical";
+import { DEFAULT_AI_MODEL } from "~/lib/anthropic/model";
 
 export const NARRATIVE_SYSTEM = `You write a single 2–3 sentence opening line for Hu Lin's dashboard on a pancreatic cancer tracking app.
 
@@ -18,7 +19,7 @@ export interface NarrativeInput {
 }
 
 export async function generateNarrative({
-  model = "claude-opus-4-7",
+  model = DEFAULT_AI_MODEL,
   locale,
   items,
 }: NarrativeInput): Promise<string> {

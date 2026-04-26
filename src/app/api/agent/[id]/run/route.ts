@@ -9,6 +9,7 @@ import type {
 } from "~/types/agent";
 import { AGENT_IDS, LOG_TAGS } from "~/types/agent";
 import { runAgent } from "~/agents/run";
+import { readJsonBody } from "~/lib/anthropic/route-helpers";
 
 export const runtime = "nodejs";
 // Specialist agents chew through referrals + state and emit up to 2k tokens
@@ -71,14 +72,10 @@ export async function POST(
     );
   }
 
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
+  const json = await readJsonBody<unknown>(req);
+  if (json.error) return json.error;
 
-  const parsed = RequestSchema.safeParse(body);
+  const parsed = RequestSchema.safeParse(json.body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Invalid request", detail: parsed.error.flatten() },
