@@ -1,4 +1,5 @@
 import type { LocalizedText } from "./treatment";
+import type { SourceSystem } from "./clinical";
 
 // Re-export so the medication module is self-contained for consumers.
 export type { LocalizedText };
@@ -191,6 +192,11 @@ export interface Medication {
   notes?: string;
   started_on: string;         // ISO date
   stopped_on?: string;
+  // Provenance when added from an imported document (prescription,
+  // discharge summary, PBS dispensing history). See SourceSystem /
+  // PdfBlob in ~/types/clinical.
+  source_system?: SourceSystem;
+  source_pdf_id?: number;
   created_at: string;
   updated_at: string;
 }

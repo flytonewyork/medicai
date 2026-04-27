@@ -2,6 +2,37 @@ export type EnteredBy = "hulin" | "catherine" | "thomas" | "clinician" | "jonaly
 export type Role = "patient" | "caregiver" | "clinician";
 export type Locale = "en" | "zh";
 export type Zone = "green" | "yellow" | "orange" | "red";
+
+// Origin of an imported clinical row. "mhr" = My Health Record PDF pulled
+// via myGov; "epworth" = Epworth portal / emailed report; "email" = other
+// clinical mail (path lab, private scan centre); "photo" = a photograph of
+// a paper report; "other" = anything else (CDA XML, copy-paste).
+//
+// Stored on the row itself so filtering ("show me only MHR-sourced labs")
+// and conflict resolution ("two CA 19-9 results same day, different
+// sources") do not require a join to pdf_blobs.
+export type SourceSystem = "mhr" | "epworth" | "email" | "photo" | "other";
+
+// Original PDF (or CDA XML) that a clinical row was extracted from.
+// Stored once in its own table so multiple rows extracted from the same
+// document can share a single copy and the "view original" affordance on
+// feed items works offline. Blob bytes never leave the device.
+export interface PdfBlob {
+  id?: number;
+  filename: string;
+  mime_type: string;       // "application/pdf", "application/xml", image/*
+  size_bytes: number;
+  sha256?: string;         // optional dedup key; computed at import time
+  blob: Blob;              // the original bytes
+  source_system: SourceSystem;
+  // When the patient captured / uploaded the document, not the clinical
+  // date of the content (that lives on the extracted row).
+  captured_at: string;
+  // Freeform note the patient added at capture ("scan from Tuesday").
+  note?: string;
+  created_at: string;
+  updated_at: string;
+}
 export type RuleCategory =
   | "function"
   | "toxicity"
@@ -208,6 +239,9 @@ export interface LabResult {
   tsh?: number;
   source: "epworth" | "external" | "patient_self_report";
   notes?: string;
+  // Provenance — see SourceSystem / PdfBlob above.
+  source_system?: SourceSystem;
+  source_pdf_id?: number;
   created_at: string;
   updated_at: string;
 }
@@ -219,6 +253,8 @@ export interface Imaging {
   findings_summary: string;
   recist_status?: "CR" | "PR" | "SD" | "PD";
   notes?: string;
+  source_system?: SourceSystem;
+  source_pdf_id?: number;
   created_at: string;
   updated_at: string;
 }
@@ -231,6 +267,8 @@ export interface CtdnaResult {
   unit?: string;
   detected: boolean;
   notes?: string;
+  source_system?: SourceSystem;
+  source_pdf_id?: number;
   created_at: string;
   updated_at: string;
 }
@@ -269,6 +307,8 @@ export interface Treatment {
   schedule?: "weekly" | "biweekly" | "other";
   modifications?: string;
   notes?: string;
+  source_system?: SourceSystem;
+  source_pdf_id?: number;
   created_at: string;
   updated_at: string;
 }
@@ -357,6 +397,8 @@ export interface LifeEvent {
   notes?: string;
   pre_event_buffer_days?: number;
   post_event_buffer_days?: number;
+  source_system?: SourceSystem;
+  source_pdf_id?: number;
   // Timeline / legacy fields (v16). Additive — existing rows default to
   // manual-created non-memory events authored by the household's primary
   // record-keeper.
@@ -377,6 +419,8 @@ export interface Decision {
   alternatives?: string;
   decided_by: string;
   linked_alert_id?: number;
+  source_system?: SourceSystem;
+  source_pdf_id?: number;
   created_at: string;
   updated_at: string;
 }

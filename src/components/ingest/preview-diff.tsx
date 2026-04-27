@@ -120,7 +120,12 @@ export function PreviewDiff({ draft, onApplied, onDiscard }: Props) {
     if (ops.length === 0) return;
     setApplying(true);
     try {
-      const r = await applyIngestOps(ops);
+      const r = await applyIngestOps(ops, {
+        provenance: {
+          source_system: draft.source_system,
+          source_pdf_id: draft.source_pdf_id,
+        },
+      });
       setResults(r);
       onApplied(r);
     } finally {

@@ -6,6 +6,7 @@ import type {
   IngestedDocumentKind,
   LabResult,
   PendingResult,
+  SourceSystem,
 } from "~/types/clinical";
 import type { ParsedExtraction } from "./heuristic-parser";
 import type { ClaudeExtraction } from "./claude-parser";
@@ -25,6 +26,12 @@ export interface UnifiedExtraction {
   ctdna?: ParsedExtraction["ctdna"];
   summary?: string;
   pending_items?: Array<{ test_name: string; category: PendingResult["category"] }>;
+  // Provenance for every row this extraction produces. Set by the
+  // caller when the extraction came from a source with recoverable
+  // origin (MHR download, Epworth portal, camera photo) and an
+  // already-stored pdf_blobs row.
+  source_system?: SourceSystem;
+  source_pdf_id?: number;
 }
 
 export function fromHeuristic(p: ParsedExtraction): UnifiedExtraction {
@@ -77,6 +84,8 @@ export async function saveExtraction(
       source: "external",
       notes: extraction.summary,
       ...extraction.labs,
+      source_system: extraction.source_system,
+      source_pdf_id: extraction.source_pdf_id,
       created_at: ts,
       updated_at: ts,
     };
@@ -90,6 +99,8 @@ export async function saveExtraction(
       findings_summary:
         extraction.imaging.findings_summary ?? extraction.summary ?? "",
       recist_status: extraction.imaging.recist_status,
+      source_system: extraction.source_system,
+      source_pdf_id: extraction.source_pdf_id,
       created_at: ts,
       updated_at: ts,
     });
@@ -103,6 +114,8 @@ export async function saveExtraction(
       detected: extraction.ctdna.detected ?? false,
       value: extraction.ctdna.value,
       notes: extraction.summary,
+      source_system: extraction.source_system,
+      source_pdf_id: extraction.source_pdf_id,
       created_at: ts,
       updated_at: ts,
     });
