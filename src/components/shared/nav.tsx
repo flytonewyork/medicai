@@ -22,6 +22,7 @@ import {
   History as HistoryIcon,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import { isNavItemActive } from "~/lib/nav/active";
 import { useT, useLocale } from "~/hooks/use-translate";
 import { useAppPerspective } from "~/lib/caregiver/scope";
 
@@ -87,7 +88,7 @@ export function DesktopSidebar() {
       <nav className="flex-1 space-y-0.5 px-2 pb-4">
         {items.map((item) => {
           const Icon = item.icon;
-          const active = pathname === item.href;
+          const active = isNavItemActive(pathname, item.href);
           const desc = "descKey" in item ? t(item.descKey) : "";
           return (
             <Link
@@ -148,7 +149,7 @@ export function MobileBottomNav() {
     >
       {mobileItems.map((item) => {
         const Icon = item.icon;
-        const active = pathname === item.href;
+        const active = isNavItemActive(pathname, item.href);
         return (
           <Link
             key={item.href}
@@ -224,7 +225,7 @@ export function MobileMoreMenu() {
             <nav className="mt-3 grid grid-cols-2 gap-2">
               {items.map((item) => {
                 const Icon = item.icon;
-                const active = pathname === item.href;
+                const active = isNavItemActive(pathname, item.href);
                 return (
                   <Link
                     key={item.href}
