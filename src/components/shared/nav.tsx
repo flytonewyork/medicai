@@ -144,15 +144,19 @@ export function MobileBottomNav() {
   const mobileItems = items.filter((i) => selected.includes(i.href));
   return (
     <nav
-      // Anchor is a fixed 0.75rem above the viewport bottom — NOT
-      // inset-aware. The home-indicator clearance is handled by
-      // `.pwa-bottom-nav` which adds `padding-bottom: env(safe-area-
-      // inset-bottom)` *inside* the pill so the icons stay above the
-      // home indicator, while the pill's rounded background extends
-      // down. Adding the inset to BOTH the anchor and the internal
-      // padding (the previous behaviour) double-counted on iOS PWA
-      // and left a visible band of dead paper-2 below the pill.
-      className="a-glass pwa-bottom-nav fixed inset-x-3 bottom-3 z-40 flex justify-around rounded-[22px] px-2 py-2.5 shadow-lg md:hidden"
+      // Anchored flush with the viewport bottom (`bottom-0`) — iOS
+      // native tab-bar pattern. The pill keeps its left/right inset +
+      // rounded corners (so it still reads as a glass card) but the
+      // bottom edge tucks into the viewport edge so there is zero
+      // visible "band" of paper-2 below the pill on iOS PWA.
+      //
+      // The pill's internal `padding-bottom: max(0.5rem, env(safe-
+      // area-inset-bottom))` (in `.pwa-bottom-nav`) keeps the icons
+      // safely above the iOS home-indicator gesture zone (~34 px).
+      // The pill background extending into that zone is fine — iOS
+      // draws the home indicator overlay on top, and our icons sit
+      // well above it (~80 px from viewport bottom on PWA).
+      className="a-glass pwa-bottom-nav fixed inset-x-3 bottom-0 z-40 flex justify-around rounded-[22px] px-2 py-2.5 shadow-lg md:hidden"
     >
       {mobileItems.map((item) => {
         const Icon = item.icon;

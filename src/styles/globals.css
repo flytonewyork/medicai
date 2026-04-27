@@ -101,15 +101,13 @@ body {
  * of truth so this stays in sync with the nav's own anchor + height
  * math (above).
  *
- * The nav itself is anchored at a fixed 0.75rem above the viewport
- * bottom (NOT inset-aware) and uses internal padding-bottom of
- * max(0.5rem, env(safe-area-inset-bottom)) to keep its icons above
- * the iOS home indicator. The page must clear the nav's *visual*
- * top edge:
+ * The nav is anchored flush with the viewport bottom (`bottom-0`)
+ * and uses internal padding-bottom of max(0.5rem, env(safe-area-
+ * inset-bottom)) to keep its icons above the iOS home indicator.
+ * The page must clear the nav's *visual* top edge:
  *
  *   nav_top_from_viewport_bottom =
- *     0.75rem                         (anchor)
- *   + 46 px                           (top padding 10 + content 36)
+ *     46 px                           (top padding 10 + content 36)
  *   + max(0.5rem, env(safe-area-inset-bottom))
  *                                     (pwa-bottom-nav padding)
  *
@@ -118,8 +116,7 @@ body {
  * desktop sidebar replaces the bottom nav. */
 .bottom-nav-clearance {
   padding-bottom: calc(
-    0.75rem
-    + 2.875rem
+    2.875rem
     + max(0.5rem, env(safe-area-inset-bottom))
     + 1rem
   );
