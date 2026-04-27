@@ -5,8 +5,7 @@ import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { addDays, format, parseISO } from "date-fns";
 import { db } from "~/lib/db/dexie";
-import { useLocale } from "~/hooks/use-translate";
-import { useBilingual } from "~/hooks/use-bilingual";
+import { useLocale, useL } from "~/hooks/use-translate";
 import {
   cycleDayDate,
   getDayRecord,
@@ -56,7 +55,7 @@ export function CycleDayDetail({
   onClose: () => void;
 }) {
   const locale = useLocale();
-  const L = useBilingual();
+  const L = useL();
 
   const date = cycleDayDate(cycle.start_date, dayNumber);
   const fullDate = useMemo(
@@ -176,9 +175,9 @@ export function CycleDayDetail({
                 variant={record?.administered ? "secondary" : "primary"}
                 onClick={() => void toggleAdministered()}
               >
-                <Check className="h-3.5 w-3.5" />
+                <Check className="h-3.5 w-3.5" aria-hidden />
                 {record?.administered
-                  ? L("Administered ✓", "已给药 ✓")
+                  ? L("Administered", "已给药")
                   : L("Mark administered", "标记已给药")}
               </Button>
               <Button

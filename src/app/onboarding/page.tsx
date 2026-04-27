@@ -4,13 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { db, now } from "~/lib/db/dexie";
 import { todayISO } from "~/lib/utils/date";
-import { useLocale, useT } from "~/hooks/use-translate";
-import { useBilingual } from "~/hooks/use-bilingual";
+import { useLocale, useT, useL } from "~/hooks/use-translate";
 import { useSettings } from "~/hooks/use-settings";
 import { useUIStore } from "~/stores/ui-store";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Field, TextInput, Textarea } from "~/components/ui/field";
+import { Alert } from "~/components/ui/alert";
 import { PROTOCOL_LIBRARY, PROTOCOL_BY_ID } from "~/config/protocols";
 import type { ProtocolId } from "~/types/treatment";
 import type { Locale, Settings } from "~/types/clinical";
@@ -23,18 +23,22 @@ import {
 import { cn } from "~/lib/utils/cn";
 
 // Order is load-bearing: welcome + profile + preferences is the "core" path
-// that gets every user onto the dashboard quickly. Team / baselines /
-// treatment are optional detail — skippable via "Finish setup later" so the
-// patient isn't gated behind data they don't have on hand.
-// Patient onboarding walks the full path: profile + team + baselines +
-// treatment are all about the patient's own situation.
+// that gets every user onto the dashboard quickly. Team / treatment are
+// optional detail — skippable via "Finish setup later" so the patient
+// isn't gated behind data they don't have on hand.
+//
+// Baselines (weight, grip, gait speed, sit-to-stand, MUAC, calf) are
+// deliberately NOT collected here. They belong in the first
+// comprehensive assessment, where they are taken with proper
+// instruments and form part of the pillar baseline that subsequent
+// assessments compare against. Onboarding's job is to get the patient
+// onto the dashboard fast; clinical measurements come later.
 const PATIENT_STEPS = [
   "welcome",
   "user_type",
   "profile",
   "preferences",
   "team",
-  "baselines",
   "treatment",
   "done",
 ] as const;
@@ -61,7 +65,6 @@ const CAN_SKIP_FROM: StepKey[] = [
   "profile",
   "preferences",
   "team",
-  "baselines",
   "treatment",
   "pick_patient",
 ];
@@ -73,7 +76,6 @@ const STEP_LABELS: Record<Locale, Record<StepKey, string>> = {
     pick_patient: "Pick a patient",
     profile: "About you",
     team: "Clinical team",
-    baselines: "Baselines",
     treatment: "Treatment",
     preferences: "Preferences",
     done: "All set",
@@ -84,7 +86,6 @@ const STEP_LABELS: Record<Locale, Record<StepKey, string>> = {
     pick_patient: "选择患者",
     profile: "基本信息",
     team: "医疗团队",
-    baselines: "基线数据",
     treatment: "治疗方案",
     preferences: "偏好设置",
     done: "完成",
@@ -105,14 +106,6 @@ interface FormState {
   oncall_phone: string;
   emergency_instructions: string;
   height_cm: string;
-  baseline_weight_kg: string;
-  baseline_grip_dominant_kg: string;
-  baseline_gait_speed_ms: string;
-  baseline_sit_to_stand: string;       // 30-second count
-  baseline_sts_5x_seconds: string;     // 5× STS time
-  baseline_tug_seconds: string;        // Timed Up-and-Go seconds
-  baseline_muac_cm: string;
-  baseline_calf_cm: string;
   start_cycle: boolean;
   protocol_id: ProtocolId;
   cycle_start_date: string;
@@ -134,14 +127,6 @@ const EMPTY: FormState = {
   oncall_phone: "",
   emergency_instructions: "",
   height_cm: "",
-  baseline_weight_kg: "",
-  baseline_grip_dominant_kg: "",
-  baseline_gait_speed_ms: "",
-  baseline_sit_to_stand: "",
-  baseline_sts_5x_seconds: "",
-  baseline_tug_seconds: "",
-  baseline_muac_cm: "",
-  baseline_calf_cm: "",
   start_cycle: false,
   protocol_id: "gnp_weekly",
   cycle_start_date: todayISO(),
@@ -188,26 +173,6 @@ export default function OnboardingPage() {
         oncall_phone: s.oncall_phone ?? "",
         emergency_instructions: s.emergency_instructions ?? "",
         height_cm: s.height_cm ? String(s.height_cm) : "",
-        baseline_weight_kg: s.baseline_weight_kg
-          ? String(s.baseline_weight_kg)
-          : "",
-        baseline_grip_dominant_kg: s.baseline_grip_dominant_kg
-          ? String(s.baseline_grip_dominant_kg)
-          : "",
-        baseline_gait_speed_ms: s.baseline_gait_speed_ms
-          ? String(s.baseline_gait_speed_ms)
-          : "",
-        baseline_sit_to_stand: s.baseline_sit_to_stand
-          ? String(s.baseline_sit_to_stand)
-          : "",
-        baseline_sts_5x_seconds: s.baseline_sts_5x_seconds
-          ? String(s.baseline_sts_5x_seconds)
-          : "",
-        baseline_tug_seconds: s.baseline_tug_seconds
-          ? String(s.baseline_tug_seconds)
-          : "",
-        baseline_muac_cm: s.baseline_muac_cm ? String(s.baseline_muac_cm) : "",
-        baseline_calf_cm: s.baseline_calf_cm ? String(s.baseline_calf_cm) : "",
         locale: s.locale,
         home_city: s.home_city ?? "",
       }));
@@ -288,26 +253,11 @@ export default function OnboardingPage() {
         dob: isCaregiver ? undefined : form.dob || undefined,
         diagnosis_date: isCaregiver ? undefined : form.diagnosis_date || undefined,
         height_cm: isCaregiver ? undefined : toNum(form.height_cm),
-        baseline_weight_kg: isCaregiver ? undefined : toNum(form.baseline_weight_kg),
-        baseline_date:
-          isCaregiver || !form.baseline_weight_kg ? undefined : todayISO(),
-        baseline_grip_dominant_kg: isCaregiver
-          ? undefined
-          : toNum(form.baseline_grip_dominant_kg),
-        baseline_gait_speed_ms: isCaregiver
-          ? undefined
-          : toNum(form.baseline_gait_speed_ms),
-        baseline_sit_to_stand: isCaregiver
-          ? undefined
-          : toNum(form.baseline_sit_to_stand),
-        baseline_sts_5x_seconds: isCaregiver
-          ? undefined
-          : toNum(form.baseline_sts_5x_seconds),
-        baseline_tug_seconds: isCaregiver
-          ? undefined
-          : toNum(form.baseline_tug_seconds),
-        baseline_muac_cm: isCaregiver ? undefined : toNum(form.baseline_muac_cm),
-        baseline_calf_cm: isCaregiver ? undefined : toNum(form.baseline_calf_cm),
+        // Baselines are deliberately NOT collected during onboarding —
+        // they belong in the first comprehensive assessment, where the
+        // measurements can be taken with proper instruments and form
+        // the pillar baseline. The settings row will pick them up the
+        // first time the patient runs through /assessment.
         locale: form.locale,
         managing_oncologist: isCaregiver
           ? undefined
@@ -416,10 +366,29 @@ export default function OnboardingPage() {
           <Anchor className="h-5 w-5 text-[var(--tide-2)]" />
           <div className="serif text-lg tracking-tight">Anchor</div>
         </div>
-        <div className="eyebrow">
+        <div
+          className="eyebrow"
+          aria-current="step"
+          aria-label={
+            locale === "zh"
+              ? `${STEP_LABELS[locale][step]} · 第 ${stepIdx + 1} 步，共 ${steps.length} 步`
+              : `${STEP_LABELS[locale][step]} · step ${stepIdx + 1} of ${steps.length}`
+          }
+        >
           {STEP_LABELS[locale][step]} · {stepIdx + 1}/{steps.length}
         </div>
-        <div className="h-1 w-full overflow-hidden rounded-full bg-ink-100">
+        <div
+          className="h-1 w-full overflow-hidden rounded-full bg-ink-100"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(progress)}
+          aria-label={
+            locale === "zh"
+              ? `第 ${stepIdx + 1} 步，共 ${steps.length} 步`
+              : `Step ${stepIdx + 1} of ${steps.length}`
+          }
+        >
           <div
             className="h-full bg-ink-900 transition-all duration-300"
             style={{ width: `${progress}%` }}
@@ -447,9 +416,6 @@ export default function OnboardingPage() {
       {step === "team" && (
         <TeamStep form={form} update={update} locale={locale} />
       )}
-      {step === "baselines" && (
-        <BaselinesStep form={form} update={update} locale={locale} />
-      )}
       {step === "treatment" && (
         <TreatmentStep form={form} update={update} locale={locale} />
       )}
@@ -467,13 +433,9 @@ export default function OnboardingPage() {
             </Button>
           )}
           {CAN_SKIP_FROM.includes(step) && (
-            <button
-              type="button"
-              onClick={skipToEnd}
-              className="text-[12px] text-ink-500 underline-offset-2 hover:text-ink-800 hover:underline"
-            >
+            <Button variant="ghost" onClick={skipToEnd} className="text-ink-500 hover:text-ink-800">
               {locale === "zh" ? "其余稍后再填" : "Finish setup later"}
-            </button>
+            </Button>
           )}
         </div>
         {step === "done" ? (
@@ -659,7 +621,7 @@ function PickPatientStep({
   onStartFresh: () => void;
   locale: Locale;
 }) {
-  const L = useBilingual();
+  const L = useL();
   const [rows, setRows] = useState<
     Array<{
       id: string;
@@ -768,17 +730,13 @@ function PickPatientStep({
       </p>
 
       {joinedName && (
-        <div className="flex items-start gap-2 rounded-md border border-[var(--ok)]/40 bg-[var(--ok-soft)] p-3 text-[12.5px] text-ink-700">
-          <Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--ok)]" />
-          <div>
-            <div className="font-semibold text-ink-900">
-              {L("You're in.", "已加入。")}
-            </div>
-            <div className="text-ink-500">
-              {L(`Joined ${joinedName}'s care team.`, `已加入 ${joinedName} 的护理团队。`)}
-            </div>
-          </div>
-        </div>
+        <Alert
+          variant="ok"
+          title={L("You're in.", "已加入。")}
+          dense
+        >
+          {L(`Joined ${joinedName}'s care team.`, `已加入 ${joinedName} 的护理团队。`)}
+        </Alert>
       )}
 
       {loading && !joinedName && (
@@ -838,8 +796,8 @@ function PickPatientStep({
         <div className="space-y-3 rounded-md border border-ink-200 bg-paper-2 p-4">
           <div className="text-[12.5px] text-ink-700">
             {L(
-              "Browsing every patient isn't enabled on this server yet. If the patient already has Anchor set up, paste the invite link they sent you.",
-              "本服务器尚未开启患者浏览功能。如对方已在使用 Anchor,请粘贴 ta 发来的邀请链接。",
+              "Paste the invite link the patient sent you to join their care team.",
+              "请粘贴患者发来的邀请链接加入其护理团队。",
             )}
           </div>
           <div className="flex gap-2">
@@ -859,19 +817,13 @@ function PickPatientStep({
               {acceptingInvite ? L("Joining…", "加入中…") : L("Join", "加入")}
             </Button>
           </div>
-          <p className="text-[11.5px] text-ink-400">
-            {L(
-              "Server admin: apply migration 2026_04_24_slice_p_caregiver_onboarding_reload.sql in Supabase to enable the picker.",
-              "服务器管理员:在 Supabase 中应用迁移 2026_04_24_slice_p_caregiver_onboarding_reload.sql 即可启用选择器。",
-            )}
-          </p>
         </div>
       )}
 
       {error && !joinedName && (
-        <div className="rounded-md border border-[var(--warn)]/40 bg-[var(--warn-soft)] p-2.5 text-[12px] text-[var(--warn)]">
+        <Alert variant="warn" dense>
           {error}
-        </div>
+        </Alert>
       )}
 
       {!joinedName && (
@@ -905,7 +857,7 @@ function ProfileStep({
         <TextInput
           value={form.profile_name}
           onChange={(e) => update("profile_name", e.target.value)}
-          placeholder={locale === "zh" ? "例如：胡林" : "e.g. Hu Lin"}
+          placeholder={locale === "zh" ? "您的姓名" : "Your name"}
           autoFocus
         />
       </Field>
@@ -1025,133 +977,6 @@ function TeamStep({
                 ? "体温 ≥ 38 °C、寒战、持续呕吐…"
                 : "Temp ≥ 38 °C, uncontrolled vomiting, new bleeding…"
             }
-          />
-        </Field>
-      </div>
-    </Card>
-  );
-}
-
-function BaselinesStep({
-  form,
-  update,
-  locale,
-}: {
-  form: FormState;
-  update: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
-  locale: Locale;
-}) {
-  return (
-    <Card className="p-6 space-y-4">
-      <div>
-        <div className="serif text-[22px] leading-tight">
-          {locale === "zh" ? "基线数据" : "Baselines"}
-        </div>
-        <p className="mt-1 text-xs text-ink-500">
-          {locale === "zh"
-            ? "用于后续的体重、握力、步速等对比。没有测量过的可以先跳过。"
-            : "Used to compare weight / grip / gait over time. Skip any you haven't measured."}
-        </p>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label={locale === "zh" ? "身高 (cm)" : "Height (cm)"}>
-          <TextInput
-            type="number"
-            step="0.5"
-            value={form.height_cm}
-            onChange={(e) => update("height_cm", e.target.value)}
-          />
-        </Field>
-        <Field label={locale === "zh" ? "体重 (kg)" : "Weight (kg)"}>
-          <TextInput
-            type="number"
-            step="0.1"
-            value={form.baseline_weight_kg}
-            onChange={(e) => update("baseline_weight_kg", e.target.value)}
-          />
-        </Field>
-        <Field
-          label={
-            locale === "zh"
-              ? "握力 — 惯用手 (kg)"
-              : "Grip — dominant (kg)"
-          }
-        >
-          <TextInput
-            type="number"
-            step="0.5"
-            value={form.baseline_grip_dominant_kg}
-            onChange={(e) =>
-              update("baseline_grip_dominant_kg", e.target.value)
-            }
-          />
-        </Field>
-        <Field
-          label={locale === "zh" ? "4 米步速 (m/s)" : "4 m gait speed (m/s)"}
-        >
-          <TextInput
-            type="number"
-            step="0.05"
-            value={form.baseline_gait_speed_ms}
-            onChange={(e) => update("baseline_gait_speed_ms", e.target.value)}
-          />
-        </Field>
-        <Field
-          label={
-            locale === "zh"
-              ? "30 秒坐立次数"
-              : "30 s sit-to-stand (count)"
-          }
-        >
-          <TextInput
-            type="number"
-            step="1"
-            value={form.baseline_sit_to_stand}
-            onChange={(e) => update("baseline_sit_to_stand", e.target.value)}
-          />
-        </Field>
-        <Field
-          label={
-            locale === "zh" ? "5 次坐立 (秒)" : "5× sit-to-stand (s)"
-          }
-        >
-          <TextInput
-            type="number"
-            step="0.1"
-            value={form.baseline_sts_5x_seconds}
-            onChange={(e) =>
-              update("baseline_sts_5x_seconds", e.target.value)
-            }
-          />
-        </Field>
-        <Field
-          label={
-            locale === "zh" ? "起立行走 TUG (秒)" : "Timed Up-and-Go (s)"
-          }
-        >
-          <TextInput
-            type="number"
-            step="0.1"
-            value={form.baseline_tug_seconds}
-            onChange={(e) => update("baseline_tug_seconds", e.target.value)}
-          />
-        </Field>
-        <Field
-          label={locale === "zh" ? "上臂围 MUAC (cm)" : "Upper arm (MUAC, cm)"}
-        >
-          <TextInput
-            type="number"
-            step="0.5"
-            value={form.baseline_muac_cm}
-            onChange={(e) => update("baseline_muac_cm", e.target.value)}
-          />
-        </Field>
-        <Field label={locale === "zh" ? "小腿围 (cm)" : "Calf (cm)"}>
-          <TextInput
-            type="number"
-            step="0.5"
-            value={form.baseline_calf_cm}
-            onChange={(e) => update("baseline_calf_cm", e.target.value)}
           />
         </Field>
       </div>
@@ -1296,7 +1121,26 @@ function PreferencesStep({
   );
 }
 
+const MONTH_SHORT_EN = [
+  "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec",
+] as const;
+
+function formatCycleDate(iso: string, locale: Locale): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return locale === "zh"
+    ? `${y} 年 ${m} 月 ${d} 日`
+    : `${d} ${MONTH_SHORT_EN[(m - 1) as keyof typeof MONTH_SHORT_EN] ?? ""} ${y}`;
+}
+
 function DoneStep({ form, locale }: { form: FormState; locale: Locale }) {
+  const protocolLabel = (() => {
+    if (!form.start_cycle) return locale === "zh" ? "暂未开始" : "Not started";
+    const proto = PROTOCOL_BY_ID[form.protocol_id];
+    const name = proto?.short_name ?? form.protocol_id;
+    return `${name} · ${formatCycleDate(form.cycle_start_date, locale)}`;
+  })();
+
   const rows: Array<[string, string]> = [
     [
       locale === "zh" ? "姓名" : "Name",
@@ -1314,22 +1158,7 @@ function DoneStep({ form, locale }: { form: FormState; locale: Locale }) {
       locale === "zh" ? "24 小时值班" : "24/7 on-call",
       form.oncall_phone || (locale === "zh" ? "未填" : "Not set"),
     ],
-    [
-      locale === "zh" ? "体重基线" : "Weight baseline",
-      form.baseline_weight_kg
-        ? `${form.baseline_weight_kg} kg`
-        : locale === "zh"
-          ? "未填"
-          : "Not set",
-    ],
-    [
-      locale === "zh" ? "方案" : "Protocol",
-      form.start_cycle
-        ? `${form.protocol_id} · ${form.cycle_start_date}`
-        : locale === "zh"
-          ? "暂未开始"
-          : "Not started",
-    ],
+    [locale === "zh" ? "方案" : "Protocol", protocolLabel],
   ];
 
   return (

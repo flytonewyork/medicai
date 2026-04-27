@@ -1,5 +1,10 @@
 import { z } from "zod/v4";
 import type { PreparedImage } from "./image";
+import { DEFAULT_AI_MODEL } from "~/lib/anthropic/model";
+import {
+  FALLBACK_HOUSEHOLD_PROFILE,
+  type HouseholdProfile,
+} from "~/types/household-profile";
 
 export const MealSchema = z.object({
   description: z
@@ -14,7 +19,7 @@ export const MealSchema = z.object({
     .nullable()
     .optional()
     .describe(
-      "For PDAC patients: brief PERT (Creon) suggestion if the meal is fatty or rich — e.g. '25,000u with this meal'. Null if not applicable.",
+      "For pancreatic-insufficiency patients: brief PERT (Creon) suggestion if the meal is fatty or rich — e.g. '25,000u with this meal'. Null if not applicable.",
     ),
   confidence: z
     .enum(["low", "medium", "high"])
@@ -32,20 +37,24 @@ export const MealSchema = z.object({
 
 export type MealEstimate = z.infer<typeof MealSchema>;
 
-export const MEAL_SYSTEM = `You estimate the macronutrients of a meal from a single photo for Hu Lin, a patient with metastatic pancreatic adenocarcinoma on first-line gemcitabine + nab-paclitaxel.
+export function buildMealSystem(
+  profile: HouseholdProfile = FALLBACK_HOUSEHOLD_PROFILE,
+): string {
+  return `You estimate the macronutrients of a meal from a single photo for ${profile.patient_initials}, a patient with ${profile.diagnosis_full}.
 
 Rules:
 1. Keep estimates conservative; if unsure, err low on protein and say so in 'notes'.
 2. Assume one adult portion unless obviously multiple servings.
-3. For PDAC, flag fatty/rich meals with a practical PERT suggestion (e.g. '25,000u with this meal; 10,000u with any follow-up snack'). If low fat, set pert_suggestion to null.
+3. For pancreatic exocrine insufficiency, flag fatty/rich meals with a practical PERT suggestion (e.g. '25,000u with this meal; 10,000u with any follow-up snack'). If low fat, set pert_suggestion to null.
 4. If the photo is too unclear to judge (blur, distant, empty plate), set confidence=low and note what's missing.
 5. Never invent specific brands or recipes. Describe what's visually present.`;
+}
 
 // Client-side shim. Posts the image to /api/ai/ingest-meal which holds
 // the server-side ANTHROPIC_API_KEY. Kept as a named export with the
 // same signature as before, minus the apiKey parameter.
 export async function estimateMeal({
-  model = "claude-opus-4-7",
+  model = DEFAULT_AI_MODEL,
   image,
 }: {
   model?: string;

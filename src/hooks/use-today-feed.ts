@@ -10,11 +10,11 @@ import {
   latestLabs,
   latestTreatmentCycles,
 } from "~/lib/db/queries";
+import { useSettings } from "~/hooks/use-settings";
 import { composeTodayFeed } from "~/lib/nudges/compose";
 import { PROTOCOL_BY_ID } from "~/config/protocols";
 import { NUDGE_LIBRARY } from "~/config/treatment-nudges";
 import { todayISO } from "~/lib/utils/date";
-import { useSettings } from "~/hooks/use-settings";
 import type { FeedItem } from "~/types/feed";
 import type { CycleContext, NudgeTemplate } from "~/types/treatment";
 import type { CurrentWeather } from "~/lib/weather/open-meteo";

@@ -52,16 +52,35 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" data-theme="light" style={{ colorScheme: "light" }}>
       <body>
         <Providers>
-          <div className="flex min-h-[100dvh] bg-paper pwa-safe-top">
+          <div className="flex min-h-[100dvh] bg-paper md:h-[100dvh] md:pt-[env(safe-area-inset-top)]">
             <DesktopSidebar />
-            <div className="flex min-w-0 flex-1 flex-col">
-              <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-ink-100/60 bg-paper-2/70 px-4 backdrop-blur-md md:hidden md:px-6">
+            <div className="flex min-w-0 flex-1 flex-col md:h-full">
+              {/* Mobile header height is fixed at 3.5rem in normal browser
+               * mode and grows by the safe-area inset only when the page is
+               * launched as a PWA / Capacitor standalone app — see
+               * `.mobile-header` in globals.css for the rationale. Adding
+               * the inset unconditionally caused the header to elongate
+               * on scroll in mobile Safari, because Safari with
+               * viewport-fit=cover reports the inset as 0 while the URL
+               * bar is visible and as the notch height once the URL bar
+               * collapses. */}
+              <header
+                className="mobile-header sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-ink-100/60 bg-paper-2/70 px-4 backdrop-blur-md md:hidden md:px-6"
+              >
                 <div className="serif text-[17px] tracking-tight text-ink-900">
                   Anchor
                 </div>
                 <MobileMoreMenu />
               </header>
-              <main className="flex-1 overflow-y-auto pb-[calc(7rem+env(safe-area-inset-bottom))] md:pb-6">
+              {/* Use document-body scroll on mobile so iOS Safari's URL bar
+               * collapses naturally on scroll. An earlier setup put
+               * `overflow-y-auto` here, which made <main> the scroll context
+               * — Safari only collapses the URL bar in response to body
+               * scroll, so users got stuck with ~50px of permanent URL-bar
+               * chrome on every page. On desktop we keep the internal scroll
+               * (md:overflow-y-auto + md:h-[100dvh] on the column) so the
+               * sidebar stays put while the main pane scrolls. */}
+              <main className="bottom-nav-clearance flex-1 md:overflow-y-auto">
                 {children}
               </main>
             </div>

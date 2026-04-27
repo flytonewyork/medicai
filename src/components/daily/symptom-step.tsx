@@ -1,7 +1,7 @@
 "use client";
 
 import { useSettings } from "~/hooks/use-settings";
-import { pickL } from "~/hooks/use-bilingual";
+import { pickL } from "~/hooks/use-translate";
 import type { DailyEntry } from "~/types/clinical";
 import {
   SYMPTOM_CATALOG,
@@ -46,7 +46,7 @@ export function SymptomStep({
     useSettings()?.tracked_symptoms ?? defaultTrackedSymptomIds();
   const rows = rankTrackedSymptoms(trackedIds, { inChemoWindow });
 
-  const L = (en: string, zh: string) => pickL(locale, en, zh);
+  const L = pickL(locale);
 
   if (rows.length === 0) {
     return (
@@ -103,6 +103,15 @@ export function SymptomStep({
                 </Field>
               </div>
             )}
+            {s.id === "taste_changes" &&
+              typeof draft.taste_changes === "number" &&
+              draft.taste_changes >= 1 && (
+                <TasteIssueChips
+                  value={draft.taste_issue}
+                  onChange={(v) => patch("taste_issue", v)}
+                  locale={locale}
+                />
+              )}
           </li>
         ))}
       </ul>
@@ -236,4 +245,57 @@ function SymptomRow({
       );
     }
   }
+}
+
+const TASTE_ISSUE_OPTIONS: Array<{
+  value: NonNullable<DailyEntry["taste_issue"]>;
+  en: string;
+  zh: string;
+}> = [
+  { value: "too_sweet", en: "Too sweet", zh: "过甜" },
+  { value: "too_salty", en: "Too salty", zh: "过咸" },
+  { value: "too_bland", en: "Too bland", zh: "寡淡" },
+  { value: "metallic", en: "Metallic", zh: "金属味" },
+];
+
+function TasteIssueChips({
+  value,
+  onChange,
+  locale,
+}: {
+  value: DailyEntry["taste_issue"];
+  onChange: (v: DailyEntry["taste_issue"] | undefined) => void;
+  locale: "en" | "zh";
+}) {
+  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  return (
+    <div className="mt-2 space-y-1.5">
+      <div className="text-[11px] text-ink-500">
+        {L(
+          "Which way is taste off? (JPCC tweaks for each)",
+          "味觉偏向哪一侧？（JPCC 提供针对性建议）",
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {TASTE_ISSUE_OPTIONS.map((opt) => {
+          const active = value === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onChange(active ? undefined : opt.value)}
+              className={cn(
+                "rounded-full border px-2.5 py-1 text-[11px] transition-colors",
+                active
+                  ? "border-ink-900 bg-ink-900 text-paper"
+                  : "border-ink-200 bg-paper text-ink-700 hover:border-ink-300",
+              )}
+            >
+              {locale === "zh" ? opt.zh : opt.en}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }

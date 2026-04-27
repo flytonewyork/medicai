@@ -1,5 +1,6 @@
 import { db } from "~/lib/db/dexie";
 import type { Table } from "dexie";
+import type { Settings } from "~/types/clinical";
 
 // Canonical "newest-first" queries for each table. Each helper fixes the
 // table-to-index pairing in one place so ad-hoc callsites can't drift from
@@ -12,6 +13,12 @@ function latest<T>(
 ): Promise<T[]> {
   const q = table.orderBy(indexField).reverse();
   return (typeof limit === "number" ? q.limit(limit) : q).toArray();
+}
+
+// Non-reactive read of the singleton Settings row. For React components
+// use the `useSettings()` hook instead.
+export async function getSettings(): Promise<Settings | null> {
+  return (await db.settings.toCollection().first()) ?? null;
 }
 
 export const latestDailyEntries = (limit?: number) =>

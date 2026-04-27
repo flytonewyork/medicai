@@ -8,6 +8,7 @@
 :root {
   --ink-900: oklch(22% 0.015 250);
   --ink-700: oklch(35% 0.015 250);
+  --ink-600: oklch(44% 0.014 250);
   --ink-500: oklch(52% 0.012 250);
   --ink-400: oklch(65% 0.010 250);
   --ink-300: oklch(78% 0.008 250);
@@ -53,6 +54,7 @@ html[data-theme="dark"] :root,
   --ink-300: oklch(44% 0.010 250);
   --ink-400: oklch(60% 0.010 250);
   --ink-500: oklch(72% 0.010 250);
+  --ink-600: oklch(80% 0.009 250);
   --ink-700: oklch(88% 0.008 250);
   --ink-900: oklch(96% 0.006 250);
   --tide-soft: oklch(32% 0.05 210);
@@ -92,6 +94,103 @@ body {
 @supports (padding: max(0px)) {
   .pwa-bottom-nav {
     padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Page-content clearance for the floating bottom nav. Single source
+ * of truth so this stays in sync with the nav's own anchor + height
+ * math (above).
+ *
+ * The nav is anchored flush with the viewport bottom (`bottom-0`)
+ * and uses internal padding-bottom of max(0.5rem, env(safe-area-
+ * inset-bottom)) to keep its icons above the iOS home indicator.
+ * The page must clear the nav's *visual* top edge:
+ *
+ *   nav_top_from_viewport_bottom =
+ *     46 px                           (top padding 10 + content 36)
+ *   + max(0.5rem, env(safe-area-inset-bottom))
+ *                                     (pwa-bottom-nav padding)
+ *
+ * Plus a 1rem visual gap so the last line of content doesn't kiss
+ * the nav glass. md+ drops back to a flat 1.5rem because the
+ * desktop sidebar replaces the bottom nav. */
+.bottom-nav-clearance {
+  padding-bottom: calc(
+    2.875rem
+    + max(0.5rem, env(safe-area-inset-bottom))
+    + 1rem
+  );
+}
+@media (min-width: 768px) {
+  .bottom-nav-clearance {
+    padding-bottom: 1.5rem;
+  }
+}
+
+/* Floating add button: clears the mobile bottom nav (which is itself
+ * anchored at max(0.75rem, env(safe-area-inset-bottom)) and includes
+ * its own internal home-indicator padding). The nav's rendered height
+ * is ~74px (icon + label + py-2.5 padding) and its top edge sits
+ * at viewport-bottom + 12px on regular browsers, +34px on iOS PWA
+ * with the home indicator. The FAB needs to clear that with a small
+ * visual gap, otherwise it overlaps the nav rounded corners.
+ *
+ * Math: nav-bottom-offset (max 0.75rem | inset) + nav-height (~74px)
+ *       + visual gap (12px) ≈ 6.5rem + inset.
+ * Desktop (≥md) drops it back to 1.5rem from the viewport bottom. */
+.add-fab {
+  bottom: calc(6.5rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  .add-fab {
+    bottom: 1.5rem;
+  }
+}
+
+/* Mobile sticky header height + padding.
+ *
+ * Default (non-standalone Safari / Chrome): a constant 3.5rem (h-14, 56px).
+ * We do NOT add `env(safe-area-inset-top)` here, because in iOS Safari
+ * with `viewport-fit=cover` the inset is reported as 0 while the URL bar
+ * is visible and as the notch height (~47px) once the URL bar collapses
+ * on scroll — which used to make the header grow mid-scroll. The
+ * browser's own URL bar is the safe-area chrome in that mode, so we
+ * don't need to pad for the status bar ourselves.
+ *
+ * Standalone (PWA + Capacitor iOS): the inset is constant for the
+ * lifetime of the session — the WebView paints under the status bar
+ * because of `apple-mobile-web-app-status-bar-style: black-translucent`.
+ * The nav-row content is sized at 2.75rem (44px) to match iOS native
+ * navigation-bar height; the inset is added on top as `padding-top` so
+ * the header background still covers the status-bar zone. Total visual
+ * height on a notched iPhone is ~91px (47 inset + 44 nav), matching
+ * what users expect from a native iOS app.
+ *
+ * The `display-mode: standalone` guard is the standard PWA detection;
+ * Capacitor's WebView reports standalone as well, so it covers iOS
+ * shell + browser-installed PWA.
+ */
+.mobile-header {
+  height: 3.5rem;
+  padding-top: 0;
+}
+@media all and (display-mode: standalone) {
+  .mobile-header {
+    height: calc(2.75rem + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* iOS Safari auto-zooms the layout viewport whenever a focused input has
+ * a computed font-size below 16px, which breaks the standalone /
+ * full-screen feel in both the PWA and the Capacitor WebView. Lock form
+ * fields to 16px on touch devices so the page stops shifting on focus.
+ * Desktop keeps the smaller 14px scale set by component classes. */
+@media (hover: none) and (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
   }
 }
 

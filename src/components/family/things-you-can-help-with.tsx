@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
-import { useLocale } from "~/hooks/use-translate";
-import { useBilingual } from "~/hooks/use-bilingual";
+import { useLocale, useL } from "~/hooks/use-translate";
 import { Card, CardContent } from "~/components/ui/card";
 import { ChevronRight, ListChecks } from "lucide-react";
 import type { TaskCategory } from "~/types/task";
@@ -25,7 +24,7 @@ const CAREGIVER_CATEGORIES: readonly TaskCategory[] = [
 
 export function ThingsYouCanHelpWith() {
   const locale = useLocale();
-  const L = useBilingual();
+  const L = useL();
 
   const tasks = useLiveQuery(async () => {
     const all = await db.patient_tasks.toArray();

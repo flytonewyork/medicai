@@ -3,10 +3,12 @@
 import { useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
-import { useLocale } from "~/hooks/use-translate";
-import { useBilingual } from "~/hooks/use-bilingual";
+import { todayISO } from "~/lib/utils/date";
+import { useLocale, useL } from "~/hooks/use-translate";
 import { generateFollowUps, type FollowUpItem } from "~/lib/log/follow-ups";
 import { addDiscussionItem } from "~/lib/appointments/discussion-items";
+import { nextAppointment } from "~/lib/appointments/upcoming";
+import { postJson } from "~/lib/utils/http";
 import type { DirectFileResult } from "~/lib/log/direct-file";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -21,7 +23,6 @@ import {
   ChevronRight,
   Loader2,
 } from "lucide-react";
-import type { Appointment } from "~/types/appointment";
 import { cn } from "~/lib/utils/cn";
 
 // Renders ranked next-step suggestions for a direct-filed data point.
@@ -59,7 +60,7 @@ const SEVERITY_STYLES: Record<
 
 export function FollowUpsCard({ filed }: { filed: DirectFileResult }) {
   const locale = useLocale();
-  const L = useBilingual();
+  const L = useL();
 
   const team = useLiveQuery(() => db.care_team.toArray(), []);
   const nextClinic = useLiveQuery(async () => {
@@ -67,12 +68,11 @@ export function FollowUpsCard({ filed }: { filed: DirectFileResult }) {
       .where("[kind+starts_at]")
       .between(["clinic", ""], ["clinic", "￿"])
       .toArray();
-    const now = Date.now();
-    return rows
-      .filter((a) => a.status !== "cancelled" && a.status !== "missed")
-      .map((a) => ({ a, t: new Date(a.starts_at).getTime() }))
-      .filter(({ t }) => Number.isFinite(t) && t >= now)
-      .sort((x, y) => x.t - y.t)[0]?.a as Appointment | undefined;
+    return (
+      nextAppointment(rows, {
+        excludeStatuses: ["cancelled", "missed"],
+      }) ?? undefined
+    );
   }, []);
 
   const items = useMemo(() => {
@@ -120,7 +120,7 @@ function FollowUpRow({
   item: FollowUpItem;
   locale: "en" | "zh";
 }) {
-  const L = useBilingual();
+  const L = useL();
   const style = SEVERITY_STYLES[item.severity];
   return (
     <div
@@ -187,7 +187,7 @@ function ActionChip({
   action: FollowUpItem["actions"][number];
   locale: "en" | "zh";
 }) {
-  const L = useBilingual();
+  const L = useL();
   const [status, setStatus] =
     useState<"idle" | "working" | "done" | "error">("idle");
 
@@ -207,17 +207,12 @@ function ActionChip({
         window.location.href = action.target;
         setStatus("done");
       } else if (action.kind === "engage_agent") {
-        const res = await fetch(`/api/agent/${action.agent_id}/run`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            date: new Date().toISOString().slice(0, 10),
-            locale,
-            trigger: "on_demand",
-            referrals: [{ kind: "text", text: action.prompt }],
-          }),
+        await postJson(`/api/agent/${action.agent_id}/run`, {
+          date: todayISO(),
+          locale,
+          trigger: "on_demand",
+          referrals: [{ kind: "text", text: action.prompt }],
         });
-        if (!res.ok) throw new Error(await res.text());
         setStatus("done");
       }
     } catch {

@@ -53,7 +53,7 @@ export const ANALYTES: AnalyteDef[] = [
     preferred: "low",
     group: "tumour_marker",
     note: {
-      en: "Primary PDAC tumour marker. Trend matters more than any single value.",
+      en: "Primary pancreatic-cancer tumour marker. Trend matters more than any single value.",
       zh: "胰腺癌主要肿瘤标志物。趋势比单次数值更重要。",
     },
   },

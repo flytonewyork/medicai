@@ -6,8 +6,9 @@ import { useLocale } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Disclosure } from "~/components/ui/disclosure";
+import { Alert } from "~/components/ui/alert";
 import { DRUGS_BY_ID } from "~/config/drug-registry";
-import { ArrowLeft } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "~/components/ui/button";
 
 export default function MedicationDetailPage() {
@@ -41,25 +42,22 @@ export default function MedicationDetailPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-8">
-      <div className="flex items-center gap-2">
-        <Link href="/medications">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-ink-900">{displayName}</h1>
-          <p className="text-sm text-ink-500">{displayClass}</p>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow={displayClass}
+        title={displayName}
+        action={
+          <Link href="/medications">
+            <Button variant="ghost" size="sm" className="gap-2">
+              <ArrowLeft className="h-4 w-4" aria-hidden />
+            </Button>
+          </Link>
+        }
+      />
 
       {drug.aliases.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           {drug.aliases.map((alias) => (
-            <span
-              key={alias}
-              className="rounded-full bg-paper-1 px-2.5 py-1 text-xs font-medium text-ink-600"
-            >
+            <span key={alias} className="a-chip">
               {alias}
             </span>
           ))}
@@ -91,9 +89,7 @@ export default function MedicationDetailPage() {
         <CardContent className="space-y-3">
           {drug.typical_doses.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase text-ink-500">
-                Typical doses
-              </p>
+              <p className="eyebrow mb-2">Typical doses</p>
               <ul className="space-y-1">
                 {drug.typical_doses.map((dose, i) => (
                   <li key={i} className="text-sm text-ink-700">
@@ -106,12 +102,13 @@ export default function MedicationDetailPage() {
 
           {drug.default_schedules.length > 0 && (
             <div className="border-t border-ink-100 pt-3">
-              <p className="mb-2 text-xs font-semibold uppercase text-ink-500">
-                Schedule
-              </p>
+              <p className="eyebrow mb-2">Schedule</p>
               <ul className="space-y-2">
                 {drug.default_schedules.map((sched, i) => (
-                  <li key={i} className="rounded bg-paper-1 p-2 text-sm">
+                  <li
+                    key={i}
+                    className="rounded-[var(--r-sm)] bg-ink-100/60 p-2.5 text-sm"
+                  >
                     <div className="font-medium text-ink-900">
                       {sched.label
                         ? locale === "zh"
@@ -120,8 +117,8 @@ export default function MedicationDetailPage() {
                         : `Schedule ${i + 1}`}
                     </div>
                     {sched.kind && (
-                      <div className="mt-1 text-xs text-ink-500">
-                        Kind: <span className="font-mono">{sched.kind}</span>
+                      <div className="mono mt-1 text-[11px] text-ink-500">
+                        {sched.kind}
                       </div>
                     )}
                   </li>
@@ -163,8 +160,14 @@ export default function MedicationDetailPage() {
             >
               <ul className="space-y-2 text-sm">
                 {drug.side_effects.serious.map((effect, i) => (
-                  <li key={i} className="flex gap-2 text-red-700">
-                    <span className="font-bold text-red-600">⚠</span>
+                  <li
+                    key={i}
+                    className="flex items-start gap-2 text-[var(--warn)]"
+                  >
+                    <AlertTriangle
+                      className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                      aria-hidden
+                    />
                     <span>
                       {locale === "zh" ? effect.zh : effect.en}
                     </span>
@@ -185,8 +188,11 @@ export default function MedicationDetailPage() {
           <CardContent>
             <ul className="space-y-2">
               {drug.monitoring.map((monitor, i) => (
-                <li key={i} className="flex gap-2 text-sm text-ink-700">
-                  <span className="text-ink-300">→</span>
+                <li key={i} className="flex items-start gap-2 text-sm text-ink-700">
+                  <ArrowRight
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-300"
+                    aria-hidden
+                  />
                   <span>
                     {locale === "zh" ? monitor.zh : monitor.en}
                   </span>
@@ -205,25 +211,19 @@ export default function MedicationDetailPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {drug.diet_interactions.map((interaction, i) => (
-              <div
+              <Alert
                 key={i}
-                className={`rounded border p-3 ${
-                  interaction.severity === "warning"
-                    ? "border-red-200 bg-red-50"
-                    : "border-yellow-200 bg-yellow-50"
-                }`}
-              >
-                <div className="font-medium text-ink-900">
-                  {locale === "zh"
+                variant={interaction.severity === "warning" ? "warn" : "info"}
+                title={
+                  locale === "zh"
                     ? interaction.food.zh
-                    : interaction.food.en}
-                </div>
-                <div className="mt-1 text-sm text-ink-700">
-                  {locale === "zh"
-                    ? interaction.effect.zh
-                    : interaction.effect.en}
-                </div>
-              </div>
+                    : interaction.food.en
+                }
+              >
+                {locale === "zh"
+                  ? interaction.effect.zh
+                  : interaction.effect.en}
+              </Alert>
             ))}
           </CardContent>
         </Card>

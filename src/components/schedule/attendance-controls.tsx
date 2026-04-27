@@ -8,8 +8,7 @@ import {
   statusFor,
   type PendingOrStatus,
 } from "~/lib/appointments/attendance";
-import { useLocale } from "~/hooks/use-translate";
-import { useBilingual } from "~/hooks/use-bilingual";
+import { useLocale, useL } from "~/hooks/use-translate";
 import type { Appointment } from "~/types/appointment";
 import { Check, Clock, X, CircleDashed } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
@@ -51,7 +50,7 @@ export function AttendanceControls({
   const localeCtx = useLocale();
   const locale = localeOverride ?? localeCtx;
   const { profilesById } = useHouseholdProfiles();
-  const L = useBilingual();
+  const L = useL();
 
   const members = Array.from(profilesById.values());
 

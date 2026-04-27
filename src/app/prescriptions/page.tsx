@@ -5,8 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
-import { useLocale } from "~/hooks/use-translate";
-import { useBilingual } from "~/hooks/use-bilingual";
+import { useLocale, useL } from "~/hooks/use-translate";
 import {
   ensureCycleMedications,
   getActiveMedications,
@@ -18,6 +17,7 @@ import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Field, TextInput } from "~/components/ui/field";
 import type { Medication } from "~/types/medication";
+import { todayISO } from "~/lib/utils/date";
 import {
   ArrowLeft,
   Check,
@@ -78,7 +78,7 @@ function Inner() {
     seeded,
   ]);
 
-  const L = useBilingual();
+  const L = useL();
 
   const grouped = useMemo(() => {
     const protocolMeds: Medication[] = [];
@@ -206,7 +206,7 @@ function NewPrescriptionForm({ locale }: { locale: "en" | "zh" }) {
   const [dose, setDose] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
-  const L = useBilingual();
+  const L = useL();
 
   async function save() {
     if (!name.trim()) return;
@@ -228,7 +228,7 @@ function NewPrescriptionForm({ locale }: { locale: "en" | "zh" }) {
         source: "user_added",
         active: true,
         notes: notes.trim() || undefined,
-        started_on: new Date().toISOString().slice(0, 10),
+        started_on: todayISO(),
         created_at: now(),
         updated_at: now(),
       });
@@ -292,7 +292,7 @@ function PrescriptionRow({
     (locale === "zh" ? catalogue?.name.zh : catalogue?.name.en) ??
     med.display_name ??
     med.drug_id;
-  const L = useBilingual();
+  const L = useL();
 
   const [editing, setEditing] = useState(false);
   const [dose, setDose] = useState(med.dose ?? "");

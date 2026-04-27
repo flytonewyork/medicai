@@ -14,9 +14,36 @@ import { cn } from "~/lib/utils/cn";
 import { Check, Thermometer } from "lucide-react";
 
 const SCALES = [
-  { key: "energy", good: "high" as const, labelEn: "Energy", labelZh: "精力" },
-  { key: "pain", good: "low" as const, labelEn: "Pain", labelZh: "疼痛" },
-  { key: "nausea", good: "low" as const, labelEn: "Nausea", labelZh: "恶心" },
+  {
+    key: "energy",
+    good: "high" as const,
+    labelEn: "Energy",
+    labelZh: "精力",
+    anchorLoEn: "none",
+    anchorHiEn: "full",
+    anchorLoZh: "无",
+    anchorHiZh: "充沛",
+  },
+  {
+    key: "pain",
+    good: "low" as const,
+    labelEn: "Pain",
+    labelZh: "疼痛",
+    anchorLoEn: "none",
+    anchorHiEn: "worst",
+    anchorLoZh: "无",
+    anchorHiZh: "最痛",
+  },
+  {
+    key: "nausea",
+    good: "low" as const,
+    labelEn: "Nausea",
+    labelZh: "恶心",
+    anchorLoEn: "none",
+    anchorHiEn: "severe",
+    anchorLoZh: "无",
+    anchorHiZh: "严重",
+  },
 ] as const;
 
 type ScaleKey = (typeof SCALES)[number]["key"];
@@ -39,8 +66,12 @@ export function QuickCheckinCard() {
   const [feverTemp, setFeverTemp] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [justSaved, setJustSaved] = useState(false);
 
-  if (existing) return null;
+  // After save, the live query picks up `existing` and unmounts this card.
+  // The transient "Saved" flash below bridges the gap so the patient sees
+  // acknowledgment before the card disappears.
+  if (existing && !justSaved) return null;
 
   async function save() {
     setSaving(true);
@@ -48,26 +79,21 @@ export function QuickCheckinCard() {
     try {
       const ts = now();
       const tempNum = Number.parseFloat(feverTemp);
+      // Only write the three scales the patient actually touched +
+      // fever (which has its own toggle). Per CLINICAL_FRAMEWORK.md,
+      // every clinical field is optional — undefined means "not
+      // entered today", which is the correct semantic when the
+      // patient took the 30-second card path. Hardcoding 5s for
+      // sleep / appetite / mood would lie to the rule engine and
+      // pollute trends.
       await db.daily_entries.add({
         date: today,
         entered_at: ts,
         entered_by: enteredBy,
         energy: values.energy,
-        sleep_quality: 5,
-        appetite: 5,
         pain_worst: values.pain,
         pain_current: values.pain,
-        mood_clarity: 5,
         nausea: values.nausea,
-        practice_morning_completed: false,
-        practice_evening_completed: false,
-        cold_dysaesthesia: false,
-        neuropathy_hands: 0,
-        neuropathy_feet: 0,
-        mouth_sores: false,
-        diarrhoea_count: 0,
-        new_bruising: false,
-        dyspnoea: false,
         fever,
         fever_temp: fever && Number.isFinite(tempNum) ? tempNum : undefined,
         created_at: ts,
@@ -86,6 +112,7 @@ export function QuickCheckinCard() {
             : "Saved, but the alert check didn't run.",
         );
       }
+      setJustSaved(true);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("[quick-checkin] save failed", err);
@@ -97,6 +124,37 @@ export function QuickCheckinCard() {
     } finally {
       setSaving(false);
     }
+  }
+
+  if (justSaved) {
+    return (
+      <Card className="p-5">
+        <div className="flex items-start gap-3">
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
+            style={{ background: "var(--ok-soft)", color: "var(--ok)" }}
+          >
+            <Check className="h-4 w-4" strokeWidth={3} />
+          </div>
+          <div className="flex-1">
+            <div className="text-[13px] font-semibold text-ink-900">
+              {locale === "zh" ? "今日已记录" : "Saved for today"}
+            </div>
+            <p className="mt-0.5 text-[12.5px] text-ink-500">
+              {locale === "zh"
+                ? "想补充细节？"
+                : "Want to add detail?"}{" "}
+              <Link
+                href="/daily/new"
+                className="text-[var(--tide-2)] hover:underline"
+              >
+                {locale === "zh" ? "完整日志" : "Full log"}
+              </Link>
+            </p>
+          </div>
+        </div>
+      </Card>
+    );
   }
 
   return (
@@ -125,6 +183,8 @@ export function QuickCheckinCard() {
           <ScaleRow
             key={s.key}
             label={locale === "zh" ? s.labelZh : s.labelEn}
+            anchorLo={locale === "zh" ? s.anchorLoZh : s.anchorLoEn}
+            anchorHi={locale === "zh" ? s.anchorHiZh : s.anchorHiEn}
             value={values[s.key]}
             onChange={(v) =>
               setValues((prev) => ({ ...prev, [s.key]: v }))
@@ -168,10 +228,14 @@ export function QuickCheckinCard() {
 
 function ScaleRow({
   label,
+  anchorLo,
+  anchorHi,
   value,
   onChange,
 }: {
   label: string;
+  anchorLo?: string;
+  anchorHi?: string;
   value: number;
   onChange: (v: number) => void;
 }) {
@@ -186,7 +250,21 @@ function ScaleRow({
           </span>
         </span>
       </div>
-      <div className="mt-2 grid grid-cols-11 gap-1.5">
+      {(anchorLo || anchorHi) && (
+        <div className="mt-1 flex justify-between">
+          {anchorLo && (
+            <span className="mono text-[9.5px] uppercase tracking-wider text-ink-400">
+              0 = {anchorLo}
+            </span>
+          )}
+          {anchorHi && (
+            <span className="mono text-[9.5px] uppercase tracking-wider text-ink-400">
+              10 = {anchorHi}
+            </span>
+          )}
+        </div>
+      )}
+      <div className="mt-1.5 grid grid-cols-11 gap-1.5">
         {Array.from({ length: 11 }, (_, n) => {
           const on = n === value;
           return (

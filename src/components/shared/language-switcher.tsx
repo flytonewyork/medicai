@@ -9,7 +9,7 @@ export function LanguageSwitcher({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "inline-flex rounded-full border border-slate-200 dark:border-slate-800 text-xs overflow-hidden",
+        "inline-flex overflow-hidden rounded-full border border-ink-200 text-xs",
         className,
       )}
       role="group"
@@ -18,10 +18,10 @@ export function LanguageSwitcher({ className }: { className?: string }) {
         type="button"
         onClick={() => setLocale("en")}
         className={cn(
-          "px-3 py-1",
+          "mono px-3 py-1 tracking-[0.06em] transition-colors",
           locale === "en"
-            ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-            : "text-slate-600 dark:text-slate-400",
+            ? "bg-ink-900 text-paper"
+            : "text-ink-500 hover:bg-ink-100/60 hover:text-ink-700",
         )}
       >
         EN
@@ -30,10 +30,10 @@ export function LanguageSwitcher({ className }: { className?: string }) {
         type="button"
         onClick={() => setLocale("zh")}
         className={cn(
-          "px-3 py-1",
+          "px-3 py-1 transition-colors",
           locale === "zh"
-            ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-            : "text-slate-600 dark:text-slate-400",
+            ? "bg-ink-900 text-paper"
+            : "text-ink-500 hover:bg-ink-100/60 hover:text-ink-700",
         )}
       >
         中文

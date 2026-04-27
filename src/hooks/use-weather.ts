@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSettings } from "~/hooks/use-settings";
 import {
   fetchCurrentWeather,
   type CurrentWeather,
 } from "~/lib/weather/open-meteo";
-import { useSettings } from "~/hooks/use-settings";
 
 const CACHE_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
 

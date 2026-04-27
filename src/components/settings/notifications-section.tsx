@@ -8,8 +8,7 @@ import {
   getPushSupport,
   sendTestPush,
 } from "~/lib/push/client";
-import { useLocale } from "~/hooks/use-translate";
-import { useBilingual } from "~/hooks/use-bilingual";
+import { useLocale, useL } from "~/hooks/use-translate";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Bell, BellOff, Check, AlertCircle } from "lucide-react";
@@ -32,7 +31,7 @@ export function NotificationsSection() {
   const [busy, setBusy] = useState<"enable" | "disable" | "test" | null>(null);
   const [testedOk, setTestedOk] = useState(false);
 
-  const L = useBilingual();
+  const L = useL();
 
   const refresh = useCallback(async () => {
     const support = getPushSupport();
@@ -162,10 +161,13 @@ export function NotificationsSection() {
                     onClick={onTest}
                     disabled={busy !== null}
                   >
+                    {testedOk && busy !== "test" && (
+                      <Check className="h-4 w-4" aria-hidden />
+                    )}
                     {busy === "test"
                       ? L("Sending…", "发送中…")
                       : testedOk
-                        ? L("Sent ✓", "已发送 ✓")
+                        ? L("Sent", "已发送")
                         : L("Send test", "测试一下")}
                   </Button>
                   <Button
@@ -209,7 +211,7 @@ function UnsupportedNote({
   reason: string;
   locale: "en" | "zh";
 }) {
-  const L = useBilingual();
+  const L = useL();
   const label =
     reason === "no-service-worker"
       ? L("Your browser doesn't support service workers.", "此浏览器不支持 Service Worker。")

@@ -16,9 +16,11 @@ import { LOG_TAGS, type AgentId, type LogTag } from "~/types/agent";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Field, Textarea } from "~/components/ui/field";
+import { Alert } from "~/components/ui/alert";
 import { PageHeader } from "~/components/ui/page-header";
 import { cn } from "~/lib/utils/cn";
-import { Send, Sparkles, Check, Loader2, ArrowLeft } from "lucide-react";
+import { Send, Sparkles, Check, Loader2, ArrowLeft, Mic, MicOff } from "lucide-react";
+import { useSpeechRecognition } from "~/hooks/use-speech-recognition";
 
 const TAG_LABELS: Record<LogTag, { en: string; zh: string }> = {
   diet: { en: "diet", zh: "饮食" },
@@ -74,6 +76,16 @@ export default function LogPage() {
   const [run, setRun] = useState<RunState>({ kind: "idle" });
 
   const enteredBy = useUIStore((s) => s.enteredBy);
+
+  // Voice dictation streams interim words into the textarea so the
+  // patient can correct what was heard before submitting. Mandarin
+  // uses zh-CN; everything else en-US. The hook returns null on
+  // browsers that don't expose SpeechRecognition (older Firefox,
+  // some webviews) so the button is hidden cleanly when unsupported.
+  const speech = useSpeechRecognition({
+    lang: locale === "zh" ? "zh-CN" : "en-US",
+    onFinal: (chunk) => setText((cur) => `${cur} ${chunk}`.trim()),
+  });
 
   const autoTags = useMemo(() => new Set(tagInput(text)), [text]);
   const tags = overrideTags ?? autoTags;
@@ -197,18 +209,48 @@ export default function LogPage() {
 
       <Card className="p-5">
         <Field label={locale === "zh" ? "记录" : "Log"}>
-          <Textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={5}
-            disabled={run.kind === "saving" || run.kind === "running"}
-            placeholder={
-              locale === "zh"
-                ? "例如：早餐吃了两个鸡蛋，约 16 克蛋白；右手指尖比昨天更麻"
-                : "e.g. two eggs at breakfast, ~16 g protein; right fingertips more numb than yesterday"
-            }
-            className="min-h-[140px] text-base"
-          />
+          <div className="relative">
+            <Textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={5}
+              disabled={run.kind === "saving" || run.kind === "running"}
+              placeholder={
+                locale === "zh"
+                  ? "例如：早餐吃了两个鸡蛋，约 16 克蛋白；右手指尖比昨天更麻"
+                  : "e.g. two eggs at breakfast, ~16 g protein; right fingertips more numb than yesterday"
+              }
+              className="min-h-[140px] pr-12 text-base"
+            />
+            {speech && (
+              <button
+                type="button"
+                onClick={speech.toggle}
+                disabled={run.kind === "saving" || run.kind === "running"}
+                className={cn(
+                  "absolute bottom-2 right-2 inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors",
+                  speech.listening
+                    ? "bg-[var(--warn,#d97706)] text-white"
+                    : "bg-ink-100 text-ink-700 hover:bg-ink-200",
+                )}
+                aria-label={
+                  speech.listening
+                    ? locale === "zh"
+                      ? "停止录音"
+                      : "Stop dictation"
+                    : locale === "zh"
+                      ? "开始录音"
+                      : "Start dictation"
+                }
+              >
+                {speech.listening ? (
+                  <MicOff className="h-4 w-4" />
+                ) : (
+                  <Mic className="h-4 w-4" />
+                )}
+              </button>
+            )}
+          </div>
         </Field>
 
         <div className="mt-4">
@@ -261,45 +303,37 @@ export default function LogPage() {
         </div>
 
         {run.kind === "error" && (
-          <div
-            role="alert"
-            className="mt-4 rounded-md border border-[var(--warn)]/40 bg-[var(--warn)]/10 p-3 text-sm text-[var(--warn)]"
-          >
+          <Alert variant="warn" role="alert" className="mt-4">
             {run.message}
-          </div>
+          </Alert>
         )}
 
         {(run.kind === "saving" || run.kind === "running") && (
-          <div
+          <Alert
+            variant="info"
             role="status"
-            className="mt-4 flex items-center gap-2 rounded-md border border-ink-200 bg-paper-2 p-3 text-sm text-ink-700"
+            icon={<Loader2 className="h-4 w-4 animate-spin" />}
+            className="mt-4"
           >
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>
-              {run.kind === "saving"
-                ? locale === "zh"
-                  ? "保存中…"
-                  : "Saving…"
-                : locale === "zh"
-                  ? `${run.total} 个智能体在整理…`
-                  : `${run.total} agent${run.total === 1 ? "" : "s"} thinking…`}
-            </span>
-          </div>
+            {run.kind === "saving"
+              ? locale === "zh"
+                ? "保存中…"
+                : "Saving…"
+              : locale === "zh"
+                ? `${run.total} 个智能体在整理…`
+                : `${run.total} agent${run.total === 1 ? "" : "s"} thinking…`}
+          </Alert>
         )}
 
         {run.kind === "filed" && (
-          <div
+          <Alert
+            variant="ok"
             role="status"
-            className="mt-4 space-y-2 rounded-md border border-[var(--ok)]/40 bg-[var(--ok-soft)] p-3 text-sm"
+            title={locale === "zh" ? "已归档" : "Filed"}
+            className="mt-4"
           >
-            <div className="flex items-center gap-2 text-ink-900">
-              <Check className="h-4 w-4 text-[var(--ok)]" />
-              {locale === "zh" ? "已归档" : "Filed"}
-            </div>
-            <div className="text-[13px] text-ink-700">
-              {run.summary[locale]}
-            </div>
-            <div className="text-[11px] text-ink-500">
+            <div className="text-[13px]">{run.summary[locale]}</div>
+            <div className="mt-1 text-[11px] opacity-80">
               {locale === "zh"
                 ? run.target === "lab"
                   ? "已加入化验记录。智能体未参与解读。"
@@ -308,22 +342,20 @@ export default function LogPage() {
                   ? "Added to labs. Agents were not called."
                   : "Added to today's entry. Agents were not called."}
             </div>
-          </div>
+          </Alert>
         )}
 
         {run.kind === "done" && (
-          <div
+          <Alert
+            variant="ok"
             role="status"
-            className="mt-4 space-y-2 rounded-md border border-ink-200 bg-paper-2 p-3 text-sm"
+            title={locale === "zh" ? "已记录" : "Logged"}
+            className="mt-4"
           >
-            <div className="flex items-center gap-2 text-ink-900">
-              <Check className="h-4 w-4 text-[var(--ok)]" />
-              {locale === "zh" ? "已记录" : "Logged"}
-            </div>
-            <ul className="space-y-1 text-[12.5px] text-ink-600">
+            <ul className="space-y-1 text-[12.5px]">
               {run.ran.map((id) => (
                 <li key={id} className="flex items-center gap-1.5">
-                  <Sparkles className="h-3 w-3 text-[var(--tide-2)]" />
+                  <Sparkles className="h-3 w-3" />
                   {AGENT_LABELS[id][locale]}
                 </li>
               ))}
@@ -337,7 +369,7 @@ export default function LogPage() {
                 </li>
               ))}
             </ul>
-          </div>
+          </Alert>
         )}
 
         <div className="mt-5 flex items-center justify-between gap-3">
@@ -375,8 +407,8 @@ export default function LogPage() {
 
       <p className="text-center text-[11px] text-ink-400">
         {locale === "zh"
-          ? "可拍照、语音记录将在后续推出。今天先用文字。"
-          : "Photo and voice coming soon. Text for now."}
+          ? "也支持语音输入。需要拍照/上传文件请到「智能识别」。"
+          : "Voice dictation works. For photos or document uploads, use Smart Ingest."}
       </p>
     </div>
   );

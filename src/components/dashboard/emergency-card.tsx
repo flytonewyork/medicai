@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useZoneStatus } from "~/hooks/use-zone-status";
 import { useT } from "~/hooks/use-translate";
 import { useSettings } from "~/hooks/use-settings";
 import { Phone, AlertOctagon, MapPin, ChevronDown, ChevronUp } from "lucide-react";
 
+// Only rendered when zone is red/orange — on green/yellow days this stays
+// silent so the dashboard doesn't carry a standing alarm. Contacts live on
+// /settings; the feed surfaces them when zone changes trigger a review.
 export function EmergencyCard() {
   const t = useT();
   const s = useSettings();
@@ -17,46 +20,45 @@ export function EmergencyCard() {
     s?.hospital_phone;
 
   const alertActive = zone === "red" || zone === "orange";
-  const [open, setOpen] = useState(false);
-  // Zone loads async from Dexie; auto-open once an alert fires, but let the
-  // user close it without flipping back open on every re-render.
-  useEffect(() => {
-    if (alertActive) setOpen(true);
-  }, [alertActive]);
+  const [open, setOpen] = useState(true);
 
   if (!hasAnyContact) return null;
+  if (!alertActive) return null;
 
   return (
     <section
-      className="rounded-[var(--r-md)] border"
+      // Red and orange zones are urgent — surface the alert via aria-live
+      // so a screen reader announces the change without the user having
+      // to navigate to it. aria-atomic ensures the whole card reads as
+      // one announcement rather than a stuttered sequence of children.
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
+      className="rounded-[var(--r-md)] border focus-within:ring-2 focus-within:ring-[var(--warn)]"
       style={{
-        background: alertActive ? "var(--warn-soft)" : "var(--paper-2)",
-        borderColor: alertActive
-          ? "var(--warn)"
-          : "color-mix(in oklch, var(--ink-900), transparent 92%)",
+        background: "var(--warn-soft)",
+        borderColor: "var(--warn)",
       }}
     >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left"
+        className="flex w-full items-center gap-3 px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--warn)]"
         aria-expanded={open}
         aria-label={open ? t("emergencyCard.hideContacts") : t("emergencyCard.showContacts")}
       >
         <div
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
           style={{
-            background: alertActive ? "var(--warn)" : "var(--tide-soft)",
-            color: alertActive ? "white" : "var(--tide-2)",
+            background: "var(--warn)",
+            color: "white",
           }}
         >
           <AlertOctagon className="h-4 w-4" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-[12.5px] font-semibold text-ink-900">
-            {alertActive
-              ? t("emergencyCard.alertActive")
-              : t("emergencyCard.alertInactive")}
+            {t("emergencyCard.alertActive")}
           </div>
           <div className="mono mt-0.5 text-[10px] uppercase tracking-wider text-ink-400">
             {t("emergencyCard.tempWarning")}

@@ -29,8 +29,21 @@ export function SyncPromptCard() {
       return;
     }
     supabase.auth.getUser().then(({ data }) => setSignedIn(Boolean(data.user)));
+    // Sign-in clears the dismiss key so a future sign-out will resurface
+    // the prompt rather than leaving it permanently silenced. Without
+    // this, dismissing once made the nudge invisible for the rest of
+    // the install.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSignedIn(Boolean(session?.user));
+      const next = Boolean(session?.user);
+      setSignedIn(next);
+      if (next) {
+        try {
+          localStorage.removeItem(DISMISS_KEY);
+        } catch {
+          // ignore — private mode etc.
+        }
+        setDismissed(false);
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, []);

@@ -5,8 +5,8 @@ import { useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
-import { useActiveCycleContext } from "~/hooks/use-active-cycle";
 import { useSettings } from "~/hooks/use-settings";
+import { useActiveCycleContext } from "~/hooks/use-active-cycle";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { DRUGS_BY_ID } from "~/config/drug-registry";
@@ -246,8 +246,7 @@ function CallClinicAction({
   onAck: () => void | Promise<void>;
 }) {
   const settings = useSettings();
-  const phone =
-    settings?.oncall_phone ?? settings?.managing_oncologist_phone;
+  const phone = settings?.oncall_phone ?? settings?.managing_oncologist_phone;
   if (phone) {
     return (
       <a href={`tel:${phone.replace(/\s/g, "")}`} onClick={() => void onAck()}>

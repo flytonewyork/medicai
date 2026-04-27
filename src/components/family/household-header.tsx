@@ -11,7 +11,7 @@ import type {
   Household,
   HouseholdMemberWithProfile,
 } from "~/types/household";
-import { useBilingual } from "~/hooks/use-bilingual";
+import { useLocale, pickL } from "~/hooks/use-translate";
 import { Users, Settings as SettingsIcon } from "lucide-react";
 
 // Small avatar stack + household name at the top of /family so any
@@ -19,7 +19,7 @@ import { Users, Settings as SettingsIcon } from "lucide-react";
 // and who else is on it. Tap goes to Settings → Household.
 
 export function HouseholdHeader() {
-  const L = useBilingual();
+  const locale = useLocale();
   const { membership, profile } = useHousehold();
   const [household, setHousehold] = useState<Household | null>(null);
   const [members, setMembers] = useState<HouseholdMemberWithProfile[]>([]);
@@ -41,10 +41,11 @@ export function HouseholdHeader() {
   }, [membership]);
 
   if (!membership || !household) return null;
+  const L = pickL(locale);
 
   return (
     <Link
-      href="/settings"
+      href="/carers"
       className="flex items-center gap-3 rounded-[var(--r-md)] border border-ink-100 bg-paper-2 px-3 py-2.5 hover:border-ink-300"
     >
       <Users className="h-4 w-4 shrink-0 text-[var(--tide-2)]" />

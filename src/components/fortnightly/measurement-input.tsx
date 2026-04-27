@@ -61,14 +61,14 @@ export function MeasurementInput({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+    <div className="a-card p-4">
       <div className="flex items-baseline justify-between gap-2">
         <div>
-          <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
+          <div className="text-sm font-medium text-ink-900">
             {label}
           </div>
           {baseline !== undefined && (
-            <div className="mt-0.5 text-xs text-slate-500">
+            <div className="mt-0.5 text-xs text-ink-500">
               {baselineLabel ?? (locale === "zh" ? "基线" : "Baseline")}: {baseline} {unit}
             </div>
           )}
@@ -78,11 +78,11 @@ export function MeasurementInput({
             className={cn(
               "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium tabular-nums",
               deltaTone === "good" &&
-                "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300",
+                "bg-[var(--ok-soft)] text-[var(--ok)]",
               deltaTone === "watch" &&
-                "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300",
+                "bg-[var(--warn-soft)] text-[var(--warn)]",
               deltaTone === "neutral" &&
-                "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+                "bg-ink-100 text-ink-500",
             )}
           >
             {deltaText}
@@ -95,7 +95,7 @@ export function MeasurementInput({
           type="button"
           aria-label="decrement"
           onClick={() => bump(-step)}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-ink-200 bg-paper text-ink-500 transition-colors hover:border-ink-300 hover:text-ink-700"
         >
           <Minus className="h-4 w-4" />
         </button>
@@ -111,9 +111,9 @@ export function MeasurementInput({
               const raw = e.target.value;
               onChange(raw === "" ? undefined : Number(raw));
             }}
-            className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 pr-12 text-center text-xl font-semibold tabular-nums text-slate-900 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-slate-100"
+            className="h-11 w-full rounded-md border border-ink-200 bg-paper px-3 pr-12 text-center text-xl font-semibold tabular-nums text-ink-900 focus:border-ink-900 focus:outline-none focus:ring-2 focus:ring-ink-900/10"
           />
-          <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-slate-500">
+          <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-500">
             {unit}
           </span>
         </div>
@@ -121,7 +121,7 @@ export function MeasurementInput({
           type="button"
           aria-label="increment"
           onClick={() => bump(step)}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-ink-200 bg-paper text-ink-500 transition-colors hover:border-ink-300 hover:text-ink-700"
         >
           <Plus className="h-4 w-4" />
         </button>

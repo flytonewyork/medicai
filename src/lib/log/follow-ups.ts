@@ -137,7 +137,7 @@ export function generateFollowUps(args: GenerateArgs): FollowUpItem[] {
       const actions: FollowUpAction[] = [];
       const msg = messageAction(
         nurse,
-        `Hu Lin's blood glucose is ${g} mmol/L (hyperglycaemia). Asking whether to do anything today.`,
+        `The patient's blood glucose is ${g} mmol/L (hyperglycaemia). Asking whether to do anything today.`,
         locale,
       );
       if (msg) actions.push(msg);
@@ -196,7 +196,7 @@ export function generateFollowUps(args: GenerateArgs): FollowUpItem[] {
       const actions: FollowUpAction[] = [];
       const msg = messageAction(
         nurse,
-        `Hu Lin's blood glucose is ${g} mmol/L (hypoglycaemia). Checking on next steps.`,
+        `The patient's blood glucose is ${g} mmol/L (hypoglycaemia). Checking on next steps.`,
         locale,
       );
       if (msg) actions.push(msg);
@@ -226,7 +226,7 @@ export function generateFollowUps(args: GenerateArgs): FollowUpItem[] {
     const actions: FollowUpAction[] = [];
     const msg = messageAction(
       nurse,
-      `Hu Lin has a fever of ${filed.patch.fever_temp}°C on ${filed.date}.`,
+      `The patient has a fever of ${filed.patch.fever_temp}°C on ${filed.date}.`,
       locale,
     );
     if (msg) actions.push(msg);

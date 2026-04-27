@@ -34,7 +34,7 @@ export function MetricTile({
     direction === "up" ? ArrowUp : direction === "down" ? ArrowDown : ArrowRight;
 
   return (
-    <div className={cn("a-card p-4", className)}>
+    <div className={cn("a-card p-5", className)}>
       <div className="eyebrow">{label}</div>
       <div className="mt-2 flex items-baseline gap-2">
         <span className="serif num text-3xl text-ink-900">{value}</span>
@@ -51,7 +51,9 @@ export function MetricTile({
             deltaClass,
           )}
         >
-          {direction && direction !== "none" && <Icon className="h-3 w-3" />}
+          {direction && direction !== "none" && (
+            <Icon className="h-3 w-3" aria-hidden />
+          )}
           {delta}
         </div>
       )}

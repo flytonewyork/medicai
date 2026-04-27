@@ -197,9 +197,6 @@ export default function IngestPage() {
         </CardContent>
       </Card>
 
-      {/* Meal + handwritten-note tiles moved off clinical ingest
-          (they are not clinical data). They live on /capture now; the
-          AddFab still exposes both shortcuts globally. */}
 
       {recent && recent.length > 0 && (
         <section className="space-y-2">

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useLocale } from "~/hooks/use-translate";
-import { useBilingual } from "~/hooks/use-bilingual";
+import { useLocale, useL } from "~/hooks/use-translate";
+import { todayISO, localeTag } from "~/lib/utils/date";
+import { postJson } from "~/lib/utils/http";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Field, Textarea } from "~/components/ui/field";
@@ -69,7 +70,7 @@ export function PhoneCallNote({
   onDraft: (draft: IngestDraft) => void;
 }) {
   const locale = useLocale();
-  const L = useBilingual();
+  const L = useL();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +91,7 @@ export function PhoneCallNote({
     const rec = new Ctor();
     rec.continuous = true;
     rec.interimResults = true;
-    rec.lang = locale === "zh" ? "zh-CN" : "en-AU";
+    rec.lang = localeTag(locale);
     rec.onresult = (ev) => {
       let delta = "";
       for (let i = ev.resultIndex; i < ev.results.length; i += 1) {
@@ -118,18 +119,15 @@ export function PhoneCallNote({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/ai/ingest-universal", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
+      const data = await postJson<{ draft: IngestDraft }>(
+        "/api/ai/ingest-universal",
+        {
           text: `Source: phone call.\n\n${text}`,
           source: "paste",
-          today: new Date().toISOString().slice(0, 10),
+          today: todayISO(),
           locale,
-        }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const data = (await res.json()) as { draft: IngestDraft };
+        },
+      );
       onDraft(data.draft);
       setText("");
     } catch (e) {

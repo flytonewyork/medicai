@@ -16,8 +16,12 @@ import {
   Sparkles,
   ChevronRight,
   MapPin,
+  Check,
+  HelpCircle,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import { localeTag } from "~/lib/utils/date";
+import { upcomingAppointments } from "~/lib/appointments/upcoming";
 
 // Calm, two-or-three-item strip of what's coming up in the next seven
 // days. Location is tappable if we have a URL; attendee chips show who
@@ -53,20 +57,11 @@ export function NextUp() {
   );
 
   const upcoming = useMemo(() => {
-    const list = appointments ?? [];
     const now = Date.now();
-    const sevenDays = now + 7 * 24 * 60 * 60 * 1000;
-    return list
-      .filter((a) => {
-        if (a.status === "cancelled") return false;
-        const t = new Date(a.starts_at).getTime();
-        return Number.isFinite(t) && t >= now && t < sevenDays;
-      })
-      .sort(
-        (a, b) =>
-          new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
-      )
-      .slice(0, 3);
+    return upcomingAppointments(appointments ?? [], {
+      from: now,
+      until: now + 7 * 24 * 60 * 60 * 1000,
+    }).slice(0, 3);
   }, [appointments]);
 
   if (!appointments) return null;
@@ -180,21 +175,23 @@ function Row({ appt, locale }: { appt: Appointment; locale: "en" | "zh" }) {
                       : c.status === "declined"
                         ? "bg-ink-100 text-ink-400 line-through"
                         : "bg-ink-100 text-ink-700";
-                const prefix =
+                const StatusIcon =
                   c.status === "confirmed"
-                    ? "✓ "
+                    ? Check
                     : c.status === "tentative"
-                      ? "? "
-                      : "";
+                      ? HelpCircle
+                      : null;
                 return (
                   <span
                     key={`${c.label}-${i}`}
                     className={
-                      "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] " +
+                      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] " +
                       tone
                     }
                   >
-                    {prefix}
+                    {StatusIcon && (
+                      <StatusIcon className="h-3 w-3" aria-hidden />
+                    )}
                     {c.label}
                   </span>
                 );
@@ -224,14 +221,14 @@ function formatWhen(appt: Appointment, locale: "en" | "zh"): string {
   } else if (apptDay.getTime() === tomorrow.getTime()) {
     dayLabel = locale === "zh" ? "明天" : "Tomorrow";
   } else {
-    dayLabel = d.toLocaleDateString(locale === "zh" ? "zh-CN" : "en-AU", {
+    dayLabel = d.toLocaleDateString(localeTag(locale), {
       weekday: "long",
       day: "numeric",
       month: "short",
     });
   }
   if (appt.all_day) return dayLabel;
-  const timeLabel = d.toLocaleTimeString(locale === "zh" ? "zh-CN" : "en-AU", {
+  const timeLabel = d.toLocaleTimeString(localeTag(locale), {
     hour: "numeric",
     minute: "2-digit",
   });

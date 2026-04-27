@@ -6,7 +6,7 @@ import { useCan } from "~/hooks/use-can";
 import { useHousehold } from "~/hooks/use-household";
 import { listInvites } from "~/lib/supabase/households";
 import type { HouseholdInvite } from "~/types/household";
-import { useBilingual } from "~/hooks/use-bilingual";
+import { useLocale, pickL } from "~/hooks/use-translate";
 import { Card, CardContent } from "~/components/ui/card";
 import { Clock, ChevronRight } from "lucide-react";
 
@@ -16,7 +16,7 @@ import { Clock, ChevronRight } from "lucide-react";
 // pending invites.
 
 export function PendingInvitesCard() {
-  const L = useBilingual();
+  const locale = useLocale();
   const canSee = useCan("see_pending_invites");
   const { membership } = useHousehold();
   const [pending, setPending] = useState<HouseholdInvite[] | null>(null);
@@ -47,6 +47,7 @@ export function PendingInvitesCard() {
 
   if (!canSee || !pending || pending.length === 0) return null;
 
+  const L = pickL(locale);
   return (
     <Card>
       <CardContent className="flex items-center justify-between gap-3 pt-4">
@@ -70,7 +71,7 @@ export function PendingInvitesCard() {
           </div>
         </div>
         <Link
-          href="/settings"
+          href="/carers"
           className="inline-flex items-center gap-0.5 text-[12px] text-ink-500 hover:text-ink-900"
         >
           {L("Manage", "管理")}

@@ -4,13 +4,13 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
-import { useLocale } from "~/hooks/use-translate";
-import { useBilingual } from "~/hooks/use-bilingual";
+import { useLocale, useL } from "~/hooks/use-translate";
 import { todayISO } from "~/lib/utils/date";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Field, TextInput } from "~/components/ui/field";
+import { Alert } from "~/components/ui/alert";
 import { cn } from "~/lib/utils/cn";
 import { PROTOCOL_LIBRARY, PROTOCOL_BY_ID } from "~/config/protocols";
 import { DRUGS_BY_ID } from "~/config/drug-registry";
@@ -66,7 +66,7 @@ interface WizardState {
 export default function NewTreatmentCyclePage() {
   const locale = useLocale();
   const router = useRouter();
-  const L = useBilingual();
+  const L = useL();
 
   const prior = useLiveQuery(() =>
     db.treatment_cycles.orderBy("cycle_number").reverse().limit(1).first(),
@@ -266,12 +266,9 @@ export default function NewTreatmentCyclePage() {
       )}
 
       {error && (
-        <div
-          role="alert"
-          className="rounded-md border border-[var(--warn)]/40 bg-[var(--warn)]/10 p-3 text-[12.5px] text-[var(--warn)]"
-        >
+        <Alert variant="warn" role="alert" dense>
           {error}
-        </div>
+        </Alert>
       )}
 
       <div className="flex items-center justify-between gap-2 pt-2">
@@ -422,7 +419,7 @@ function ScheduleStep({
   computedNumber: number;
   locale: "en" | "zh";
 }) {
-  const L = useBilingual();
+  const L = useL();
   return (
     <Card>
       <CardHeader>
@@ -516,7 +513,7 @@ function ReviewStep({
   previewAppointments: ReturnType<typeof deriveCycleAppointments>;
   locale: "en" | "zh";
 }) {
-  const L = useBilingual();
+  const L = useL();
   const protocol = PROTOCOL_BY_ID[state.protocol_id];
   if (!protocol) return null;
 

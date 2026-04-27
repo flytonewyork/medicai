@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { useEffect, useState } from "react";
-import { useBilingual } from "~/hooks/use-bilingual";
+import { useLocale, pickL } from "~/hooks/use-translate";
 import { UniversalDrop } from "~/components/ingest/universal-drop";
 import { PhoneCallNote } from "~/components/ingest/phone-note";
 import { CalendarSubscribe } from "~/components/ingest/calendar-subscribe";
@@ -35,7 +35,7 @@ type Tab = "phone" | "drop" | "calendar";
 export function IngestModal() {
   const isOpen = useIngestModal((s) => s.isOpen);
   const close = useIngestModal((s) => s.close);
-  const L = useBilingual();
+  const locale = useLocale();
   const [tab, setTab] = useState<Tab>("phone");
   const [draft, setDraft] = useState<IngestDraft | null>(null);
   const [results, setResults] = useState<IngestApplyResult[] | null>(null);
@@ -70,6 +70,7 @@ export function IngestModal() {
   }, [isOpen, draft, close]);
 
   if (!isOpen) return null;
+  const L = pickL(locale);
 
   return (
     <div

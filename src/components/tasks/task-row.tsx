@@ -14,32 +14,32 @@ const BUCKET_META: Record<
   { tone: string; icon: React.ComponentType<{ className?: string }>; label: { en: string; zh: string } }
 > = {
   overdue: {
-    tone: "border-red-400 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200",
+    tone: "border-[var(--warn)]/50 bg-[var(--warn-soft)] text-[var(--warn)]",
     icon: AlertTriangle,
     label: { en: "Overdue", zh: "已超期" },
   },
   due_today: {
-    tone: "border-amber-400 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200",
+    tone: "border-[var(--sand-2)]/60 bg-[var(--sand)]/40 text-ink-900",
     icon: Clock,
     label: { en: "Due today", zh: "今日到期" },
   },
   cycle_relevant: {
-    tone: "border-orange-400 bg-orange-50 text-orange-800 dark:border-orange-900 dark:bg-orange-950/40 dark:text-orange-200",
+    tone: "border-[var(--tide)]/40 bg-[var(--tide-soft)] text-[var(--tide-2)]",
     icon: CalendarClock,
     label: { en: "Relevant now", zh: "当前相关" },
   },
   approaching: {
-    tone: "border-slate-300 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300",
+    tone: "border-ink-200 bg-paper text-ink-700",
     icon: Clock,
     label: { en: "Approaching", zh: "即将到期" },
   },
   scheduled: {
-    tone: "border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300",
+    tone: "border-ink-100 bg-paper-2 text-ink-700",
     icon: CalendarClock,
     label: { en: "Scheduled", zh: "已排期" },
   },
   snoozed: {
-    tone: "border-dashed border-slate-300 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-900/40",
+    tone: "border-dashed border-ink-200 bg-paper text-ink-500",
     icon: MoonStar,
     label: { en: "Snoozed", zh: "已暂缓" },
   },
@@ -65,7 +65,7 @@ export function TaskRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 rounded-xl border p-3 transition-colors",
+        "flex items-center gap-3 rounded-lg border p-3 transition-colors",
         meta.tone,
       )}
     >
@@ -73,7 +73,7 @@ export function TaskRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <div className="text-sm font-medium truncate">{title}</div>
-          <span className="text-[10px] uppercase tracking-wide font-semibold shrink-0">
+          <span className="mono shrink-0 text-[10px] uppercase tracking-[0.1em]">
             {meta.label[locale]}
           </span>
         </div>
@@ -128,7 +128,7 @@ export function TaskRow({
           {task.id !== undefined && (
             <Link
               href={`/tasks/${task.id}`}
-              className="rounded-md px-2 py-1 text-xs text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="rounded-md px-2 py-1 text-xs text-ink-500 transition-colors hover:bg-ink-100/60 hover:text-ink-700"
             >
               {locale === "zh" ? "编辑" : "Edit"}
             </Link>

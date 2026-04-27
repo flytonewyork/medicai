@@ -77,7 +77,7 @@ export function SarcF({
     <div className="space-y-4">
       {qs.map((q, i) => (
         <div key={i} className="space-y-2">
-          <div className="text-sm font-medium text-slate-800 dark:text-slate-200">
+          <div className="text-sm font-medium text-ink-900">
             {i + 1}. {q.prompt}
           </div>
           <div className="grid grid-cols-3 gap-2">
@@ -89,10 +89,10 @@ export function SarcF({
                   type="button"
                   onClick={() => update(i, val)}
                   className={cn(
-                    "h-11 rounded-lg border px-2 text-xs font-medium transition-colors",
+                    "h-11 rounded-md border px-2 text-xs font-medium transition-colors",
                     active
-                      ? "border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900"
-                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300",
+                      ? "border-ink-900 bg-ink-900 text-paper"
+                      : "border-ink-200 bg-paper-2 text-ink-700 hover:border-ink-300",
                   )}
                   aria-pressed={active}
                 >
@@ -106,18 +106,18 @@ export function SarcF({
 
       <div
         className={cn(
-          "flex items-center justify-between rounded-lg border px-3 py-2",
+          "flex items-center justify-between rounded-md border px-3 py-2",
           positive
-            ? "border-amber-400 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
-            : "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300",
+            ? "border-[var(--warn)]/40 bg-[var(--warn-soft)] text-[var(--warn)]"
+            : "border-ink-200 bg-paper-2 text-ink-700",
         )}
       >
-        <span className="text-xs font-medium uppercase tracking-wide">
+        <span className="mono text-[10.5px] uppercase tracking-[0.1em]">
           {locale === "zh" ? "SARC-F 总分" : "SARC-F total"}
         </span>
-        <span className="text-lg font-semibold tabular-nums">
+        <span className="serif text-lg tabular-nums">
           {total} / 10{" "}
-          <span className="ml-1 text-xs font-medium">
+          <span className="ml-1 mono text-[10.5px] uppercase tracking-[0.08em]">
             {positive
               ? locale === "zh"
                 ? "筛查阳性"

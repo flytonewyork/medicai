@@ -1,4 +1,5 @@
 import type { HouseholdRole } from "~/types/household";
+import type { SyncedTable } from "~/lib/sync/tables";
 
 // Authoritative permission matrix. This file is the single source of
 // truth — the client-side gates read from `PERMISSIONS`, and the
@@ -116,6 +117,46 @@ export const ROLE_LABEL: Record<HouseholdRole, { en: string; zh: string }> = {
   family: { en: "Family", zh: "家人" },
   clinician: { en: "Clinician", zh: "临床医师" },
   observer: { en: "Observer", zh: "观察者" },
+};
+
+// Maps each `cloud_rows.table_name` to the permission action that
+// gates writes against it. Mirrored in
+// supabase/migrations/2026_04_26_slice_m_role_writes.sql; the parity
+// test in tests/unit/permissions.test.ts asserts the two stay in
+// sync. Tables not listed fall back to a household-membership-only
+// check on the SQL side.
+export const TABLE_WRITE_ACTION: Partial<Record<SyncedTable, PermissionAction>> = {
+  // Clinical surface
+  labs: "log_clinical_note",
+  imaging: "log_clinical_note",
+  ctdna_results: "log_clinical_note",
+  molecular_profile: "log_clinical_note",
+  pending_results: "log_clinical_note",
+  ingested_documents: "log_clinical_note",
+  comprehensive_assessments: "log_clinical_note",
+  fortnightly_assessments: "log_clinical_note",
+  quarterly_reviews: "log_clinical_note",
+  change_signals: "log_clinical_note",
+  signal_events: "log_clinical_note",
+  decisions: "log_clinical_note",
+  // Treatment plan
+  treatments: "edit_treatment_plan",
+  treatment_cycles: "edit_treatment_plan",
+  trials: "edit_treatment_plan",
+  // Medications
+  medications: "edit_medications",
+  medication_events: "edit_medications",
+  medication_prompt_events: "edit_medications",
+  // Daily check-ins
+  daily_entries: "log_daily_checkin",
+  weekly_assessments: "log_daily_checkin",
+  // Family / patient narrative
+  family_notes: "quick_note_family",
+  life_events: "quick_note_family",
+  zone_alerts: "quick_note_family",
+  patient_tasks: "quick_note_family",
+  // Household configuration
+  settings: "edit_household_settings",
 };
 
 // Plain-language description of what each role can do. Shown in the

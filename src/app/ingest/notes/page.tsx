@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { db, now } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
-import { useSettings } from "~/hooks/use-settings";
+import { useDefaultAiModel } from "~/hooks/use-settings";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -23,7 +23,7 @@ type DailyPatch = NonNullable<NotesStructure["daily_patch"]>;
 
 export default function NotesIngestPage() {
   const locale = useLocale();
-  const model = useSettings()?.default_ai_model ?? "claude-opus-4-7";
+  const model = useDefaultAiModel();
 
   const [prepared, setPrepared] = useState<PreparedImage | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -155,6 +155,9 @@ export default function NotesIngestPage() {
 
           {preview && (
             <div className="overflow-hidden rounded-[var(--r-md)] border border-ink-100">
+              {/* `preview` is a data URL from the in-memory file capture — next/image
+                  can't optimise it, so a plain <img> is correct here. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={preview}
                 alt="note"

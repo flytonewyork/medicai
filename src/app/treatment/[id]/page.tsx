@@ -7,8 +7,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { latestDailyEntries } from "~/lib/db/queries";
 import { buildCycleContext } from "~/lib/treatment/engine";
-import { useLocale } from "~/hooks/use-translate";
-import { useBilingual } from "~/hooks/use-bilingual";
+import { useLocale, useL } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -16,7 +15,7 @@ import { CycleCalendar } from "~/components/treatment/cycle-calendar";
 import { CycleDayDetail } from "~/components/treatment/cycle-day-detail";
 import { CycleMedicationsCard } from "~/components/treatment/cycle-medications-card";
 import { NudgeCard } from "~/components/treatment/nudge-card";
-import { formatDate } from "~/lib/utils/date";
+import { formatDate, todayISO } from "~/lib/utils/date";
 import { addDays, format, parseISO } from "date-fns";
 import type { NudgeCategory } from "~/types/treatment";
 import type { LabResult } from "~/types/clinical";
@@ -110,7 +109,7 @@ export default function CycleDetailPage() {
     if (!cycle?.id) return;
     await db.treatment_cycles.update(cycle.id, {
       status: "completed",
-      actual_end_date: new Date().toISOString().slice(0, 10),
+      actual_end_date: todayISO(),
       updated_at: now(),
     });
   }
@@ -216,6 +215,39 @@ export default function CycleDetailPage() {
         />
       )}
 
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Link
+          href="/safety/chemo-at-home"
+          className="rounded-md border border-ink-100 bg-paper-2/40 px-4 py-3 text-[12px] text-ink-700 hover:border-ink-300"
+        >
+          <div className="font-medium text-ink-900">
+            {locale === "zh"
+              ? "居家化疗安全"
+              : "Chemo safety at home"}
+          </div>
+          <div className="mt-0.5 text-[11px] text-ink-500">
+            {locale === "zh"
+              ? "用药后 48 小时体液防护"
+              : "Body-fluid precautions for 48 h after each dose"}
+          </div>
+        </Link>
+        <Link
+          href="/safety/neutropenia"
+          className="rounded-md border border-ink-100 bg-paper-2/40 px-4 py-3 text-[12px] text-ink-700 hover:border-ink-300"
+        >
+          <div className="font-medium text-ink-900">
+            {locale === "zh"
+              ? "中性粒细胞 & 感染防护"
+              : "Neutropenia & infection prevention"}
+          </div>
+          <div className="mt-0.5 text-[11px] text-ink-500">
+            {locale === "zh"
+              ? "用药后 7–14 天风险最高"
+              : "Risk peaks days 7–14 after each dose"}
+          </div>
+        </Link>
+      </div>
+
       <CycleMedicationsCard cycleId={cycle.id} />
 
       <CycleQuickActions cycle={cycle} protocol={protocol} locale={locale} />
@@ -233,7 +265,7 @@ export default function CycleDetailPage() {
             {protocol.description[locale]}
           </p>
           <div className="space-y-1">
-            <div className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+            <div className="eyebrow">
               {locale === "zh" ? "药物" : "Agents"}
             </div>
             <ul className="space-y-1">
@@ -248,7 +280,7 @@ export default function CycleDetailPage() {
             </ul>
           </div>
           <div className="space-y-1">
-            <div className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+            <div className="eyebrow">
               {locale === "zh" ? "预用药" : "Premeds"}
             </div>
             <p className="text-xs text-ink-600">
@@ -256,7 +288,7 @@ export default function CycleDetailPage() {
             </p>
           </div>
           <div className="space-y-1">
-            <div className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+            <div className="eyebrow">
               {locale === "zh" ? "典型副作用谱" : "Side effect profile"}
             </div>
             <p className="text-xs text-ink-600">
@@ -390,9 +422,12 @@ function CycleQuickActions({
   protocol: { dose_days: number[]; cycle_length_days: number };
   locale: "en" | "zh";
 }) {
-  const L = useBilingual();
+  const L = useL();
 
-  const today = new Date();
+  // `todayMs` stays stable across renders so the useMemo below has
+  // stable deps. Recreating `new Date()` on every render would
+  // otherwise re-run nextDoseDay on every keystroke.
+  const todayMs = useMemo(() => Date.now(), []);
   const startMs = parseISO(cycle.start_date).getTime();
 
   // Pre-chemo consult date: one calendar day before the next upcoming
@@ -404,10 +439,10 @@ function CycleQuickActions({
     const dayOffsets = protocol.dose_days.map((d) => d - 1);
     for (const o of dayOffsets) {
       const ms = startMs + o * 86_400_000;
-      if (ms >= today.getTime()) return ms;
+      if (ms >= todayMs) return ms;
     }
     return null;
-  }, [protocol.dose_days, startMs, today]);
+  }, [protocol.dose_days, startMs, todayMs]);
 
   const preChemoDate = nextDoseDay
     ? format(addDays(new Date(nextDoseDay), -1), "yyyy-MM-dd")

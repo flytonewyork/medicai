@@ -46,6 +46,14 @@ import type {
   ProfileEntry,
   ProfilePrompt,
 } from "~/types/legacy";
+import type {
+  FoodItem,
+  MealEntry,
+  MealItem,
+  FluidLog,
+  MealTemplate,
+} from "~/types/nutrition";
+import type { HouseholdProfile as HouseholdProfileRow } from "~/types/household-profile";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -89,6 +97,15 @@ export class AnchorDB extends Dexie {
   biographical_outline!: Table<BiographicalOutline, number>;
   memory_clusters!: Table<MemoryCluster, number>;
   profile_consent!: Table<ProfileConsent, number>;
+  // v18: Nutrition module.
+  foods!: Table<FoodItem, number>;
+  meal_entries!: Table<MealEntry, number>;
+  meal_items!: Table<MealItem, number>;
+  // v19: Nutrition enhancements.
+  fluid_logs!: Table<FluidLog, number>;
+  meal_templates!: Table<MealTemplate, number>;
+  // v20: Patient identity envelope (mirrors Supabase household_profile).
+  household_profile!: Table<HouseholdProfileRow, string>;
 
   constructor() {
     super("anchor_db");
@@ -271,6 +288,55 @@ export class AnchorDB extends Dexie {
       memory_clusters:
         "++id, seed_entry_id, created_by, approximate_date, created_at",
       profile_consent: "&id",
+    });
+    // v18: Nutrition module. Three tables drive food search, per-meal
+    // line items, and a snapshot of meal-level totals.
+    //
+    // - foods: a searchable catalogue of foods with mPDAC/ keto flags.
+    //   Indexed on `name` for prefix lookups, `category` for filtering,
+    //   `keto_friendly` and `pdac_easy_digest` so the picker can show
+    //   "good choices first" without scanning the whole table. `source`
+    //   lets us segment seed vs. user vs. AI-generated rows for QA.
+    // - meal_entries: one row per logged meal. `[date+meal_type]` is
+    //   the hot index — the daily dashboard pulls all of today's
+    //   meals, in meal-type order, in O(k).
+    // - meal_items: line items inside a meal. Indexed on
+    //   meal_entry_id for the obvious join; on food_id so "where have
+    //   I eaten this before" lookups are cheap.
+    this.version(18).stores({
+      foods:
+        "++id, name, name_zh, category, source, keto_friendly, " +
+        "pdac_easy_digest, updated_at",
+      meal_entries:
+        "++id, date, meal_type, logged_at, source, " +
+        "[date+meal_type]",
+      meal_items:
+        "++id, meal_entry_id, food_id, created_at",
+    });
+    // v19: Nutrition enhancements — hydration tracking + meal templates.
+    //
+    // - fluid_logs: one row per swallow event. Indexed by `date` for
+    //   the daily total and `logged_at` for the day-clock view. The
+    //   compound `[date+kind]` lets the dashboard slice "water vs.
+    //   electrolyte vs. broth" cheaply for the 7-day trend.
+    // - meal_templates: saved-meal definitions. Items are stored as a
+    //   JSON-shaped property in the row (not a separate table) since
+    //   templates are immutable snapshots. Indexed by `last_used_at`
+    //   for the recent-templates list and `use_count` for "favourites".
+    this.version(19).stores({
+      fluid_logs:
+        "++id, date, kind, logged_at, [date+kind]",
+      meal_templates:
+        "++id, name, meal_type, last_used_at, use_count, updated_at",
+    });
+    // v20: Patient identity envelope. Mirrors the Supabase
+    // `household_profile` table so AI prompt templating has a local
+    // source on offline-first devices. One row keyed by `household_id`
+    // (string PK, not auto-increment) so the round-tripping with the
+    // server stays trivial.
+    this.version(20).stores({
+      household_profile:
+        "&household_id, updated_at",
     });
   }
 }

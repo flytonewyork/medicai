@@ -4,7 +4,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { db, now } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
-import { useSettings } from "~/hooks/use-settings";
+import { useDefaultAiModel } from "~/hooks/use-settings";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -22,7 +22,7 @@ import { Sparkles, Check, Loader2 } from "lucide-react";
 
 export default function MealIngestPage() {
   const locale = useLocale();
-  const model = useSettings()?.default_ai_model ?? "claude-opus-4-7";
+  const model = useDefaultAiModel();
 
   const [prepared, setPrepared] = useState<PreparedImage | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -154,6 +154,9 @@ export default function MealIngestPage() {
 
           {preview && (
             <div className="overflow-hidden rounded-[var(--r-md)] border border-ink-100">
+              {/* `preview` is a data URL from the in-memory file capture — next/image
+                  can't optimise it, so a plain <img> is correct here. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={preview}
                 alt="meal"

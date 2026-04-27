@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import {
-  COACH_SYSTEM,
+  buildCoachSystem,
   type CoachContext,
   type CoachMessage,
 } from "~/lib/ai/coach";
+import {
+  DEFAULT_AI_MODEL,
+  getAnthropicClient,
+  readJsonBody,
+  withAnthropicErrorBoundary,
+} from "~/lib/anthropic/route-helpers";
+import { requireSession } from "~/lib/auth/require-session";
+import { loadHouseholdProfile } from "~/lib/household/profile";
+import { wrapUserInputBlock } from "~/lib/anthropic/wrap-user-input";
 import type { Locale } from "~/types/clinical";
 
 export const runtime = "nodejs";
@@ -18,20 +26,16 @@ interface RequestBody {
 }
 
 export async function POST(req: Request) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "ANTHROPIC_API_KEY is not configured on the server." },
-      { status: 503 },
-    );
-  }
+  const auth = await requireSession();
+  if (!auth.ok) return auth.error;
 
-  let body: RequestBody;
-  try {
-    body = (await req.json()) as RequestBody;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
+  const gate = getAnthropicClient();
+  if (gate.error) return gate.error;
+
+  const parsed = await readJsonBody<RequestBody>(req);
+  if (parsed.error) return parsed.error;
+  const body = parsed.body;
+
   if (!body?.context || !Array.isArray(body?.history)) {
     return NextResponse.json(
       { error: "context and history[] required" },
@@ -39,37 +43,38 @@ export async function POST(req: Request) {
     );
   }
 
-  const { model = "claude-opus-4-7", context, history, locale = "en" } = body;
+  const { model = DEFAULT_AI_MODEL, context, history, locale = "en" } = body;
+  const profile = await loadHouseholdProfile(auth.session.household_id);
   const contextBlock = `Current step: ${context.stepTitle}\nKey: ${context.stepKey}\nInstructions shown to the user:\n${context.stepInstructions}\n\nRespond in ${locale === "zh" ? "Simplified Chinese (简体中文)" : "English"}.`;
 
-  const client = new Anthropic({ apiKey });
-  try {
-    const response = await client.messages.create({
+  const result = await withAnthropicErrorBoundary(() =>
+    gate.client.messages.create({
       model,
       max_tokens: 600,
       system: [
         {
           type: "text",
-          text: COACH_SYSTEM,
+          text: buildCoachSystem(profile),
           cache_control: { type: "ephemeral" },
         },
         { type: "text", text: contextBlock },
       ],
       messages: history.map((m) => ({
         role: m.role,
-        content: [{ type: "text", text: m.content }],
+        content: [
+          { type: "text", text: wrapUserInputBlock(m.content) },
+        ],
       })),
-    });
-    const block = response.content.find((b) => b.type === "text");
-    if (!block || block.type !== "text") {
-      return NextResponse.json(
-        { error: "Empty response from coach" },
-        { status: 502 },
-      );
-    }
-    return NextResponse.json({ reply: block.text });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message }, { status: 502 });
+    }),
+  );
+  if (result.error) return result.error;
+
+  const block = result.value.content.find((b) => b.type === "text");
+  if (!block || block.type !== "text") {
+    return NextResponse.json(
+      { error: "Empty response from coach" },
+      { status: 502 },
+    );
   }
+  return NextResponse.json({ reply: block.text });
 }

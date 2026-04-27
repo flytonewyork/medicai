@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useBilingual } from "~/hooks/use-bilingual";
-import { useSettings } from "~/hooks/use-settings";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "~/lib/db/dexie";
+import { useLocale, useL } from "~/hooks/use-translate";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Field, TextInput, Textarea } from "~/components/ui/field";
 import { Calendar, AlertCircle, Loader2 } from "lucide-react";
 import type { IngestDraft } from "~/types/ingest";
+import { postJson } from "~/lib/utils/http";
 
 // Feeds the ICS path through the same preview-diff flow. Accepts
 // either a webcal:// / https:// subscription URL (Apple Calendar,
@@ -19,7 +21,8 @@ export function CalendarSubscribe({
 }: {
   onDraft: (draft: IngestDraft) => void;
 }) {
-  const L = useBilingual();
+  const locale = useLocale();
+  const L = useL();
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -27,7 +30,8 @@ export function CalendarSubscribe({
 
   // Pull the patient's home timezone so floating ICS times (no TZID) are
   // resolved to the right wall clock. Falls back to the browser zone.
-  const homeTz = useSettings()?.home_timezone;
+  const settings = useLiveQuery(() => db.settings.toArray(), []);
+  const homeTz = settings?.[0]?.home_timezone;
 
   async function fetchAndParse() {
     const canUrl = url.trim().length > 0;
@@ -48,13 +52,10 @@ export function CalendarSubscribe({
       const payload = canUrl
         ? { url: url.trim(), fallbackTimezone }
         : { text, fallbackTimezone };
-      const res = await fetch("/api/ingest-ics", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const data = (await res.json()) as { draft: IngestDraft };
+      const data = await postJson<{ draft: IngestDraft }>(
+        "/api/ingest-ics",
+        payload,
+      );
       onDraft(data.draft);
       setUrl("");
       setText("");

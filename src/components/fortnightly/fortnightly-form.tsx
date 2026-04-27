@@ -127,7 +127,7 @@ export function FortnightlyForm({ entryId }: { entryId?: number }) {
           <CardTitle>
             {locale === "zh" ? "ECOG 自评" : "ECOG self-report"}
           </CardTitle>
-          <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <div className="mt-1 text-sm text-ink-500">
             {locale === "zh"
               ? "选择最贴近你过去一周活动水平的一项。"
               : "Choose the row that best matches your activity level over the past week."}
@@ -146,7 +146,7 @@ export function FortnightlyForm({ entryId }: { entryId?: number }) {
           <CardTitle>
             {locale === "zh" ? "功能测试" : "Functional tests"}
           </CardTitle>
-          <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <div className="mt-1 text-sm text-ink-500">
             {locale === "zh"
               ? "每两周一次，清晨完成。若有疑问请向临床团队求助。"
               : "Every two weeks, ideally in the morning. Ask the clinical team if uncertain."}
@@ -244,7 +244,7 @@ export function FortnightlyForm({ entryId }: { entryId?: number }) {
           <CardTitle>
             {locale === "zh" ? "人体测量" : "Anthropometrics"}
           </CardTitle>
-          <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <div className="mt-1 text-sm text-ink-500">
             {locale === "zh"
               ? "肌肉质量的代用指标。用卷尺测量，精确到 0.5 cm。"
               : "Proxies for muscle mass. Use a soft tape, nearest 0.5 cm."}
@@ -302,7 +302,7 @@ export function FortnightlyForm({ entryId }: { entryId?: number }) {
               ? "其他功能测试（可选）"
               : "Additional function tests (optional)"}
           </CardTitle>
-          <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <div className="mt-1 text-sm text-ink-500">
             {locale === "zh"
               ? "可在家里安全完成 —— 身边最好有人照看。"
               : "All safe to do at home — ideally with a spotter nearby."}
@@ -412,7 +412,7 @@ export function FortnightlyForm({ entryId }: { entryId?: number }) {
       <Card>
         <CardHeader>
           <CardTitle>SARC-F</CardTitle>
-          <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <div className="mt-1 text-sm text-ink-500">
             {locale === "zh"
               ? "5 个问题的肌少症筛查（每题 0–2 分）。总分 ≥ 4 建议进一步评估。"
               : "5-question sarcopenia screen (0–2 per item). Total ≥ 4 flags the need for further assessment."}
@@ -431,7 +431,7 @@ export function FortnightlyForm({ entryId }: { entryId?: number }) {
           <CardTitle>
             {locale === "zh" ? "周围神经病变分级" : "Neuropathy grade"}
           </CardTitle>
-          <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <div className="mt-1 text-sm text-ink-500">
             {locale === "zh"
               ? "选择最严重的一项 —— 手或脚的症状，无论哪一侧。"
               : "Pick the worst — hands or feet, either side. CTCAE-aligned."}

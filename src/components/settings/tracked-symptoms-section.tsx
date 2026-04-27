@@ -1,15 +1,15 @@
 "use client";
 
+import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
-import { useLocale } from "~/hooks/use-translate";
-import { useBilingual } from "~/hooks/use-bilingual";
-import { useSettings } from "~/hooks/use-settings";
+import { useLocale, useL } from "~/hooks/use-translate";
 import {
   SYMPTOM_CATALOG,
   defaultTrackedSymptomIds,
   type SymptomTag,
 } from "~/lib/daily/symptom-catalog";
 import { cn } from "~/lib/utils/cn";
+import { localeTag } from "~/lib/utils/date";
 import { Card, CardContent } from "~/components/ui/card";
 import { Stethoscope, RotateCcw } from "lucide-react";
 
@@ -31,9 +31,11 @@ const TAG_LABEL: Record<SymptomTag, { en: string; zh: string }> = {
 
 export function TrackedSymptomsSection() {
   const locale = useLocale();
-  const L = useBilingual();
-  const s = useSettings();
+  const settings = useLiveQuery(() => db.settings.toArray(), []);
+  const s = settings?.[0];
   const tracked = new Set(s?.tracked_symptoms ?? defaultTrackedSymptomIds());
+
+  const L = useL();
 
   async function toggle(id: string) {
     if (!s?.id) return;
@@ -64,8 +66,8 @@ export function TrackedSymptomsSection() {
           </h2>
           <p className="mt-1 text-xs text-ink-500">
             {L(
-              "Pick the PDAC- and GnP-specific symptoms the daily check-in should ask about. Your first full entry becomes the baseline for trend detection.",
-              "选择每日记录要询问的 PDAC 与 GnP 相关症状。首次完整记录将作为趋势对比的基线。",
+              "Pick the mPDAC- and GnP-specific symptoms the daily check-in should ask about. Your first full entry becomes the baseline for trend detection.",
+              "选择每日记录要询问的 mPDAC、GnP 相关症状。首次完整记录将作为趋势对比的基线。",
             )}
           </p>
         </div>
@@ -158,7 +160,7 @@ export function TrackedSymptomsSection() {
         <p className="text-[11px] text-ink-400">
           {L("Baseline set on ", "基线记录于 ")}
           {new Date(s.symptoms_baseline_set_at).toLocaleDateString(
-            locale === "zh" ? "zh-CN" : "en-AU",
+            localeTag(locale),
             { dateStyle: "medium" },
           )}
         </p>

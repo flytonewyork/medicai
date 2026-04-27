@@ -79,7 +79,7 @@ export const TASK_PRESETS: readonly TaskPreset[] = [
     lead_time_days: 0,
     priority: "low",
     rationale: {
-      en: "Someone other than Hu Lin does this — reduces dust and mould exposure.",
+      en: "Someone other than the patient does this — reduces dust and mould exposure.",
       zh: "由其他家人完成 —— 减少灰尘和霉菌暴露。",
     },
   },

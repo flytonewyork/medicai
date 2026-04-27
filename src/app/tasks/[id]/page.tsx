@@ -10,7 +10,9 @@ export default function EditTaskPage() {
   const params = useParams<{ id: string }>();
   const id = Number(params?.id);
   if (!Number.isFinite(id)) {
-    return <div className="p-6 text-sm text-red-700">Invalid id.</div>;
+    return (
+      <div className="p-6 text-sm text-[var(--warn)]">Invalid id.</div>
+    );
   }
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4 md:p-8">

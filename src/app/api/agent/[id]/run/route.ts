@@ -9,6 +9,9 @@ import type {
 } from "~/types/agent";
 import { AGENT_IDS, LOG_TAGS } from "~/types/agent";
 import { runAgent } from "~/agents/run";
+import { readJsonBody } from "~/lib/anthropic/route-helpers";
+import { requireSession } from "~/lib/auth/require-session";
+import { loadHouseholdProfile } from "~/lib/household/profile";
 
 export const runtime = "nodejs";
 // Specialist agents chew through referrals + state and emit up to 2k tokens
@@ -71,14 +74,13 @@ export async function POST(
     );
   }
 
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
+  const auth = await requireSession();
+  if (!auth.ok) return auth.error;
 
-  const parsed = RequestSchema.safeParse(body);
+  const json = await readJsonBody<unknown>(req);
+  if (json.error) return json.error;
+
+  const parsed = RequestSchema.safeParse(json.body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Invalid request", detail: parsed.error.flatten() },
@@ -96,6 +98,8 @@ export async function POST(
     );
   }
 
+  const profile = await loadHouseholdProfile(auth.session.household_id);
+
   let output: AgentOutput;
   try {
     output = await runAgent({
@@ -106,6 +110,7 @@ export async function POST(
       locale: parsed.data.locale,
       date: parsed.data.date,
       trigger: parsed.data.trigger,
+      profile,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

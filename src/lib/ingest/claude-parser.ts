@@ -1,5 +1,7 @@
 import { z } from "zod/v4";
 import type { PreparedImage } from "~/lib/ingest/image";
+import { DEFAULT_AI_MODEL } from "~/lib/anthropic/model";
+import { postJson } from "~/lib/utils/http";
 
 const LabsSchema = z.object({
   // Tumour markers
@@ -112,7 +114,7 @@ Your job is to extract structured fields into the given schema. Rules:
 export async function extractWithClaude({
   text,
   image,
-  model = "claude-opus-4-7",
+  model = DEFAULT_AI_MODEL,
 }: {
   text?: string;
   image?: PreparedImage;
@@ -121,12 +123,9 @@ export async function extractWithClaude({
   if (!text && !image) {
     throw new Error("extractWithClaude requires at least text or image input");
   }
-  const res = await fetch("/api/ai/ingest-report", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ text, image, model }),
-  });
-  if (!res.ok) throw new Error(await res.text());
-  const data = (await res.json()) as { result: ClaudeExtraction };
+  const data = await postJson<{ result: ClaudeExtraction }>(
+    "/api/ai/ingest-report",
+    { text, image, model },
+  );
   return data.result;
 }

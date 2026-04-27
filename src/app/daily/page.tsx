@@ -9,7 +9,7 @@ import { Button } from "~/components/ui/button";
 import { PageHeader } from "~/components/ui/page-header";
 import { EmptyState } from "~/components/ui/empty-state";
 import { Attribution } from "~/components/shared/attribution";
-import { ChevronRight, CalendarDays } from "lucide-react";
+import { ChevronRight, CalendarDays, Check } from "lucide-react";
 
 export default function DailyPage() {
   const t = useT();
@@ -82,42 +82,25 @@ export default function DailyPage() {
                     <span>{e.walking_minutes} min walk</span>
                   )}
                   {e.resistance_training && (
-                    <span className="text-[var(--ok)]">
-                      {locale === "zh" ? "阻力 ✓" : "resistance ✓"}
+                    <span className="inline-flex items-center gap-1 text-[var(--ok)]">
+                      <Check className="h-3 w-3" aria-hidden />
+                      {locale === "zh" ? "阻力" : "resistance"}
                     </span>
                   )}
                 </div>
-                <div className="flex gap-1.5 text-xs">
+                <div className="flex flex-wrap gap-1.5">
                   {e.fever && (
-                    <span
-                      className="rounded-full px-2 py-0.5 text-[11px]"
-                      style={{
-                        background: "var(--warn-soft)",
-                        color: "var(--warn)",
-                      }}
-                    >
+                    <span className="a-chip warn">
                       {locale === "zh" ? "发热" : "fever"}
                     </span>
                   )}
                   {(e.neuropathy_feet || e.neuropathy_hands) && (
-                    <span
-                      className="rounded-full px-2 py-0.5 text-[11px]"
-                      style={{
-                        background: "var(--sand)",
-                        color: "oklch(45% 0.06 70)",
-                      }}
-                    >
+                    <span className="a-chip sand">
                       {locale === "zh" ? "神经病变" : "neuropathy"}
                     </span>
                   )}
                   {e.new_bruising && (
-                    <span
-                      className="rounded-full px-2 py-0.5 text-[11px]"
-                      style={{
-                        background: "var(--sand)",
-                        color: "oklch(45% 0.06 70)",
-                      }}
-                    >
+                    <span className="a-chip sand">
                       {locale === "zh" ? "瘀斑" : "bruising"}
                     </span>
                   )}

@@ -1,5 +1,11 @@
 import { z } from "zod/v4";
 import type { PreparedImage } from "./image";
+import { DEFAULT_AI_MODEL } from "~/lib/anthropic/model";
+import {
+  FALLBACK_HOUSEHOLD_PROFILE,
+  type HouseholdProfile,
+} from "~/types/household-profile";
+import { postJson } from "~/lib/utils/http";
 
 export const NotesStructureSchema = z.object({
   transcription: z
@@ -40,7 +46,10 @@ export const NotesStructureSchema = z.object({
 
 export type NotesStructure = z.infer<typeof NotesStructureSchema>;
 
-export const NOTES_SYSTEM = `You're reading a photo of Hu Lin's handwritten daily notes from his cancer-tracking journal and structuring them into Anchor's daily-log fields.
+export function buildNotesSystem(
+  profile: HouseholdProfile = FALLBACK_HOUSEHOLD_PROFILE,
+): string {
+  return `You're reading a photo of ${profile.patient_initials}'s handwritten daily notes from a cancer-tracking journal and structuring them into Anchor's daily-log fields.
 
 Rules:
 1. First transcribe the note faithfully — no rewording, no added words, no interpretation.
@@ -50,20 +59,18 @@ Rules:
 5. For practice completion: only set true if the note says the practice was done today.
 6. Never invent metrics. If the note doesn't mention something, omit it (leave absent / null).
 7. Put any free-text reflection (non-metric sentences) into the 'reflection' field.`;
+}
 
 export async function structureNotes({
-  model = "claude-opus-4-7",
+  model = DEFAULT_AI_MODEL,
   image,
 }: {
   model?: string;
   image: PreparedImage;
 }): Promise<NotesStructure> {
-  const res = await fetch("/api/ai/ingest-notes", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ image, model }),
-  });
-  if (!res.ok) throw new Error(await res.text());
-  const data = (await res.json()) as { result: NotesStructure };
+  const data = await postJson<{ result: NotesStructure }>(
+    "/api/ai/ingest-notes",
+    { image, model },
+  );
   return data.result;
 }

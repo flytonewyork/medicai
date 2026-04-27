@@ -29,7 +29,7 @@ function bmiCategory(b: number): string {
 
 export function useBodyMetrics(): BodyMetrics {
   const entries = useLiveQuery(() => latestDailyEntries(28));
-  const baseline = useSettings();
+  const baseline = useSettings() ?? undefined;
 
   return useMemo(
     () => computeMetrics(entries ?? [], baseline),
@@ -39,7 +39,7 @@ export function useBodyMetrics(): BodyMetrics {
 
 function computeMetrics(
   entries: DailyEntry[],
-  baseline: Settings | undefined,
+  baseline: Settings | null | undefined,
 ): BodyMetrics {
   const ordered = entries.slice().reverse();
   const last7 = ordered.slice(-7);
