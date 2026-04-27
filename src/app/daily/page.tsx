@@ -54,7 +54,7 @@ export default function DailyPage() {
           <li key={e.id}>
             <Link
               href={`/daily/${e.id}`}
-              className="group flex items-center justify-between rounded-xl border border-ink-100/70 bg-paper-2 p-4 transition-colors hover:border-ink-300"
+              className="a-row group justify-between"
             >
               <div className="space-y-1">
                 <div className="flex items-center gap-2">

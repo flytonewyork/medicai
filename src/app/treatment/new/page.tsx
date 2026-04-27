@@ -223,7 +223,7 @@ export default function NewTreatmentCyclePage() {
   if (!protocol) return null;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 p-4 md:p-8">
+    <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-8">
       <PageHeader
         title={L("Start new cycle", "开始新周期")}
         subtitle={L(

@@ -127,7 +127,7 @@ export default function TasksPage() {
         if (items.length === 0) return null;
         return (
           <section key={key} className="space-y-2">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-ink-500">
+            <h2 className="eyebrow">
               {label[locale]} · {items.length}
             </h2>
             <ul className="space-y-2">

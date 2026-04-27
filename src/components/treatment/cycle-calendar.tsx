@@ -177,7 +177,7 @@ export function CycleCalendar({
                 aria-pressed={isSelected}
                 aria-label={tooltip}
                 title={tooltip}
-                className="relative flex aspect-square flex-col items-center justify-center rounded-[10px] transition-transform hover:scale-[1.03] focus:outline-none"
+                className="relative flex aspect-square flex-col items-center justify-center rounded-md transition-transform hover:scale-[1.03] focus:outline-none"
                 style={style}
               >
                 {content}
@@ -187,7 +187,7 @@ export function CycleCalendar({
           return (
             <div
               key={n}
-              className="relative flex aspect-square flex-col items-center justify-center rounded-[10px]"
+              className="relative flex aspect-square flex-col items-center justify-center rounded-md"
               style={style}
               title={tooltip}
             >

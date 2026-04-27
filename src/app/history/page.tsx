@@ -338,9 +338,7 @@ function DateGroup({
       : format(d, "EEEE · d MMM yyyy");
   return (
     <section>
-      <div className="mono mb-2 text-[10px] uppercase tracking-[0.14em] text-ink-400">
-        {label}
-      </div>
+      <div className="eyebrow mb-2">{label}</div>
       <ul className="space-y-1.5">
         {entries.map((e) => (
           <li key={e.id}>

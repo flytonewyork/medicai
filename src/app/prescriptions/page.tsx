@@ -342,7 +342,7 @@ function PrescriptionRow({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <div className="text-[14px] font-semibold text-ink-900">{name}</div>
-            <div className="mono text-[10.5px] uppercase tracking-[0.12em] text-ink-400">
+            <div className="eyebrow">
               {med.category}
               {med.source === "user_added" ? " · self-added" : ""}
             </div>

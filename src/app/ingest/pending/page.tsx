@@ -142,7 +142,7 @@ export default function PendingResultsPage() {
       </Card>
 
       <section className="space-y-3">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-ink-500">
+        <h2 className="eyebrow">
           {locale === "zh" ? "未收到" : "Open"} ({open.length})
         </h2>
         {open.length === 0 && (
@@ -212,7 +212,7 @@ export default function PendingResultsPage() {
 
       {done.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-ink-500">
+          <h2 className="eyebrow">
             {locale === "zh" ? "已收到" : "Received"} ({done.length})
           </h2>
           <ul className="space-y-2">

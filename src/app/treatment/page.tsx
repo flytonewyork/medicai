@@ -63,7 +63,7 @@ export default function TreatmentListPage() {
       <div className="grid gap-2 sm:grid-cols-2">
         <Link
           href="/prescriptions"
-          className="group flex items-center gap-3 rounded-xl border border-ink-100/70 bg-paper-2 p-3 transition-colors hover:border-ink-300"
+          className="a-row dense group"
         >
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--tide-soft)] text-[var(--tide-2)]">
             <ClipboardList className="h-4 w-4" />
@@ -82,7 +82,7 @@ export default function TreatmentListPage() {
         </Link>
         <Link
           href="/medications"
-          className="group flex items-center gap-3 rounded-xl border border-ink-100/70 bg-paper-2 p-3 transition-colors hover:border-ink-300"
+          className="a-row dense group"
         >
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--sand)] text-ink-900">
             <BookOpen className="h-4 w-4" />
@@ -124,7 +124,7 @@ export default function TreatmentListPage() {
           const style = STATUS_STYLES[c.status];
           return (
             <li key={c.id}>
-              <div className="group flex items-center justify-between rounded-xl border border-ink-100/70 bg-paper-2 p-4 transition-colors hover:border-ink-300">
+              <div className="a-row group justify-between">
                 <Link
                   href={`/treatment/${c.id}`}
                   className="flex min-w-0 flex-1 items-center gap-3"

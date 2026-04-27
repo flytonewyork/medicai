@@ -258,6 +258,30 @@ body {
   border: 0.5px solid rgba(20, 25, 40, 0.05);
 }
 
+/* a-row — the list-row card. Used for clickable list items that
+ * stand in for cards but stack densely (daily entries, treatment
+ * cycles, weekly/fortnightly assessments, etc.). Lighter than .a-card
+ * — single-pixel border, no shadow — so a stack of them reads as a
+ * list rather than a column of cards. The `group` modifier is
+ * applied at the call site so chevrons and other affordances can
+ * react on hover. */
+.a-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: var(--r-md);
+  border: 1px solid color-mix(in oklch, var(--ink-100), transparent 30%);
+  background: var(--paper-2);
+  padding: 1rem;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+.a-row:hover {
+  border-color: var(--ink-300);
+}
+.a-row.dense {
+  padding: 0.75rem;
+}
+
 /* Horizon — subtle gradient line for section dividers */
 .a-horizon {
   height: 1px;

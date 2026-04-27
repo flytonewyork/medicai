@@ -216,34 +216,32 @@ export default function CycleDetailPage() {
       )}
 
       <div className="grid gap-2 sm:grid-cols-2">
-        <Link
-          href="/safety/chemo-at-home"
-          className="rounded-md border border-ink-100 bg-paper-2/40 px-4 py-3 text-[12px] text-ink-700 hover:border-ink-300"
-        >
-          <div className="font-medium text-ink-900">
-            {locale === "zh"
-              ? "居家化疗安全"
-              : "Chemo safety at home"}
-          </div>
-          <div className="mt-0.5 text-[11px] text-ink-500">
-            {locale === "zh"
-              ? "用药后 48 小时体液防护"
-              : "Body-fluid precautions for 48 h after each dose"}
+        <Link href="/safety/chemo-at-home" className="a-row dense group">
+          <div className="min-w-0 flex-1">
+            <div className="text-[13px] font-semibold text-ink-900">
+              {locale === "zh"
+                ? "居家化疗安全"
+                : "Chemo safety at home"}
+            </div>
+            <div className="mt-0.5 text-[11.5px] text-ink-500">
+              {locale === "zh"
+                ? "用药后 48 小时体液防护"
+                : "Body-fluid precautions for 48 h after each dose"}
+            </div>
           </div>
         </Link>
-        <Link
-          href="/safety/neutropenia"
-          className="rounded-md border border-ink-100 bg-paper-2/40 px-4 py-3 text-[12px] text-ink-700 hover:border-ink-300"
-        >
-          <div className="font-medium text-ink-900">
-            {locale === "zh"
-              ? "中性粒细胞 & 感染防护"
-              : "Neutropenia & infection prevention"}
-          </div>
-          <div className="mt-0.5 text-[11px] text-ink-500">
-            {locale === "zh"
-              ? "用药后 7–14 天风险最高"
-              : "Risk peaks days 7–14 after each dose"}
+        <Link href="/safety/neutropenia" className="a-row dense group">
+          <div className="min-w-0 flex-1">
+            <div className="text-[13px] font-semibold text-ink-900">
+              {locale === "zh"
+                ? "中性粒细胞 & 感染防护"
+                : "Neutropenia & infection prevention"}
+            </div>
+            <div className="mt-0.5 text-[11.5px] text-ink-500">
+              {locale === "zh"
+                ? "用药后 7–14 天风险最高"
+                : "Risk peaks days 7–14 after each dose"}
+            </div>
           </div>
         </Link>
       </div>
@@ -316,9 +314,7 @@ export default function CycleDetailPage() {
             if (!items || items.length === 0) return null;
             return (
               <div key={cat}>
-                <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-500">
-                  {cat}
-                </div>
+                <div className="eyebrow mb-1.5">{cat}</div>
                 <div className="space-y-1.5">
                   {items.map((n) => (
                     <NudgeCard key={n.id} nudge={n} onSnooze={snooze} />
@@ -336,7 +332,7 @@ export default function CycleDetailPage() {
           )}
           {(cycle.snoozed_nudge_ids?.length ?? 0) > 0 && (
             <div className="pt-2">
-              <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-500">
+              <div className="eyebrow mb-1.5">
                 {locale === "zh" ? "已暂隐" : "Snoozed"}
               </div>
               <div className="flex flex-wrap gap-1.5 text-xs">
@@ -391,11 +387,11 @@ export default function CycleDetailPage() {
               >
                 {locale === "zh" ? "取消" : "Cancel"}
               </Button>
-              <button
-                type="button"
+              <Button
+                variant="danger"
+                size="sm"
                 onClick={deleteCycle}
                 disabled={deleting}
-                className="rounded-md bg-[var(--warn)] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-95 disabled:opacity-60"
               >
                 {deleting
                   ? locale === "zh"
@@ -404,7 +400,7 @@ export default function CycleDetailPage() {
                   : locale === "zh"
                     ? "确认删除"
                     : "Confirm delete"}
-              </button>
+              </Button>
             </div>
           )}
         </div>
