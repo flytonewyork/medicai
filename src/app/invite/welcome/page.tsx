@@ -9,6 +9,7 @@ import {
   updateMyProfile,
 } from "~/lib/supabase/households";
 import { useHousehold } from "~/hooks/use-household";
+import { db, now as nowISO } from "~/lib/db/dexie";
 import { useUIStore } from "~/stores/ui-store";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent } from "~/components/ui/card";
@@ -157,14 +158,56 @@ export default function InviteWelcomePage() {
     try {
       const finalRelationship =
         customRelationship.trim() || relationship.trim() || null;
+      const finalDisplayName = displayName.trim() || "Care team member";
       await updateMyProfile({
-        display_name: displayName.trim() || "Care team member",
+        display_name: finalDisplayName,
         relationship: finalRelationship,
         care_role_label: finalRelationship,
         locale,
         timezone: timezone || browserTimezone,
       });
       setUILocale(locale);
+
+      // Backfill a minimal Dexie settings row marked as caregiver /
+      // clinician + onboarded_at. Without this, the next time the user
+      // hits `/` the dashboard's onboarded_at gate fires and dumps
+      // them in the patient onboarding wizard — wrong audience. The
+      // dashboard now ALSO has a Supabase-membership-first redirect
+      // for safety, but writing the local row keeps the offline
+      // experience consistent and prevents flicker.
+      try {
+        const ts = nowISO();
+        const userType: "caregiver" | "clinician" =
+          membership?.role === "clinician" ? "clinician" : "caregiver";
+        const existing = await db.settings.toArray();
+        const existingRow = existing[0];
+        if (existingRow?.id) {
+          await db.settings.update(existingRow.id, {
+            user_type: userType,
+            profile_name:
+              existingRow.profile_name?.trim() || finalDisplayName,
+            locale,
+            home_timezone: timezone || browserTimezone || existingRow.home_timezone,
+            onboarded_at: existingRow.onboarded_at ?? ts,
+            updated_at: ts,
+          });
+        } else {
+          await db.settings.add({
+            user_type: userType,
+            profile_name: finalDisplayName,
+            locale,
+            home_timezone: timezone || browserTimezone,
+            onboarded_at: ts,
+            created_at: ts,
+            updated_at: ts,
+          });
+        }
+      } catch {
+        // Dexie write is a nice-to-have; failure here doesn't block the
+        // user from continuing to /family. The dashboard's Supabase-
+        // membership check covers the routing case either way.
+      }
+
       router.replace("/family");
     } catch {
       // Fail-open: even if the profile write errors we still drop them on

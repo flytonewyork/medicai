@@ -38,18 +38,30 @@ export default function DashboardPage() {
   // racing useEffects can't both call router.replace on the same
   // render. Order:
   //   1. Settings still loading (undefined) → wait.
-  //   2. No settings row OR no onboarded_at → /onboarding (everyone
-  //      finishes onboarding before any role-based routing).
-  //   3. Caregiver / clinician (per Dexie settings.user_type) →
+  //   2. Supabase household membership still resolving → wait. The
+  //      hook has a 4s timeout, so this branch can't deadlock.
+  //   3. Authenticated household member with a non-patient,
+  //      non-primary-carer role (per Supabase) → /family. Checked
+  //      BEFORE the Dexie onboarded_at gate because a freshly-
+  //      signed-in carer who came via /invite/<token> has no Dexie
+  //      settings row yet — sending them to /onboarding would dump
+  //      them in the patient wizard, which is the wrong audience.
+  //   4. No settings row OR no onboarded_at → /onboarding (the
+  //      patient / primary-carer onboarding wizard).
+  //   5. Caregiver / clinician (per Dexie settings.user_type) →
   //      /family. Set during onboarding before any sign-in.
-  //   4. Authenticated household member with a non-patient,
-  //      non-primary-carer role (per Supabase) → /family. We wait
-  //      for the household hook to resolve (membership === undefined)
-  //      before acting on this branch so we don't route a
-  //      yet-to-load primary_carer to the family view by accident.
-  //   5. Otherwise (patient / primary carer) → stay on dashboard.
+  //   6. Otherwise (patient / primary carer) → stay on dashboard.
   useEffect(() => {
-    if (settings === undefined) return; // still loading
+    if (settings === undefined) return; // dexie still loading
+    if (membership === undefined) return; // supabase still resolving
+    if (
+      membership !== null &&
+      membership.role !== "primary_carer" &&
+      membership.role !== "patient"
+    ) {
+      router.replace("/family");
+      return;
+    }
     if (!settings?.onboarded_at) {
       router.replace("/onboarding");
       return;
@@ -58,14 +70,7 @@ export default function DashboardPage() {
       router.replace("/family");
       return;
     }
-    if (membership === undefined) return; // hook still resolving
-    if (
-      membership !== null &&
-      membership.role !== "primary_carer" &&
-      membership.role !== "patient"
-    ) {
-      router.replace("/family");
-    }
+    // Otherwise stay on the dashboard (patient / primary carer).
   }, [membership, router, settings]);
 
   const { greeting, eyebrow } = useMemo(() => {
@@ -96,6 +101,14 @@ export default function DashboardPage() {
   // than flash the patient dashboard at a caregiver who's about to be
   // routed to /family. The app-level loading.tsx covers the visual.
   if (settings === undefined) return null;
+  if (membership === undefined) return null;
+  if (
+    membership !== null &&
+    membership.role !== "primary_carer" &&
+    membership.role !== "patient"
+  ) {
+    return null;
+  }
   if (!settings?.onboarded_at) return null;
   if (settings.user_type === "caregiver" || settings.user_type === "clinician") {
     return null;
