@@ -373,7 +373,7 @@ export default function LogPage() {
         )}
 
         <div className="mt-5 flex items-center justify-between gap-3">
-          {run.kind === "done" ? (
+          {run.kind === "done" || run.kind === "filed" ? (
             <>
               <Button variant="ghost" onClick={() => router.push("/")}>
                 <ArrowLeft className="h-4 w-4" />

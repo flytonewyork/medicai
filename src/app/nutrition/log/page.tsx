@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Sparkles, Clock, Loader2 } from "lucide-react";
 import { todayISO } from "~/lib/utils/date";
 import { useLocale } from "~/hooks/use-translate";
+import { useUIStore } from "~/stores/ui-store";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/field";
@@ -32,6 +33,7 @@ interface PendingItem {
 export default function LogMealPage() {
   const router = useRouter();
   const locale = useLocale();
+  const enteredBy = useUIStore((s) => s.enteredBy);
   const [parsed, setParsed] = useState<ParsedMealResult | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
   const [parsedSource, setParsedSource] = useState<"photo" | "text">("text");
@@ -81,7 +83,7 @@ export default function LogMealPage() {
         source: "photo",
         confidence: result.confidence,
         pert_taken: false,
-        entered_by: "hulin",
+        entered_by: enteredBy,
         // Parser emits per-eaten-serving macros; createMeal expects
         // per-100 g. Bridge through parsedItemToInline so the values
         // round-trip into meal_items at the right magnitude.
@@ -112,7 +114,7 @@ export default function LogMealPage() {
         source: parsedSource,
         confidence: data.confidence,
         pert_taken: data.pert_taken,
-        entered_by: "hulin",
+        entered_by: enteredBy,
         items: data.items.map((it) => {
           if (it.food_id && it.food_match) {
             return {
@@ -154,7 +156,7 @@ export default function LogMealPage() {
         logged_at: assembleLoggedAt(todayISO(), mealTime),
         notes: manualNotes || undefined,
         source: "manual",
-        entered_by: "hulin",
+        entered_by: enteredBy,
         items: manualItems.map((p) => ({
           kind: "food" as const,
           food: p.food,

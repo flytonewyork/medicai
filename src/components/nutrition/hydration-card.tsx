@@ -15,6 +15,7 @@ import {
 import { Card, CardContent } from "~/components/ui/card";
 import { TargetBar } from "./macro-bar";
 import { useLocale, useL } from "~/hooks/use-translate";
+import { useUIStore } from "~/stores/ui-store";
 import { cn } from "~/lib/utils/cn";
 import type { FluidKind } from "~/types/nutrition";
 
@@ -23,6 +24,7 @@ import type { FluidKind } from "~/types/nutrition";
 // target, and a collapsible list of today's swallow events.
 export function HydrationCard({ date }: { date: string }) {
   const locale = useLocale();
+  const enteredBy = useUIStore((s) => s.enteredBy);
   const fluidsRaw = useLiveQuery(
     async () => listFluidsForDate(date),
     [date],
@@ -67,7 +69,7 @@ export function HydrationCard({ date }: { date: string }) {
                   date,
                   kind: preset.kind,
                   volume_ml: preset.volume_ml,
-                  entered_by: "hulin",
+                  entered_by: enteredBy,
                 })
               }
               className="inline-flex items-center gap-1.5 rounded-full border border-ink-200 bg-paper px-2.5 py-1 text-[11px] text-ink-700 hover:border-ink-300 hover:bg-paper-2/60"
@@ -124,7 +126,7 @@ export function HydrationCard({ date }: { date: string }) {
                   date,
                   kind: customKind,
                   volume_ml: customMl,
-                  entered_by: "hulin",
+                  entered_by: enteredBy,
                 });
                 setOpen(false);
               }}

@@ -15,6 +15,7 @@ import { todayISO } from "~/lib/utils/date";
 import { Card } from "~/components/ui/card";
 import { cn } from "~/lib/utils/cn";
 import { useLocale } from "~/hooks/use-translate";
+import { useUIStore } from "~/stores/ui-store";
 import type { MealType } from "~/types/nutrition";
 
 const ORDER: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
@@ -60,6 +61,7 @@ export function MealList({ date }: { date: string }) {
 
 function MealCard({ mealId }: { mealId: number }) {
   const locale = useLocale();
+  const enteredBy = useUIStore((s) => s.enteredBy);
   const [open, setOpen] = useState(false);
   const items =
     useLiveQuery(async () => listItemsForMeal(mealId), [mealId]) ?? [];
@@ -166,7 +168,7 @@ function MealCard({ mealId }: { mealId: number }) {
                 await relogMeal({
                   source_meal_id: mealId,
                   date: todayISO(),
-                  entered_by: "hulin",
+                  entered_by: enteredBy,
                 });
               }}
               className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-ink-500 hover:bg-ink-100 hover:text-ink-900"
