@@ -19,7 +19,7 @@ export default function NutritionPage() {
   const date = todayISO();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-8">
       <PageHeader
         eyebrow={locale === "zh" ? "营养" : "NUTRITION"}
         title={
@@ -58,29 +58,23 @@ export default function NutritionPage() {
       <WeeklySummary />
 
       <section className="grid gap-2 sm:grid-cols-2">
-        <Link
-          href="/nutrition/foods"
-          className="flex items-center justify-between rounded-md border border-ink-100 bg-paper-2/40 px-4 py-3 text-sm transition-colors hover:border-ink-300"
-        >
-          <span className="flex items-center gap-3">
+        <Link href="/nutrition/foods" className="a-row dense group justify-between">
+          <span className="flex items-center gap-3 text-sm">
             <Apple className="h-4 w-4 text-[var(--tide-2)]" />
             <span className="text-ink-900">
               {locale === "zh" ? "食物库" : "Foods database"}
             </span>
           </span>
-          <ChevronRight className="h-4 w-4 text-ink-400" />
+          <ChevronRight className="h-4 w-4 text-ink-400 group-hover:text-ink-700" />
         </Link>
-        <Link
-          href="/nutrition/guide"
-          className="flex items-center justify-between rounded-md border border-ink-100 bg-paper-2/40 px-4 py-3 text-sm transition-colors hover:border-ink-300"
-        >
-          <span className="flex items-center gap-3">
+        <Link href="/nutrition/guide" className="a-row dense group justify-between">
+          <span className="flex items-center gap-3 text-sm">
             <BookOpen className="h-4 w-4 text-[var(--tide-2)]" />
             <span className="text-ink-900">
               {locale === "zh" ? "饮食策略" : "Diet strategy"}
             </span>
           </span>
-          <ChevronRight className="h-4 w-4 text-ink-400" />
+          <ChevronRight className="h-4 w-4 text-ink-400 group-hover:text-ink-700" />
         </Link>
       </section>
     </div>

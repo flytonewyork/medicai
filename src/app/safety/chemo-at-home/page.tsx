@@ -17,7 +17,7 @@ import { getSource } from "~/lib/nutrition/sources";
 export default function ChemoAtHomePage() {
   const locale = useLocale();
   return (
-    <div className="mx-auto max-w-2xl space-y-5 px-4 py-6 sm:px-6">
+    <div className="mx-auto max-w-2xl space-y-6 p-4 md:p-8">
       <Link
         href="/safety"
         className="inline-flex items-center gap-1.5 text-[12px] text-ink-500 hover:text-ink-900"

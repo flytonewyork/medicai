@@ -254,7 +254,7 @@ export default function LogPage() {
         </Field>
 
         <div className="mt-4">
-          <div className="mono mb-1.5 text-[10px] uppercase tracking-[0.14em] text-ink-400">
+          <div className="eyebrow mb-1.5">
             {locale === "zh" ? "分类" : "Tags"}
           </div>
           <div className="flex flex-wrap gap-2">

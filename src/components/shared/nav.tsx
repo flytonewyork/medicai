@@ -156,7 +156,7 @@ export function MobileBottomNav() {
       // The pill background extending into that zone is fine — iOS
       // draws the home indicator overlay on top, and our icons sit
       // well above it (~80 px from viewport bottom on PWA).
-      className="a-glass pwa-bottom-nav fixed inset-x-3 bottom-0 z-40 flex justify-around rounded-[22px] px-2 py-2.5 shadow-lg md:hidden"
+      className="a-glass pwa-bottom-nav fixed inset-x-3 bottom-0 z-40 flex justify-around rounded-lg px-2 py-2.5 shadow-lg md:hidden"
     >
       {mobileItems.map((item) => {
         const Icon = item.icon;
@@ -219,7 +219,7 @@ export function MobileMoreMenu() {
             className="absolute inset-0 bg-ink-900/30"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute inset-x-3 top-3 rounded-[22px] bg-paper-2 p-4 shadow-xl">
+          <div className="absolute inset-x-3 top-3 rounded-lg bg-paper-2 p-4 shadow-xl">
             <div className="flex items-center justify-between">
               <div className="serif text-[17px] tracking-tight text-ink-900">
                 {locale === "zh" ? "导航" : "Navigate"}

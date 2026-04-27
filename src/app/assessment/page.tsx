@@ -81,7 +81,7 @@ export default function AssessmentListPage() {
           <li key={a.id}>
             <Link
               href={a.status === "draft" ? `/assessment/run/${a.id}` : `/assessment/${a.id}`}
-              className="group flex items-center gap-4 rounded-xl border border-ink-100/70 bg-paper-2 p-4 transition-colors hover:border-ink-300"
+              className="a-row group gap-4"
             >
               {typeof a.anchor_index === "number" ? (
                 <PillarRing score={a.anchor_index} size={56} />

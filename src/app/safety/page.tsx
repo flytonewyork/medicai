@@ -19,7 +19,7 @@ export default function SafetyIndex() {
   const locale = useLocale();
   const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
   return (
-    <div className="mx-auto max-w-2xl space-y-5 px-4 py-6 sm:px-6">
+    <div className="mx-auto max-w-2xl space-y-6 p-4 md:p-8">
       <PageHeader
         eyebrow={L("SAFETY", "安全指引")}
         title={L("Safety at home", "居家安全")}

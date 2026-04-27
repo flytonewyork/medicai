@@ -86,7 +86,7 @@ export default function BridgePage() {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-8">
+    <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-8">
       <PageHeader
         title={t("nav.bridge")}
         subtitle={
@@ -98,7 +98,7 @@ export default function BridgePage() {
       />
 
       {/* ECOG plain-language explainer */}
-      <div className="rounded-[var(--r-lg)] border border-ink-100 bg-paper-2 p-5 space-y-3">
+      <Card className="space-y-3 p-5">
         <div className="flex items-baseline gap-2">
           <div className="text-[13px] font-semibold text-ink-900">
             {L("What is ECOG?", "什么是 ECOG？")}
@@ -117,11 +117,11 @@ export default function BridgePage() {
           {ecogLevels.map((level) => (
             <div
               key={level.grade}
-              className="flex items-start gap-3 rounded-[var(--r-md)] p-3"
+              className="flex items-start gap-3 rounded-md p-3"
               style={{ background: level.soft }}
             >
               <div
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[12px] font-bold text-paper"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[12px] font-semibold text-paper"
                 style={{ background: level.color }}
               >
                 {level.grade}
@@ -137,7 +137,7 @@ export default function BridgePage() {
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
       {/* Always-visible strategy explainer */}
       <div className="grid gap-4 md:grid-cols-3">

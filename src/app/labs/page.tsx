@@ -7,6 +7,7 @@ import { format, parseISO } from "date-fns";
 import { latestLabs } from "~/lib/db/queries";
 import { useLocale } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
+import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { EmptyState } from "~/components/ui/empty-state";
 import { MetricChart, type MetricPoint } from "~/components/labs/metric-chart";
@@ -237,7 +238,7 @@ export default function LabsPage() {
 
         {def.note && (
           <div
-            className="mt-3.5 flex items-start gap-2.5 rounded-[10px] p-2.5"
+            className="mt-3.5 flex items-start gap-2.5 rounded-md p-2.5"
             style={{ background: "var(--tide-soft)" }}
           >
             <Sparkles className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--tide-2)" }} />
@@ -266,17 +267,15 @@ export default function LabsPage() {
           }
           actions={
             <>
-              <Link
-                href="/ingest"
-                className="rounded-md bg-ink-900 px-4 py-2 text-sm font-medium text-paper hover:brightness-110"
-              >
-                {locale === "zh" ? "上传报告" : "Upload report"}
+              <Link href="/ingest">
+                <Button>
+                  {locale === "zh" ? "上传报告" : "Upload report"}
+                </Button>
               </Link>
-              <Link
-                href="/labs/ca199"
-                className="rounded-md border border-ink-200 bg-paper-2 px-4 py-2 text-sm font-medium text-ink-700 hover:border-ink-300"
-              >
-                {locale === "zh" ? "手动添加" : "Add manually"}
+              <Link href="/labs/ca199">
+                <Button variant="secondary">
+                  {locale === "zh" ? "手动添加" : "Add manually"}
+                </Button>
               </Link>
             </>
           }

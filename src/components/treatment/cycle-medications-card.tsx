@@ -112,13 +112,13 @@ function MedSection({
 }) {
   return (
     <section className="space-y-1.5">
-      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-500">
+      <div className="eyebrow flex items-center gap-1.5">
         <Icon className="h-3 w-3" />
         {title}
-        <span className="mono text-[10px] text-ink-400">· {meds.length}</span>
+        <span className="text-ink-400">· {meds.length}</span>
       </div>
       {meds.length === 0 ? (
-        <div className="rounded-[var(--r-md)] border border-dashed border-ink-200 bg-paper px-3 py-2 text-[11.5px] text-ink-500">
+        <div className="rounded-md border border-dashed border-ink-200 bg-paper px-3 py-2 text-[11.5px] text-ink-500">
           {emptyLabel}
         </div>
       ) : (

@@ -290,7 +290,7 @@ export default function AnalyteDetailPage() {
       {/* Clinical note */}
       {def.note && (
         <div
-          className="flex items-start gap-2.5 rounded-[10px] p-3"
+          className="flex items-start gap-2.5 rounded-md p-3"
           style={{ background: "var(--tide-soft)" }}
         >
           <Sparkles
