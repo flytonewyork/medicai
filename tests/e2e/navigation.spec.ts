@@ -38,22 +38,32 @@ test.describe("Mobile navigation (390px wide)", () => {
     await expect(nav).toBeVisible();
   });
 
-  test("bottom nav contains link to Daily", async ({ page }) => {
-    // Daily is the core daily interaction — must be in mobile nav.
+  test("bottom nav contains link to Nutrition (first-class slot)", async ({
+    page,
+  }) => {
+    // Nutrition replaced /daily in the bottom nav — cachexia is the
+    // primary axis-3 signal and is logged daily, so it earns the
+    // permanent slot. Daily check-in stays one tap away via the FAB.
     await expect(
-      page.getByRole("link", { name: /daily/i }),
+      page.locator("nav.pwa-bottom-nav").getByRole("link", {
+        name: /nutrition/i,
+      }),
     ).toBeVisible();
   });
 
   test("bottom nav contains link to Dashboard", async ({ page }) => {
     await expect(
-      page.getByRole("link", { name: /dashboard/i }),
+      page.locator("nav.pwa-bottom-nav").getByRole("link", {
+        name: /dashboard/i,
+      }),
     ).toBeVisible();
   });
 
   test("bottom nav contains link to Schedule", async ({ page }) => {
     await expect(
-      page.getByRole("link", { name: /schedule/i }),
+      page.locator("nav.pwa-bottom-nav").getByRole("link", {
+        name: /schedule/i,
+      }),
     ).toBeVisible();
   });
 
@@ -68,9 +78,12 @@ test.describe("Mobile navigation (390px wide)", () => {
     ).toBeVisible();
   });
 
-  test("can navigate to /daily from mobile nav", async ({ page }) => {
-    await page.getByRole("link", { name: /daily/i }).click();
-    await expect(page).toHaveURL(/\/daily/);
+  test("can navigate to /nutrition from mobile nav", async ({ page }) => {
+    await page
+      .locator("nav.pwa-bottom-nav")
+      .getByRole("link", { name: /nutrition/i })
+      .click();
+    await expect(page).toHaveURL(/\/nutrition/);
   });
 
   test("can navigate to /settings via more menu", async ({ page }) => {
@@ -95,9 +108,9 @@ test.describe("Desktop navigation (1440px wide)", () => {
     await expect(page.getByText("Anchor").first()).toBeVisible();
   });
 
-  test("sidebar link to /daily is present", async ({ page }) => {
+  test("sidebar link to /nutrition is present", async ({ page }) => {
     await expect(
-      page.locator("aside").getByRole("link", { name: /daily/i }),
+      page.locator("aside").getByRole("link", { name: /nutrition/i }),
     ).toBeVisible();
   });
 

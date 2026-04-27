@@ -80,7 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                * chrome on every page. On desktop we keep the internal scroll
                * (md:overflow-y-auto + md:h-[100dvh] on the column) so the
                * sidebar stays put while the main pane scrolls. */}
-              <main className="flex-1 pb-[calc(7rem+env(safe-area-inset-bottom))] md:pb-6 md:overflow-y-auto">
+              <main className="bottom-nav-clearance flex-1 md:overflow-y-auto">
                 {children}
               </main>
             </div>
