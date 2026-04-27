@@ -9,6 +9,7 @@ import type {
 } from "~/types/agent";
 import type { Locale } from "~/types/clinical";
 import { agentsForTags } from "~/agents/routing";
+import { HttpError, postJson } from "~/lib/utils/http";
 
 // Client-side orchestration for running one specialist agent.
 // 1. Read state.md + recent feedback for this agent from Dexie
@@ -64,29 +65,24 @@ export async function runAgentClient(
     );
   }
 
-  const res = await fetch(`/api/agent/${args.agentId}/run`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
+  let body: { agent_id: AgentId; ran_at: string; output: AgentOutput };
+  try {
+    body = await postJson(`/api/agent/${args.agentId}/run`, {
       referrals,
       state_md: stateMd,
       recent_feedback: feedback,
       locale: args.locale,
       date: args.date,
       trigger: args.trigger,
-    }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`agent ${args.agentId} run failed: ${res.status} ${text}`);
+    });
+  } catch (err) {
+    if (err instanceof HttpError) {
+      throw new Error(
+        `agent ${args.agentId} run failed: ${err.status} ${err.body}`,
+      );
+    }
+    throw err;
   }
-
-  const body = (await res.json()) as {
-    agent_id: AgentId;
-    ran_at: string;
-    output: AgentOutput;
-  };
 
   const referralIds = referrals
     .map((r) => r.id)

@@ -1,4 +1,4 @@
-import type { LocalizedText } from "./treatment";
+import type { LocalizedText } from "./localized";
 import type { SourceSystem } from "./clinical";
 
 // Re-export so the medication module is self-contained for consumers.

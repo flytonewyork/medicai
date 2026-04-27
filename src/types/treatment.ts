@@ -1,4 +1,7 @@
-import type { Locale, SourceSystem } from "./clinical";
+import type { SourceSystem } from "./clinical";
+import type { LocalizedText } from "./localized";
+
+export type { LocalizedText };
 
 export type ProtocolId =
   | "gnp_weekly"
@@ -30,11 +33,6 @@ export type PhaseKey =
   | "recovery_late"
   | "rest"
   | "pre_dose";
-
-export interface LocalizedText {
-  en: string;
-  zh: string;
-}
 
 export interface ProtocolAgent {
   id: string;
@@ -155,6 +153,3 @@ export function resolveProtocol(
   return library?.find((p) => p.id === id);
 }
 
-export function localized(text: LocalizedText, locale: Locale): string {
-  return text[locale] ?? text.en;
-}

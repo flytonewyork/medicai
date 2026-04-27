@@ -1,4 +1,7 @@
-import type { Locale } from "./clinical";
+import type { LocalizedText } from "./localized";
+
+export { localize } from "./localized";
+export type { LocalizedText } from "./localized";
 
 export type FeedCategory =
   | "safety"
@@ -21,19 +24,14 @@ export type FeedCategory =
 
 export type FeedTone = "info" | "caution" | "warning" | "positive";
 
-export interface LocalizedString {
-  en: string;
-  zh: string;
-}
-
 export interface FeedItem {
   id: string;
   priority: number;
   category: FeedCategory;
   tone: FeedTone;
-  title: LocalizedString;
-  body: LocalizedString;
-  cta?: { href: string; label: LocalizedString };
+  title: LocalizedText;
+  body: LocalizedText;
+  cta?: { href: string; label: LocalizedText };
   icon?: string;
   source?: string;
   // Optional structured meta for sources that need to thread state back
@@ -47,7 +45,3 @@ export type AgentRunMeta = {
   agent_id: string;
   run_id: number;
 };
-
-export function localize(s: LocalizedString, locale: Locale): string {
-  return s[locale] ?? s.en;
-}

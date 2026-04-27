@@ -1,4 +1,5 @@
-import type { FeedItem, LocalizedString } from "./feed";
+import type { FeedItem } from "./feed";
+import type { LocalizedText } from "./localized";
 import type { Locale } from "./clinical";
 
 // IDs of specialist agents. No triage agent — routing is deterministic
@@ -94,14 +95,14 @@ export interface DexiePatch {
 
 export interface SafetyFlag {
   level: "red" | "orange" | "yellow";
-  title: LocalizedString;
-  detail: LocalizedString;
+  title: LocalizedText;
+  detail: LocalizedText;
   rule_id?: string; // optional zone-rule id if mapped to the engine
 }
 
 export interface FollowUpQuestion {
   id: string; // stable id so the feed can dedup
-  prompt: LocalizedString;
+  prompt: LocalizedText;
   kind: "numeric" | "yesno" | "text" | "scale_0_10";
 }
 
@@ -112,7 +113,7 @@ export interface FollowUpQuestion {
 export interface AgentOutput {
   // Patient-facing morning brief for this batch — markdown narrative the
   // feed renders as the agent's daily report card.
-  daily_report: LocalizedString;
+  daily_report: LocalizedText;
   safety_flags: SafetyFlag[];
   filings: DexiePatch[];
   questions: FollowUpQuestion[];

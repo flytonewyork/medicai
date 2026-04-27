@@ -6,7 +6,7 @@
 // and the singleton consent record that bounds future AI use.
 
 import type { EnteredBy, Locale } from "./clinical";
-import type { LocalizedString } from "./feed";
+import type { LocalizedText } from "./localized";
 
 export type ProfileEntryKind =
   | "voice_memo"
@@ -97,7 +97,7 @@ export interface ProfilePrompt {
   category: string;
   depth: PromptDepth;
   audience: PromptAudience;
-  question: LocalizedString;
+  question: LocalizedText;
   source: PromptSource;
   sensitivity: PromptSensitivity;
   /** 0..1. Higher = surfaces more often under the cadence engine. */
