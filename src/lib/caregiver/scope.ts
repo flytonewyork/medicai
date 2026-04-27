@@ -1,8 +1,7 @@
 "use client";
 
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
 import { useHousehold } from "~/hooks/use-household";
+import { useSettings } from "~/hooks/use-settings";
 import type { HouseholdRole } from "~/types/household";
 
 export type AppPerspective = "patient" | "caregiver" | "clinician";
@@ -23,7 +22,7 @@ const CAREGIVER_ROLES: readonly HouseholdRole[] = [
 //       existing single-user install behaviour.
 export function useAppPerspective(): AppPerspective {
   const { membership } = useHousehold();
-  const settings = useLiveQuery(() => db.settings.toArray(), [], []);
+  const settings = useSettings();
 
   if (membership?.role) {
     if (membership.role === "primary_carer" || membership.role === "patient") {
@@ -37,7 +36,7 @@ export function useAppPerspective(): AppPerspective {
     }
   }
 
-  const userType = settings?.[0]?.user_type;
+  const userType = settings?.user_type;
   if (userType === "caregiver") return "caregiver";
   if (userType === "clinician") return "clinician";
   return "patient";

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { appointmentsToIcs, triggerIcsDownload } from "~/lib/calendar/ics-export";
 import { db } from "~/lib/db/dexie";
+import { pickL } from "~/hooks/use-translate";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Calendar, Check, Loader2 } from "lucide-react";
@@ -13,7 +14,7 @@ import { Calendar, Check, Loader2 } from "lucide-react";
 // PHI off-device — users re-export when they add new events.
 
 export function CalendarShare({ locale = "en" }: { locale?: "en" | "zh" }) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = pickL(locale);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
 
