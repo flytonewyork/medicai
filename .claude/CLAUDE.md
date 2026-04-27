@@ -122,12 +122,16 @@ obsessively — it's the most important piece of code in the project.
 Read, in order:
 1. `docs/CLINICAL_FRAMEWORK.md`
 2. `docs/BRIDGE_STRATEGY.md`
-3. `docs/DATA_SCHEMA.md`
+3. `docs/DATA_SCHEMA.md` — includes the "Sync semantics" section
+   (last-write-wins, single-active-editor assumption).
 4. `docs/ZONE_RULES.md`
 5. `docs/BUILD_ORDER.md`
 6. `docs/LEGACY_MODULE.md` — required only when touching family timeline,
    profile entries, the biographer or orchestrator agents, or any capture
    modality described in that doc's feature set.
+7. `docs/AI_SURFACES.md` — required only when touching any
+   `src/agents/`, `src/lib/ai/`, `src/lib/ingest/`, `src/lib/nudges/`,
+   or `src/app/api/ai/*` / `src/app/api/agent/*` route.
 
 Always prefer to ask a clarifying question if clinical logic is ambiguous. Do not
 invent thresholds or rules not specified in the framework docs.

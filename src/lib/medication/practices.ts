@@ -1,4 +1,4 @@
-// Custom behavioural practices — Hu Lin's breathing exercises, meditation,
+// Custom behavioural practices — the patient's breathing exercises, meditation,
 // walking, etc. Stored in the same `medications` table with
 // `category: "behavioural"` and `source: "user_added"`. Drug_id uses a
 // `custom:<slug>` namespace per docs/MEDICATIONS.md so they don't collide

@@ -8,8 +8,11 @@ import {
 } from "~/lib/anthropic/route-helpers";
 import {
   ParsedMealSchema,
-  NUTRITION_SYSTEM,
+  buildNutritionSystem,
 } from "~/lib/nutrition/parser-schema";
+import { requireSession } from "~/lib/auth/require-session";
+import { loadHouseholdProfile } from "~/lib/household/profile";
+import { wrapUserInput } from "~/lib/anthropic/wrap-user-input";
 import type { PreparedImage } from "~/lib/ingest/image";
 
 export const runtime = "nodejs";
@@ -30,6 +33,9 @@ interface TextBody {
 type RequestBody = PhotoBody | TextBody;
 
 export async function POST(req: Request) {
+  const auth = await requireSession();
+  if (!auth.ok) return auth.error;
+
   const gate = getAnthropicClient();
   if (gate.error) return gate.error;
 
@@ -50,6 +56,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "text required" }, { status: 400 });
   }
 
+  const profile = await loadHouseholdProfile(auth.session.household_id);
   const localeNote =
     body.locale === "zh"
       ? "Reply in English keys, but populate name_zh for every item."
@@ -62,7 +69,7 @@ export async function POST(req: Request) {
       system: [
         {
           type: "text",
-          text: `${NUTRITION_SYSTEM}\n\n${localeNote}`,
+          text: `${buildNutritionSystem(profile)}\n\n${localeNote}`,
           cache_control: { type: "ephemeral" },
         },
       ],
@@ -94,7 +101,10 @@ export async function POST(req: Request) {
                 content: [
                   {
                     type: "text",
-                    text: `Parse this meal description into structured items:\n\n${body.text}`,
+                    text: wrapUserInput(
+                      "Parse the meal description into structured items",
+                      body.text,
+                    ),
                   },
                 ],
               },

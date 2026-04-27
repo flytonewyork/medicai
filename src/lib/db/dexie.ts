@@ -53,6 +53,7 @@ import type {
   FluidLog,
   MealTemplate,
 } from "~/types/nutrition";
+import type { HouseholdProfile as HouseholdProfileRow } from "~/types/household-profile";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -103,6 +104,8 @@ export class AnchorDB extends Dexie {
   // v19: Nutrition enhancements.
   fluid_logs!: Table<FluidLog, number>;
   meal_templates!: Table<MealTemplate, number>;
+  // v20: Patient identity envelope (mirrors Supabase household_profile).
+  household_profile!: Table<HouseholdProfileRow, string>;
 
   constructor() {
     super("anchor_db");
@@ -289,7 +292,7 @@ export class AnchorDB extends Dexie {
     // v18: Nutrition module. Three tables drive food search, per-meal
     // line items, and a snapshot of meal-level totals.
     //
-    // - foods: a searchable catalogue of foods with PDAC / keto flags.
+    // - foods: a searchable catalogue of foods with mPDAC/ keto flags.
     //   Indexed on `name` for prefix lookups, `category` for filtering,
     //   `keto_friendly` and `pdac_easy_digest` so the picker can show
     //   "good choices first" without scanning the whole table. `source`
@@ -325,6 +328,15 @@ export class AnchorDB extends Dexie {
         "++id, date, kind, logged_at, [date+kind]",
       meal_templates:
         "++id, name, meal_type, last_used_at, use_count, updated_at",
+    });
+    // v20: Patient identity envelope. Mirrors the Supabase
+    // `household_profile` table so AI prompt templating has a local
+    // source on offline-first devices. One row keyed by `household_id`
+    // (string PK, not auto-increment) so the round-tripping with the
+    // server stays trivial.
+    this.version(20).stores({
+      household_profile:
+        "&household_id, updated_at",
     });
   }
 }

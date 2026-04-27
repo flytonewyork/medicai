@@ -30,7 +30,7 @@ export function BaselinesCard() {
 
   const { register, handleSubmit, reset, formState } = useForm<SettingsInput>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: { profile_name: "Hu Lin", locale: "en" },
+    defaultValues: { profile_name: "", locale: "en" },
   });
 
   useEffect(() => {

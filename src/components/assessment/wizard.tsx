@@ -241,12 +241,31 @@ export function AssessmentWizard({ assessmentId }: WizardProps) {
     <div className="space-y-6">
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs text-ink-500">
-          <span className="mono uppercase tracking-[0.08em]">
+          <span
+            className="mono uppercase tracking-[0.08em]"
+            aria-current="step"
+            aria-label={
+              locale === "zh"
+                ? `第 ${cursor + 1} 步，共 ${tests.length} 步 · ${currentTest.category}`
+                : `Step ${cursor + 1} of ${tests.length} · ${currentTest.category}`
+            }
+          >
             {cursor + 1} / {tests.length} · {currentTest.category}
           </span>
           <span className="num">{progressPct}%</span>
         </div>
-        <div className="h-1 w-full overflow-hidden rounded-full bg-ink-100">
+        <div
+          className="h-1 w-full overflow-hidden rounded-full bg-ink-100"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progressPct}
+          aria-label={
+            locale === "zh"
+              ? `评估进度 ${progressPct}%`
+              : `Assessment progress ${progressPct}%`
+          }
+        >
           <div
             className="h-full bg-ink-900 transition-all duration-300"
             style={{ width: `${progressPct}%` }}

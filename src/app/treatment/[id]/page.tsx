@@ -391,7 +391,10 @@ function CycleQuickActions({
 }) {
   const L = useL();
 
-  const today = new Date();
+  // `todayMs` stays stable across renders so the useMemo below has
+  // stable deps. Recreating `new Date()` on every render would
+  // otherwise re-run nextDoseDay on every keystroke.
+  const todayMs = useMemo(() => Date.now(), []);
   const startMs = parseISO(cycle.start_date).getTime();
 
   // Pre-chemo consult date: one calendar day before the next upcoming
@@ -403,10 +406,10 @@ function CycleQuickActions({
     const dayOffsets = protocol.dose_days.map((d) => d - 1);
     for (const o of dayOffsets) {
       const ms = startMs + o * 86_400_000;
-      if (ms >= today.getTime()) return ms;
+      if (ms >= todayMs) return ms;
     }
     return null;
-  }, [protocol.dose_days, startMs, today]);
+  }, [protocol.dose_days, startMs, todayMs]);
 
   const preChemoDate = nextDoseDay
     ? format(addDays(new Date(nextDoseDay), -1), "yyyy-MM-dd")

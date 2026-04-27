@@ -10,12 +10,14 @@ import { localeTag } from "~/lib/utils/date";
 // saved before Slice C. Used on daily-entry rows, follow-up log
 // events, and anywhere else we want subtle "who wrote this" context.
 
+// Generic fallback labels by role keyword. Real names come from the
+// household profile / per-user profile lookup — these are only used
+// when a row was saved by a legacy `entered_by` string and we don't
+// have an auth uid to resolve to a profile row.
 const STRING_LABELS: Record<string, { en: string; zh: string }> = {
-  hulin: { en: "Hu Lin", zh: "胡林" },
-  thomas: { en: "Thomas", zh: "Thomas" },
-  catherine: { en: "Catherine", zh: "Catherine" },
+  patient: { en: "Patient", zh: "患者" },
+  carer: { en: "Carer", zh: "照护者" },
   clinician: { en: "Clinician", zh: "医师" },
-  jonalyn: { en: "Jonalyn", zh: "Jonalyn" },
 };
 
 export function Attribution({

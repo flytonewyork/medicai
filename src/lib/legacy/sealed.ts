@@ -4,11 +4,12 @@ import type { ProfileEntry, ProfileEntryMode } from "~/types/legacy";
 
 // Sealed entries cover three Tier-1 features that share a shape:
 //
-//   - Legacy letters (slice 17): Hu Lin composes for a future occasion
-//     (Thomas's 50th, a grandchild's 18th). Sealed until date / event.
+//   - Legacy letters (slice 17): the patient composes for a future
+//     occasion (a child's 50th, a grandchild's 18th). Sealed until
+//     date / event.
 //   - Ethical will (slice 18): a generative Chinese / Jewish tradition
 //     — values, hopes, blessings, apologies. Composed once, sealed
-//     lightly, reviewed by Hu Lin.
+//     lightly, reviewed by the patient.
 //   - Advent-calendar timed release (slice 19): a slow drip of
 //     snippets queued for future delivery to specific recipients, each
 //     with its own unlock date.

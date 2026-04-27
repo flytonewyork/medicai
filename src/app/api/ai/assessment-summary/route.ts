@@ -7,7 +7,10 @@ import {
   readJsonBody,
   withAnthropicErrorBoundary,
 } from "~/lib/anthropic/route-helpers";
-import { SUMMARY_SYSTEM } from "~/lib/ai/coach";
+import { buildSummarySystem } from "~/lib/ai/coach";
+import { requireSession } from "~/lib/auth/require-session";
+import { loadHouseholdProfile } from "~/lib/household/profile";
+import { wrapUserInputBlock } from "~/lib/anthropic/wrap-user-input";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -24,6 +27,9 @@ interface RequestBody {
 }
 
 export async function POST(req: Request) {
+  const auth = await requireSession();
+  if (!auth.ok) return auth.error;
+
   const gate = getAnthropicClient();
   if (gate.error) return gate.error;
 
@@ -38,6 +44,8 @@ export async function POST(req: Request) {
     );
   }
 
+  const profile = await loadHouseholdProfile(auth.session.household_id);
+
   const result = await withAnthropicErrorBoundary(() =>
     gate.client.messages.parse({
       model: body.model ?? DEFAULT_AI_MODEL,
@@ -45,7 +53,7 @@ export async function POST(req: Request) {
       system: [
         {
           type: "text",
-          text: SUMMARY_SYSTEM,
+          text: buildSummarySystem(profile),
           cache_control: { type: "ephemeral" },
         },
       ],
@@ -56,10 +64,12 @@ export async function POST(req: Request) {
           content: [
             {
               type: "text",
-              text: JSON.stringify({
-                assessment: body.assessment,
-                prior_assessment: body.prior_assessment ?? null,
-              }),
+              text: wrapUserInputBlock(
+                JSON.stringify({
+                  assessment: body.assessment,
+                  prior_assessment: body.prior_assessment ?? null,
+                }),
+              ),
             },
           ],
         },

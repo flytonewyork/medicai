@@ -36,7 +36,7 @@ export interface FoodItem {
   sugar_alcohols_g?: number;
   sugar_g?: number;
   net_carbs_g: number;             // derived: max(0, total - fiber - SA)
-  // PDAC / keto guidance. These flags drive the food picker's "good
+  // mPDAC/ keto guidance. These flags drive the food picker's "good
   // choice" / "go easy" hint without needing a separate rule engine.
   keto_friendly: boolean;          // net carbs ≤ 5 g per 100 g
   pdac_easy_digest?: boolean;      // soft, low-fiber, low-FODMAP-ish
@@ -171,8 +171,8 @@ export interface FoodPickerHint {
 
 // ─── Hydration ───────────────────────────────────────────────────────
 //
-// Fluid intake is the nutrition agent's third remit (`role.md`). PDAC +
-// chemo dehydration risk is real — especially during gemcitabine
+// Fluid intake is the nutrition agent's third remit (`role.md`). mPDAC
+// + chemo dehydration risk is real — especially during gemcitabine
 // infusion days. We store one row per swallow event so the dashboard
 // can sum a daily total and the timeline can show clustering.
 

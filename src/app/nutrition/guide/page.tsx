@@ -35,7 +35,7 @@ export default function DietGuidePage() {
         subtitle={
           locale === "zh"
             ? "胰腺癌 + 化疗的功能保留方案。"
-            : "Function preservation through PDAC + chemo."
+            : "Function preservation through pancreatic cancer + chemo."
         }
       />
 
@@ -108,7 +108,7 @@ function ContentEN() {
         <CardContent className="space-y-2">
           <h3 className="serif text-base text-ink-900">Why low-carb when stable</h3>
           <p className="text-[13px] leading-snug text-ink-700">
-            Hyperglycaemic spikes correlate with worse PDAC outcomes.
+            Hyperglycaemic spikes correlate with worse pancreatic-cancer outcomes.
             <Cite source="wolpin_2009" /> A relaxed-keto pattern (≤ 50 g net
             carbs) reduces glycaemic load without the strict-keto
             compliance burden during chemo, and stabilises energy through
@@ -319,7 +319,7 @@ function ContentZH() {
             </li>
             <li>
               正餐建议剂量 <span className="mono">25,000–50,000</span> 单位脂肪酶；
-              加餐减半。如果仍有脂肪泻，请与 Sumitra 医生或营养师调整。
+              加餐减半。如果仍有脂肪泻，请与肿瘤科医生或营养师调整。
             </li>
             <li>避热保存（避免阳光、远离烤箱）。</li>
           </ul>

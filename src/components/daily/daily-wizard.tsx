@@ -562,16 +562,28 @@ function StepScreen({
   const def = catDef(catId);
   const pct = Math.round(((index + 1) / total) * 100);
 
+  const stepOfTotalLabel =
+    locale === "zh"
+      ? `第 ${index + 1} 步，共 ${total} 步`
+      : `Step ${index + 1} of ${total}`;
+
   return (
     <div className="space-y-5">
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs text-ink-500">
-          <span>
+          <span aria-current="step" aria-label={stepOfTotalLabel}>
             {index + 1} / {total}
           </span>
           <span className="tabular-nums">{pct}%</span>
         </div>
-        <div className="h-1 w-full overflow-hidden rounded-full bg-ink-100">
+        <div
+          className="h-1 w-full overflow-hidden rounded-full bg-ink-100"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={pct}
+          aria-label={stepOfTotalLabel}
+        >
           <div
             className="h-full bg-ink-900 transition-all duration-300"
             style={{ width: `${pct}%` }}

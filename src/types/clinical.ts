@@ -46,7 +46,7 @@ export interface DailyEntry {
   dyspnoea?: boolean;
   fever?: boolean;
   fever_temp?: number;
-  // Curated PDAC / GnP symptom additions — tracked when the user has
+  // Curated mPDAC/ GnP symptom additions — tracked when the user has
   // them enabled in settings.tracked_symptoms. Semantics:
   //   fatigue, anorexia, abdominal_pain — 0–10 severity
   //   taste_changes — 0–5 (0 normal, 5 food tastes wrong)
@@ -450,7 +450,7 @@ export interface Settings {
   user_type?: "patient" | "caregiver" | "clinician";
   // Which symptom ids (from SYMPTOM_CATALOG) the daily-check-in surfaces.
   // Undefined falls back to defaultTrackedSymptomIds() — the top-10
-  // GnP/PDAC list.
+  // GnP-and-mPDAC-default list.
   tracked_symptoms?: string[];
   // Date the patient first completed a full check-in covering all
   // tracked symptoms — later changes are read against this row as

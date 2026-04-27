@@ -18,8 +18,9 @@ export interface Source {
 }
 
 export const SOURCES = {
-  // Local clinical guide (Epworth Richmond — same campus as Mark
-  // Cullinan). Anchors every patient-facing nutrition statement.
+  // Local clinical guide (Epworth Richmond — same campus as the
+  // hepatobiliary surgical service). Anchors every patient-facing
+  // nutrition statement.
   jpcc_2021: {
     id: "jpcc_2021",
     short_label: "JPCC Nutrition Guide",

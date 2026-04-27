@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import {
-  COACH_SYSTEM,
+  buildCoachSystem,
   type CoachContext,
   type CoachMessage,
 } from "~/lib/ai/coach";
@@ -10,6 +10,9 @@ import {
   readJsonBody,
   withAnthropicErrorBoundary,
 } from "~/lib/anthropic/route-helpers";
+import { requireSession } from "~/lib/auth/require-session";
+import { loadHouseholdProfile } from "~/lib/household/profile";
+import { wrapUserInputBlock } from "~/lib/anthropic/wrap-user-input";
 import type { Locale } from "~/types/clinical";
 
 export const runtime = "nodejs";
@@ -23,6 +26,9 @@ interface RequestBody {
 }
 
 export async function POST(req: Request) {
+  const auth = await requireSession();
+  if (!auth.ok) return auth.error;
+
   const gate = getAnthropicClient();
   if (gate.error) return gate.error;
 
@@ -38,6 +44,7 @@ export async function POST(req: Request) {
   }
 
   const { model = DEFAULT_AI_MODEL, context, history, locale = "en" } = body;
+  const profile = await loadHouseholdProfile(auth.session.household_id);
   const contextBlock = `Current step: ${context.stepTitle}\nKey: ${context.stepKey}\nInstructions shown to the user:\n${context.stepInstructions}\n\nRespond in ${locale === "zh" ? "Simplified Chinese (简体中文)" : "English"}.`;
 
   const result = await withAnthropicErrorBoundary(() =>
@@ -47,14 +54,16 @@ export async function POST(req: Request) {
       system: [
         {
           type: "text",
-          text: COACH_SYSTEM,
+          text: buildCoachSystem(profile),
           cache_control: { type: "ephemeral" },
         },
         { type: "text", text: contextBlock },
       ],
       messages: history.map((m) => ({
         role: m.role,
-        content: [{ type: "text", text: m.content }],
+        content: [
+          { type: "text", text: wrapUserInputBlock(m.content) },
+        ],
       })),
     }),
   );

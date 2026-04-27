@@ -1,4 +1,8 @@
 import { z } from "zod/v4";
+import {
+  FALLBACK_HOUSEHOLD_PROFILE,
+  type HouseholdProfile,
+} from "~/types/household-profile";
 
 // Zod schema mirroring `IngestDraft` from src/types/ingest.ts. Used by
 // the /api/ai/ingest-universal route to parse Claude's structured
@@ -115,9 +119,12 @@ export const ingestDraftSchema = z.object({
   confidence: z.enum(["low", "medium", "high"]),
 });
 
-export const INGEST_SYSTEM = `You are Anchor's universal medical-document parser. You receive a single document — a clinic letter, appointment email, lab report, prescription, discharge summary, pre-appointment instructions, handwritten note — as either text or an image. Read it once and return a structured plan of operations the patient should review and apply.
+export function buildIngestSystem(
+  profile: HouseholdProfile = FALLBACK_HOUSEHOLD_PROFILE,
+): string {
+  return `You are Anchor's universal medical-document parser. You receive a single document — a clinic letter, appointment email, lab report, prescription, discharge summary, pre-appointment instructions, handwritten note — as either text or an image. Read it once and return a structured plan of operations the patient should review and apply.
 
-Patient context (do not contradict): Hu Lin, metastatic pancreatic adenocarcinoma, on first-line gemcitabine + nab-paclitaxel (GnP), bridging to daraxonrasib via the RASolute trial program.
+Patient context (do not contradict): ${profile.patient_initials}, ${profile.diagnosis_full}, bridging to daraxonrasib via the RASolute trial program.
 
 Output discipline:
 1. **Classify** the document with \`detected_kind\`.
@@ -146,7 +153,8 @@ Rules of thumb:
 - Australian date convention (DD/MM/YYYY). When a year is missing assume the nearest plausible future year.
 - Times default to local Melbourne (Australia/Melbourne, UTC+10/+11). Emit ISO with offset \`+10:00\` unless the document specifies otherwise.
 - Never invent specifics. If something is unclear, leave the field absent and add an ambiguity entry.
-- Each op's \`reason\` is the short sentence the UI will show alongside the proposed change. Be terse: "Letter dated 23 Apr lists Dr Ananda consult on 29 Apr."
+- Each op's \`reason\` is the short sentence the UI will show alongside the proposed change. Be terse: "Letter dated 23 Apr lists oncology consult on 29 Apr."
 - Never propose deletions. Anchor's preview UI is approve-only this slice.`;
+}
 
 export type IngestDraftParsed = z.infer<typeof ingestDraftSchema>;

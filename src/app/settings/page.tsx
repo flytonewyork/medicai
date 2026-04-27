@@ -26,7 +26,7 @@ export default function SettingsPage() {
   const { register, handleSubmit, reset, formState } = useForm<SettingsInput>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
-      profile_name: "Hu Lin",
+      profile_name: "",
       locale: "en",
     },
   });

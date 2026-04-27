@@ -154,6 +154,9 @@ export default function MealIngestPage() {
 
           {preview && (
             <div className="overflow-hidden rounded-[var(--r-md)] border border-ink-100">
+              {/* `preview` is a data URL from the in-memory file capture — next/image
+                  can't optimise it, so a plain <img> is correct here. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={preview}
                 alt="meal"

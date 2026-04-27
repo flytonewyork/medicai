@@ -22,9 +22,18 @@ const variantCls: Record<Variant, string> = {
     "bg-[var(--tide-2)] text-paper hover:brightness-110",
 };
 
+// Heights are deliberate WCAG AA tap-target tiers:
+//   sm  (h-8, 32 px)  — chips, dense inline controls. Below the AA
+//                       floor, used only where horizontal space is at
+//                       a premium (e.g. medication-prompts-card chips).
+//   md  (h-11, 44 px) — secondary actions. Meets the AA 44×44
+//                       minimum for compact controls.
+//   lg  (h-12, 48 px) — primary patient-facing actions. Meets the
+//                       48×48 patient-surface floor; used by the
+//                       daily wizard, quick check-in save, etc.
 const sizeCls: Record<Size, string> = {
   sm: "h-8 px-3 text-xs",
-  md: "h-10 px-4 text-sm",
+  md: "h-11 px-4 text-sm",
   lg: "h-12 px-6 text-base",
 };
 

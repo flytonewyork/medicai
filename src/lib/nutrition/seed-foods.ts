@@ -1,13 +1,13 @@
 import type { FoodItem, FoodCategory } from "~/types/nutrition";
 
-// Per-100 g seed data, keto + PDAC oriented. Values are conservative
+// Per-100 g seed data, keto + mPDAC-oriented. Values are conservative
 // USDA / AusFoodComp averages, rounded to 1 decimal. Fibre / sugar
 // alcohols are explicit so net_carbs is computed once at seed time
 // and never drifts.
 //
 // Curation principles:
 // - Foundation: pasture-raised animal foods, fatty fish, olive oil,
-//   non-starchy veg, dairy fats. The PDAC patient needs energy density
+//   non-starchy veg, dairy fats. The mPDAC-patient needs energy density
 //   without carb load.
 // - Easy-digest flag: soft, low-residue, low-FODMAP-friendly, gentle
 //   on a chemo-irritated GI.

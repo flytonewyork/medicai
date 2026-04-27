@@ -137,7 +137,7 @@ function currentCyclePhase(
 function seasonalSuggestion(todayISO: string): EventSuggestion | null {
   // Rough fixed-date proxies. Lunar calendar is year-dependent; a real
   // implementation would use a lookup table. For now: a small set of
-  // Western-calendar cultural anchors for Hu Lin's context.
+  // Western-calendar cultural anchors for the patient's context.
   const md = todayISO.slice(5, 10); // MM-DD
   const SEASON: Record<string, EventSuggestion> = {
     "02-17": {

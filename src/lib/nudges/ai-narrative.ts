@@ -1,9 +1,16 @@
 import type { FeedItem } from "~/types/feed";
 import type { Locale } from "~/types/clinical";
 import { DEFAULT_AI_MODEL } from "~/lib/anthropic/model";
+import {
+  FALLBACK_HOUSEHOLD_PROFILE,
+  type HouseholdProfile,
+} from "~/types/household-profile";
 import { postJson } from "~/lib/utils/http";
 
-export const NARRATIVE_SYSTEM = `You write a single 2–3 sentence opening line for Hu Lin's dashboard on a pancreatic cancer tracking app.
+export function buildNarrativeSystem(
+  profile: HouseholdProfile = FALLBACK_HOUSEHOLD_PROFILE,
+): string {
+  return `You write a single 2–3 sentence opening line for ${profile.patient_initials}'s dashboard on a ${profile.diagnosis_short} tracking app.
 
 Rules:
 1. You see the top 8 contextual signals for today as a ranked list. Read them, pick the one or two that actually matter right now, and say it.
@@ -12,6 +19,7 @@ Rules:
 4. If a red-zone safety alert is in the list, the opener must reference it first and must end with a clear "call the on-call team or go to hospital" line if the signal implies that.
 5. Respect the language requested. Plain, everyday words.
 6. Under 60 words.`;
+}
 
 export interface NarrativeInput {
   model?: string;

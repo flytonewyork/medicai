@@ -1,6 +1,6 @@
 import type { DailyEntry } from "~/types/clinical";
 
-// The curated PDAC / GnP symptom catalog. Each entry is one checkable
+// The curated mPDAC/ GnP symptom catalog. Each entry is one checkable
 // item on the daily-wizard "Symptoms" step. The catalog is the single
 // source of truth — both the wizard UI and the Settings customiser read
 // from it, so adding a new symptom is a one-line change here.

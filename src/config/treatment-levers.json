@@ -51,7 +51,7 @@
     "category": "supportive",
     "name": "Apixaban 2.5 mg BD",
     "description": "VTE prophylaxis.",
-    "when": "Ambulatory PDAC on active treatment"
+    "when": "Ambulatory mPDAC, on active treatment"
   },
   "supportive.pert": {
     "category": "supportive",

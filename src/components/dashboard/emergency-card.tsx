@@ -27,7 +27,14 @@ export function EmergencyCard() {
 
   return (
     <section
-      className="rounded-[var(--r-md)] border"
+      // Red and orange zones are urgent — surface the alert via aria-live
+      // so a screen reader announces the change without the user having
+      // to navigate to it. aria-atomic ensures the whole card reads as
+      // one announcement rather than a stuttered sequence of children.
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
+      className="rounded-[var(--r-md)] border focus-within:ring-2 focus-within:ring-[var(--warn)]"
       style={{
         background: "var(--warn-soft)",
         borderColor: "var(--warn)",
@@ -36,7 +43,7 @@ export function EmergencyCard() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left"
+        className="flex w-full items-center gap-3 px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--warn)]"
         aria-expanded={open}
         aria-label={open ? t("emergencyCard.hideContacts") : t("emergencyCard.showContacts")}
       >

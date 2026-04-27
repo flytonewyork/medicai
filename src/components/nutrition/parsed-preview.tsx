@@ -149,6 +149,9 @@ export function ParsedPreview({
 
       {photoDataUrl && (
         <div className="bg-paper-2/40">
+          {/* `photoDataUrl` is a data URL from in-memory capture — next/image
+              can't optimise it, so a plain <img> is correct here. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={photoDataUrl}
             alt="Meal"
