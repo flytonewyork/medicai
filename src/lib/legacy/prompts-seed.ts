@@ -1,5 +1,5 @@
 import type { ProfilePrompt, PromptSource } from "~/types/legacy";
-import type { LocalizedString } from "~/types/feed";
+import type { LocalizedText } from "~/types/localized";
 
 // Seeded bilingual prompt library. ~120 prompts across seven evidence-
 // based frameworks plus a deliberate lightness band.
@@ -36,7 +36,7 @@ function p(
   source: PromptSource,
   sensitivity: ProfilePrompt["sensitivity"],
   cadence_weight: number,
-  question: LocalizedString,
+  question: LocalizedText,
   pair_id?: string,
 ): PromptSeed {
   return {

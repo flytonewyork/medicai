@@ -1,4 +1,4 @@
-import type { LocalizedString } from "~/types/feed";
+import type { LocalizedText } from "~/types/localized";
 
 // Ethical will — guided composition scaffold.
 //
@@ -15,9 +15,9 @@ import type { LocalizedString } from "~/types/feed";
 
 export interface EthicalWillSection {
   key: string;
-  title: LocalizedString;
-  prompt: LocalizedString;
-  example?: LocalizedString;
+  title: LocalizedText;
+  prompt: LocalizedText;
+  example?: LocalizedText;
   optional?: boolean;
 }
 
@@ -72,7 +72,7 @@ export const ETHICAL_WILL_SECTIONS: EthicalWillSection[] = [
       en: "What I wish I had done differently",
       zh: "我希望当初另作选择的事",
       zh_fallback: "我希望当初另作选择的事",
-    } as LocalizedString,
+    } as LocalizedText,
     prompt: {
       en: "Are there apologies you'd like to offer, or things you'd wish to have done differently? Write only what you want to.",
       zh: "有哪些您想表达的歉意,或者希望当初另作选择的事?只写您愿意写的。",

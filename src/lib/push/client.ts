@@ -1,5 +1,7 @@
 "use client";
 
+import { HttpError, postJson } from "~/lib/utils/http";
+
 // Client-side push subscribe / unsubscribe / status. Wraps the
 // ServiceWorker + PushManager dance and the server round-trips so the
 // Settings UI stays tiny.
@@ -107,25 +109,23 @@ export async function enablePush(args: {
   }
 
   const json = sub.toJSON();
-  const body = {
-    endpoint: json.endpoint,
-    keys: json.keys,
-    user_agent: navigator.userAgent,
-    locale: args.locale,
-  };
-  const res = await fetch("/api/push/subscribe", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
+  try {
+    await postJson("/api/push/subscribe", {
+      endpoint: json.endpoint,
+      keys: json.keys,
+      user_agent: navigator.userAgent,
+      locale: args.locale,
+    });
+  } catch (err) {
     // Roll back the browser-side subscription if the server rejected.
     try {
       await sub.unsubscribe();
     } catch {
       // ignore
     }
-    return { ok: false, reason: (await res.text()) || "server-rejected" };
+    const reason =
+      err instanceof HttpError ? err.body || "server-rejected" : "server-rejected";
+    return { ok: false, reason };
   }
   return { ok: true, endpoint: json.endpoint ?? "" };
 }
@@ -139,12 +139,11 @@ export async function disablePush(): Promise<{ ok: true } | { ok: false; reason:
   } catch {
     // continue — server cleanup is still worth doing
   }
-  const res = await fetch("/api/push/unsubscribe", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ endpoint }),
-  });
-  if (!res.ok) return { ok: false, reason: "server-error" };
+  try {
+    await postJson("/api/push/unsubscribe", { endpoint });
+  } catch {
+    return { ok: false, reason: "server-error" };
+  }
   return { ok: true };
 }
 

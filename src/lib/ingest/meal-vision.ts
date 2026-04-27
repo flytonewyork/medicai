@@ -5,6 +5,7 @@ import {
   FALLBACK_HOUSEHOLD_PROFILE,
   type HouseholdProfile,
 } from "~/types/household-profile";
+import { postJson } from "~/lib/utils/http";
 
 export const MealSchema = z.object({
   description: z
@@ -60,14 +61,9 @@ export async function estimateMeal({
   model?: string;
   image: PreparedImage;
 }): Promise<MealEstimate> {
-  const res = await fetch("/api/ai/ingest-meal", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ image, model }),
-  });
-  if (!res.ok) {
-    throw new Error(await res.text());
-  }
-  const data = (await res.json()) as { result: MealEstimate };
+  const data = await postJson<{ result: MealEstimate }>(
+    "/api/ai/ingest-meal",
+    { image, model },
+  );
   return data.result;
 }
