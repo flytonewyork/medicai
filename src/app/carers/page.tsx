@@ -30,31 +30,22 @@ import {
   CalendarClock,
 } from "lucide-react";
 
-// /carers — the single source of truth for everyone involved in the
-// patient's care.
+// /carers — single source of truth for everyone involved in the
+// patient's care. See the README at the bottom of this file for the
+// design rationale.
 //
-// Replaces three previously-separate surfaces:
-//   - /household        (Anchor account members, just-built)
-//   - /settings#care-team (local contact registry)
-//   - /care-team        (clinical visit log — kept at its URL but
-//                        demoted from the primary nav)
-//
-// Mental model:
-//   "Carers" = PEOPLE involved in care
-//   "Add carer" = invite them to an Anchor account (the primary CTA)
-//
-// Two sections under the hood:
-//   1. On Anchor — household members + pending invites. These are
-//      people with their own logins who can actively participate
-//      (log check-ins, confirm attendance, edit appointments…).
-//   2. Local contacts — phone numbers and notes for clinicians /
-//      services that don't need Anchor accounts (oncologist's
-//      office, on-call line, GP, allied health). Most of the
-//      clinical care orbit lives here, not on Anchor.
-//
-// The clinical visit log (date / kind / notes per interaction) is
-// the bridge-strategy contact-cadence metric — it stays at /care-team
-// and is reachable from a footer link below.
+// Page layout (top → bottom):
+//   1. Top section — depends on auth/household state. Renders the
+//      "Add carer" CTA + Anchor membership list when signed in with
+//      a household; falls back to a "Sign in" or "Set up household"
+//      prompt otherwise. NEVER blocks the page on a global loading
+//      spinner — useHousehold has its own 4s safety timeout, and
+//      this page renders the local-contacts directory regardless.
+//   2. Local contacts — always rendered. It's pure Dexie / offline
+//      and has no dependency on Supabase, so if the cloud is
+//      unreachable the user can still read the oncologist's phone
+//      number and call.
+//   3. Footer link → /care-team (visit log).
 
 export default function CarersPage() {
   const locale = useLocale();
@@ -95,12 +86,55 @@ export default function CarersPage() {
     void reload();
   }, [reload]);
 
-  // OFFLINE-only Anchor build: the local-contacts directory still
-  // works (it's all Dexie), but Anchor account invites need Supabase.
-  // Render local-contacts on its own with a notice up top.
-  if (!isSupabaseConfigured()) {
-    return (
-      <Shell locale={locale}>
+  const activeInvites = invites.filter(
+    (i) => !i.accepted_at && !i.revoked_at && new Date(i.expires_at) > new Date(),
+  );
+
+  const supabaseConfigured = isSupabaseConfigured();
+
+  return (
+    <div className="mx-auto max-w-2xl space-y-5 p-4 md:p-8">
+      <PageHeader
+        eyebrow={L("CARERS", "护理人员")}
+        title={
+          household
+            ? L(
+                `${household.patient_display_name}'s care team`,
+                `${household.patient_display_name} 的护理团队`,
+              )
+            : L("Carers", "护理人员")
+        }
+        subtitle={
+          household && members.length > 0 ? (
+            <span className="text-[12px] text-ink-500">
+              {L(
+                `${members.length} ${members.length === 1 ? "carer" : "carers"} on Anchor`,
+                `${members.length} 位 Anchor 账号成员`,
+              )}
+              {activeInvites.length > 0 && (
+                <>
+                  {" · "}
+                  {L(
+                    `${activeInvites.length} pending`,
+                    `${activeInvites.length} 份待接受`,
+                  )}
+                </>
+              )}
+            </span>
+          ) : undefined
+        }
+      />
+
+      {/* TOP: Anchor-account section. Renders one of:
+          - "Add carer" CTA + members list (signed in + has household)
+          - read-only members hint (signed in but not primary_carer)
+          - "Sign in" prompt (signed out)
+          - "Set up household" prompt (signed in, no household)
+          - "Sync isn't configured" notice (offline-only build)
+          - Inline loading hint (still resolving)
+          The local contacts section below is unaffected by any of
+          these states. */}
+      {!supabaseConfigured ? (
         <Card>
           <CardContent className="space-y-2 pt-5 text-[13px] text-ink-500">
             <div className="flex items-center gap-2 text-ink-700">
@@ -117,30 +151,14 @@ export default function CarersPage() {
             </p>
           </CardContent>
         </Card>
-        <section className="space-y-2">
-          <SectionHeader title={L("Local contacts", "本地通讯录")} />
-          <LocalContactsSection />
-        </section>
-      </Shell>
-    );
-  }
-
-  if (loading) {
-    return (
-      <Shell locale={locale}>
+      ) : loading ? (
         <Card>
-          <CardContent className="flex items-center gap-2 pt-5 text-[13px] text-ink-500">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {L("Loading…", "加载中…")}
+          <CardContent className="flex items-center gap-2 pt-5 text-[12.5px] text-ink-500">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            {L("Checking your account…", "正在检查账号…")}
           </CardContent>
         </Card>
-      </Shell>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <Shell locale={locale}>
+      ) : !profile ? (
         <Card>
           <CardContent className="space-y-3 pt-5 text-[13px] text-ink-500">
             <p>
@@ -154,15 +172,7 @@ export default function CarersPage() {
             </Link>
           </CardContent>
         </Card>
-      </Shell>
-    );
-  }
-
-  // Signed in but not part of any household yet — show local-contacts
-  // anyway (it doesn't depend on a household), and prompt for setup.
-  if (!membership || !householdId) {
-    return (
-      <Shell locale={locale}>
+      ) : !membership || !householdId ? (
         <Card>
           <CardContent className="space-y-3 pt-5 text-[13px] text-ink-500">
             <p>
@@ -171,110 +181,97 @@ export default function CarersPage() {
                 "您尚未加入家庭。请完成引导流程创建家庭，再从此页添加护理人员。",
               )}
             </p>
-            <div className="flex gap-2">
-              <Link href="/onboarding">
-                <Button size="md">
-                  {L("Set up household", "创建家庭")}
-                </Button>
-              </Link>
-            </div>
+            <Link href="/onboarding">
+              <Button size="md">
+                {L("Set up household", "创建家庭")}
+              </Button>
+            </Link>
           </CardContent>
         </Card>
-        <section className="space-y-2">
-          <SectionHeader title={L("Local contacts", "本地通讯录")} />
-          <LocalContactsSection />
-        </section>
-      </Shell>
-    );
-  }
-
-  const activeInvites = invites.filter(
-    (i) => !i.accepted_at && !i.revoked_at && new Date(i.expires_at) > new Date(),
-  );
-
-  return (
-    <Shell
-      locale={locale}
-      household={household}
-      memberCount={members.length}
-      pendingCount={activeInvites.length}
-    >
-      {/* Primary CTA — the answer to "no obvious way to add carers". */}
-      {isPrimary && !showInviteFlow && (
-        <Card className="border-[var(--tide-2)]/40 bg-[var(--tide-soft)]">
-          <CardContent className="flex items-center justify-between gap-3 pt-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--tide-2)]/15 text-[var(--tide-2)]">
-                <UserPlus className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[13.5px] font-semibold text-ink-900">
-                  {L("Add a carer", "添加护理人员")}
+      ) : (
+        <>
+          {/* Primary CTA — the answer to "no obvious way to add carers". */}
+          {isPrimary && !showInviteFlow && (
+            <Card className="border-[var(--tide-2)]/40 bg-[var(--tide-soft)]">
+              <CardContent className="flex items-center justify-between gap-3 pt-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--tide-2)]/15 text-[var(--tide-2)]">
+                    <UserPlus className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[13.5px] font-semibold text-ink-900">
+                      {L("Add a carer", "添加护理人员")}
+                    </div>
+                    <p className="mt-0.5 text-[11.5px] text-ink-500">
+                      {L(
+                        "Send an invite link — family member, clinician, or observer.",
+                        "发送邀请链接 —— 家人、医师或观察者均可。",
+                      )}
+                    </p>
+                  </div>
                 </div>
-                <p className="mt-0.5 text-[11.5px] text-ink-500">
+                <Button onClick={() => setShowInviteFlow(true)} size="md">
+                  {L("Add carer", "添加")}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {!isPrimary && (
+            <Card>
+              <CardContent className="flex items-start gap-2 pt-4 text-[12.5px] text-ink-500">
+                <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>
                   {L(
-                    "Send an invite link — family member, clinician, or observer.",
-                    "发送邀请链接 —— 家人、医师或观察者均可。",
+                    "Only the primary carer can add or remove carers. Ask them if you'd like to bring someone in.",
+                    "仅主要照护者可添加或移除护理人员。如需新增，请联系主要照护者。",
                   )}
-                </p>
-              </div>
-            </div>
-            <Button onClick={() => setShowInviteFlow(true)} size="md">
-              {L("Add carer", "添加")}
-            </Button>
-          </CardContent>
-        </Card>
+                </span>
+              </CardContent>
+            </Card>
+          )}
+
+          {isPrimary && showInviteFlow && (
+            <InviteCarerFlow
+              householdId={householdId}
+              onClose={() => setShowInviteFlow(false)}
+              onIssued={() => void reload()}
+            />
+          )}
+
+          <section className="space-y-2">
+            <SectionHeader title={L("On Anchor", "Anchor 账号")} />
+            {loadingData && members.length === 0 ? (
+              <Card>
+                <CardContent className="flex items-center gap-2 pt-5 text-[13px] text-ink-500">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {L("Loading members…", "加载成员中…")}
+                </CardContent>
+              </Card>
+            ) : (
+              <MembersList
+                members={members}
+                currentUserId={profile.id}
+                isPrimary={Boolean(isPrimary)}
+                householdId={householdId}
+                onChanged={reload}
+              />
+            )}
+          </section>
+
+          {isPrimary && invites.length > 0 && (
+            <section className="space-y-2">
+              <SectionHeader title={L("Invites", "邀请")} />
+              <PendingInvitesList invites={invites} onChanged={reload} />
+            </section>
+          )}
+        </>
       )}
 
-      {!isPrimary && (
-        <Card>
-          <CardContent className="flex items-start gap-2 pt-4 text-[12.5px] text-ink-500">
-            <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span>
-              {L(
-                "Only the primary carer can add or remove carers. Ask them if you'd like to bring someone in.",
-                "仅主要照护者可添加或移除护理人员。如需新增，请联系主要照护者。",
-              )}
-            </span>
-          </CardContent>
-        </Card>
-      )}
-
-      {isPrimary && showInviteFlow && (
-        <InviteCarerFlow
-          householdId={householdId}
-          onClose={() => setShowInviteFlow(false)}
-          onIssued={() => void reload()}
-        />
-      )}
-
-      <section className="space-y-2">
-        <SectionHeader title={L("On Anchor", "Anchor 账号")} />
-        {loadingData && members.length === 0 ? (
-          <Card>
-            <CardContent className="flex items-center gap-2 pt-5 text-[13px] text-ink-500">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {L("Loading members…", "加载成员中…")}
-            </CardContent>
-          </Card>
-        ) : (
-          <MembersList
-            members={members}
-            currentUserId={profile.id}
-            isPrimary={Boolean(isPrimary)}
-            householdId={householdId}
-            onChanged={reload}
-          />
-        )}
-      </section>
-
-      {isPrimary && invites.length > 0 && (
-        <section className="space-y-2">
-          <SectionHeader title={L("Invites", "邀请")} />
-          <PendingInvitesList invites={invites} onChanged={reload} />
-        </section>
-      )}
-
+      {/* Local contacts ALWAYS renders — pure offline / Dexie. The
+          phone book is the most important fallback when sync is
+          flaky: tired carer needs to call the oncologist, opens
+          /carers, gets the number. Don't gate it behind anything. */}
       <section className="space-y-2">
         <SectionHeader title={L("Local contacts", "本地通讯录")} />
         <LocalContactsSection />
@@ -290,60 +287,6 @@ export default function CarersPage() {
           <ChevronRight className="h-3 w-3" />
         </Link>
       </section>
-    </Shell>
-  );
-}
-
-// Page chrome shared by every state. Pulled out so the loading /
-// signed-out / no-household / fully-loaded branches don't each
-// re-implement the header.
-function Shell({
-  locale,
-  children,
-  household,
-  memberCount,
-  pendingCount,
-}: {
-  locale: "en" | "zh";
-  children: React.ReactNode;
-  household?: Household | null;
-  memberCount?: number;
-  pendingCount?: number;
-}) {
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
-  return (
-    <div className="mx-auto max-w-2xl space-y-5 p-4 md:p-8">
-      <PageHeader
-        eyebrow={L("CARERS", "护理人员")}
-        title={
-          household
-            ? L(
-                `${household.patient_display_name}'s care team`,
-                `${household.patient_display_name} 的护理团队`,
-              )
-            : L("Carers", "护理人员")
-        }
-        subtitle={
-          household && memberCount !== undefined ? (
-            <span className="text-[12px] text-ink-500">
-              {L(
-                `${memberCount} ${memberCount === 1 ? "carer" : "carers"} on Anchor`,
-                `${memberCount} 位 Anchor 账号成员`,
-              )}
-              {pendingCount !== undefined && pendingCount > 0 && (
-                <>
-                  {" · "}
-                  {L(
-                    `${pendingCount} pending`,
-                    `${pendingCount} 份待接受`,
-                  )}
-                </>
-              )}
-            </span>
-          ) : undefined
-        }
-      />
-      {children}
     </div>
   );
 }
