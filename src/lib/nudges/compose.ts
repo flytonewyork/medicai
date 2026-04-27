@@ -13,6 +13,7 @@ import { computeTrendNudges } from "./trend-nudges";
 import { computeWeatherNudges } from "./weather-nudges";
 import { computeNutritionNudges } from "./nutrition-nudges";
 import { computeFoodSafetyNudges } from "./food-safety-nudges";
+import { computeChemoBodyFluidNudges } from "./chemo-body-fluid-nudges";
 import { agentRunsToFeedItems } from "./agent-runs";
 import { getActiveTaskInstances } from "~/lib/tasks/engine";
 
@@ -83,6 +84,14 @@ export function composeTodayFeed(inputs: ComposeInputs): FeedItem[] {
   // ── 5c. Food safety during chemo nadir / early recovery ────────────
   feed.push(
     ...computeFoodSafetyNudges({
+      cycleContext: inputs.cycleContext,
+      todayISO: inputs.todayISO,
+    }),
+  );
+
+  // ── 5d. Body-fluid precautions during 48h-after-each-dose window ───
+  feed.push(
+    ...computeChemoBodyFluidNudges({
       cycleContext: inputs.cycleContext,
       todayISO: inputs.todayISO,
     }),

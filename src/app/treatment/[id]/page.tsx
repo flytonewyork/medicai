@@ -215,6 +215,39 @@ export default function CycleDetailPage() {
         />
       )}
 
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Link
+          href="/safety/chemo-at-home"
+          className="rounded-md border border-ink-100 bg-paper-2/40 px-4 py-3 text-[12px] text-ink-700 hover:border-ink-300"
+        >
+          <div className="font-medium text-ink-900">
+            {locale === "zh"
+              ? "居家化疗安全"
+              : "Chemo safety at home"}
+          </div>
+          <div className="mt-0.5 text-[11px] text-ink-500">
+            {locale === "zh"
+              ? "用药后 48 小时体液防护"
+              : "Body-fluid precautions for 48 h after each dose"}
+          </div>
+        </Link>
+        <Link
+          href="/safety/neutropenia"
+          className="rounded-md border border-ink-100 bg-paper-2/40 px-4 py-3 text-[12px] text-ink-700 hover:border-ink-300"
+        >
+          <div className="font-medium text-ink-900">
+            {locale === "zh"
+              ? "中性粒细胞 & 感染防护"
+              : "Neutropenia & infection prevention"}
+          </div>
+          <div className="mt-0.5 text-[11px] text-ink-500">
+            {locale === "zh"
+              ? "用药后 7–14 天风险最高"
+              : "Risk peaks days 7–14 after each dose"}
+          </div>
+        </Link>
+      </div>
+
       <CycleMedicationsCard cycleId={cycle.id} />
 
       <CycleQuickActions cycle={cycle} protocol={protocol} locale={locale} />
