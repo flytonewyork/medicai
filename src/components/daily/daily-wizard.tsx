@@ -213,6 +213,10 @@ export function DailyWizard({ entryId, date }: Props) {
   );
   const [cursor, setCursor] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  // After a successful add we capture the new row id so a retry (e.g. user
+  // hits Save again after an engine warning) updates instead of duplicating.
+  const [savedId, setSavedId] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     if (existing) {
@@ -298,6 +302,7 @@ export function DailyWizard({ entryId, date }: Props) {
 
   async function save() {
     setSaving(true);
+    setSaveError(null);
     try {
       const { getCachedUserId } = await import("~/lib/supabase/current-user");
       const uid = getCachedUserId();
@@ -309,13 +314,17 @@ export function DailyWizard({ entryId, date }: Props) {
         entered_at: existing?.entered_at ?? now(),
         updated_at: now(),
       };
-      if (entryId) {
-        await db.daily_entries.update(entryId, base);
+      // Persist the entry first. If this throws the user can retry without
+      // a duplicate row being created.
+      const targetId = entryId ?? savedId;
+      if (targetId) {
+        await db.daily_entries.update(targetId, base);
       } else {
-        await db.daily_entries.add({
+        const newId = await db.daily_entries.add({
           ...(base as DailyEntry),
           created_at: now(),
         });
+        setSavedId(newId);
       }
 
       // Stamp the symptom baseline the first time a check-in writes to
@@ -341,8 +350,23 @@ export function DailyWizard({ entryId, date }: Props) {
         }
       }
 
-      await runEngineAndPersist();
+      // Engine evaluation is best-effort — entry is already saved, so a
+      // failure here must not abort navigation or re-throw to React.
+      try {
+        await runEngineAndPersist();
+      } catch (engineErr) {
+        // eslint-disable-next-line no-console
+        console.warn("[daily-wizard] engine evaluation failed", engineErr);
+      }
       router.push("/daily");
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[daily-wizard] save failed", err);
+      setSaveError(
+        locale === "zh"
+          ? "保存失败，请再试一次。"
+          : "Couldn't save — please try again.",
+      );
     } finally {
       setSaving(false);
     }
@@ -385,6 +409,7 @@ export function DailyWizard({ entryId, date }: Props) {
       picked={picked}
       draft={draft}
       saving={saving}
+      saveError={saveError}
       onResume={(id) => {
         const idx = picked.indexOf(id);
         if (idx >= 0) {
@@ -1073,6 +1098,7 @@ function ReviewScreen({
   picked,
   draft,
   saving,
+  saveError,
   onResume,
   onAddMore,
   onSave,
@@ -1081,6 +1107,7 @@ function ReviewScreen({
   picked: CatId[];
   draft: Draft;
   saving: boolean;
+  saveError: string | null;
   onResume: (id: CatId) => void;
   onAddMore: () => void;
   onSave: () => void;
@@ -1155,6 +1182,15 @@ function ReviewScreen({
           )}
         </CardContent>
       </Card>
+
+      {saveError && (
+        <div
+          role="alert"
+          className="rounded-md border border-[var(--warn)]/40 bg-[var(--warn-soft)] p-2.5 text-xs text-[var(--warn)]"
+        >
+          {saveError}
+        </div>
+      )}
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Button variant="ghost" onClick={onAddMore}>

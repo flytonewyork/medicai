@@ -9,6 +9,7 @@ import {
   logTemplate,
 } from "~/lib/nutrition/templates";
 import { useLocale, pickL } from "~/hooks/use-translate";
+import { useUIStore } from "~/stores/ui-store";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils/cn";
@@ -27,6 +28,7 @@ export function TemplatesPicker({
   onLogged: (meal_id: number) => void;
 }) {
   const locale = useLocale();
+  const enteredBy = useUIStore((s) => s.enteredBy);
   const [order, setOrder] = useState<"recent" | "favourites">("recent");
   const templates =
     useLiveQuery(
@@ -82,7 +84,7 @@ export function TemplatesPicker({
                   template_id: t.id!,
                   date,
                   meal_type,
-                  entered_by: "hulin",
+                  entered_by: enteredBy,
                 });
                 onLogged(id);
               }}

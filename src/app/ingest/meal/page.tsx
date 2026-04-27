@@ -5,9 +5,11 @@ import { format } from "date-fns";
 import { db, now } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
 import { useDefaultAiModel } from "~/hooks/use-settings";
+import { useUIStore } from "~/stores/ui-store";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
+import { Alert } from "~/components/ui/alert";
 import { CameraCapture } from "~/components/ingest/camera-capture";
 import {
   prepareImageForVision,
@@ -23,6 +25,7 @@ import { Sparkles, Check, Loader2 } from "lucide-react";
 export default function MealIngestPage() {
   const locale = useLocale();
   const model = useDefaultAiModel();
+  const enteredBy = useUIStore((s) => s.enteredBy);
 
   const [prepared, setPrepared] = useState<PreparedImage | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -31,6 +34,7 @@ export default function MealIngestPage() {
     null,
   );
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState<{ proteinAdd: number } | null>(null);
 
   async function onPhoto(file: File) {
     reset();
@@ -64,6 +68,7 @@ export default function MealIngestPage() {
   async function saveToToday() {
     if (!estimate) return;
     setBusy("save");
+    setError(null);
     try {
       const today = todayISO();
       const existing = await db.daily_entries
@@ -79,39 +84,25 @@ export default function MealIngestPage() {
           updated_at: ts,
         });
       } else {
+        // Per DailyEntry's "every clinical field is optional" contract,
+        // only write what the patient actually provided. Stamping placeholder
+        // 5s for energy / mood / pain etc. would lie to the rule engine.
         await db.daily_entries.add({
           date: today,
           entered_at: ts,
-          entered_by: "hulin",
-          energy: 5,
-          sleep_quality: 5,
-          appetite: 5,
-          pain_worst: 0,
-          pain_current: 0,
-          mood_clarity: 5,
-          nausea: 0,
-          practice_morning_completed: false,
-          practice_evening_completed: false,
-          cold_dysaesthesia: false,
-          neuropathy_hands: 0,
-          neuropathy_feet: 0,
-          mouth_sores: false,
-          diarrhoea_count: 0,
-          new_bruising: false,
-          dyspnoea: false,
-          fever: false,
+          entered_by: enteredBy,
           protein_grams: proteinAdd,
           meals_count: 1,
           created_at: ts,
           updated_at: ts,
         });
       }
-      reset();
-      alert(
-        locale === "zh"
-          ? `已加入 ${proteinAdd} g 蛋白到今日记录`
-          : `Added ${proteinAdd} g protein to today's log`,
-      );
+      setPrepared(null);
+      setPreview(null);
+      setEstimate(null);
+      setSaved({ proteinAdd });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(null);
     }
@@ -122,6 +113,7 @@ export default function MealIngestPage() {
     setPreview(null);
     setEstimate(null);
     setError(null);
+    setSaved(null);
   }
 
   return (
@@ -138,7 +130,26 @@ export default function MealIngestPage() {
 
       <Card>
         <CardContent className="space-y-4 pt-5">
-          {!prepared && (
+          {saved && (
+            <Alert
+              variant="ok"
+              role="status"
+              title={locale === "zh" ? "已加入今日" : "Added to today"}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[13px]">
+                  {locale === "zh"
+                    ? `+ ${saved.proteinAdd} g 蛋白`
+                    : `+ ${saved.proteinAdd} g protein`}
+                </span>
+                <Button variant="ghost" onClick={reset}>
+                  {locale === "zh" ? "再拍一张" : "Snap another"}
+                </Button>
+              </div>
+            </Alert>
+          )}
+
+          {!prepared && !saved && (
             <div className="space-y-3">
               <CameraCapture
                 onPhoto={onPhoto}
