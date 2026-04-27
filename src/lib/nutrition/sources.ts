@@ -77,6 +77,27 @@ export const SOURCES = {
       "Cohen CW et al. (2018). A ketogenic diet is acceptable in women with ovarian and endometrial cancer and has no adverse effects on blood lipids. Nutrition and Cancer 70(7):1187–1199.",
     year: 2018,
   },
+  // Cancer Institute NSW patient-information sheets distributed
+  // through eviq.org.au — JPCC hands these to its patients verbatim
+  // for chemotherapy safety and infection-prevention guidance.
+  eviq_chemo_safety_2025: {
+    id: "eviq_chemo_safety_2025",
+    short_label: "eviq · Chemotherapy safety at home",
+    full_citation:
+      "Cancer Institute NSW (September 2025). Chemotherapy safety at home — patient information sheet. ID 3095, Version 7. SC252600473.",
+    url: "https://www.eviq.org.au",
+    contact: "feedback@eviq.org.au",
+    year: 2025,
+  },
+  eviq_neutropenia_2025: {
+    id: "eviq_neutropenia_2025",
+    short_label: "eviq · Neutropenia & infection prevention",
+    full_citation:
+      "Cancer Institute NSW (January 2025). Reducing your risk of infection during cancer treatment — patient information sheet. SC242500243.",
+    url: "https://www.eviq.org.au",
+    contact: "feedback@eviq.org.au",
+    year: 2025,
+  },
 } as const satisfies Record<string, Source>;
 
 export type SourceId = keyof typeof SOURCES;

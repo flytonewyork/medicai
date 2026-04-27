@@ -48,6 +48,14 @@ function ContentEN() {
   const jpcc = getSource("jpcc_2021");
   return (
     <div className="space-y-3">
+      <Link
+        href="/safety"
+        className="block rounded-md border border-ink-100 bg-paper-2/40 px-4 py-2.5 text-[12px] text-ink-700 hover:border-ink-300"
+      >
+        See also: <strong>chemo safety at home</strong> and{" "}
+        <strong>neutropenia / infection prevention</strong> →
+      </Link>
+
       <Card>
         <CardContent className="space-y-2">
           <h3 className="serif text-base text-ink-900">Two policies, one strategy</h3>
@@ -216,6 +224,14 @@ function ContentZH() {
   const jpcc = getSource("jpcc_2021");
   return (
     <div className="space-y-3">
+      <Link
+        href="/safety"
+        className="block rounded-md border border-ink-100 bg-paper-2/40 px-4 py-2.5 text-[12px] text-ink-700 hover:border-ink-300"
+      >
+        另请参阅：<strong>居家化疗安全</strong> 与{" "}
+        <strong>感染防护（中性粒细胞低谷）</strong> →
+      </Link>
+
       <Card>
         <CardContent className="space-y-2">
           <h3 className="serif text-base text-ink-900">两套方案，一个目标</h3>
