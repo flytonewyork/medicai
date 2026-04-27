@@ -97,6 +97,29 @@ test.describe("Mobile bottom nav — render + clearance", () => {
     expect(after!.y).toBeCloseTo(initial!.y, -1);
   });
 
+  test("pill bottom edge sits within 16 px of viewport bottom (no big white band below)", async ({
+    page,
+  }) => {
+    // The earlier bug: anchor was `max(0.75rem, env(safe-area-inset-
+    // bottom))`, so on iOS PWA the inset (~34 px) pushed the pill up
+    // and left a visible band of paper-2 below it — the user
+    // screenshot that triggered this fix. Regular-browser viewports
+    // don't expose the inset, so the assertion here is the simpler
+    // "anchor is fixed at 0.75rem" expectation. PWA mode is verified
+    // visually on the Vercel preview.
+    const nav = page.locator("nav.pwa-bottom-nav");
+    const box = await nav.boundingBox();
+    expect(box).not.toBeNull();
+    const viewport = page.viewportSize()!;
+    const gap = viewport.height - (box!.y + box!.height);
+    expect(
+      gap,
+      `Pill bottom edge ${gap}px from viewport bottom (want ≤ 16px)`,
+    ).toBeLessThanOrEqual(16);
+    // Also confirm the pill *isn't* overlapping the viewport edge.
+    expect(gap).toBeGreaterThanOrEqual(0);
+  });
+
   test("nav is hidden on /login", async ({ page }) => {
     await page.goto("/login");
     await expect(page.locator("nav.pwa-bottom-nav")).toHaveCount(0);

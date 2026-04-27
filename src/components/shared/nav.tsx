@@ -144,8 +144,15 @@ export function MobileBottomNav() {
   const mobileItems = items.filter((i) => selected.includes(i.href));
   return (
     <nav
-      className="a-glass pwa-bottom-nav fixed inset-x-3 z-40 flex justify-around rounded-[22px] px-2 py-2.5 shadow-lg md:hidden"
-      style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      // Anchor is a fixed 0.75rem above the viewport bottom — NOT
+      // inset-aware. The home-indicator clearance is handled by
+      // `.pwa-bottom-nav` which adds `padding-bottom: env(safe-area-
+      // inset-bottom)` *inside* the pill so the icons stay above the
+      // home indicator, while the pill's rounded background extends
+      // down. Adding the inset to BOTH the anchor and the internal
+      // padding (the previous behaviour) double-counted on iOS PWA
+      // and left a visible band of dead paper-2 below the pill.
+      className="a-glass pwa-bottom-nav fixed inset-x-3 bottom-3 z-40 flex justify-around rounded-[22px] px-2 py-2.5 shadow-lg md:hidden"
     >
       {mobileItems.map((item) => {
         const Icon = item.icon;

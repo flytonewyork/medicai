@@ -99,22 +99,26 @@ body {
 
 /* Page-content clearance for the floating bottom nav. Single source
  * of truth so this stays in sync with the nav's own anchor + height
- * math (above) — earlier the page used a hard-coded 7rem + inset
- * which overshot the actual nav top edge by ~30 px on regular
- * browsers and ~16 px on PWA, leaving the patient looking at a band
- * of dead space at the bottom of every screen.
+ * math (above).
  *
- * Visual top of nav from viewport bottom =
- *   max(0.75rem, inset)             (nav anchor)
- * + 46 px                           (top padding 10 + content 36)
- * + max(0.5rem, inset)              (pwa-bottom-nav padding)
+ * The nav itself is anchored at a fixed 0.75rem above the viewport
+ * bottom (NOT inset-aware) and uses internal padding-bottom of
+ * max(0.5rem, env(safe-area-inset-bottom)) to keep its icons above
+ * the iOS home indicator. The page must clear the nav's *visual*
+ * top edge:
+ *
+ *   nav_top_from_viewport_bottom =
+ *     0.75rem                         (anchor)
+ *   + 46 px                           (top padding 10 + content 36)
+ *   + max(0.5rem, env(safe-area-inset-bottom))
+ *                                     (pwa-bottom-nav padding)
  *
  * Plus a 1rem visual gap so the last line of content doesn't kiss
  * the nav glass. md+ drops back to a flat 1.5rem because the
  * desktop sidebar replaces the bottom nav. */
 .bottom-nav-clearance {
   padding-bottom: calc(
-    max(0.75rem, env(safe-area-inset-bottom))
+    0.75rem
     + 2.875rem
     + max(0.5rem, env(safe-area-inset-bottom))
     + 1rem
