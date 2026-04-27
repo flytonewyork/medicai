@@ -174,17 +174,17 @@ export function WeeklyForm({ entryId }: { entryId?: number }) {
           <CardTitle>
             {locale === "zh" ? "本周概览" : "This week"}
           </CardTitle>
-          <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <div className="mt-1 text-sm text-ink-500">
             {formatWeekRange(form.week_start, locale)}
           </div>
         </CardHeader>
         <CardContent className="space-y-5">
           <div>
-            <div className="text-sm font-medium text-slate-800 dark:text-slate-200">
+            <div className="text-sm font-medium text-ink-900">
               {locale === "zh" ? "修习天数" : "Practice days"}
             </div>
             {autoFilled && (
-              <div className="mt-1 text-xs text-slate-500">
+              <div className="mt-1 text-xs text-ink-500">
                 {locale === "zh"
                   ? "从每日记录自动填充 —— 可以调整。"
                   : "Pre-filled from daily entries — adjust if needed."}
@@ -241,7 +241,7 @@ export function WeeklyForm({ entryId }: { entryId?: number }) {
           />
 
           <div>
-            <div className="text-sm font-medium text-slate-800 dark:text-slate-200">
+            <div className="text-sm font-medium text-ink-900">
               {locale === "zh" ? "能量走向" : "Energy trend"}
             </div>
             <div className="mt-2 grid grid-cols-3 gap-2">
@@ -259,8 +259,8 @@ export function WeeklyForm({ entryId }: { entryId?: number }) {
                     className={cn(
                       "h-11 rounded-lg border text-sm font-medium transition-colors",
                       active
-                        ? "border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900"
-                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300",
+                        ? "border-ink-900 bg-ink-900 text-paper"
+                        : "border-ink-200 bg-paper text-ink-700 hover:border-ink-300",
                     )}
                     aria-pressed={active}
                   >
@@ -278,7 +278,7 @@ export function WeeklyForm({ entryId }: { entryId?: number }) {
           <CardTitle>
             {locale === "zh" ? "临床对话" : "For the clinical conversation"}
           </CardTitle>
-          <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <div className="mt-1 text-sm text-ink-500">
             {locale === "zh"
               ? "这些内容会直接出现在 Dr Lee 的就诊前小结里。"
               : "These go straight into the pre-clinic summary for Dr Lee."}
@@ -353,7 +353,7 @@ export function WeeklyForm({ entryId }: { entryId?: number }) {
 }
 
 const textareaCls =
-  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:border-slate-700 dark:bg-slate-900 dark:focus:border-slate-100";
+  "w-full rounded-md border border-ink-200 bg-paper px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400 focus:border-ink-900 focus:outline-none focus:ring-2 focus:ring-ink-900/10";
 
 function Labelled({
   label,
@@ -364,7 +364,7 @@ function Labelled({
 }) {
   return (
     <label className="block space-y-1.5">
-      <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
+      <span className="text-sm font-medium text-ink-900">
         {label}
       </span>
       {children}
@@ -382,13 +382,13 @@ function Counter({
   onChange: (n: number) => void;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3 text-center dark:border-slate-800 dark:bg-slate-900">
-      <div className="text-xs font-medium text-slate-500">{label}</div>
+    <div className="rounded-lg border border-ink-200 bg-paper p-3 text-center">
+      <div className="text-xs font-medium text-ink-500">{label}</div>
       <div className="mt-1 flex items-center justify-center gap-2">
         <button
           type="button"
           onClick={() => onChange(value - 1)}
-          className="h-8 w-8 rounded-md border border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+          className="h-8 w-8 rounded-md border border-ink-200 text-ink-500 hover:bg-ink-100/60"
         >
           −
         </button>
@@ -398,7 +398,7 @@ function Counter({
         <button
           type="button"
           onClick={() => onChange(value + 1)}
-          className="h-8 w-8 rounded-md border border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+          className="h-8 w-8 rounded-md border border-ink-200 text-ink-500 hover:bg-ink-100/60"
         >
           +
         </button>
@@ -421,10 +421,10 @@ function RatingRow({
   return (
     <div className="space-y-2">
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
+        <span className="text-sm font-medium text-ink-900">
           {label}
         </span>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-ink-500">
           {RATING_LABELS[locale][value]}
         </span>
       </div>
@@ -439,8 +439,8 @@ function RatingRow({
               className={cn(
                 "h-11 rounded-lg border text-sm font-semibold transition-colors",
                 active
-                  ? "border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400",
+                  ? "border-ink-900 bg-ink-900 text-paper"
+                  : "border-ink-200 bg-paper text-ink-500 hover:border-ink-300",
               )}
               aria-pressed={active}
             >

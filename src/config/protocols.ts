@@ -419,7 +419,7 @@ export const PROTOCOL_LIBRARY: readonly Protocol[] = [
       zh: "吉西他滨 + 白蛋白紫杉醇 + 纳马非替尼",
     },
     description: {
-      en: "28-day GnP backbone (D1/D8/D15 infusions) plus continuous oral narmafotinib (AMP945) — an investigational FAK inhibitor studied in the ACCENT trial in mPDAC (NCT05355298). Hypothesis: disrupting stromal fibrosis improves chemo delivery. Standard GnP backbone monitoring (FBC, LFTs, U&Es D1/D8/D15) applies; oral adherence is critical.",
+      en: "28-day GnP backbone (D1/D8/D15 infusions) plus continuous oral narmafotinib (AMP945) — an investigational FAK inhibitor studied in the ACCENT trial in mPDAC, NCT05355298. Hypothesis: disrupting stromal fibrosis improves chemo delivery. Standard GnP backbone monitoring (FBC, LFTs, U&Es D1/D8/D15) applies; oral adherence is critical.",
       zh: "28 天 GnP 框架（D1/D8/D15 输注）+ 每日连续口服纳马非替尼（AMP945）—— ACCENT 研究（NCT05355298）中用于转移性胰腺癌的试验性 FAK 抑制剂。设想：通过破坏肿瘤基质纤维化来提升化疗药物递送。沿用 GnP 骨干监测（D1/D8/D15 血常规、肝功、电解质）；口服依从性至关重要。",
     },
     cycle_length_days: 28,

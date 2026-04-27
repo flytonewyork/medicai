@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { useEffect, useState } from "react";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, pickL } from "~/hooks/use-translate";
 import { UniversalDrop } from "~/components/ingest/universal-drop";
 import { PhoneCallNote } from "~/components/ingest/phone-note";
 import { CalendarSubscribe } from "~/components/ingest/calendar-subscribe";
@@ -70,7 +70,7 @@ export function IngestModal() {
   }, [isOpen, draft, close]);
 
   if (!isOpen) return null;
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = pickL(locale);
 
   return (
     <div

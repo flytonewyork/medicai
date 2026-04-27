@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
 import { useTodayFeed } from "~/hooks/use-today-feed";
 import { useWeather } from "~/hooks/use-weather";
+import { todayISO } from "~/lib/utils/date";
 import { useLocale, useT } from "~/hooks/use-translate";
+import { useDefaultAiModel } from "~/hooks/use-settings";
 import { generateNarrative } from "~/lib/nudges/ai-narrative";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -93,8 +93,7 @@ export function TodayFeed({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [rawFeed, excludeKey],
   );
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const model = settings?.[0]?.default_ai_model ?? "claude-opus-4-7";
+  const model = useDefaultAiModel();
 
   const [expanded, setExpanded] = useState(false);
   const [narrative, setNarrative] = useState<string | null>(null);
@@ -113,7 +112,7 @@ export function TodayFeed({
   // ANTHROPIC_API_KEY via /api/ai/feed-narrative; no per-user key needed.
   useEffect(() => {
     if (feed.length === 0) return;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayISO();
     const cacheTag = `${today}_${locale}`;
     try {
       const raw = localStorage.getItem(CACHE_KEY);
@@ -144,7 +143,12 @@ export function TodayFeed({
         } catch {
           // ignore
         }
-      } catch {
+      } catch (err) {
+        // Narrative is best-effort — log so we know when the API
+        // gateway / rate limit is biting, but never block the feed
+        // on it.
+        // eslint-disable-next-line no-console
+        console.warn("[today-feed] narrative fetch failed", err);
         setNarrative(null);
       } finally {
         setNarrativeLoading(false);
@@ -156,7 +160,26 @@ export function TodayFeed({
 
   if (feed.length === 0) {
     return (
-      <Card className="p-5 text-sm text-ink-500">{t("todayFeed.empty")}</Card>
+      <Card className="p-5">
+        <div className="flex items-start gap-3">
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
+            style={{ background: "var(--tide-soft)", color: "var(--tide-2)" }}
+          >
+            <Sparkles className="h-4 w-4" />
+          </div>
+          <div className="space-y-1">
+            <div className="text-[13px] font-semibold text-ink-900">
+              {locale === "zh" ? "今天的动态会显示在这里" : "Your feed will appear here"}
+            </div>
+            <p className="text-[12.5px] text-ink-500 leading-relaxed">
+              {locale === "zh"
+                ? "完成今日记录后，这里会显示摘要、提醒和趋势。先从上方的快速记录开始。"
+                : "After you log today's check-in, this feed will show your summary, alerts, and trends. Start with the quick check-in above."}
+            </p>
+          </div>
+        </div>
+      </Card>
     );
   }
 
@@ -184,7 +207,21 @@ export function TodayFeed({
       )}
 
       {narrativeLoading && !narrative && (
-        <div className="eyebrow px-1">{t("todayFeed.aiLoading")}</div>
+        <Card className="p-5" aria-busy="true">
+          <div className="flex items-start gap-3">
+            <div
+              className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+              style={{ background: "var(--tide-soft)", color: "var(--tide-2)" }}
+            >
+              <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+            </div>
+            <div className="flex-1 space-y-2">
+              <div className="eyebrow">{t("todayFeed.aiLoading")}</div>
+              <div className="h-3 w-3/4 animate-pulse rounded bg-ink-100" />
+              <div className="h-3 w-1/2 animate-pulse rounded bg-ink-100" />
+            </div>
+          </div>
+        </Card>
       )}
 
       <ul className="space-y-2">
@@ -292,6 +329,9 @@ function categoryLabel(
     body: { en: "Body", zh: "身体" },
     trend: { en: "Trend", zh: "趋势" },
     encouragement: { en: "Going well", zh: "进展良好" },
+    nutrition: { en: "Nutrition", zh: "营养" },
+    memory: { en: "Memory", zh: "回忆" },
+    invitation: { en: "Gathering", zh: "聚会" },
   };
   return labels[c][locale];
 }

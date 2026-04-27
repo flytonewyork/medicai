@@ -71,7 +71,7 @@ export function PresetPicker() {
     <div className="space-y-4">
       {Object.entries(byCategory).map(([cat, items]) => (
         <section key={cat}>
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <h3 className="eyebrow mb-2">
             {cat.replace("_", " ")}
           </h3>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -87,13 +87,13 @@ export function PresetPicker() {
                 >
                   <CardContent className="flex items-start justify-between gap-3 pt-4">
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium">
+                      <div className="text-sm font-medium text-ink-900">
                         {p.title[locale]}
                       </div>
-                      <div className="mt-1 text-xs text-slate-500">
+                      <div className="mt-1 text-xs text-ink-500">
                         {p.rationale[locale]}
                       </div>
-                      <div className="mt-2 text-[11px] text-slate-400">
+                      <div className="mono mt-2 text-[10.5px] uppercase tracking-[0.08em] text-ink-400">
                         {p.schedule_kind === "recurring" &&
                           p.recurrence_interval_days &&
                           (locale === "zh"
@@ -114,10 +114,10 @@ export function PresetPicker() {
                       }}
                       disabled={added}
                       className={cn(
-                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border",
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors",
                         added
-                          ? "border-emerald-500 text-emerald-600"
-                          : "border-slate-300 bg-white text-slate-700 hover:border-slate-500 dark:border-slate-700 dark:bg-slate-900",
+                          ? "border-[var(--ok)]/40 bg-[var(--ok-soft)] text-[var(--ok)]"
+                          : "border-ink-200 bg-paper text-ink-700 hover:border-ink-300",
                       )}
                       aria-label={added ? "added" : "add"}
                     >

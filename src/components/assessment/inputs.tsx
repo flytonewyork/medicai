@@ -22,10 +22,8 @@ export function NumberScale({
   return (
     <div className="space-y-2">
       <div className="flex items-baseline justify-between">
-        <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
-          {label}
-        </span>
-        <span className="text-sm tabular-nums text-slate-500">
+        <span className="text-sm font-medium text-ink-900">{label}</span>
+        <span className="text-sm tabular-nums text-ink-500">
           {typeof value === "number" ? value : "—"}
         </span>
       </div>
@@ -39,10 +37,10 @@ export function NumberScale({
               type="button"
               onClick={() => onChange(n)}
               className={cn(
-                "h-10 min-w-[2.25rem] rounded-md border text-sm font-medium",
+                "h-10 min-w-[2.25rem] rounded-md border text-sm font-medium transition-colors",
                 active
-                  ? "bg-slate-900 text-white border-slate-900 dark:bg-slate-100 dark:text-slate-900 dark:border-slate-100"
-                  : "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800",
+                  ? "border-ink-900 bg-ink-900 text-paper"
+                  : "border-ink-200 bg-paper text-ink-700 hover:border-ink-300 hover:bg-ink-100/60",
               )}
             >
               {n}
@@ -51,7 +49,7 @@ export function NumberScale({
         })}
       </div>
       {(leftLabel || rightLabel) && (
-        <div className="flex justify-between text-[11px] text-slate-500">
+        <div className="flex justify-between text-[11px] text-ink-500">
           <span>{leftLabel}</span>
           <span>{rightLabel}</span>
         </div>
@@ -70,8 +68,8 @@ export function YesNoToggle({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900">
-      <span className="text-sm text-slate-800 dark:text-slate-200">{label}</span>
+    <div className="flex items-center justify-between gap-3 rounded-md border border-ink-200 bg-paper px-3 py-2">
+      <span className="text-sm text-ink-900">{label}</span>
       <div className="flex gap-1">
         {(
           [
@@ -86,10 +84,10 @@ export function YesNoToggle({
               type="button"
               onClick={() => onChange(v)}
               className={cn(
-                "rounded-md border px-3 py-1 text-xs font-medium",
+                "rounded-md border px-3 py-1 text-xs font-medium transition-colors",
                 active
-                  ? "border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900"
-                  : "border-slate-300 text-slate-700 dark:border-slate-700 dark:text-slate-400",
+                  ? "border-ink-900 bg-ink-900 text-paper"
+                  : "border-ink-200 text-ink-700 hover:border-ink-300",
               )}
             >
               {k === "yes" ? "Yes" : "No"}
@@ -114,9 +112,7 @@ export function OrdinalScale({
 }) {
   return (
     <div className="space-y-2">
-      <div className="text-sm font-medium text-slate-800 dark:text-slate-200">
-        {label}
-      </div>
+      <div className="text-sm font-medium text-ink-900">{label}</div>
       <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
         {options.map((opt, i) => {
           const active = value === i;
@@ -126,10 +122,10 @@ export function OrdinalScale({
               type="button"
               onClick={() => onChange(i)}
               className={cn(
-                "rounded-md border p-2 text-xs font-medium",
+                "rounded-md border p-2 text-xs font-medium transition-colors",
                 active
-                  ? "border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900"
-                  : "border-slate-200 text-slate-700 hover:border-slate-400 dark:border-slate-800 dark:text-slate-300",
+                  ? "border-ink-900 bg-ink-900 text-paper"
+                  : "border-ink-200 text-ink-700 hover:border-ink-300",
               )}
             >
               {opt}

@@ -9,6 +9,13 @@ import type {
 } from "~/types/agent";
 import type { Locale } from "~/types/clinical";
 import { AgentOutputSchema } from "./schema";
+import { DEFAULT_AI_MODEL } from "~/lib/anthropic/model";
+import {
+  FALLBACK_HOUSEHOLD_PROFILE,
+  type HouseholdProfile,
+} from "~/types/household-profile";
+import { renderProfileTemplate } from "~/lib/household/profile";
+import { wrapUserInputBlock } from "~/lib/anthropic/wrap-user-input";
 
 // Server-side runtime for one specialist invocation. Takes the batch of
 // log events that routed to this agent (a day's worth, typically) plus the
@@ -18,13 +25,18 @@ import { AgentOutputSchema } from "./schema";
 // The caller is responsible for reading state.md from Dexie before, and
 // writing the returned `state_diff` + persisting the AgentRunRow after.
 
-const MODEL = process.env.ANTHROPIC_LOG_MODEL || "claude-opus-4-7";
+const MODEL = process.env.ANTHROPIC_LOG_MODEL || DEFAULT_AI_MODEL;
 
-function roleFor(id: AgentId): string {
+function roleFor(id: AgentId, profile: HouseholdProfile): string {
   // Role files are committed to the repo. We resolve them relative to the
   // project root at request time so they ship with the server build.
+  // The raw text contains `{patient_initials}` / `{diagnosis_short}` /
+  // `{diagnosis_full}` / `{oncologist_name}` tokens which we render
+  // against the per-household profile here so no patient identity is
+  // baked into the prompt at build time.
   const path = join(process.cwd(), "src", "agents", id, "role.md");
-  return readFileSync(path, "utf8");
+  const raw = readFileSync(path, "utf8");
+  return renderProfileTemplate(raw, profile);
 }
 
 function formatReferrals(referrals: readonly LogEventRow[]): string {
@@ -37,7 +49,10 @@ function formatReferrals(referrals: readonly LogEventRow[]): string {
         `[${i + 1}] ${row.at}  ·  tags: ${row.input.tags.join(", ") || "(none)"}`,
       ];
       if (row.input.text.trim()) {
-        lines.push(`text: ${row.input.text.trim()}`);
+        // Wrap the patient's free-text in <user_input> so the agent knows
+        // it's data, not instructions. The model's role.md is the
+        // authority; anything inside the wrapper is to be parsed.
+        lines.push(`text: ${wrapUserInputBlock(row.input.text.trim())}`);
       }
       if (row.input.imageUrl) {
         lines.push(`image: ${row.input.imageUrl}`);
@@ -70,6 +85,10 @@ export interface RunAgentArgs {
   locale: Locale;
   date: string; // "YYYY-MM-DD" — the day this run is producing a report for
   trigger: "daily_batch" | "on_demand";
+  // Household identity envelope used to template role.md. Optional so
+  // tests can call runAgent() without setting up a profile; the
+  // fallback envelope keeps the prompt generic.
+  profile?: HouseholdProfile;
 }
 
 export async function runAgent(args: RunAgentArgs): Promise<AgentOutput> {
@@ -92,13 +111,14 @@ export async function runAgent(args: RunAgentArgs): Promise<AgentOutput> {
     formatReferrals(args.referrals),
   ].join("\n");
 
+  const profile = args.profile ?? FALLBACK_HOUSEHOLD_PROFILE;
   const response = await client.messages.parse({
     model: MODEL,
     max_tokens: 2000,
     system: [
       {
         type: "text",
-        text: roleFor(args.id),
+        text: roleFor(args.id, profile),
         cache_control: { type: "ephemeral" },
       },
       {

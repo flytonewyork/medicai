@@ -17,7 +17,7 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 // Vercel Cron entry point. Fires at 21:00 UTC daily (configured in
-// vercel.json), which is 07:00 AEST — Hu Lin's morning in Melbourne.
+// vercel.json), which is 07:00 AEST — the patient's morning in Melbourne.
 // Multi-timezone fan-out isn't handled yet; this is a single fire.
 //
 // Auth: Vercel's cron invocation carries `x-vercel-cron: 1` (only

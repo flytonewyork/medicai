@@ -14,14 +14,13 @@ RASolute 302 trial (readout April 2026).
 
 - **Patient:** Hu Lin, father of the primary user (Thomas Hu, MBBS, the project owner)
 - **Diagnosis:** confirmed metastatic PDAC
-- **Managing oncologist:** Dr Michael Lee (Melbourne)
+- **Managing oncologist:** A/Prof Sumitra Ananda (Melbourne)
 - **HPB surgeon:** Mark Cullinan (Epworth Richmond)
 - **First-line treatment:** gemcitabine + nab-paclitaxel (GnP), optimised for
   function preservation over maximum response
 - **Patient values:** continued spiritual practice (Qigong, meditation, Chinese
   spiritual traditions), independence, mental stillness, family connection
-- **Strategic goal:** bridge to daraxonrasib via RASolute 303 (1L trial, now
-  enrolling) or RASolute 302 (2L, enrollment closing June 2026) or expanded access
+- **Strategic goal:** bridge to daraxonrasib via FDA Approval or RASolute 302 (2L, enrollment closing June 2026) or expanded access
 
 ## The three-axis framework (CRITICAL conceptual foundation)
 
@@ -77,8 +76,7 @@ not predetermined.
 
 ## Design principles
 
-1. Local-first always. IndexedDB via Dexie. No cloud, no server, no PHI leaves
-   the device for MVP. Phase 2 may add encrypted sync.
+1. Local-first then sync to cloud DB. IndexedDB via Dexie.
 2. Bilingual (English + Simplified Chinese). All patient-facing copy. Clinical
    terminology may remain English in reports.
 3. Mobile-first for daily tracking. Desktop-first for analytical dashboards.
@@ -124,9 +122,16 @@ obsessively — it's the most important piece of code in the project.
 Read, in order:
 1. `docs/CLINICAL_FRAMEWORK.md`
 2. `docs/BRIDGE_STRATEGY.md`
-3. `docs/DATA_SCHEMA.md`
+3. `docs/DATA_SCHEMA.md` — includes the "Sync semantics" section
+   (last-write-wins, single-active-editor assumption).
 4. `docs/ZONE_RULES.md`
 5. `docs/BUILD_ORDER.md`
+6. `docs/LEGACY_MODULE.md` — required only when touching family timeline,
+   profile entries, the biographer or orchestrator agents, or any capture
+   modality described in that doc's feature set.
+7. `docs/AI_SURFACES.md` — required only when touching any
+   `src/agents/`, `src/lib/ai/`, `src/lib/ingest/`, `src/lib/nudges/`,
+   or `src/app/api/ai/*` / `src/app/api/agent/*` route.
 
 Always prefer to ask a clarifying question if clinical logic is ambiguous. Do not
 invent thresholds or rules not specified in the framework docs.

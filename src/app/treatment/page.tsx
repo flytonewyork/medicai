@@ -11,7 +11,7 @@ import { PROTOCOL_BY_ID } from "~/config/protocols";
 import { formatDate } from "~/lib/utils/date";
 import { cn } from "~/lib/utils/cn";
 import type { CycleStatus } from "~/types/treatment";
-import { ChevronRight, Pencil, Syringe } from "lucide-react";
+import { BookOpen, ChevronRight, ClipboardList, Pencil, Syringe } from "lucide-react";
 
 const STATUS_STYLES: Record<CycleStatus, { label: { en: string; zh: string }; cls: string }> = {
   planned: {
@@ -55,6 +55,51 @@ export default function TreatmentListPage() {
           </Link>
         }
       />
+
+      {/* Quick links to medication-management surfaces that would
+          otherwise be orphaned from primary nav. Prescriptions hosts
+          the active-meds list + edit; the medications reference is
+          the read-only drug glossary. */}
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Link
+          href="/prescriptions"
+          className="group flex items-center gap-3 rounded-xl border border-ink-100/70 bg-paper-2 p-3 transition-colors hover:border-ink-300"
+        >
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--tide-soft)] text-[var(--tide-2)]">
+            <ClipboardList className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[13px] font-semibold text-ink-900">
+              {locale === "zh" ? "当前处方" : "Current prescriptions"}
+            </div>
+            <div className="text-[11.5px] text-ink-500">
+              {locale === "zh"
+                ? "查看与编辑活动药物"
+                : "View and edit active medications"}
+            </div>
+          </div>
+          <ChevronRight className="h-4 w-4 shrink-0 text-ink-400 group-hover:text-ink-700" />
+        </Link>
+        <Link
+          href="/medications"
+          className="group flex items-center gap-3 rounded-xl border border-ink-100/70 bg-paper-2 p-3 transition-colors hover:border-ink-300"
+        >
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--sand)] text-ink-900">
+            <BookOpen className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[13px] font-semibold text-ink-900">
+              {locale === "zh" ? "用药参考" : "Medication reference"}
+            </div>
+            <div className="text-[11.5px] text-ink-500">
+              {locale === "zh"
+                ? "副作用、相互作用、注意事项"
+                : "Side effects, interactions, notes"}
+            </div>
+          </div>
+          <ChevronRight className="h-4 w-4 shrink-0 text-ink-400 group-hover:text-ink-700" />
+        </Link>
+      </div>
       {(!cycles || cycles.length === 0) && (
         <EmptyState
           icon={Syringe}

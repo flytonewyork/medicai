@@ -11,9 +11,9 @@
 // "Palliative Care RN").
 
 export type CareTeamRole =
-  | "family"         // Thomas, Catherine, Wendy
-  | "oncologist"     // Dr Michael Lee
-  | "surgeon"        // Mark Cullinan
+  | "family"         // immediate family / household carers
+  | "oncologist"     // medical oncologist
+  | "surgeon"        // hepatobiliary / pancreatic surgeon
   | "gp"             // general practitioner
   | "nurse"          // chemo nurse, care coordinator
   | "allied_health"  // physio, dietitian, psychologist

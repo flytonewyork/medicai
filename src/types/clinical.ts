@@ -77,7 +77,7 @@ export interface DailyEntry {
   dyspnoea?: boolean;
   fever?: boolean;
   fever_temp?: number;
-  // Curated PDAC / GnP symptom additions — tracked when the user has
+  // Curated mPDAC/ GnP symptom additions — tracked when the user has
   // them enabled in settings.tracked_symptoms. Semantics:
   //   fatigue, anorexia, abdominal_pain — 0–10 severity
   //   taste_changes — 0–5 (0 normal, 5 food tastes wrong)
@@ -86,6 +86,22 @@ export interface DailyEntry {
   anorexia?: number;
   abdominal_pain?: number;
   taste_changes?: number;
+  // JPCC p. 16 quadrants: which way is taste off? Optional —
+  // captured only when `taste_changes` is non-zero. Drives the
+  // taste-tweak suggester and the food-picker filter.
+  taste_issue?:
+    | "too_sweet"
+    | "too_salty"
+    | "too_bland"
+    | "metallic"
+    | "normal";
+  // JPCC p. 14 / 17: additional symptoms with their own playbook.
+  // Both optional booleans — captured only on days where the patient
+  // ticks the corresponding chip on the daily wizard. No Dexie
+  // schema bump needed (not indexed); legacy rows load with these
+  // as undefined.
+  dry_mouth?: boolean;
+  early_satiety?: boolean;
   steatorrhoea?: boolean;
   reflection?: string;
   reflection_lang?: Locale;
@@ -377,12 +393,19 @@ export interface LifeEvent {
   id?: number;
   title: string;
   event_date: string;
-  category: "family" | "cultural" | "travel" | "practice" | "medical" | "other";
+  category: "family" | "cultural" | "travel" | "practice" | "medical" | "diary" | "other";
   notes?: string;
   pre_event_buffer_days?: number;
   post_event_buffer_days?: number;
   source_system?: SourceSystem;
   source_pdf_id?: number;
+  // Timeline / legacy fields (v16). Additive — existing rows default to
+  // manual-created non-memory events authored by the household's primary
+  // record-keeper.
+  author?: EnteredBy;
+  created_via?: "manual" | "auto_appointment" | "import";
+  is_memory?: boolean;                 // diary entry vs tracked planning event
+  source_appointment_id?: number;      // set when created_via = auto_appointment
   created_at: string;
   updated_at: string;
 }
@@ -426,6 +449,11 @@ export interface FamilyNote {
   updated_at: string;
   author: EnteredBy;
   body: string;
+  // Optional threading onto a timeline anchor (v16). A note can hang off a
+  // life event (family moment) or an appointment (clinical milestone), so
+  // the timeline view can render it as a reply under that anchor.
+  life_event_id?: number;
+  appointment_id?: number;
 }
 
 export interface Settings {
@@ -466,7 +494,7 @@ export interface Settings {
   user_type?: "patient" | "caregiver" | "clinician";
   // Which symptom ids (from SYMPTOM_CATALOG) the daily-check-in surfaces.
   // Undefined falls back to defaultTrackedSymptomIds() — the top-10
-  // GnP/PDAC list.
+  // GnP-and-mPDAC-default list.
   tracked_symptoms?: string[];
   // Date the patient first completed a full check-in covering all
   // tracked symptoms — later changes are read against this row as

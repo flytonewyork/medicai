@@ -140,8 +140,8 @@ const GEMCITABINE: DrugInfo = {
     },
   },
   clinical_note: {
-    en: "Hu Lin tolerates weekly GnP well. Monitor for cumulative neuropathy and declining counts. Australian protocol: eviQ 1375.",
-    zh: "胡林对每周 GnP 耐受良好。监测累积性神经病变和血象下降。澳洲方案：eviQ 1375。",
+    en: "The patient tolerates weekly GnP well. Monitor for cumulative neuropathy and declining counts. Australian protocol: eviQ 1375.",
+    zh: "患者对每周 GnP 耐受良好。监测累积性神经病变和血象下降。澳洲方案：eviQ 1375。",
   },
 };
 
@@ -256,7 +256,7 @@ const NARMAFOTINIB: DrugInfo = {
   },
   mechanism: {
     en: "Inhibits focal adhesion kinase, reducing stromal fibrosis and remodeling. Hypothesized to improve gemcitabine delivery in mPDAC. Under investigation in ACCENT trial.",
-    zh: "抑制黏着斑激酶，减少基质纤维化和重建。假设改善吉西他滨在 mPDAC 中的递送。在 ACCENT 研究中调查。",
+    zh: "抑制黏着斑激酶，减少基质纤维化和重建。假设改善吉西他滨在转移性胰腺癌中的递送。在 ACCENT 研究中调查。",
   },
   typical_doses: [
     { en: "400 mg PO once daily (RP2D, ACCENT trial)", zh: "400 mg 口服，每日一次（RP2D，ACCENT 试验）" },
@@ -344,7 +344,7 @@ const OXALIPLATIN: DrugInfo = {
   },
   mechanism: {
     en: "Forms platinum-DNA adducts causing interstrand crosslinks. Used in mFFX for mPDAC.",
-    zh: "形成铂-DNA 加合体导致链间交联。用于 mPDAC 的 mFFX。",
+    zh: "形成铂-DNA 加合体导致链间交联。用于转移性胰腺癌的 mFFX。",
   },
   typical_doses: [{ en: "85 mg/m² IV", zh: "85 mg/m² 静脉注射" }],
   default_schedules: [
@@ -1048,8 +1048,8 @@ const PANCRELIPASE: DrugInfo = {
   mpdac_relevant: true,
   drug_class: { en: "Pancreatic enzyme replacement", zh: "胰酶替代品" },
   mechanism: {
-    en: "Replaces pancreatic lipase, amylase, and protease. Essential for nutrient absorption in PDAC (pancreatic insufficiency).",
-    zh: "替代胰脂肪酶、淀粉酶和蛋白酶。对 PDAC（胰腺功能不全）患者营养吸收必需。",
+    en: "Replaces pancreatic lipase, amylase, and protease. Essential for nutrient absorption in pancreatic insufficiency.",
+    zh: "替代胰脂肪酶、淀粉酶和蛋白酶。对胰腺功能不全患者营养吸收必需。",
   },
   typical_doses: [
     { en: "Creon 25 000–50 000 units with meals", zh: "Creon 25 000–50 000 单位，与正餐同服" },
@@ -1096,8 +1096,8 @@ const PANCRELIPASE: DrugInfo = {
     },
   ],
   clinical_note: {
-    en: "Hu Lin's PERT adherence is excellent. Foundational for weight + function. TGA/FDA dose: start ~500 lipase units/kg/meal, titrate to response; max 2 500 units/kg/meal or 10 000 units/kg/day. Emphasise: EVERY meal and snack.",
-    zh: "胡林的 PERT 依从性极好，是维持体重与功能的基础。TGA/FDA 剂量：起始约 500 脂肪酶单位 / 千克 / 餐，按反应调整；最大 2 500 单位 / 千克 / 餐或 10 000 单位 / 千克 / 天。强调：每一餐与加餐。",
+    en: "PERT adherence is foundational for weight + function. TGA/FDA dose: start ~500 lipase units/kg/meal, titrate to response; max 2 500 units/kg/meal or 10 000 units/kg/day. Emphasise: EVERY meal and snack.",
+    zh: "PERT 依从性是维持体重与功能的基础。TGA/FDA 剂量：起始约 500 脂肪酶单位 / 千克 / 餐，按反应调整；最大 2 500 单位 / 千克 / 餐或 10 000 单位 / 千克 / 天。强调：每一餐与加餐。",
   },
 };
 
@@ -1111,7 +1111,7 @@ const APIXABAN: DrugInfo = {
   drug_class: { en: "DOAC (direct oral anticoagulant) — Factor Xa inhibitor", zh: "直接口服抗凝药 —— X 因子抑制剂" },
   mechanism: {
     en: "Inhibits Factor Xa in the intrinsic and extrinsic pathways. Standard VTE prophylaxis in ambulatory mPDAC.",
-    zh: "抑制内源和外源途径中的 X 因子。门诊 mPDAC 中标准静脉血栓栓塞预防。",
+    zh: "抑制内源和外源途径中的 X 因子。门诊转移性胰腺癌的标准静脉血栓栓塞预防。",
   },
   typical_doses: [
     { en: "2.5 mg PO BD", zh: "2.5 mg 口服，每日两次" },
@@ -1404,8 +1404,8 @@ const QIGONG: DrugInfo = {
   monitoring: [],
   diet_interactions: [],
   clinical_note: {
-    en: "Central to Hu Lin's functional preservation strategy. Practice rhythm (even 10 min) matters more than intensity. Spiritual practice aligned with his values.",
-    zh: "胡林功能保留策略的核心。修习节奏（即使 10 分钟）比强度更重要。与他的价值观相符的精神修习。",
+    en: "Central to the patient's functional preservation strategy. Practice rhythm (even 10 min) matters more than intensity. Spiritual practice aligned with their values.",
+    zh: "患者功能保留策略的核心。修习节奏（即使 10 分钟）比强度更重要。与他们的价值观相符的精神修习。",
   },
 };
 

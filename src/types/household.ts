@@ -74,3 +74,25 @@ export interface HouseholdSummary {
   created_at: string;
   member_count: number;
 }
+
+// Public-readable invite preview returned by `get_invite_preview` —
+// the minimum needed for the /invite/<token> landing page to show a
+// trustworthy "you've been invited to X as Y" card BEFORE forcing
+// the visitor to sign in. Status mirrors the SQL function's enum.
+export type InvitePreviewStatus =
+  | "active"
+  | "expired"
+  | "revoked"
+  | "accepted"
+  | "not_found";
+
+export interface InvitePreview {
+  status: InvitePreviewStatus;
+  household_name: string | null;
+  patient_display_name: string | null;
+  role: HouseholdRole | null;
+  invited_by_name: string | null;
+  expires_at: string | null;
+  accepted_at: string | null;
+  revoked_at: string | null;
+}

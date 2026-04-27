@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { ensureSeeded } from "~/lib/db/seed";
 import { initSync } from "~/lib/sync/init";
 import { useUIStore } from "~/stores/ui-store";
@@ -10,7 +9,6 @@ import { IngestModal } from "~/components/ingest/ingest-modal";
 import { ObserverBanner } from "~/components/shared/observer-banner";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [client] = useState(() => new QueryClient());
   const locale = useUIStore((s) => s.locale);
 
   useEffect(() => {
@@ -34,11 +32,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, [locale]);
 
   return (
-    <QueryClientProvider client={client}>
+    <>
       <ObserverBanner />
       {children}
       <WelcomeAuthModal />
       <IngestModal />
-    </QueryClientProvider>
+    </>
   );
 }

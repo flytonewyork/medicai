@@ -9,16 +9,12 @@ import {
   Plus,
   X,
   CalendarDays,
-  CalendarRange,
   CalendarClock,
-  Stethoscope,
-  Utensils,
-  NotebookPen,
   ListTodo,
-  Camera,
   Pill,
   MessageSquarePlus,
   Sparkles,
+  Salad,
 } from "lucide-react";
 import { useIngestModal } from "~/components/ingest/ingest-modal";
 import { useAppPerspective } from "~/lib/caregiver/scope";
@@ -36,7 +32,7 @@ interface FabItem {
 
 // Caregiver-friendly FAB — only the verbs a supporting family member
 // reaches for. Patient-authored captures (daily wizard, weekly / fort.
-// assessments, meal photo, practice toggle) are hidden.
+// assessments, practice toggle) are hidden.
 const CAREGIVER_ITEMS: FabItem[] = [
   {
     href: "/log",
@@ -68,46 +64,52 @@ const CAREGIVER_ITEMS: FabItem[] = [
     icon: ListTodo,
   },
   {
-    action: "ingest",
-    label: { en: "Upload clinic letter", zh: "上传就诊函" },
+    href: "/nutrition/log",
+    label: { en: "Log a meal", zh: "记录用餐" },
     hint: {
-      en: "Photo or paste — the team sees it too",
-      zh: "拍照或粘贴 —— 团队也可看到",
+      en: "What dad ate or drank",
+      zh: "记录用餐或饮水",
+    },
+    icon: Salad,
+    tone: "sand",
+  },
+  {
+    action: "ingest",
+    label: { en: "Add a photo or document", zh: "导入照片或文档" },
+    hint: {
+      en: "Clinic letter, lab report, scan result",
+      zh: "就诊函、化验单、影像报告",
     },
     icon: Sparkles,
     tone: "tide",
   },
 ];
 
+// Patient FAB — one capture channel, one check-in, one appointment verb,
+// one medication quick-log. The free-text/voice "Say what's happening"
+// stays primary so anything that can be spoken or typed funnels through
+// it; structured shortcuts (daily check-in, meal log, medication log)
+// stay first-class because the patient reaches for them on a tired day
+// without wanting to compose a sentence.
 const ITEMS: FabItem[] = [
   {
-    action: "ingest",
-    label: { en: "Smart capture", zh: "智能导入" },
-    hint: {
-      en: "Phone note, photo, paste — Claude classifies and previews",
-      zh: "电话记录、照片、粘贴 —— Claude 分类并预览",
-    },
-    icon: Sparkles,
-    tone: "tide",
-  },
-  {
     href: "/log",
-    label: { en: "Tell the team", zh: "告诉团队" },
+    label: { en: "Say what's happening", zh: "说说现在的情况" },
     hint: {
-      en: "Free text — agents file it",
-      zh: "随手写 —— 智能体整理",
+      en: "Type or speak — agents file it for you",
+      zh: "随手写或语音 —— 智能体整理",
     },
     icon: MessageSquarePlus,
     tone: "sand",
   },
   {
-    href: "/schedule/new",
-    label: { en: "New appointment", zh: "新建预约" },
+    action: "ingest",
+    label: { en: "Add a photo or document", zh: "导入照片或文档" },
     hint: {
-      en: "Clinic / chemo / scan / blood test",
-      zh: "门诊 / 化疗 / 检查 / 化验",
+      en: "Lab report, clinic letter, scan result",
+      zh: "化验单、就诊函、影像报告",
     },
-    icon: CalendarClock,
+    icon: Sparkles,
     tone: "tide",
   },
   {
@@ -118,6 +120,16 @@ const ITEMS: FabItem[] = [
     tone: "tide",
   },
   {
+    href: "/nutrition/log",
+    label: { en: "Log a meal", zh: "记录用餐" },
+    hint: {
+      en: "What you ate, drank, or couldn't finish",
+      zh: "用餐、饮水或没吃完的情况",
+    },
+    icon: Salad,
+    tone: "sand",
+  },
+  {
     href: "/medications/log",
     label: { en: "Log medication", zh: "记录服药" },
     hint: {
@@ -125,44 +137,15 @@ const ITEMS: FabItem[] = [
       zh: "已服、漏服、副作用",
     },
     icon: Pill,
-    tone: "tide",
   },
   {
-    href: "/ingest/meal",
-    label: { en: "Meal photo", zh: "餐食照片" },
+    href: "/schedule/new",
+    label: { en: "New appointment", zh: "新建预约" },
     hint: {
-      en: "Protein + PERT estimate",
-      zh: "蛋白与胰酶建议",
+      en: "Clinic / chemo / scan / blood test",
+      zh: "门诊 / 化疗 / 检查 / 化验",
     },
-    icon: Utensils,
-    tone: "tide",
-  },
-  {
-    href: "/ingest/notes",
-    label: { en: "Handwritten notes", zh: "手写笔记" },
-    hint: { en: "Photo → daily log", zh: "照片 → 每日日志" },
-    icon: NotebookPen,
-  },
-  {
-    href: "/ingest",
-    label: { en: "Upload report", zh: "上传报告" },
-    hint: { en: "Lab / imaging / referral", zh: "化验 / 影像 / 转诊" },
-    icon: Camera,
-  },
-  {
-    href: "/weekly/new",
-    label: { en: "Weekly reflection", zh: "每周回顾" },
-    hint: { en: "Sunday evening, ~5 min", zh: "周日晚约 5 分钟" },
-    icon: CalendarRange,
-  },
-  {
-    href: "/fortnightly/new",
-    label: { en: "Functional tests", zh: "两周功能评估" },
-    hint: {
-      en: "Grip, gait, SARC-F",
-      zh: "握力、步速、SARC-F",
-    },
-    icon: Stethoscope,
+    icon: CalendarClock,
   },
   {
     href: "/tasks/new",
@@ -203,10 +186,16 @@ export function AddFab() {
 
   if (pathname === "/login" || pathname?.startsWith("/auth/")) return null;
 
+  // Mobile: float above the bottom nav. The nav itself is anchored at
+  // `max(0.75rem, env(safe-area-inset-bottom))` from the viewport with
+  // internal padding for the home indicator, so the FAB has to clear
+  // ~64px of nav + the iOS home-indicator inset; otherwise the nav
+  // hides the button on iOS PWA. Desktop keeps a flat 1.5rem from
+  // the viewport bottom — see `.add-fab` in globals.css.
   return (
     <div
       ref={ref}
-      className="fixed bottom-24 right-4 z-50 md:bottom-6 md:right-6"
+      className="add-fab fixed right-4 z-50 md:right-6"
     >
       {open && (
         <div className="mb-3 w-[280px] overflow-hidden rounded-[var(--r-lg)] border border-ink-100/80 bg-paper-2 shadow-xl">

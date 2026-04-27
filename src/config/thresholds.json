@@ -8,7 +8,10 @@
     "gait_warning_ms": 1.0,
     "practice_completion_yellow_days": 4,
     "practice_completion_orange_days": 2,
-    "practice_lookback_weeks": 2
+    "practice_lookback_weeks": 2,
+    "sarc_f_yellow_total": 4,
+    "tug_yellow_seconds": 14,
+    "sts_5x_yellow_seconds": 15
   },
   "psychological": {
     "phq9_yellow_threshold": 10,
@@ -20,7 +23,8 @@
   },
   "disease": {
     "ca199_rising_consecutive_yellow": 3,
-    "ctdna_rising_yellow": true
+    "ctdna_rising_yellow": true,
+    "pending_result_default_days": 14
   },
   "toxicity": {
     "neuropathy_yellow_grade": 2,

@@ -3,10 +3,10 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { settingsSchema, type SettingsInput } from "~/lib/validators/schemas";
 import { useT } from "~/hooks/use-translate";
+import { useSettings } from "~/hooks/use-settings";
 import { Card, CardContent } from "~/components/ui/card";
 
 // Baseline anthropometrics + functional benchmarks. Lives next to the
@@ -26,12 +26,11 @@ const numberOptional = {
 
 export function BaselinesCard() {
   const t = useT();
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const current = settings?.[0];
+  const current = useSettings();
 
   const { register, handleSubmit, reset, formState } = useForm<SettingsInput>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: { profile_name: "Hu Lin", locale: "en" },
+    defaultValues: { profile_name: "", locale: "en" },
   });
 
   useEffect(() => {

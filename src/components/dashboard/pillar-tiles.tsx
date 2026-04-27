@@ -8,7 +8,7 @@ import {
   format,
   parseISO,
 } from "date-fns";
-import { db } from "~/lib/db/dexie";
+import { useSettings } from "~/hooks/use-settings";
 import {
   latestDailyEntries,
   latestLabs,
@@ -19,6 +19,7 @@ import { useWeather } from "~/hooks/use-weather";
 import { Sparkline } from "~/components/ui/sparkline";
 import { PROTOCOL_BY_ID } from "~/config/protocols";
 import { cn } from "~/lib/utils/cn";
+import { todayISO as getTodayISO } from "~/lib/utils/date";
 import {
   ArrowDown,
   ChevronRight,
@@ -59,14 +60,14 @@ export function PillarTiles() {
   const dailies = useLiveQuery(() => latestDailyEntries(7));
   const labs = useLiveQuery(() => latestLabs(7));
   const cycles = useLiveQuery(() => latestTreatmentCycles(1));
-  const settings = useLiveQuery(() => db.settings.toArray());
+  const settings = useSettings();
 
   const ordered = (dailies ?? []).slice().reverse();
-  const todayISO = format(new Date(), "yyyy-MM-dd");
+  const todayISO = getTodayISO();
   const todayEntry = ordered.find((d) => d.date === todayISO);
   const recentCycle = (cycles ?? [])[0];
   const latestLab = (labs ?? [])[0];
-  const baselineWeight = settings?.[0]?.baseline_weight_kg;
+  const baselineWeight = settings?.baseline_weight_kg;
 
   // -- Symptoms 7d -------------------------------------------------------
   const symptomSeries = useMemo(

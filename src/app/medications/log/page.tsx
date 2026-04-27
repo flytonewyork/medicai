@@ -150,8 +150,8 @@ export default function MedicationLogPage() {
 
       {ctx && dueNow.length > 0 && (
         <section>
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-ink-500">
-            <AlertCircle className="h-4 w-4" />
+          <h2 className="eyebrow mb-3 flex items-center gap-2">
+            <AlertCircle className="h-3.5 w-3.5" />
             {locale === "zh" ? "待服药" : "Due now"}
           </h2>
           <div className="space-y-2">
@@ -171,7 +171,7 @@ export default function MedicationLogPage() {
 
       {ctx && otherActive.length > 0 && (
         <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-500">
+          <h2 className="eyebrow mb-3">
             {locale === "zh" ? "其他活动药物" : "Other active medications"}
           </h2>
           <div className="space-y-2">
@@ -244,7 +244,7 @@ function MedRow({
     <Card
       className={cn(
         "transition-colors",
-        allLogged && "bg-paper-1 opacity-80",
+        allLogged && "bg-ink-100/40 opacity-80",
       )}
     >
       <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4">
@@ -260,7 +260,7 @@ function MedRow({
                   <span
                     className={cn(
                       logged_count >= due_count
-                        ? "text-green-600"
+                        ? "text-[var(--ok)]"
                         : "text-ink-600",
                     )}
                   >
@@ -357,7 +357,7 @@ function SideEffectSheet({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-t-2xl bg-paper p-5 shadow-xl sm:rounded-2xl"
+        className="a-card w-full max-w-lg rounded-t-lg p-5 sm:rounded-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
@@ -424,7 +424,7 @@ function SideEffectSheet({
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder={locale === "zh" ? "备注（可选）" : "Note (optional)"}
-          className="mb-4 w-full rounded border border-ink-200 bg-paper-1 p-2 text-sm"
+          className="mb-4 w-full rounded-[var(--r-sm)] border border-ink-200 bg-paper px-3 py-2 text-sm text-ink-900 placeholder:text-ink-400 focus:border-ink-900 focus:outline-none focus:ring-2 focus:ring-ink-900/10"
           rows={2}
         />
 

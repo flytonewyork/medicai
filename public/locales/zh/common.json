@@ -23,8 +23,28 @@
     "settings": "设置",
     "practices": "修习",
     "history": "历史记录",
-    "care_team": "医疗团队",
-    "log": "记录"
+    "care_team": "就诊记录",
+    "carers": "护理人员",
+    "log": "记录",
+    "nutrition": "营养",
+    "desc": {
+      "dashboard": "今日摘要与警示",
+      "schedule": "预约与准备事项",
+      "family": "患者状态总览",
+      "assessment": "功能测试与评分",
+      "treatment": "化疗周期与剂量",
+      "labs": "化验趋势",
+      "nutrition": "餐食、蛋白质与饮水",
+      "practices": "气功与日常修习",
+      "care_team": "联系方式与通话记录",
+      "carers": "家人与护理圈",
+      "bridge": "策略与试验资格",
+      "history": "所有过往记录",
+      "ingest": "上传文件与记录",
+      "reports": "就诊前 PDF 小结",
+      "settings": "个人资料与偏好",
+      "log": "为患者记录观察"
+    }
   },
   "zones": {
     "green": "稳定",
@@ -86,7 +106,8 @@
     "signupCta": "创建账户",
     "pleaseWait": "请稍候…",
     "toggleToSignup": "还没有账户？创建一个",
-    "toggleToSignin": "已有账户？登录"
+    "toggleToSignin": "已有账户？登录",
+    "inviteHint": "要加入家人的护理计划？请在这台设备上打开对方发给您的邀请链接 — 登录后即可生效。"
   },
   "emergencyCard": {
     "alertActive": "警示激活 —— 如有需要请立即拨打",

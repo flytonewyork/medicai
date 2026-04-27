@@ -5,7 +5,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { format, parseISO } from "date-fns";
 import { db } from "~/lib/db/dexie";
 import { getSupabaseBrowser } from "~/lib/supabase/client";
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, useL } from "~/hooks/use-translate";
 import { useHousehold } from "~/hooks/use-household";
 import { Card, CardContent } from "~/components/ui/card";
 import { CalendarClock, ChevronRight } from "lucide-react";
@@ -20,7 +20,7 @@ import { useEffect, useState } from "react";
 
 export function AppointmentsYoureAttending() {
   const locale = useLocale();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
   const { profile } = useHousehold();
 
   const [userId, setUserId] = useState<string | null>(null);

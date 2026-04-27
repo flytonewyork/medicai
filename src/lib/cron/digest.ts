@@ -1,5 +1,6 @@
 import type { Zone } from "~/types/clinical";
 import { highestZone } from "~/lib/rules/engine";
+import { localeTag } from "~/lib/utils/date";
 
 // Pure digest builder: given a household's context (appointments,
 // open zone alerts, follow-up tasks) + a user's locale, produces the
@@ -110,7 +111,7 @@ export function buildDigest(args: BuildDigestArgs): DigestPayload | null {
 
   for (const a of upcoming.slice(0, 2)) {
     const time = new Date(a.starts_at).toLocaleTimeString(
-      args.locale === "zh" ? "zh-CN" : "en-AU",
+      localeTag(args.locale),
       { hour: "numeric", minute: "2-digit" },
     );
     const location = a.location ? ` · ${a.location}` : "";

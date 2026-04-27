@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale } from "~/hooks/use-translate";
+import { useLocale, useL } from "~/hooks/use-translate";
 import {
   PREP_KIND_LABEL,
 } from "~/lib/appointments/prep";
@@ -56,7 +56,7 @@ export function PrepEditor({
   onChange: (next: AppointmentPrep[]) => void;
 }) {
   const locale = useLocale();
-  const L = (en: string, zh: string) => (locale === "zh" ? zh : en);
+  const L = useL();
 
   function patch(i: number, over: Partial<AppointmentPrep>) {
     const next = value.slice();

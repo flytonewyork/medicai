@@ -10,6 +10,43 @@ vi.mock("~/agents/run", () => ({
   selectReferralsForAgent: () => [],
 }));
 
+// Phase 1.1 added a session gate to /api/agent/[id]/run. Stub the
+// supabase server client so requireSession() resolves to a fake user
+// without needing a live Supabase. The chain helper supports the
+// shapes both the membership lookup (`.eq().limit().maybeSingle()`)
+// and the household-profile lookup (`.eq().maybeSingle()`) use.
+vi.mock("~/lib/supabase/server", () => {
+  const fakeUser = { id: "test-user-id", email: "test@example.com" };
+  function makeChain(payload: unknown): unknown {
+    const result = Promise.resolve({ data: payload, error: null });
+    const chain: Record<string, unknown> = {};
+    chain.select = () => chain;
+    chain.eq = () => chain;
+    chain.limit = () => chain;
+    chain.maybeSingle = () => result;
+    chain.single = () => result;
+    chain.then = (resolve: (v: unknown) => unknown) => result.then(resolve);
+    return chain;
+  }
+  return {
+    getSupabaseServer: () => ({
+      auth: {
+        getUser: () =>
+          Promise.resolve({ data: { user: fakeUser }, error: null }),
+      },
+      from: (table: string) => {
+        if (table === "household_memberships") {
+          return makeChain({ household_id: "test-household-id" });
+        }
+        if (table === "household_profile") {
+          return makeChain(null);
+        }
+        return makeChain(null);
+      },
+    }),
+  };
+});
+
 function emptyOutput(): AgentOutput {
   return {
     daily_report: { en: "", zh: "" },

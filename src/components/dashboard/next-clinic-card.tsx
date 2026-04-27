@@ -8,6 +8,7 @@ import { db } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
 import { Card } from "~/components/ui/card";
 import { activeFast, hasActivePrep } from "~/lib/appointments/prep";
+import { nextAppointment } from "~/lib/appointments/upcoming";
 import { Stethoscope, ChevronRight, Clock, MapPin, UserRound } from "lucide-react";
 
 // Dedicated "NEXT CLINIC APPOINTMENT" card. Separate from the broader
@@ -28,16 +29,20 @@ export function NextClinicCard() {
 
   const next = useMemo(() => {
     if (!appointments) return null;
-    const now = Date.now();
-    const upcoming = appointments
-      .filter((a) => a.status !== "cancelled" && a.status !== "missed")
-      .map((a) => ({ a, t: new Date(a.starts_at).getTime() }))
-      .filter(({ t }) => Number.isFinite(t) && t >= now)
-      .sort((x, y) => x.t - y.t);
-    return upcoming[0]?.a ?? null;
+    return nextAppointment(appointments, {
+      excludeStatuses: ["cancelled", "missed"],
+    });
   }, [appointments]);
 
   if (!next) return null;
+  // ScheduleCard already shows today + tomorrow appointments. Suppress this
+  // dedicated card when the next clinic is already in that window so the
+  // dashboard doesn't surface the same appointment twice.
+  const startToday = new Date();
+  startToday.setHours(0, 0, 0, 0);
+  const endTomorrow = startToday.getTime() + 2 * 24 * 60 * 60 * 1000;
+  const nextStart = new Date(next.starts_at).getTime();
+  if (Number.isFinite(nextStart) && nextStart < endTomorrow) return null;
 
   const when = new Date(next.starts_at);
   const dateLabel = isToday(when)

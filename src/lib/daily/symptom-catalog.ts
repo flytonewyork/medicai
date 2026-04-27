@@ -1,6 +1,6 @@
 import type { DailyEntry } from "~/types/clinical";
 
-// The curated PDAC / GnP symptom catalog. Each entry is one checkable
+// The curated mPDAC/ GnP symptom catalog. Each entry is one checkable
 // item on the daily-wizard "Symptoms" step. The catalog is the single
 // source of truth — both the wizard UI and the Settings customiser read
 // from it, so adding a new symptom is a one-line change here.
@@ -182,10 +182,39 @@ export const SYMPTOM_CATALOG: readonly SymptomDefinition[] = [
   {
     id: "taste_changes",
     label: { en: "Taste changes", zh: "味觉改变" },
+    hint: {
+      en: "0 = normal · 5 = food tastes wrong. When ≥ 1, you can pick the kind (sweet / salty / bland / metallic) for tailored tweaks.",
+      zh: "0 = 正常 · 5 = 食物味道完全不对。≥ 1 时可选择类型（过甜 / 过咸 / 寡淡 / 金属味）以获取建议。",
+    },
     scale: "0_to_5",
     tags: ["chemo"],
     defaultTracked: false,
     dailyEntryField: "taste_changes",
+  },
+  // JPCC p. 14 / 17 — symptoms with their own playbook.
+  {
+    id: "dry_mouth",
+    label: { en: "Dry mouth", zh: "口干" },
+    hint: {
+      en: "Common on chemo and after long hospital stays.",
+      zh: "化疗或长时间住院后常见。",
+    },
+    scale: "boolean",
+    tags: ["chemo"],
+    defaultTracked: false,
+    dailyEntryField: "dry_mouth",
+  },
+  {
+    id: "early_satiety",
+    label: { en: "Felt full after a few bites", zh: "几口后就饱了" },
+    hint: {
+      en: "Early satiety. JPCC: try smaller meals every 2–3 hours and avoid drinking with the meal.",
+      zh: "早期饱胀。JPCC：每 2–3 小时少量进食，进餐时少喝水。",
+    },
+    scale: "boolean",
+    tags: ["pdac"],
+    defaultTracked: false,
+    dailyEntryField: "early_satiety",
   },
 ];
 

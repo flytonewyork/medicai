@@ -38,6 +38,23 @@ import type {
   LogEventRow,
 } from "~/types/agent";
 import type { Appointment, AppointmentLink } from "~/types/appointment";
+import type { TimelineMedia } from "~/types/timeline";
+import type {
+  BiographicalOutline,
+  MemoryCluster,
+  ProfileAspect,
+  ProfileConsent,
+  ProfileEntry,
+  ProfilePrompt,
+} from "~/types/legacy";
+import type {
+  FoodItem,
+  MealEntry,
+  MealItem,
+  FluidLog,
+  MealTemplate,
+} from "~/types/nutrition";
+import type { HouseholdProfile as HouseholdProfileRow } from "~/types/household-profile";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -73,6 +90,24 @@ export class AnchorDB extends Dexie {
   appointments!: Table<Appointment, number>;
   appointment_links!: Table<AppointmentLink, number>;
   care_team!: Table<CareTeamMember, number>;
+  timeline_media!: Table<TimelineMedia, number>;
+  // v17: Legacy module tables.
+  profile_entries!: Table<ProfileEntry, number>;
+  profile_prompts!: Table<ProfilePrompt, number>;
+  profile_aspects!: Table<ProfileAspect, number>;
+  biographical_outline!: Table<BiographicalOutline, number>;
+  memory_clusters!: Table<MemoryCluster, number>;
+  profile_consent!: Table<ProfileConsent, number>;
+  // v18: Nutrition module.
+  foods!: Table<FoodItem, number>;
+  meal_entries!: Table<MealEntry, number>;
+  meal_items!: Table<MealItem, number>;
+  // v19: Nutrition enhancements.
+  fluid_logs!: Table<FluidLog, number>;
+  meal_templates!: Table<MealTemplate, number>;
+  // v20: Patient identity envelope (mirrors Supabase household_profile).
+  household_profile!: Table<HouseholdProfileRow, string>;
+  // v21: Records-import provenance.
   pdf_blobs!: Table<PdfBlob, number>;
 
   constructor() {
@@ -199,7 +234,114 @@ export class AnchorDB extends Dexie {
       appointments:
         "++id, starts_at, kind, status, cycle_id, ics_uid, [kind+starts_at]",
     });
-    // v16: patient-owned records import (step 2 of docs/RECORDS_IMPORT).
+    // v16: family timeline foundations. `timeline_media` is the single
+    // blob store for photos / short video clips / voice memos attached
+    // to a timeline-visible anchor (life event, family note, or
+    // appointment). Composite [owner_type+owner_id] lets the timeline
+    // renderer pull all media for one anchor in O(k); `taken_at` is
+    // indexed so the chronological stream can merge blobs with events
+    // without a table scan.
+    //
+    // `life_events` and `family_notes` gain optional columns (author,
+    // created_via, is_memory, source_appointment_id on life events;
+    // life_event_id and appointment_id on notes). These are additive —
+    // Dexie only re-declares the stores whose *indexes* change, so we
+    // re-state existing tables only where we want a new index, and
+    // leave the rest to live as schemaless extra fields.
+    this.version(16).stores({
+      timeline_media:
+        "++id, owner_type, owner_id, taken_at, created_at, [owner_type+owner_id]",
+      life_events:
+        "++id, event_date, category, is_memory, created_via, source_appointment_id",
+      family_notes:
+        "++id, created_at, life_event_id, appointment_id",
+    });
+    // v17: Legacy module. Six new tables drive the biographer's corpus
+    // and the cadence engine that surfaces prompts. Indexes are chosen
+    // so the biographer's hot paths (per-author, per-chapter, cluster
+    // lookup, "next prompt for audience X") are all O(k) table scans.
+    //
+    // - profile_entries: the raw captures. Indexed by author for
+    //   per-person threads, prompt_id for "answered?" joins, recorded_at
+    //   for timeline joins, and memory_cluster_id for cluster render.
+    // - profile_prompts: the seeded library. audience + asked_at lets
+    //   the cadence engine pick an unseen prompt per person cheaply;
+    //   pair_id clusters cross-audience prompts on the same theme.
+    // - profile_aspects: derived character sketch facts with citations
+    //   back to entries. Indexed by aspect + chapter.
+    // - biographical_outline: Butler life-review outline. Sparse — one
+    //   row per chapter/sub_chapter. arc_position drives sequencing.
+    // - memory_clusters: cross-perspective memory aggregation. Indexed
+    //   by seed_entry_id for "find my cluster" and approximate_date for
+    //   chronological layering.
+    // - profile_consent: singleton row (id=1). No secondary indexes.
+    this.version(17).stores({
+      profile_entries:
+        "++id, author, kind, entry_mode, visibility, " +
+        "relationship_dyad, memory_cluster_id, prompt_id, " +
+        "recorded_at, [author+recorded_at]",
+      profile_prompts:
+        "++id, audience, depth, source, sensitivity, category, " +
+        "pair_id, asked_at, [audience+asked_at]",
+      profile_aspects:
+        "++id, aspect, chapter, last_updated",
+      biographical_outline:
+        "++id, chapter, arc_position, target_depth, " +
+        "[chapter+sub_chapter]",
+      memory_clusters:
+        "++id, seed_entry_id, created_by, approximate_date, created_at",
+      profile_consent: "&id",
+    });
+    // v18: Nutrition module. Three tables drive food search, per-meal
+    // line items, and a snapshot of meal-level totals.
+    //
+    // - foods: a searchable catalogue of foods with mPDAC/ keto flags.
+    //   Indexed on `name` for prefix lookups, `category` for filtering,
+    //   `keto_friendly` and `pdac_easy_digest` so the picker can show
+    //   "good choices first" without scanning the whole table. `source`
+    //   lets us segment seed vs. user vs. AI-generated rows for QA.
+    // - meal_entries: one row per logged meal. `[date+meal_type]` is
+    //   the hot index — the daily dashboard pulls all of today's
+    //   meals, in meal-type order, in O(k).
+    // - meal_items: line items inside a meal. Indexed on
+    //   meal_entry_id for the obvious join; on food_id so "where have
+    //   I eaten this before" lookups are cheap.
+    this.version(18).stores({
+      foods:
+        "++id, name, name_zh, category, source, keto_friendly, " +
+        "pdac_easy_digest, updated_at",
+      meal_entries:
+        "++id, date, meal_type, logged_at, source, " +
+        "[date+meal_type]",
+      meal_items:
+        "++id, meal_entry_id, food_id, created_at",
+    });
+    // v19: Nutrition enhancements — hydration tracking + meal templates.
+    //
+    // - fluid_logs: one row per swallow event. Indexed by `date` for
+    //   the daily total and `logged_at` for the day-clock view. The
+    //   compound `[date+kind]` lets the dashboard slice "water vs.
+    //   electrolyte vs. broth" cheaply for the 7-day trend.
+    // - meal_templates: saved-meal definitions. Items are stored as a
+    //   JSON-shaped property in the row (not a separate table) since
+    //   templates are immutable snapshots. Indexed by `last_used_at`
+    //   for the recent-templates list and `use_count` for "favourites".
+    this.version(19).stores({
+      fluid_logs:
+        "++id, date, kind, logged_at, [date+kind]",
+      meal_templates:
+        "++id, name, meal_type, last_used_at, use_count, updated_at",
+    });
+    // v20: Patient identity envelope. Mirrors the Supabase
+    // `household_profile` table so AI prompt templating has a local
+    // source on offline-first devices. One row keyed by `household_id`
+    // (string PK, not auto-increment) so the round-tripping with the
+    // server stays trivial.
+    this.version(20).stores({
+      household_profile:
+        "&household_id, updated_at",
+    });
+    // v21: patient-owned records import (step 2 of docs/RECORDS_IMPORT).
     // `pdf_blobs` stores the original PDF / CDA XML / image bytes a
     // clinical row was extracted from, so the "view original" affordance
     // on feed items resolves offline without re-uploading. Clinical rows
@@ -208,7 +350,7 @@ export class AnchorDB extends Dexie {
     // `source_pdf_id` + `source_system` fields in their type definitions;
     // unindexed nullable columns do not require a Dexie migration, so
     // only the new table is declared here.
-    this.version(16).stores({
+    this.version(21).stores({
       pdf_blobs: "++id, sha256, source_system, captured_at",
     });
   }

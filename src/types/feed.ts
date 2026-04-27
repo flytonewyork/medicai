@@ -8,7 +8,16 @@ export type FeedCategory =
   | "weather"
   | "body"
   | "trend"
-  | "encouragement";
+  | "encouragement"
+  // Nutrition-policy / JPCC-derived items. Sits between `body` (raw
+  // physical signal) and `trend` (statistical drift) — these carry
+  // dietitian-grade recommendations with explicit citations.
+  | "nutrition"
+  // Legacy-module categories. `memory` resurfaces anniversary items at
+  // low priority; `invitation` carries orchestrator event suggestions
+  // (slice 15). Both are always lower-priority than clinical items.
+  | "memory"
+  | "invitation";
 
 export type FeedTone = "info" | "caution" | "warning" | "positive";
 
