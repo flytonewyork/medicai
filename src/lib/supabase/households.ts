@@ -15,12 +15,27 @@ import type {
 // household + profile + invite surface. Every function is a no-op
 // returning null/empty when Supabase isn't configured, so local-only
 // sessions keep working.
+//
+// All "current user" lookups go through `currentUserId` instead of
+// calling `sb.auth.getUser()` directly. `getUser()` makes a network
+// call to /auth/v1/user and can hang on poor / Capacitor / iOS
+// network conditions, leaving `useHousehold` permanently in the
+// loading state. `getSession()` reads from local storage and is
+// instant — RLS on the server is what actually authenticates the
+// query, so a stale session token here is harmless: a failed query
+// surfaces as an error from the RLS check, not a silent hang.
+
+async function currentUserId(): Promise<string | null> {
+  const sb = getSupabaseBrowser();
+  if (!sb) return null;
+  const { data } = await sb.auth.getSession();
+  return data.session?.user?.id ?? null;
+}
 
 export async function getCurrentMembership(): Promise<HouseholdMembership | null> {
   const sb = getSupabaseBrowser();
   if (!sb) return null;
-  const { data: user } = await sb.auth.getUser();
-  const uid = user.user?.id;
+  const uid = await currentUserId();
   if (!uid) return null;
   const { data, error } = await sb
     .from("household_memberships")
@@ -35,8 +50,7 @@ export async function getCurrentMembership(): Promise<HouseholdMembership | null
 export async function getCurrentProfile(): Promise<Profile | null> {
   const sb = getSupabaseBrowser();
   if (!sb) return null;
-  const { data: user } = await sb.auth.getUser();
-  const uid = user.user?.id;
+  const uid = await currentUserId();
   if (!uid) return null;
   const { data, error } = await sb
     .from("profiles")
@@ -62,8 +76,7 @@ export async function updateMyProfile(
 ): Promise<void> {
   const sb = getSupabaseBrowser();
   if (!sb) return;
-  const { data: user } = await sb.auth.getUser();
-  const uid = user.user?.id;
+  const uid = await currentUserId();
   if (!uid) return;
   const { error } = await sb.from("profiles").update(patch).eq("id", uid);
   if (error) throw error;
@@ -226,8 +239,7 @@ export async function createInvite(args: {
 }): Promise<HouseholdInvite> {
   const sb = getSupabaseBrowser();
   if (!sb) throw new Error("supabase_not_configured");
-  const { data: user } = await sb.auth.getUser();
-  const uid = user.user?.id;
+  const uid = await currentUserId();
   if (!uid) throw new Error("not_signed_in");
   const { data, error } = await sb
     .from("household_invites")
@@ -270,8 +282,7 @@ export async function revokeInvite(inviteId: string): Promise<void> {
 export async function leaveHousehold(householdId: string): Promise<void> {
   const sb = getSupabaseBrowser();
   if (!sb) return;
-  const { data: user } = await sb.auth.getUser();
-  const uid = user.user?.id;
+  const uid = await currentUserId();
   if (!uid) return;
   const { error } = await sb
     .from("household_memberships")

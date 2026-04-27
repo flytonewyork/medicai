@@ -108,8 +108,12 @@ export default function InvitePage() {
         });
         return;
       }
-      const { data: auth } = await sb.auth.getUser();
-      if (!auth.user) {
+      // getSession() reads from local storage — no network call. The
+      // accept RPC below verifies auth server-side anyway, so we don't
+      // need the network round-trip from getUser() here, and skipping
+      // it prevents the page from hanging on flaky / Capacitor networks.
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session?.user) {
         setPhase({ kind: "needs_signin", preview });
         return;
       }
