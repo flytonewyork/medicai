@@ -76,6 +76,16 @@ export function PhoneCallNote({
   const [error, setError] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
   const recRef = useRef<SpeechRecognition | null>(null);
+  // Canonical finalised transcript for the current dictation session.
+  // We rebuild this from `ev.results` on every event rather than
+  // appending a delta — Chrome and Safari both re-emit overlapping
+  // result indices, so an append-style accumulator double-counts and
+  // the patient sees their words repeat.
+  const finalRef = useRef("");
+  // The text already in the textarea when dictation starts. New
+  // dictated text gets appended after this baseline so we never
+  // overwrite typing from before dictation.
+  const baseTextRef = useRef("");
   const canSpeech = typeof getSpeechRecognitionCtor() === "function";
 
   useEffect(() => {
@@ -92,13 +102,19 @@ export function PhoneCallNote({
     rec.continuous = true;
     rec.interimResults = true;
     rec.lang = localeTag(locale);
+    finalRef.current = "";
+    baseTextRef.current = text;
     rec.onresult = (ev) => {
-      let delta = "";
-      for (let i = ev.resultIndex; i < ev.results.length; i += 1) {
+      let finalText = "";
+      for (let i = 0; i < ev.results.length; i += 1) {
         const res = ev.results[i];
-        if (res && res[0] && res.isFinal) delta += res[0].transcript;
+        if (res && res[0] && res.isFinal) finalText += res[0].transcript;
       }
-      if (delta) setText((prev) => (prev ? `${prev} ${delta}` : delta));
+      const trimmed = finalText.trim();
+      if (trimmed.length <= finalRef.current.length) return;
+      finalRef.current = trimmed;
+      const base = baseTextRef.current;
+      setText(base ? `${base} ${trimmed}` : trimmed);
     };
     rec.onerror = (e) => {
       setError(String((e as unknown as { error?: string }).error ?? "speech-error"));

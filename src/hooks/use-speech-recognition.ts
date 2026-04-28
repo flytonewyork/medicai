@@ -50,7 +50,10 @@ declare global {
 
 export interface UseSpeechRecognitionResult {
   listening: boolean;
+  /** Full display string: finalised text plus the in-flight interim tail. */
   transcript: string;
+  /** In-flight interim words only (empty when nothing pending). */
+  interim: string;
   error: string | null;
   start: () => void;
   stop: () => void;
@@ -65,8 +68,16 @@ export function useSpeechRecognition(
   const [supported, setSupported] = useState(false);
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [interim, setInterim] = useState("");
   const [error, setError] = useState<string | null>(null);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
+  // Canonical finalised transcript for the current session. We rebuild
+  // this from `e.results` on every event rather than appending deltas:
+  // browsers (notably Chrome on Android and Safari) re-emit the same
+  // final indices across events, and an interim that becomes final
+  // shares its index with the prior interim — so any append-style
+  // accumulator double-counts and the patient sees their words repeat.
+  const finalRef = useRef("");
   // Capture the latest `onFinal` so we don't have to recreate the
   // recogniser when the parent re-renders with a new closure.
   const onFinalRef = useRef(onFinal);
@@ -85,19 +96,36 @@ export function useSpeechRecognition(
     rec.onresult = (e) => {
       let finalText = "";
       let interimText = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
+      // Walk the entire results list each time and recompute. This is
+      // O(n) per event but n stays small for any realistic utterance,
+      // and it's the only way to get a duplication-free transcript.
+      for (let i = 0; i < e.results.length; i++) {
         const r = e.results[i];
         if (r.isFinal) finalText += r[0].transcript;
         else interimText += r[0].transcript;
       }
-      setTranscript((cur) => {
-        const next = (cur + finalText).trim();
-        if (interimText) return `${next} ${interimText.trim()}`.trim();
-        return next;
-      });
-      if (finalText.trim() && onFinalRef.current) {
-        onFinalRef.current(finalText.trim());
+      const trimmedFinal = finalText.trim();
+      const prevFinal = finalRef.current;
+      // Detect the genuinely-new final delta by length comparison
+      // against the last canonical final text. We only call onFinal
+      // for that delta so callers appending to their own state never
+      // see a repeat.
+      if (trimmedFinal.length > prevFinal.length) {
+        const delta = trimmedFinal.slice(prevFinal.length).trim();
+        finalRef.current = trimmedFinal;
+        if (delta && onFinalRef.current) onFinalRef.current(delta);
+      } else if (trimmedFinal.length < prevFinal.length) {
+        // New session started under us (e.g. browser auto-restart);
+        // accept the shorter canonical text as the new baseline.
+        finalRef.current = trimmedFinal;
       }
+      const trimmedInterim = interimText.trim();
+      setInterim(trimmedInterim);
+      setTranscript(
+        trimmedInterim
+          ? `${finalRef.current} ${trimmedInterim}`.trim()
+          : finalRef.current,
+      );
     };
     rec.onerror = (e) => {
       setError(e.error);
@@ -115,6 +143,8 @@ export function useSpeechRecognition(
     if (!recRef.current) return;
     setError(null);
     setTranscript("");
+    setInterim("");
+    finalRef.current = "";
     try {
       recRef.current.start();
       setListening(true);
@@ -133,8 +163,12 @@ export function useSpeechRecognition(
     else start();
   }, [listening, start, stop]);
 
-  const reset = useCallback(() => setTranscript(""), []);
+  const reset = useCallback(() => {
+    setTranscript("");
+    setInterim("");
+    finalRef.current = "";
+  }, []);
 
   if (!supported) return null;
-  return { listening, transcript, error, start, stop, toggle, reset };
+  return { listening, transcript, interim, error, start, stop, toggle, reset };
 }
