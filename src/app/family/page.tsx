@@ -4,6 +4,7 @@ import { useLocale } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
 import { EmergencyCard } from "~/components/dashboard/emergency-card";
 import { HouseholdHeader } from "~/components/family/household-header";
+import { NoHouseholdBanner } from "~/components/family/no-household-banner";
 import { ProfileCompletionBanner } from "~/components/family/profile-completion-banner";
 import { PresenceStack } from "~/components/shared/presence-stack";
 import { ZoneBanner } from "~/components/family/zone-banner";
@@ -28,6 +29,8 @@ export default function FamilyPage() {
       />
 
       <HouseholdHeader />
+
+      <NoHouseholdBanner />
 
       <ProfileCompletionBanner />
 

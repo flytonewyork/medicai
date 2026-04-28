@@ -11,6 +11,7 @@ import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Field, Select, TextInput, Textarea } from "~/components/ui/field";
 import { Alert } from "~/components/ui/alert";
+import { InlineSignIn } from "~/components/auth/inline-sign-in";
 import { PROTOCOL_LIBRARY, PROTOCOL_BY_ID } from "~/config/protocols";
 import {
   MELBOURNE_ONCOLOGISTS,
@@ -157,13 +158,59 @@ export default function OnboardingPage() {
   const setEnteredBy = useUIStore((s) => s.setEnteredBy);
   const existingSettings = useSettings();
 
+  // Re-entry escape hatch. A caregiver who completed onboarding on
+  // device but never picked a patient (cancelled mid-flow, or the join
+  // RPC errored) was previously trapped: /onboarding bounced to / and
+  // / bounced back to /family, which had no recovery surface. The
+  // NoHouseholdBanner on /family now links here with `?step=pick_patient`
+  // so we can skip the "already onboarded" bounce and drop them
+  // straight into the PickPatientStep.
+  const [rejoinTarget, setRejoinTarget] = useState<StepKey | null>(null);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const target = params.get("step");
+    if (target === "pick_patient" || target === "user_type") {
+      setRejoinTarget(target as StepKey);
+    }
+  }, []);
+
   const [form, setForm] = useState<FormState>({ ...EMPTY, locale });
   const [step, setStep] = useState<StepKey>("welcome");
   const [saving, setSaving] = useState(false);
 
-  // If already onboarded, bounce back to dashboard.
+  // If already onboarded, bounce back to dashboard — UNLESS the user
+  // is explicitly re-entering via `?step=…` (caregiver-finds-patient
+  // recovery flow). In that case we drop them on the requested step
+  // and prefill EVERY field from existing settings so finish() (which
+  // does a full `db.settings.put`) doesn't blow away other fields.
   useEffect(() => {
     const s = existingSettings;
+    if (s?.onboarded_at && rejoinTarget) {
+      setForm((f) => ({
+        ...f,
+        user_type:
+          rejoinTarget === "pick_patient"
+            ? "caregiver"
+            : s.user_type ?? f.user_type,
+        profile_name: s.profile_name ?? "",
+        dob: s.dob ?? "",
+        diagnosis_date: s.diagnosis_date ?? "",
+        managing_oncologist: s.managing_oncologist ?? "",
+        managing_oncologist_phone: s.managing_oncologist_phone ?? "",
+        hospital_name: s.hospital_name ?? "",
+        hospital_phone: s.hospital_phone ?? "",
+        hospital_address: s.hospital_address ?? "",
+        oncall_phone: s.oncall_phone ?? "",
+        emergency_instructions: s.emergency_instructions ?? "",
+        height_cm: s.height_cm ? String(s.height_cm) : "",
+        weight_kg: s.baseline_weight_kg ? String(s.baseline_weight_kg) : "",
+        locale: s.locale ?? f.locale,
+        home_city: s.home_city ?? "",
+      }));
+      setStep(rejoinTarget);
+      return;
+    }
     if (s?.onboarded_at) {
       router.replace("/");
     } else if (s) {
@@ -187,7 +234,7 @@ export default function OnboardingPage() {
         home_city: s.home_city ?? "",
       }));
     }
-  }, [existingSettings, router]);
+  }, [existingSettings, rejoinTarget, router]);
 
   function update<K extends keyof FormState>(k: K, v: FormState[K]) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -679,6 +726,9 @@ function PickPatientStep({
   locale: Locale;
 }) {
   const L = useL();
+  const [authState, setAuthState] = useState<
+    "unknown" | "signed_out" | "signed_in"
+  >("unknown");
   const [rows, setRows] = useState<
     Array<{
       id: string;
@@ -688,26 +738,77 @@ function PickPatientStep({
       member_count: number;
     }>
   >([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [joining, setJoining] = useState<string | null>(null);
   const [joinedName, setJoinedName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // When the discovery RPC isn't installed (typically because the carer-
-  // onboarding migration hasn't been applied), we fall back to an
-  // invite-token paste box so the user can still complete onboarding.
+  // onboarding migration hasn't been applied), the picker becomes
+  // pure-paste — used to gate copy that says "or paste a link" vs the
+  // standalone fallback. The paste-invite block itself is now ALWAYS
+  // visible (a legitimate alternative even when discovery works), so
+  // a caregiver who only has a token is never gated behind a flag.
   const [pickerUnavailable, setPickerUnavailable] = useState(false);
   const [inviteInput, setInviteInput] = useState("");
   const [acceptingInvite, setAcceptingInvite] = useState(false);
 
+  // Resolve auth state up-front. The household-discovery RPC is granted
+  // only to `authenticated`; calling it as anon hits a raw permission-
+  // denied error that surfaces as untranslated PostgreSQL text. We
+  // gate the picker behind sign-in and render <InlineSignIn> when
+  // the caregiver hasn't authenticated yet.
   useEffect(() => {
     let cancelled = false;
+    let unsub: (() => void) | null = null;
+    void (async () => {
+      const { getSupabaseBrowser, isSupabaseConfigured } = await import(
+        "~/lib/supabase/client"
+      );
+      if (!isSupabaseConfigured()) {
+        if (!cancelled) setAuthState("signed_out");
+        return;
+      }
+      const sb = getSupabaseBrowser();
+      if (!sb) {
+        if (!cancelled) setAuthState("signed_out");
+        return;
+      }
+      const { data } = await sb.auth.getSession();
+      if (cancelled) return;
+      setAuthState(data.session?.user ? "signed_in" : "signed_out");
+      const { data: sub } = sb.auth.onAuthStateChange((_e, session) => {
+        if (cancelled) return;
+        setAuthState(session?.user ? "signed_in" : "signed_out");
+      });
+      unsub = () => sub.subscription.unsubscribe();
+      // If the component unmounted between the await and here, fire
+      // the cleanup we just registered. Otherwise the outer cleanup
+      // closure will pick it up.
+      if (cancelled) unsub();
+    })();
+    return () => {
+      cancelled = true;
+      unsub?.();
+    };
+  }, []);
+
+  // Once signed in, fetch the household list. Re-runs after sign-in
+  // because authState transitions from `signed_out` → `signed_in`.
+  useEffect(() => {
+    if (authState !== "signed_in") return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
     void (async () => {
       try {
         const { listAllHouseholds } = await import(
           "~/lib/supabase/households"
         );
         const all = await listAllHouseholds();
-        if (!cancelled) setRows(all);
+        if (!cancelled) {
+          setRows(all);
+          setPickerUnavailable(false);
+        }
       } catch (err) {
         if (cancelled) return;
         if (
@@ -726,7 +827,7 @@ function PickPatientStep({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [authState]);
 
   async function join(id: string, displayName: string) {
     setJoining(id);
@@ -781,8 +882,8 @@ function PickPatientStep({
       </div>
       <p className="text-[13px] text-ink-500">
         {L(
-          "Pick the patient already using Anchor. You'll join their care team — no baselines or clinical setup on your end.",
-          "选择已在使用 Anchor 的患者。您将加入其护理团队 —— 无需输入基线或临床信息。",
+          "Pick the patient already using Anchor — or paste an invite link they sent you. You'll join their care team; no clinical setup on your end.",
+          "选择已在使用 Anchor 的患者，或粘贴对方发来的邀请链接。您将加入其护理团队 —— 无需输入临床信息。",
         )}
       </p>
 
@@ -796,65 +897,96 @@ function PickPatientStep({
         </Alert>
       )}
 
-      {loading && !joinedName && (
+      {/* Auth gate. The picker RPC requires `authenticated`, so we
+          inline a sign-in/sign-up panel rather than punting the user
+          out to /login mid-onboarding (which loses every other field
+          they entered). After auth the household-list effect re-runs
+          automatically. */}
+      {!joinedName && authState === "signed_out" && (
+        <div className="rounded-md border border-ink-200 bg-paper-2 p-4">
+          <InlineSignIn
+            title={L(
+              "Sign in to find the patient",
+              "登录后查找患者",
+            )}
+            subtitle={L(
+              "We need to know who you are before we can list the patients on Anchor or accept an invite link on your behalf.",
+              "查看患者列表或代您接受邀请链接前，需先确认您的身份。",
+            )}
+          />
+        </div>
+      )}
+
+      {!joinedName && authState === "signed_in" && loading && (
         <div className="rounded-md border border-ink-200 bg-paper-2 p-3 text-[12.5px] text-ink-500">
           {L("Loading patients…", "加载中…")}
         </div>
       )}
 
-      {!loading && !joinedName && !pickerUnavailable && !error && rows.length === 0 && (
-        <div className="rounded-md border border-dashed border-ink-300 bg-paper p-4 text-[12.5px] text-ink-600">
-          {L(
-            "No patients have set up Anchor yet. Ask the person you're supporting to create their profile first, or set up a fresh patient yourself.",
-            "尚无患者设置 Anchor。请先请患者本人创建资料,或由您自己开始新患者流程。",
-          )}
-        </div>
-      )}
-
-      {!loading && !joinedName && rows.length > 0 && (
-        <ul className="space-y-2">
-          {rows.map((h) => {
-            const display = h.patient_display_name || h.name;
-            return (
-              <li key={h.id}>
-                <button
-                  type="button"
-                  onClick={() => void join(h.id, display)}
-                  disabled={joining !== null}
-                  className={cn(
-                    "flex w-full items-center justify-between gap-3 rounded-xl border p-4 text-left transition-colors",
-                    joining === h.id
-                      ? "border-[var(--tide-2)] bg-[var(--tide-soft)]"
-                      : "border-ink-200 bg-paper-2 hover:border-ink-400",
-                  )}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[14.5px] font-semibold text-ink-900">
-                      {display}
+      {!joinedName &&
+        authState === "signed_in" &&
+        !loading &&
+        rows.length > 0 && (
+          <ul className="space-y-2">
+            {rows.map((h) => {
+              const display = h.patient_display_name || h.name;
+              return (
+                <li key={h.id}>
+                  <button
+                    type="button"
+                    onClick={() => void join(h.id, display)}
+                    disabled={joining !== null}
+                    className={cn(
+                      "flex w-full items-center justify-between gap-3 rounded-xl border p-4 text-left transition-colors",
+                      joining === h.id
+                        ? "border-[var(--tide-2)] bg-[var(--tide-soft)]"
+                        : "border-ink-200 bg-paper-2 hover:border-ink-400",
+                    )}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[14.5px] font-semibold text-ink-900">
+                        {display}
+                      </div>
+                      <div className="mt-0.5 text-[11.5px] text-ink-500">
+                        {h.member_count}{" "}
+                        {h.member_count === 1
+                          ? L("member", "位成员")
+                          : L("members", "位成员")}
+                      </div>
                     </div>
-                    <div className="mt-0.5 text-[11.5px] text-ink-500">
-                      {h.member_count}{" "}
-                      {h.member_count === 1
-                        ? L("member", "位成员")
-                        : L("members", "位成员")}
-                    </div>
-                  </div>
-                  <span className="mono text-[10px] uppercase tracking-[0.12em] text-ink-400">
-                    {joining === h.id ? L("Joining…", "加入中…") : L("Join", "加入")}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                    <span className="mono text-[10px] uppercase tracking-[0.12em] text-ink-400">
+                      {joining === h.id ? L("Joining…", "加入中…") : L("Join", "加入")}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
 
-      {!loading && !joinedName && pickerUnavailable && (
-        <div className="space-y-3 rounded-md border border-ink-200 bg-paper-2 p-4">
+      {!joinedName &&
+        authState === "signed_in" &&
+        !loading &&
+        rows.length === 0 &&
+        !pickerUnavailable && (
+          <div className="rounded-md border border-dashed border-ink-300 bg-paper p-4 text-[12.5px] text-ink-600">
+            {L(
+              "No patients have set up Anchor yet. Paste an invite link below if you've been sent one, or tap \"I'm setting up a new patient instead\" to start the patient flow yourself.",
+              "尚无患者设置 Anchor。如已收到邀请链接，请在下方粘贴；或点击下方“我要新建一位患者”自行开始患者流程。",
+            )}
+          </div>
+        )}
+
+      {/* Paste-invite block — ALWAYS visible once signed in. The
+          previous version hid it behind `pickerUnavailable` so a
+          caregiver with a token but a working RPC had no way to use
+          their token. */}
+      {!joinedName && authState === "signed_in" && (
+        <div className="space-y-2 rounded-md border border-ink-200 bg-paper-2 p-4">
           <div className="text-[12.5px] text-ink-700">
             {L(
-              "Paste the invite link the patient sent you to join their care team.",
-              "请粘贴患者发来的邀请链接加入其护理团队。",
+              "Have an invite link from the patient? Paste it here.",
+              "已收到患者发来的邀请链接？请在此粘贴。",
             )}
           </div>
           <div className="flex gap-2">
