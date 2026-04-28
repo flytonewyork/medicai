@@ -303,6 +303,13 @@ export default function CarersPage() {
                 {L("Sign in to invite", "登录后邀请")}
               </Button>
             </Link>
+            {/* Diagnostic block. The page is gated on session.signedIn,
+                which reads the Supabase session straight from local
+                storage / cookies. If the user is convinced they're
+                signed in but the gate disagrees, the actual values
+                here tell us exactly which signal is wrong. Toggle off
+                once we trust the surface. */}
+            <SessionDiag />
           </CardContent>
         </Card>
       ) : !membership || !householdId ? (
@@ -453,5 +460,92 @@ export default function CarersPage() {
         </Link>
       </section>
     </div>
+  );
+}
+
+// Inline diagnostic for the "Sign in to invite" branch on /carers.
+// Reads the Supabase session directly (separate from useAuthSession's
+// state to avoid a chicken-and-egg with the gate it controls) and
+// dumps a plain-text summary the user can read or screenshot.
+//
+// The bug we keep chasing: a user is convinced they're signed in but
+// the gate disagrees. The only way to distinguish the real cause
+// (cookies cleared / cross-origin session / expired token / browser
+// extension blocking storage) is to see what getSession actually
+// returns in their browser. Self-contained — no props.
+function SessionDiag() {
+  const [info, setInfo] = useState<string[]>(["resolving…"]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const lines: string[] = [];
+      try {
+        const { isSupabaseConfigured: isCfg, getSupabaseBrowser: getSb } =
+          await import("~/lib/supabase/client");
+        lines.push(`supabase configured: ${isCfg() ? "yes" : "no"}`);
+        // Local storage probe — surfaces "blocked by browser /
+        // private mode" cases that silently break Supabase JS auth.
+        try {
+          const probeKey = "__anchor_diag_probe";
+          window.localStorage.setItem(probeKey, "1");
+          window.localStorage.removeItem(probeKey);
+          lines.push("localStorage: writable");
+        } catch {
+          lines.push("localStorage: BLOCKED (private mode / disabled)");
+        }
+        lines.push(`cookies enabled: ${navigator.cookieEnabled ? "yes" : "no"}`);
+        const sb = getSb();
+        if (!sb) {
+          lines.push("client: not constructed");
+          if (!cancelled) setInfo(lines);
+          return;
+        }
+        const sess = await sb.auth.getSession();
+        if (sess.error) {
+          lines.push(`getSession error: ${sess.error.message}`);
+        }
+        const session = sess.data.session;
+        lines.push(`session present: ${session ? "yes" : "no"}`);
+        if (session) {
+          lines.push(`user id: ${session.user.id.slice(0, 8)}…`);
+          if (session.expires_at) {
+            const exp = new Date(session.expires_at * 1000).toISOString();
+            lines.push(`expires at: ${exp}`);
+            lines.push(
+              `expired: ${session.expires_at * 1000 < Date.now() ? "YES" : "no"}`,
+            );
+          }
+        }
+        const userResp = await sb.auth.getUser();
+        if (userResp.error) {
+          lines.push(`getUser error: ${userResp.error.message}`);
+        } else {
+          lines.push(
+            `getUser id: ${userResp.data.user?.id?.slice(0, 8) ?? "(null)"}…`,
+          );
+        }
+      } catch (err) {
+        lines.push(
+          `diag exception: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      } finally {
+        if (!cancelled) setInfo(lines);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <details className="rounded-md border border-ink-200 bg-paper-2 p-2 text-[11px] text-ink-600">
+      <summary className="cursor-pointer select-none font-medium text-ink-700">
+        Why does this say sign in?
+      </summary>
+      <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-[10.5px] leading-snug">
+        {info.join("\n")}
+      </pre>
+    </details>
   );
 }
