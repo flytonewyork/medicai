@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Camera, Loader2, Sparkles, Type, Mic, MicOff } from "lucide-react";
 import { prepareImageForVision } from "~/lib/ingest/image";
-import { useSpeechRecognition } from "~/hooks/use-speech-recognition";
+import { useVoiceTranscription } from "~/hooks/use-voice-transcription";
 import {
   parseMealPhoto,
   parseMealText,
@@ -27,12 +27,15 @@ export function MealIngest({
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Voice dictation streams interim words into the textarea so the
-  // patient can see what was heard before tapping Parse. Mandarin
-  // routes through `zh-CN`; everything else uses en-US.
-  const speech = useSpeechRecognition({
-    lang: locale === "zh" ? "zh-CN" : "en-US",
-    onFinal: (chunk) => setText((cur) => `${cur} ${chunk}`.trim()),
+  // Click-to-record voice memo. Tap once to record, tap again to stop;
+  // the audio uploads to /api/ai/transcribe (Whisper) and the finalised
+  // text appears once. No streaming — what the patient sees is what
+  // Whisper heard.
+  const voice = useVoiceTranscription({
+    locale,
+    source: "meal_ingest",
+    onTranscribed: (chunk) =>
+      setText((cur) => (cur ? `${cur} ${chunk}` : chunk)),
   });
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -137,18 +140,28 @@ export function MealIngest({
               disabled={busy}
             />
             <div className="flex items-center justify-between gap-2">
-              {speech ? (
+              {voice ? (
                 <Button
                   type="button"
-                  variant={speech.listening ? "danger" : "secondary"}
+                  variant={
+                    voice.status === "recording" ? "danger" : "secondary"
+                  }
                   size="sm"
-                  onClick={speech.toggle}
-                  disabled={busy}
+                  onClick={() => {
+                    if (voice.status === "recording") voice.stop();
+                    else void voice.start();
+                  }}
+                  disabled={busy || voice.status === "transcribing"}
                 >
-                  {speech.listening ? (
+                  {voice.status === "recording" ? (
                     <>
                       <MicOff className="h-3.5 w-3.5" />
                       {locale === "zh" ? "停止" : "Stop"}
+                    </>
+                  ) : voice.status === "transcribing" ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      {locale === "zh" ? "识别中" : "Transcribing"}
                     </>
                   ) : (
                     <>
@@ -169,6 +182,13 @@ export function MealIngest({
                 {locale === "zh" ? "智能识别" : "Parse"}
               </Button>
             </div>
+            {voice?.error && (
+              <div className="rounded-md bg-[var(--warn,#d97706)]/10 px-3 py-2 text-[12px] text-[var(--warn,#d97706)]">
+                {locale === "zh"
+                  ? `语音识别出错：${voice.error}`
+                  : `Voice transcription error: ${voice.error}`}
+              </div>
+            )}
           </div>
         )}
 

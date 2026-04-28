@@ -29,7 +29,7 @@ import {
   MicOff,
   Keyboard,
 } from "lucide-react";
-import { useSpeechRecognition } from "~/hooks/use-speech-recognition";
+import { useVoiceTranscription } from "~/hooks/use-voice-transcription";
 
 const TAG_LABELS: Record<LogTag, { en: string; zh: string }> = {
   diet: { en: "diet", zh: "饮食" },
@@ -90,14 +90,16 @@ export default function LogPage() {
 
   const enteredBy = useUIStore((s) => s.enteredBy);
 
-  // Voice dictation streams interim words into the textarea so the
-  // patient can correct what was heard before submitting. Mandarin
-  // uses zh-CN; everything else en-US. The hook returns null on
-  // browsers that don't expose SpeechRecognition (older Firefox,
-  // some webviews) so we fall back to a plain textarea cleanly.
-  const speech = useSpeechRecognition({
-    lang: locale === "zh" ? "zh-CN" : "en-US",
-    onFinal: (chunk) => setText((cur) => (cur ? `${cur} ${chunk}` : chunk)),
+  // Click-to-record voice memo. The patient taps the mic, speaks, taps
+  // again to stop. The recording uploads to /api/ai/transcribe (Whisper),
+  // and the finalised transcript appears once — no streaming, no interim
+  // words, no duplication. The hook returns null on browsers without
+  // MediaRecorder so we fall back to a plain textarea cleanly.
+  const voice = useVoiceTranscription({
+    locale,
+    source: "log",
+    enteredBy,
+    onTranscribed: (chunk) => setText((cur) => (cur ? `${cur} ${chunk}` : chunk)),
   });
 
   const autoTags = useMemo(() => new Set(tagInput(text)), [text]);
@@ -201,7 +203,7 @@ export default function LogPage() {
     setText("");
     setOverrideTags(null);
     setRun({ kind: "idle" });
-    speech?.reset();
+    voice?.cancel();
   }
 
   // A direct-filed value bypasses the agent requirement.
@@ -222,15 +224,15 @@ export default function LogPage() {
       />
 
       <Card className="p-5">
-        {speech && !editMode ? (
+        {voice && !editMode ? (
           <VoiceCapture
-            speech={speech}
+            voice={voice}
             text={text}
             setText={setText}
             disabled={run.kind === "saving" || run.kind === "running"}
             locale={locale}
             onSwitchToTyping={() => {
-              speech.stop();
+              voice.cancel();
               setEditMode(true);
             }}
           />
@@ -240,7 +242,7 @@ export default function LogPage() {
             setText={setText}
             disabled={run.kind === "saving" || run.kind === "running"}
             locale={locale}
-            canSwitchToVoice={Boolean(speech)}
+            canSwitchToVoice={Boolean(voice)}
             onSwitchToVoice={() => {
               setEditMode(false);
             }}
@@ -409,61 +411,72 @@ export default function LogPage() {
 }
 
 function VoiceCapture({
-  speech,
+  voice,
   text,
   setText,
   disabled,
   locale,
   onSwitchToTyping,
 }: {
-  speech: NonNullable<ReturnType<typeof useSpeechRecognition>>;
+  voice: NonNullable<ReturnType<typeof useVoiceTranscription>>;
   text: string;
   setText: (v: string) => void;
   disabled: boolean;
   locale: "en" | "zh";
   onSwitchToTyping: () => void;
 }) {
-  // Final chunks already flowed into `text` via the hook's `onFinal`
-  // callback. We only render the unsettled interim tail on top, so the
-  // patient sees mid-utterance words without any duplication.
-  const interimTail = speech.listening ? speech.interim : "";
+  const recording = voice.status === "recording";
+  const transcribing = voice.status === "transcribing";
+  // The mic button drives a click-to-record loop: idle → recording →
+  // transcribing → idle. While transcribing we lock the button so the
+  // patient can't fire another upload while one is in flight.
+  const micDisabled = disabled || transcribing;
+
+  function handleMicTap() {
+    if (recording) voice.stop();
+    else void voice.start();
+  }
 
   return (
     <div>
       <div className="flex flex-col items-center gap-3">
         <button
           type="button"
-          onClick={speech.toggle}
-          disabled={disabled}
+          onClick={handleMicTap}
+          disabled={micDisabled}
           aria-label={
-            speech.listening
+            recording
               ? locale === "zh" ? "停止录音" : "Stop recording"
               : locale === "zh" ? "开始录音" : "Start recording"
           }
-          aria-pressed={speech.listening}
+          aria-pressed={recording}
           className={cn(
             "relative flex h-20 w-20 items-center justify-center rounded-full shadow-md transition-all",
-            speech.listening
+            recording
               ? "bg-[var(--warn,#d97706)] text-white"
               : "bg-ink-900 text-paper hover:scale-105",
-            disabled && "opacity-50",
+            micDisabled && "opacity-50",
           )}
         >
-          {speech.listening && (
+          {recording && (
             <span className="absolute inset-0 animate-ping rounded-full bg-[var(--warn,#d97706)]/40" />
           )}
-          {speech.listening ? (
+          {transcribing ? (
+            <Loader2 className="relative h-7 w-7 animate-spin" />
+          ) : recording ? (
             <MicOff className="relative h-7 w-7" />
           ) : (
             <Mic className="relative h-7 w-7" />
           )}
         </button>
         <div className="text-[12px] text-ink-500" aria-live="polite">
-          {speech.listening
-            ? locale === "zh" ? "正在听…轻点停止" : "Listening — tap to stop"
-            : text.trim()
-              ? locale === "zh" ? "再次轻点继续录音" : "Tap to keep recording"
-              : locale === "zh" ? "轻点麦克风开始" : "Tap the mic to start"}
+          {recording
+            ? locale === "zh" ? "正在录音…轻点停止" : "Recording — tap to stop"
+            : transcribing
+              ? locale === "zh" ? "正在识别…" : "Transcribing…"
+              : text.trim()
+                ? locale === "zh" ? "再次轻点继续录音" : "Tap to record more"
+                : locale === "zh" ? "轻点麦克风开始" : "Tap the mic to start"}
         </div>
       </div>
 
@@ -472,10 +485,10 @@ function VoiceCapture({
           {locale === "zh" ? "听到的内容" : "Transcript"}
         </div>
         <Textarea
-          value={text + (interimTail ? (text ? " " : "") + interimTail : "")}
+          value={text}
           onChange={(e) => setText(e.target.value)}
           rows={5}
-          disabled={disabled}
+          disabled={disabled || recording}
           placeholder={
             locale === "zh"
               ? "例如：早餐吃了两个鸡蛋，约 16 克蛋白；右手指尖比昨天更麻"
@@ -485,16 +498,16 @@ function VoiceCapture({
         />
         <p className="mt-1.5 text-[11px] text-ink-400">
           {locale === "zh"
-            ? "可以随时编辑听到的内容。"
-            : "You can edit the transcript anytime."}
+            ? "录音停止后会出现完整文字，可以随时编辑。"
+            : "The full transcript appears after you stop recording — edit anytime."}
         </p>
       </div>
 
-      {speech.error && (
+      {voice.error && (
         <Alert variant="warn" role="alert" className="mt-3">
           {locale === "zh"
-            ? `语音识别出错：${speech.error}`
-            : `Speech recognition error: ${speech.error}`}
+            ? `语音识别出错：${voice.error}`
+            : `Voice transcription error: ${voice.error}`}
         </Alert>
       )}
 
