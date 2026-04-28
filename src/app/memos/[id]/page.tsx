@@ -22,6 +22,7 @@ import {
 import { useLocale } from "~/hooks/use-translate";
 import { db } from "~/lib/db/dexie";
 import { reparseVoiceMemo } from "~/lib/voice-memo/parse";
+import { retranscribeVoiceMemo } from "~/lib/voice-memo/retranscribe";
 import {
   applyMemoPatches,
   extractDailyShape,
@@ -273,18 +274,53 @@ function TranscriptCard({
   memo: VoiceMemo;
   locale: "en" | "zh";
 }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const empty = !memo.transcript.trim();
+
+  async function onRetry() {
+    if (!memo.id) return;
+    setBusy(true);
+    setError(null);
+    const r = await retranscribeVoiceMemo(memo.id);
+    setBusy(false);
+    if (!r.ok) setError(r.error ?? "Re-transcribe failed");
+  }
+
   return (
     <Card className="p-4">
-      <div className="text-[11px] font-medium uppercase tracking-wider text-ink-400">
-        {locale === "zh" ? "转写" : "Transcript"}
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-[11px] font-medium uppercase tracking-wider text-ink-400">
+          {locale === "zh" ? "转写" : "Transcript"}
+        </div>
+        {empty && memo.audio_media_id ? (
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={onRetry}
+            disabled={busy}
+          >
+            {busy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            {locale === "zh" ? "重新转写" : "Re-transcribe"}
+          </Button>
+        ) : null}
       </div>
       <p className="mt-1.5 whitespace-pre-wrap text-[14px] leading-relaxed text-ink-900">
         {memo.transcript || (
           <span className="italic text-ink-400">
-            {locale === "zh" ? "（无可识别文字）" : "(no transcript)"}
+            {locale === "zh"
+              ? "（暂无文字 — 可重试转写）"
+              : "(no transcript yet — tap re-transcribe)"}
           </span>
         )}
       </p>
+      {error && (
+        <p className="mt-2 text-[11.5px] text-[var(--warn)]">{error}</p>
+      )}
     </Card>
   );
 }

@@ -21,13 +21,9 @@ export async function POST(req: Request) {
   const auth = await requireSession();
   if (!auth.ok) return auth.error;
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "OPENAI_API_KEY is not configured on the server." },
-      { status: 503 },
-    );
-  }
+  const apiKeyResult = readApiKey();
+  if (apiKeyResult.error) return apiKeyResult.error;
+  const apiKey = apiKeyResult.key;
 
   let form: FormData;
   try {
@@ -94,6 +90,59 @@ export async function POST(req: Request) {
   const data = (await res.json()) as { text?: string };
   const text = (data.text ?? "").trim();
   return NextResponse.json({ text });
+}
+
+// Read OPENAI_API_KEY out of the env and validate it. Returns either
+// the cleaned key or a NextResponse the caller can return directly.
+//
+// Why this exists: Vercel env values can pick up smart-quote
+// substitutions ("’" U+2019) when they're pasted from rich-text
+// sources (Notes, Notion, Slack). undici's fetch insists every
+// header value be ASCII / Latin-1, so a single curly char anywhere
+// in the key throws `TypeError: Cannot convert argument to a
+// ByteString…value of 8217`. The patient sees a cryptic error.
+// We trim, strip any UTF whitespace, and reject any non-ASCII byte
+// up-front with a message that points at the actual fix (rotate
+// the key without smart-quote rewrites).
+function readApiKey():
+  | { key: string; error?: undefined }
+  | { error: NextResponse; key?: undefined } {
+  const raw = process.env.OPENAI_API_KEY;
+  if (!raw) {
+    return {
+      error: NextResponse.json(
+        { error: "OPENAI_API_KEY is not configured on the server." },
+        { status: 503 },
+      ),
+    };
+  }
+  const cleaned = raw.trim();
+  if (!cleaned) {
+    return {
+      error: NextResponse.json(
+        { error: "OPENAI_API_KEY is empty after trimming." },
+        { status: 503 },
+      ),
+    };
+  }
+  for (let i = 0; i < cleaned.length; i++) {
+    const code = cleaned.charCodeAt(i);
+    if (code < 0x20 || code > 0x7e) {
+      return {
+        error: NextResponse.json(
+          {
+            error:
+              "OPENAI_API_KEY contains a non-ASCII character " +
+              `(0x${code.toString(16)} at position ${i}). ` +
+              "Rotate the key in Vercel env without smart-quote substitution " +
+              "(paste it as plain text, not from rich-text sources).",
+          },
+          { status: 503 },
+        ),
+      };
+    }
+  }
+  return { key: cleaned };
 }
 
 function mimeToExt(mime: string): string {

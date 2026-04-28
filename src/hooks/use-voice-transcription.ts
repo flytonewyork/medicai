@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { db } from "~/lib/db/dexie";
 import { persistVoiceMemo } from "~/lib/voice-memo/persist";
 import { uploadVoiceMemoAudio } from "~/lib/voice-memo/cloud";
 import { parseVoiceMemo } from "~/lib/voice-memo/parse";
@@ -211,48 +212,74 @@ export function useVoiceTranscription(
         }
         const blob = new Blob(localChunks, { type: localMime });
         setStatus("transcribing");
-        uploadAndTranscribe(blob, localMime)
-          .then(async (text) => {
-            // Persist the memo first so the diary has a row even if
-            // the consumer's onTranscribed callback throws. The cloud
-            // upload kicks off async — we don't await it, since the
-            // local Blob alone is enough for immediate playback.
-            if (persistRef.current && text) {
-              try {
-                const { memo_id } = await persistVoiceMemo({
-                  blob,
-                  mime: localMime,
-                  duration_ms: durationMs,
-                  transcript: text,
-                  locale: localeRef.current,
-                  entered_by: enteredByRef.current,
-                  source_screen: sourceRef.current,
-                });
-                onPersistedRef.current?.({ memo_id, transcript: text });
-                void uploadVoiceMemoAudio(memo_id).catch((err) => {
-                  // eslint-disable-next-line no-console
-                  console.warn("[voice-memo] cloud upload failed", err);
-                });
-                if (parseAfterPersistRef.current) {
-                  void parseVoiceMemo(memo_id).catch((err) => {
-                    // eslint-disable-next-line no-console
-                    console.warn("[voice-memo] parse failed", err);
-                  });
-                }
-              } catch (err) {
+        // Persist the audio + memo row BEFORE transcription so a
+        // failed Whisper call doesn't throw the recording away. The
+        // memo lands in /memos either way; if transcription fails
+        // the patient sees an empty-transcript memo with a
+        // "Re-transcribe" affordance on the detail page.
+        void (async () => {
+          let memoId: number | null = null;
+          if (persistRef.current) {
+            try {
+              const { memo_id } = await persistVoiceMemo({
+                blob,
+                mime: localMime,
+                duration_ms: durationMs,
+                transcript: "",
+                locale: localeRef.current,
+                entered_by: enteredByRef.current,
+                source_screen: sourceRef.current,
+              });
+              memoId = memo_id;
+              void uploadVoiceMemoAudio(memo_id).catch((err) => {
                 // eslint-disable-next-line no-console
-                console.warn("[voice-memo] persist failed", err);
-              }
+                console.warn("[voice-memo] cloud upload failed", err);
+              });
+            } catch (err) {
+              // eslint-disable-next-line no-console
+              console.warn("[voice-memo] persist failed", err);
             }
-            if (text) onTranscribedRef.current(text);
-            setStatus("idle");
-          })
-          .catch((err: unknown) => {
-            const message =
-              err instanceof Error ? err.message : String(err);
-            setError(message);
+          }
+
+          let text = "";
+          let transcribeError: string | null = null;
+          try {
+            text = await uploadAndTranscribe(blob, localMime);
+          } catch (err) {
+            transcribeError = err instanceof Error ? err.message : String(err);
+          }
+
+          if (memoId !== null && text) {
+            try {
+              await db.voice_memos.update(memoId, {
+                transcript: text,
+                updated_at: new Date().toISOString(),
+              });
+            } catch (err) {
+              // eslint-disable-next-line no-console
+              console.warn("[voice-memo] transcript update failed", err);
+            }
+          }
+
+          if (memoId !== null && text && parseAfterPersistRef.current) {
+            void parseVoiceMemo(memoId).catch((err) => {
+              // eslint-disable-next-line no-console
+              console.warn("[voice-memo] parse failed", err);
+            });
+          }
+
+          if (memoId !== null) {
+            onPersistedRef.current?.({ memo_id: memoId, transcript: text });
+          }
+          if (text) onTranscribedRef.current(text);
+
+          if (transcribeError) {
+            setError(transcribeError);
             setStatus("error");
-          });
+          } else {
+            setStatus("idle");
+          }
+        })();
       };
 
       streamRef.current = stream;
