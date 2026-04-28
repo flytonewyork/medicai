@@ -20,6 +20,7 @@ import {
   X,
   History as HistoryIcon,
   BookOpen,
+  Mic,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 import { isNavItemActive } from "~/lib/nav/active";
@@ -39,6 +40,7 @@ import { useAppPerspective } from "~/lib/caregiver/scope";
 const PATIENT_ITEMS = [
   { href: "/", key: "nav.dashboard", icon: LayoutDashboard, descKey: "nav.desc.dashboard" },
   { href: "/diary", key: "nav.diary", icon: BookOpen, descKey: "nav.desc.diary" },
+  { href: "/memos", key: "nav.memos", icon: Mic, descKey: "nav.desc.memos" },
   { href: "/schedule", key: "nav.schedule", icon: CalendarDays, descKey: "nav.desc.schedule" },
   { href: "/treatment", key: "nav.treatment", icon: Syringe, descKey: "nav.desc.treatment" },
   { href: "/labs", key: "nav.labs", icon: FlaskConical, descKey: "nav.desc.labs" },
