@@ -43,10 +43,38 @@ export interface VoiceMemo {
 }
 
 export interface VoiceMemoParsedFields {
+  // Subjective 0–10 scales matching DailyEntry. Only set when the
+  // patient verbalises a number or a clear qualitative anchor we can
+  // map (e.g. "no pain at all" → 0, "really tired" → ~3 energy).
   energy?: number;
-  sleep_hours?: number;
-  pain?: number;
-  mood?: number;
-  symptoms?: string[];
+  sleep_quality?: number;
+  appetite?: number;
+  pain_current?: number;
+  pain_worst?: number;
+  mood_clarity?: number;
+  nausea?: number;
+  fatigue?: number;
+  anorexia?: number;
+  abdominal_pain?: number;
+  // CTCAE 0–4 neuropathy. Inferred from descriptions like "tingling
+  // when I touch cold things" → 1, "interferes with buttoning shirt"
+  // → 2.
+  neuropathy_hands?: number;
+  neuropathy_feet?: number;
+  // Concrete objective values when the patient states them.
+  weight_kg?: number;
+  diarrhoea_count?: number;
+  // Booleans only flip true when the patient clearly reports the
+  // symptom. We never invert a previously-true daily-entry boolean
+  // back to false from a memo that's silent on it.
+  cold_dysaesthesia?: boolean;
+  mouth_sores?: boolean;
+  fever?: boolean;
+  // Free-form catch-all for things that don't map to a daily field
+  // (taste changes, food eaten, conversations had, mood notes).
   notes?: string;
+  // Confidence the parser had in the extraction. Low/medium results
+  // do not write to daily_entries even when fields are present —
+  // they only show on the memo card so the patient can confirm.
+  confidence: "low" | "medium" | "high";
 }

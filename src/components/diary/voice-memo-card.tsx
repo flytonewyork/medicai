@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Mic, Pause, Play, CloudUpload, CloudOff } from "lucide-react";
-import type { VoiceMemo } from "~/types/voice-memo";
+import type { VoiceMemo, VoiceMemoParsedFields } from "~/types/voice-memo";
 import { resolveVoiceMemoAudioUrl } from "~/lib/voice-memo/cloud";
 import { Card } from "~/components/ui/card";
 import { cn } from "~/lib/utils/cn";
@@ -130,6 +130,12 @@ export function VoiceMemoCard({ memo, locale }: VoiceMemoCardProps) {
               </span>
             )}
           </p>
+          {memo.parsed_fields && (
+            <ParsedFieldsRow
+              parsed={memo.parsed_fields}
+              locale={locale}
+            />
+          )}
           {error && (
             <p className="mt-1.5 text-[11px] text-[var(--warn)]">{error}</p>
           )}
@@ -158,6 +164,128 @@ function formatDuration(ms: number): string {
   const mins = Math.floor(total / 60);
   const secs = total % 60;
   return `${mins}:${String(secs).padStart(2, "0")}`;
+}
+
+function ParsedFieldsRow({
+  parsed,
+  locale,
+}: {
+  parsed: VoiceMemoParsedFields;
+  locale: "en" | "zh";
+}) {
+  const chips = collectChips(parsed, locale);
+  const showLowConfidenceHint =
+    parsed.confidence !== "high" && (chips.length > 0 || parsed.notes);
+
+  if (chips.length === 0 && !parsed.notes) {
+    if (parsed.confidence === "low") {
+      return (
+        <p className="mt-1.5 text-[10.5px] italic text-ink-400">
+          {locale === "zh"
+            ? "（信息不足，未提取结构化字段）"
+            : "(not enough detail to extract structured fields)"}
+        </p>
+      );
+    }
+    return null;
+  }
+
+  return (
+    <div className="mt-2 space-y-1.5">
+      {chips.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {chips.map((c) => (
+            <span
+              key={c.label}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-medium",
+                parsed.confidence === "high"
+                  ? "bg-[var(--tide-2)]/12 text-[var(--tide-2)]"
+                  : "bg-ink-100 text-ink-500",
+              )}
+            >
+              {c.label}
+              <span className="font-normal opacity-70">{c.value}</span>
+            </span>
+          ))}
+        </div>
+      )}
+      {parsed.notes && (
+        <p className="text-[11.5px] italic text-ink-500">
+          {locale === "zh" ? "笔记：" : "Notes: "}
+          {parsed.notes}
+        </p>
+      )}
+      {showLowConfidenceHint && (
+        <p className="text-[10.5px] text-ink-400">
+          {locale === "zh"
+            ? `识别可信度：${confidenceLabel(parsed.confidence, "zh")}（高可信度才会自动写入日常表）`
+            : `Confidence: ${confidenceLabel(parsed.confidence, "en")} — only high-confidence fields auto-fill the daily form.`}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function collectChips(
+  parsed: VoiceMemoParsedFields,
+  locale: "en" | "zh",
+): { label: string; value: string }[] {
+  const chips: { label: string; value: string }[] = [];
+  function num(label: { en: string; zh: string }, val: number | undefined, suffix = "/10") {
+    if (typeof val !== "number") return;
+    chips.push({
+      label: locale === "zh" ? label.zh : label.en,
+      value: `${val}${suffix}`,
+    });
+  }
+  function bool(label: { en: string; zh: string }, val: boolean | undefined) {
+    if (val !== true) return;
+    chips.push({
+      label: locale === "zh" ? label.zh : label.en,
+      value: locale === "zh" ? "是" : "yes",
+    });
+  }
+  num({ en: "energy", zh: "精力" }, parsed.energy);
+  num({ en: "sleep", zh: "睡眠" }, parsed.sleep_quality);
+  num({ en: "appetite", zh: "胃口" }, parsed.appetite);
+  num({ en: "pain", zh: "疼痛" }, parsed.pain_current);
+  num({ en: "pain (worst)", zh: "最痛" }, parsed.pain_worst);
+  num({ en: "mood", zh: "心情" }, parsed.mood_clarity);
+  num({ en: "nausea", zh: "恶心" }, parsed.nausea);
+  num({ en: "fatigue", zh: "疲倦" }, parsed.fatigue);
+  num({ en: "anorexia", zh: "厌食" }, parsed.anorexia);
+  num({ en: "abdo pain", zh: "腹痛" }, parsed.abdominal_pain);
+  num({ en: "neuro hands", zh: "手麻" }, parsed.neuropathy_hands, "/4");
+  num({ en: "neuro feet", zh: "脚麻" }, parsed.neuropathy_feet, "/4");
+  if (typeof parsed.weight_kg === "number") {
+    chips.push({
+      label: locale === "zh" ? "体重" : "weight",
+      value: `${parsed.weight_kg.toFixed(1)} kg`,
+    });
+  }
+  if (typeof parsed.diarrhoea_count === "number") {
+    chips.push({
+      label: locale === "zh" ? "腹泻" : "diarrhoea",
+      value: `${parsed.diarrhoea_count}×`,
+    });
+  }
+  bool({ en: "cold dysaesthesia", zh: "冷敏感" }, parsed.cold_dysaesthesia);
+  bool({ en: "mouth sores", zh: "口腔溃疡" }, parsed.mouth_sores);
+  bool({ en: "fever", zh: "发烧" }, parsed.fever);
+  return chips;
+}
+
+function confidenceLabel(
+  c: VoiceMemoParsedFields["confidence"],
+  locale: "en" | "zh",
+): string {
+  if (locale === "zh") {
+    if (c === "high") return "高";
+    if (c === "medium") return "中";
+    return "低";
+  }
+  return c;
 }
 
 function sourceLabel(
