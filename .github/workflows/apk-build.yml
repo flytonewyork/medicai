@@ -1,0 +1,165 @@
+name: APK build
+
+# Manual-only. Building the TWA APK signs with a long-lived release key —
+# we never want a push to main to silently rotate or republish. Trigger
+# from the Actions tab when you're ready to ship a new build.
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   ANDROID_KEYSTORE_BASE64   base64 of android/android.keystore created
+#                             by `bubblewrap init`. Generate with:
+#                               base64 -i android/android.keystore | pbcopy
+#   ANDROID_KEYSTORE_PASSWORD keystore password set during `bubblewrap init`
+#   ANDROID_KEY_PASSWORD      key password (same as keystore unless changed)
+#   TWA_PROD_HOST             production host without protocol, e.g.
+#                             anchor.thomashu.com. Substituted into
+#                             twa-manifest.json so the APK is bound to the
+#                             right origin and assetlinks endpoint.
+#
+# After the workflow opens its PR, review the manifest diff + the new APK
+# (size, sha256), then merge to publish via Vercel.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Semver, e.g. 1.0.0 or 1.0.1-rc.1"
+        required: true
+        type: string
+      notes_en:
+        description: "Release notes (English)"
+        required: false
+        type: string
+      notes_zh:
+        description: "Release notes (Chinese)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  build:
+    name: bubblewrap build · publish manifest
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Bubblewrap CLI
+        run: npm install -g @bubblewrap/cli@1.22.0
+
+      - name: Substitute production host into twa-manifest.json
+        env:
+          TWA_PROD_HOST: ${{ secrets.TWA_PROD_HOST }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [ -z "$TWA_PROD_HOST" ]; then
+            echo "TWA_PROD_HOST secret is empty" >&2
+            exit 1
+          fi
+          # In-place substitution of the placeholder; commit-back is gated
+          # by the publish step so the canonical file in main keeps the
+          # placeholder.
+          sed -i "s/REPLACE_WITH_VERCEL_PROD_HOST/${TWA_PROD_HOST}/g" twa-manifest.json
+          # Bump appVersion to the release input. appVersionName is the
+          # human-readable string; appVersion is the integer Play Store
+          # build code, monotonically increasing.
+          node -e "
+            const fs = require('fs');
+            const m = JSON.parse(fs.readFileSync('twa-manifest.json', 'utf8'));
+            m.appVersionName = process.env.VERSION;
+            m.appVersion = (m.appVersion ?? 0) + 1;
+            fs.writeFileSync('twa-manifest.json', JSON.stringify(m, null, 2) + '\n');
+          "
+
+      - name: Decode keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p android
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/android.keystore
+          # Sanity check: keytool will refuse to parse a corrupt keystore,
+          # which is the most common secret-paste failure mode.
+          keytool -list -keystore android/android.keystore \
+            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >/dev/null
+
+      - name: Bubblewrap init
+        run: |
+          # --skipPwaValidation lets init run without hitting the live PWA
+          # (CI shouldn't depend on production being reachable). The
+          # generated android/ tree is overwritten by the keystore step
+          # below if needed.
+          bubblewrap init --manifest=$PWD/twa-manifest.json \
+            --directory=$PWD/android --skipPwaValidation
+
+      - name: Restore signing keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          # `bubblewrap init` writes a fresh keystore — replace it with the
+          # production one so the produced APK matches the SHA-256 the
+          # /.well-known/assetlinks.json route serves.
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/android.keystore
+
+      - name: Bubblewrap build
+        env:
+          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          cd android
+          # --skipPwaValidation again; sign-mode env vars feed the bubblewrap
+          # interactive prompts non-interactively.
+          bubblewrap build --skipPwaValidation
+
+      - name: Publish APK to manifest
+        run: |
+          NOTES_ARGS=()
+          if [ -n "${{ inputs.notes_en }}" ]; then
+            NOTES_ARGS+=(--notes-en "${{ inputs.notes_en }}")
+          fi
+          if [ -n "${{ inputs.notes_zh }}" ]; then
+            NOTES_ARGS+=(--notes-zh "${{ inputs.notes_zh }}")
+          fi
+          node scripts/apk-publish.mjs \
+            --apk android/app/build/outputs/apk/release/app-release-signed.apk \
+            --version "${{ inputs.version }}" \
+            "${NOTES_ARGS[@]}"
+
+      - name: Open release PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: apk/release-${{ inputs.version }}
+          base: main
+          commit-message: "chore(apk): publish ${{ inputs.version }}"
+          title: "chore(apk): publish ${{ inputs.version }}"
+          body: |
+            Automated APK release prepared by `.github/workflows/apk-build.yml`.
+
+            - Version: `${{ inputs.version }}`
+            - Triggered by: @${{ github.actor }}
+
+            Review `public/apk/manifest.json` and the new `.apk` blob, then
+            merge. Vercel deploys the updated `/apk` page automatically.
+          add-paths: |
+            public/apk/manifest.json
+            public/apk/anchor-${{ inputs.version }}.apk
