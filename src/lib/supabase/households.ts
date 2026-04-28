@@ -141,6 +141,40 @@ export async function createHousehold(args: {
   return data;
 }
 
+// Idempotent bootstrap. The user-story bug: a patient who self-onboarded
+// offline has `settings.onboarded_at` set but never reached the
+// `createHousehold` step in `onboarding/page.tsx` (it only fires when a
+// Supabase session is already present). When they later sign in to invite
+// a carer, they have a profile but no membership — and rerunning
+// onboarding bounces them back to `/` because `onboarded_at` is set.
+// This helper closes that gap from anywhere: call it after sign-in or
+// when the carer-invite UI needs a household, and it'll create one with
+// the patient as primary_carer of their own care team. No-ops when:
+//   - Supabase isn't configured
+//   - the user isn't signed in
+//   - the user already has a membership
+//   - a `patientName` isn't supplied AND we can't infer one (we don't
+//     want to seed `Patient`'s family blindly — caller passes the name)
+//
+// Returns the household id (existing or newly-created), or null when the
+// no-op conditions hit. Throws on RPC error so the UI can surface it.
+export async function ensureHouseholdForCurrentUser(args: {
+  patientName: string;
+}): Promise<string | null> {
+  const sb = getSupabaseBrowser();
+  if (!sb) return null;
+  const uid = await currentUserId();
+  if (!uid) return null;
+  const existing = await getCurrentMembership();
+  if (existing?.household_id) return existing.household_id;
+  const trimmed = args.patientName.trim();
+  if (!trimmed) return null;
+  return createHousehold({
+    name: `${trimmed}'s care team`,
+    patient_name: trimmed,
+  });
+}
+
 // PostgREST returns PGRST202 when the requested RPC isn't in its schema
 // cache — typically because the caregiver-onboarding migration hasn't been
 // applied (or applied without a cache reload). We surface this as a typed

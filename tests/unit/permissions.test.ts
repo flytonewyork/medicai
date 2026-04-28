@@ -44,12 +44,14 @@ describe("can (permission matrix)", () => {
     }
     const writes: PermissionAction[] = [
       "invite_members",
+      "remove_members",
       "edit_treatment_plan",
       "edit_medications",
       "edit_appointments",
       "log_daily_checkin",
       "log_clinical_note",
       "quick_note_family",
+      "see_pending_invites",
     ];
     for (const action of writes) {
       expect(can("observer", action)).toBe(false);
@@ -73,16 +75,23 @@ describe("can (permission matrix)", () => {
     expect(can("family", "invite_members")).toBe(false);
   });
 
-  it("patient can edit own medications + log check-ins but not treatment plan", () => {
+  it("patient can edit own medications + log check-ins + invite carers but not treatment plan", () => {
     expect(can("patient", "log_daily_checkin")).toBe(true);
     expect(can("patient", "edit_medications")).toBe(true);
     expect(can("patient", "edit_treatment_plan")).toBe(false);
-    expect(can("patient", "invite_members")).toBe(false);
+    // Patients are captains of their own care team — they can bring
+    // carers in directly. Removing other members and editing
+    // structural settings still belong to the primary carer.
+    expect(can("patient", "invite_members")).toBe(true);
+    expect(can("patient", "see_pending_invites")).toBe(true);
+    expect(can("patient", "remove_members")).toBe(true);
+    expect(can("patient", "edit_household_settings")).toBe(false);
   });
 
-  it("only primary_carer sees pending invites", () => {
+  it("primary_carer and patient see pending invites; others don't", () => {
     for (const role of ROLES) {
-      expect(can(role, "see_pending_invites")).toBe(role === "primary_carer");
+      const expected = role === "primary_carer" || role === "patient";
+      expect(can(role, "see_pending_invites")).toBe(expected);
     }
   });
 

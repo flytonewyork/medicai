@@ -30,8 +30,14 @@ export type PermissionAction =
   | "see_pending_invites";
 
 export const PERMISSIONS: Record<PermissionAction, readonly HouseholdRole[]> = {
-  invite_members: ["primary_carer"],
-  remove_members: ["primary_carer"],
+  // The patient is captain of their own care team. They can bring carers
+  // in directly without going through the primary carer — this is the
+  // canonical user story for someone who self-onboards before anyone
+  // else exists in the household. Removing other members and editing
+  // structural household settings still belong to the primary carer
+  // (so a patient can't accidentally lock the lead carer out).
+  invite_members: ["primary_carer", "patient"],
+  remove_members: ["primary_carer", "patient"],
   edit_household_settings: ["primary_carer"],
   edit_treatment_plan: ["primary_carer", "clinician"],
   edit_medications: ["primary_carer", "patient", "clinician"],
@@ -60,7 +66,7 @@ export const PERMISSIONS: Record<PermissionAction, readonly HouseholdRole[]> = {
     "clinician",
     "observer",
   ],
-  see_pending_invites: ["primary_carer"],
+  see_pending_invites: ["primary_carer", "patient"],
 };
 
 // The workhorse. Null role (signed out / no membership) never

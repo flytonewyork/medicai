@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useHousehold } from "~/hooks/use-household";
 import {
+  ensureHouseholdForCurrentUser,
+  friendlyInviteError,
   getHousehold,
   listHouseholdMembers,
   listInvites,
@@ -15,9 +18,11 @@ import type {
 } from "~/types/household";
 import { useLocale, useL } from "~/hooks/use-translate";
 import { isSupabaseConfigured } from "~/lib/supabase/client";
+import { useSettings } from "~/hooks/use-settings";
 import { PageHeader, SectionHeader } from "~/components/ui/page-header";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
+import { Alert } from "~/components/ui/alert";
 import { InviteCarerFlow } from "~/components/invite/invite-carer-flow";
 import { MembersList } from "~/components/invite/members-list";
 import { PendingInvitesList } from "~/components/invite/pending-invites-list";
@@ -50,8 +55,12 @@ import {
 export default function CarersPage() {
   const locale = useLocale();
   const L = useL();
-  const { membership, profile, loading } = useHousehold();
+  const searchParams = useSearchParams();
+  const settings = useSettings();
+  const { membership, profile, loading, refresh } = useHousehold();
   const householdId = membership?.household_id ?? null;
+  const canInvite =
+    membership?.role === "primary_carer" || membership?.role === "patient";
   const isPrimary = membership?.role === "primary_carer";
 
   const [household, setHousehold] = useState<Household | null>(null);
@@ -59,6 +68,17 @@ export default function CarersPage() {
   const [invites, setInvites] = useState<HouseholdInvite[]>([]);
   const [showInviteFlow, setShowInviteFlow] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
+  // Bootstrap state for the "I signed in but have no household" branch.
+  // The /carers page is the natural home for this: a user who lands
+  // here is asking to grow their team, so creating their household is
+  // the implicit ask. We never bounce to /onboarding (that path is
+  // gated by `onboarded_at` and dead-ends).
+  const [bootstrapping, setBootstrapping] = useState(false);
+  const [bootstrapError, setBootstrapError] = useState<string | null>(null);
+  const [autoOpenedFromQuery, setAutoOpenedFromQuery] = useState(false);
+
+  const patientName =
+    settings?.profile_name?.trim() || profile?.display_name?.trim() || "";
 
   const reload = useCallback(async () => {
     if (!householdId) {
@@ -85,6 +105,56 @@ export default function CarersPage() {
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  const bootstrapHousehold = useCallback(async () => {
+    if (!patientName) {
+      setBootstrapError(
+        L(
+          "Add your name in Settings before setting up your care team.",
+          "请先在「设置」中填写姓名，再创建护理团队。",
+        ),
+      );
+      return null;
+    }
+    setBootstrapping(true);
+    setBootstrapError(null);
+    try {
+      const id = await ensureHouseholdForCurrentUser({ patientName });
+      await refresh();
+      return id;
+    } catch (err) {
+      setBootstrapError(friendlyInviteError(err));
+      return null;
+    } finally {
+      setBootstrapping(false);
+    }
+  }, [L, patientName, refresh]);
+
+  // Deep-link handler. After a sign-in detour the patient lands here
+  // with `?action=add-carer`. We bootstrap the household if needed and
+  // auto-open the invite flow so the click that started this journey
+  // ("Add carer") doesn't have to be repeated. Runs once per mount.
+  useEffect(() => {
+    if (autoOpenedFromQuery) return;
+    if (loading) return;
+    if (searchParams?.get("action") !== "add-carer") return;
+    if (!profile) return;
+    void (async () => {
+      if (!membership) {
+        const id = await bootstrapHousehold();
+        if (!id) return;
+      }
+      setShowInviteFlow(true);
+      setAutoOpenedFromQuery(true);
+    })();
+  }, [
+    autoOpenedFromQuery,
+    bootstrapHousehold,
+    loading,
+    membership,
+    profile,
+    searchParams,
+  ]);
 
   const activeInvites = invites.filter(
     (i) => !i.accepted_at && !i.revoked_at && new Date(i.expires_at) > new Date(),
@@ -127,9 +197,13 @@ export default function CarersPage() {
 
       {/* TOP: Anchor-account section. Renders one of:
           - "Add carer" CTA + members list (signed in + has household)
-          - read-only members hint (signed in but not primary_carer)
-          - "Sign in" prompt (signed out)
-          - "Set up household" prompt (signed in, no household)
+          - read-only members hint (signed in but lacks invite permission)
+          - "Sign in" prompt (signed out) — deep-links back here with
+            ?action=add-carer so the click that started this journey
+            opens the invite flow on return
+          - "Set up your care team" inline auto-create (signed in,
+            onboarded locally but no household yet — the gap that used
+            to dead-end at /onboarding)
           - "Sync isn't configured" notice (offline-only build)
           - Inline loading hint (still resolving)
           The local contacts section below is unaffected by any of
@@ -159,39 +233,79 @@ export default function CarersPage() {
           </CardContent>
         </Card>
       ) : !profile ? (
-        <Card>
-          <CardContent className="space-y-3 pt-5 text-[13px] text-ink-500">
-            <p>
+        <Card className="border-[var(--tide-2)]/40 bg-[var(--tide-soft)]">
+          <CardContent className="space-y-3 pt-5 text-[13px]">
+            <div className="flex items-center gap-2 text-ink-900">
+              <UserPlus className="h-4 w-4 text-[var(--tide-2)]" />
+              <span className="font-semibold">
+                {L("Add someone to your care team", "邀请家人加入护理团队")}
+              </span>
+            </div>
+            <p className="text-ink-700">
               {L(
-                "Sign in to see and add carers.",
-                "登录后即可查看与添加护理人员。",
+                "Sign in once so the invite link can carry your details. We'll bring you straight back here to share it.",
+                "请先登录，以便邀请链接附带您的信息。登录后会直接回到此页继续分享。",
               )}
             </p>
-            <Link href="/login?next=%2Fcarers">
-              <Button size="md">{L("Sign in", "登录")}</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      ) : !membership || !householdId ? (
-        <Card>
-          <CardContent className="space-y-3 pt-5 text-[13px] text-ink-500">
-            <p>
-              {L(
-                "You aren't part of a household yet. Run through onboarding to create one — then you can add carers from here.",
-                "您尚未加入家庭。请完成引导流程创建家庭，再从此页添加护理人员。",
-              )}
-            </p>
-            <Link href="/onboarding">
+            <Link href="/login?next=%2Fcarers%3Faction%3Dadd-carer">
               <Button size="md">
-                {L("Set up household", "创建家庭")}
+                {L("Sign in to invite", "登录后邀请")}
               </Button>
             </Link>
           </CardContent>
         </Card>
+      ) : !membership || !householdId ? (
+        <Card className="border-[var(--tide-2)]/40 bg-[var(--tide-soft)]">
+          <CardContent className="space-y-3 pt-5 text-[13px]">
+            <div className="flex items-center gap-2 text-ink-900">
+              <UserPlus className="h-4 w-4 text-[var(--tide-2)]" />
+              <span className="font-semibold">
+                {L("Set up your care team", "创建您的护理团队")}
+              </span>
+            </div>
+            <p className="text-ink-700">
+              {patientName
+                ? L(
+                    `One tap creates ${patientName}'s care team and lets you start sharing it with carers.`,
+                    `轻触一下即可创建 ${patientName} 的护理团队，并开始邀请家人。`,
+                  )
+                : L(
+                    "One tap creates your care team and lets you start sharing it with carers.",
+                    "轻触一下即可创建您的护理团队，并开始邀请家人。",
+                  )}
+            </p>
+            {bootstrapError && (
+              <Alert variant="warn" dense>
+                {bootstrapError}
+              </Alert>
+            )}
+            <Button
+              size="md"
+              onClick={() =>
+                void (async () => {
+                  const id = await bootstrapHousehold();
+                  if (id) setShowInviteFlow(true);
+                })()
+              }
+              disabled={bootstrapping}
+            >
+              {bootstrapping ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <UserPlus className="h-4 w-4" />
+              )}
+              {bootstrapping
+                ? L("Setting up…", "创建中…")
+                : L("Set up & invite a carer", "创建并邀请护理人员")}
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <>
-          {/* Primary CTA — the answer to "no obvious way to add carers". */}
-          {isPrimary && !showInviteFlow && (
+          {/* Primary CTA — the answer to "no obvious way to add carers".
+              Visible to anyone the matrix lets invite (primary_carer +
+              patient). Other roles see the read-only hint below. */}
+          {canInvite && !showInviteFlow && (
             <Card className="border-[var(--tide-2)]/40 bg-[var(--tide-soft)]">
               <CardContent className="flex items-center justify-between gap-3 pt-4">
                 <div className="flex min-w-0 items-center gap-3">
@@ -217,21 +331,21 @@ export default function CarersPage() {
             </Card>
           )}
 
-          {!isPrimary && (
+          {!canInvite && (
             <Card>
               <CardContent className="flex items-start gap-2 pt-4 text-[12.5px] text-ink-500">
                 <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
                   {L(
-                    "Only the primary carer can add or remove carers. Ask them if you'd like to bring someone in.",
-                    "仅主要照护者可添加或移除护理人员。如需新增，请联系主要照护者。",
+                    "Only the patient or primary carer can add new carers. Ask one of them if you'd like to bring someone in.",
+                    "仅患者或主要照护者可添加新成员。如需新增，请与他们沟通。",
                   )}
                 </span>
               </CardContent>
             </Card>
           )}
 
-          {isPrimary && showInviteFlow && (
+          {canInvite && showInviteFlow && (
             <InviteCarerFlow
               householdId={householdId}
               onClose={() => setShowInviteFlow(false)}
@@ -259,7 +373,7 @@ export default function CarersPage() {
             )}
           </section>
 
-          {isPrimary && invites.length > 0 && (
+          {canInvite && invites.length > 0 && (
             <section className="space-y-2">
               <SectionHeader title={L("Invites", "邀请")} />
               <PendingInvitesList invites={invites} onChanged={reload} />
