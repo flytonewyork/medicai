@@ -35,6 +35,7 @@ export function PhoneCallNote({
 
   const voice = useVoiceTranscription({
     locale,
+    source: "phone_note",
     onTranscribed: (chunk) =>
       setText((cur) => (cur ? `${cur} ${chunk}` : chunk)),
   });

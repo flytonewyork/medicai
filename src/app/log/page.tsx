@@ -97,6 +97,8 @@ export default function LogPage() {
   // MediaRecorder so we fall back to a plain textarea cleanly.
   const voice = useVoiceTranscription({
     locale,
+    source: "log",
+    enteredBy,
     onTranscribed: (chunk) => setText((cur) => (cur ? `${cur} ${chunk}` : chunk)),
   });
 

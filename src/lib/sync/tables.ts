@@ -27,6 +27,7 @@ export const SYNCED_TABLES = [
   "comprehensive_assessments",
   "treatment_cycles",
   "patient_tasks",
+  "voice_memos",
 ] as const;
 
 export type SyncedTable = (typeof SYNCED_TABLES)[number];

@@ -10,7 +10,6 @@ import {
   Settings as SettingsIcon,
   ScanLine,
   FlaskConical,
-  Compass,
   Syringe,
   Sparkles,
   Salad,
@@ -20,6 +19,7 @@ import {
   Menu,
   X,
   History as HistoryIcon,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 import { isNavItemActive } from "~/lib/nav/active";
@@ -27,14 +27,19 @@ import { useT, useLocale } from "~/hooks/use-translate";
 import { useAppPerspective } from "~/lib/caregiver/scope";
 
 // Patient nav: everything. Patient owns self-reporting, treatment,
-// assessment, bridge strategy, reports. The "/family" surface is the
+// the diary, bridge strategy, reports. The "/family" surface is the
 // caregiver-perspective landing page — patients land on "/" instead and
 // reach household / invites through Settings → Care team, so it's
 // excluded here to avoid a confusing duplicate view.
+//
+// Slice "voice memos foundational": /diary replaced /assessment in the
+// patient nav. The `/assessment` route still exists for the rare
+// baseline-establishment flow (linked from the dashboard nudge card),
+// it's just not in the daily nav surface anymore.
 const PATIENT_ITEMS = [
   { href: "/", key: "nav.dashboard", icon: LayoutDashboard, descKey: "nav.desc.dashboard" },
+  { href: "/diary", key: "nav.diary", icon: BookOpen, descKey: "nav.desc.diary" },
   { href: "/schedule", key: "nav.schedule", icon: CalendarDays, descKey: "nav.desc.schedule" },
-  { href: "/assessment", key: "nav.assessment", icon: Compass, descKey: "nav.desc.assessment" },
   { href: "/treatment", key: "nav.treatment", icon: Syringe, descKey: "nav.desc.treatment" },
   { href: "/labs", key: "nav.labs", icon: FlaskConical, descKey: "nav.desc.labs" },
   { href: "/nutrition", key: "nav.nutrition", icon: Salad, descKey: "nav.desc.nutrition" },
@@ -138,7 +143,7 @@ export function MobileBottomNav() {
   // nutrition + log. Nutrition is first-class because cachexia /
   // weight loss is a primary axis-3 signal in mPDAC, and is logged
   // daily.
-  const patientHrefs = ["/", "/assessment", "/treatment", "/nutrition", "/schedule"];
+  const patientHrefs = ["/", "/diary", "/treatment", "/nutrition", "/schedule"];
   const caregiverHrefs = ["/family", "/schedule", "/nutrition", "/carers", "/log"];
   const selected = items === PATIENT_ITEMS ? patientHrefs : caregiverHrefs;
   const mobileItems = items.filter((i) => selected.includes(i.href));

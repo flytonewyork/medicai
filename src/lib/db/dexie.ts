@@ -55,6 +55,7 @@ import type {
   MealTemplate,
 } from "~/types/nutrition";
 import type { HouseholdProfile as HouseholdProfileRow } from "~/types/household-profile";
+import type { VoiceMemo } from "~/types/voice-memo";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -109,6 +110,10 @@ export class AnchorDB extends Dexie {
   household_profile!: Table<HouseholdProfileRow, string>;
   // v21: Records-import provenance.
   pdf_blobs!: Table<PdfBlob, number>;
+  // v22: Voice memos. The patient's primary self-report channel; rows
+  // carry transcript + metadata, while the audio Blob lives in
+  // `timeline_media` (`owner_type: "voice_memo"`).
+  voice_memos!: Table<VoiceMemo, number>;
 
   constructor() {
     super("anchor_db");
@@ -352,6 +357,17 @@ export class AnchorDB extends Dexie {
     // only the new table is declared here.
     this.version(21).stores({
       pdf_blobs: "++id, sha256, source_system, captured_at",
+    });
+    // v22: Voice memos. The patient records, Whisper transcribes, the
+    // memo lands here. Indexed on `day` for the diary's per-day index,
+    // `recorded_at` for chronological merge with other diary streams,
+    // `log_event_id` for joining back to the agent fan-out a memo
+    // triggered, and `audio_media_id` so the audio Blob lookup in
+    // `timeline_media` is O(1).
+    this.version(22).stores({
+      voice_memos:
+        "++id, recorded_at, day, log_event_id, audio_media_id, " +
+        "source_screen, entered_by",
     });
   }
 }

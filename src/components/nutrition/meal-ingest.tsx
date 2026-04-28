@@ -33,6 +33,7 @@ export function MealIngest({
   // Whisper heard.
   const voice = useVoiceTranscription({
     locale,
+    source: "meal_ingest",
     onTranscribed: (chunk) =>
       setText((cur) => (cur ? `${cur} ${chunk}` : chunk)),
   });
