@@ -123,6 +123,19 @@ jobs:
 
       - name: Bubblewrap init
         run: |
+          # Bubblewrap reads ~/.bubblewrap/config.json on startup and only
+          # prompts for JDK / SDK locations if the config is missing. The
+          # CI runner already has both installed (setup-java + setup-android
+          # steps above export JAVA_HOME and ANDROID_HOME); pre-write the
+          # config so init runs non-interactively. Without this it hangs on
+          # "Do you want Bubblewrap to install the JDK?" and dies (exit 130).
+          mkdir -p "$HOME/.bubblewrap"
+          cat > "$HOME/.bubblewrap/config.json" <<EOF
+          {
+            "jdkPath": "${JAVA_HOME}",
+            "androidSdkPath": "${ANDROID_HOME}"
+          }
+          EOF
           # --skipPwaValidation lets init run without hitting the live PWA
           # (CI shouldn't depend on production being reachable). The
           # generated android/ tree is overwritten by the keystore step
