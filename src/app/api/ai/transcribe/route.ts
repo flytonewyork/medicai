@@ -1,21 +1,32 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "~/lib/auth/require-session";
 
-// Voice-memo transcription. The browser records via MediaRecorder and
-// posts the resulting audio blob here as multipart/form-data; we hand
-// it to OpenAI Whisper and return the finalised text in one go. No
-// streaming, no interim results — the patient sees the transcript
-// once when it's ready.
+// Voice-memo transcription. Browser records via MediaRecorder, posts
+// the resulting audio blob here as multipart/form-data; we hand it
+// to OpenAI's gpt-4o-mini-transcribe with `stream=true` and proxy the
+// resulting SSE stream straight back to the client. Each SSE event is
+// append-only — the `transcript.text.delta` events deliver new text
+// chunks, not re-emitted overlapping ranges, so the client can
+// concatenate without any de-dup logic.
 //
-// Why Whisper not Claude: Anthropic's API doesn't accept audio input.
-// Whisper is the industry-standard speech-to-text endpoint, accepts
-// the same webm/opus blobs MediaRecorder produces, and supports the
-// two locales Anchor cares about (en, zh).
+// Why gpt-4o-mini-transcribe over whisper-1: whisper-1 doesn't stream,
+// so the patient stares at "Transcribing…" until the whole thing
+// returns. The mini variant streams (typically 0.5–2s to first word)
+// and is half the price ($0.003/min vs $0.006/min). Same accuracy
+// envelope as Whisper for short, conversational memos.
+//
+// Anthropic's API doesn't accept audio at all, so OpenAI is the only
+// surface for the actual speech-to-text step.
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MAX_AUDIO_BYTES = 25 * 1024 * 1024; // Whisper's hard limit.
+const MAX_AUDIO_BYTES = 25 * 1024 * 1024; // OpenAI's hard limit.
+
+const STREAMING_MODELS = new Set([
+  "gpt-4o-mini-transcribe",
+  "gpt-4o-transcribe",
+]);
 
 export async function POST(req: Request) {
   const auth = await requireSession();
@@ -49,10 +60,10 @@ export async function POST(req: Request) {
   const localeRaw = form.get("locale");
   const locale = localeRaw === "zh" ? "zh" : "en";
 
-  // Whisper expects a named file with an extension it recognises. The
-  // browser sends MIME types like `audio/webm;codecs=opus` — strip the
-  // codecs suffix and map to a sensible extension so the upload is
-  // accepted on every codec MediaRecorder picks.
+  const model =
+    process.env.OPENAI_TRANSCRIBE_MODEL?.trim() || "gpt-4o-mini-transcribe";
+  const wantsStream = STREAMING_MODELS.has(model);
+
   const mime = audio.type.split(";")[0]?.trim() || "audio/webm";
   const ext = mimeToExt(mime);
   const filename = `voice-memo.${ext}`;
@@ -63,47 +74,62 @@ export async function POST(req: Request) {
     new File([audio], filename, { type: mime }),
     filename,
   );
-  upload.append("model", "whisper-1");
+  upload.append("model", model);
   upload.append("language", locale);
-  upload.append("response_format", "json");
+  if (wantsStream) {
+    upload.append("stream", "true");
+    upload.append("response_format", "json");
+  } else {
+    upload.append("response_format", "json");
+  }
 
-  let res: Response;
+  let upstream: Response;
   try {
-    res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}` },
-      body: upload,
-    });
+    upstream = await fetch(
+      "https://api.openai.com/v1/audio/transcriptions",
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}` },
+        body: upload,
+      },
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: message }, { status: 502 });
   }
 
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
+  if (!upstream.ok) {
+    const detail = await upstream.text().catch(() => "");
     return NextResponse.json(
-      { error: detail || `Whisper returned ${res.status}` },
+      { error: detail || `Whisper returned ${upstream.status}` },
       { status: 502 },
     );
   }
 
-  const data = (await res.json()) as { text?: string };
+  // Streaming path — proxy the SSE body straight back to the browser.
+  // Setting cache-control no-cache here matters because some PWAs /
+  // CDNs would otherwise buffer or coalesce the event stream and
+  // defeat the live UX.
+  if (wantsStream && upstream.body) {
+    return new Response(upstream.body, {
+      status: 200,
+      headers: {
+        "content-type":
+          upstream.headers.get("content-type") ?? "text/event-stream",
+        "cache-control": "no-cache, no-transform",
+        "x-anchor-stream": "1",
+      },
+    });
+  }
+
+  // Non-streaming fallback (whisper-1 or any model not in the streaming
+  // set). Returns a plain JSON envelope the client unwraps without
+  // touching the SSE parser.
+  const data = (await upstream.json()) as { text?: string };
   const text = (data.text ?? "").trim();
   return NextResponse.json({ text });
 }
 
-// Read OPENAI_API_KEY out of the env and validate it. Returns either
-// the cleaned key or a NextResponse the caller can return directly.
-//
-// Why this exists: Vercel env values can pick up smart-quote
-// substitutions ("’" U+2019) when they're pasted from rich-text
-// sources (Notes, Notion, Slack). undici's fetch insists every
-// header value be ASCII / Latin-1, so a single curly char anywhere
-// in the key throws `TypeError: Cannot convert argument to a
-// ByteString…value of 8217`. The patient sees a cryptic error.
-// We trim, strip any UTF whitespace, and reject any non-ASCII byte
-// up-front with a message that points at the actual fix (rotate
-// the key without smart-quote rewrites).
 function readApiKey():
   | { key: string; error?: undefined }
   | { error: NextResponse; key?: undefined } {

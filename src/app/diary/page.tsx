@@ -238,6 +238,14 @@ function RecorderCard({
           </div>
         </div>
       </div>
+      {transcribing && voice.liveText && (
+        <div className="mt-3 rounded-md bg-paper-2/60 px-3 py-2 text-[13px] leading-relaxed text-ink-900">
+          <span className="text-ink-500 text-[10.5px] uppercase tracking-wider">
+            {locale === "zh" ? "正在识别" : "Live"}
+          </span>
+          <p className="mt-1 whitespace-pre-wrap">{voice.liveText}</p>
+        </div>
+      )}
       {voice.error && (
         <Alert variant="warn" role="alert" className="mt-3">
           {locale === "zh"

@@ -1,12 +1,13 @@
 import { db, now } from "~/lib/db/dexie";
 import { parseVoiceMemo } from "./parse";
+import { parseSseStream, readTranscriptionFrame } from "./sse";
 
-// Retry the Whisper transcription for a memo whose first attempt
-// failed (env-var glitch, network blip, OpenAI 5xx). Uses the audio
-// Blob already in `timeline_media`; falls back to fetching the cloud
-// copy if the local Blob has been pruned. On success, kicks the
-// Claude parser off behind the scenes so the preview lands on the
-// detail page automatically.
+// Retry transcription for a memo whose first attempt failed
+// (env-var glitch, network blip, OpenAI 5xx). Uses the audio Blob
+// already in `timeline_media`; the route streams the result back
+// via SSE, and as deltas arrive we patch the running text onto the
+// memo so the detail-view transcript card fills in word by word.
+// On completion, Claude parsing kicks off automatically.
 
 export async function retranscribeVoiceMemo(memoId: number): Promise<{
   ok: boolean;
@@ -31,6 +32,14 @@ export async function retranscribeVoiceMemo(memoId: number): Promise<{
   );
   form.append("locale", memo.locale);
 
+  // Clear any stale parse so the detail view's spinner reflects the
+  // re-parse that's coming up after the new text lands.
+  await db.voice_memos.update(memoId, {
+    transcript: "",
+    parsed_fields: undefined,
+    updated_at: now(),
+  });
+
   let res: Response;
   try {
     res = await fetch("/api/ai/transcribe", { method: "POST", body: form });
@@ -44,20 +53,42 @@ export async function retranscribeVoiceMemo(memoId: number): Promise<{
     const detail = await res.text().catch(() => "");
     return { ok: false, error: detail || `transcribe failed (${res.status})` };
   }
-  const data = (await res.json()) as { text?: string };
-  const text = (data.text ?? "").trim();
+
+  const isStream =
+    res.headers.get("x-anchor-stream") === "1" ||
+    (res.headers.get("content-type") ?? "").includes("text/event-stream");
+
+  let text = "";
+  if (isStream && res.body) {
+    let running = "";
+    let canonical = "";
+    for await (const frame of parseSseStream(res.body)) {
+      const evt = readTranscriptionFrame(frame);
+      if (!evt) continue;
+      if (evt.type === "delta") {
+        running += evt.text;
+        await db.voice_memos
+          .update(memoId, { transcript: running, updated_at: now() })
+          .catch(() => undefined);
+      } else if (evt.type === "done") {
+        canonical = evt.text;
+      }
+    }
+    text = (canonical || running).trim();
+  } else {
+    const data = (await res.json()) as { text?: string };
+    text = (data.text ?? "").trim();
+  }
+
   if (!text) {
-    return { ok: false, error: "Whisper returned an empty transcript" };
+    return { ok: false, error: "Transcription returned no text" };
   }
 
   await db.voice_memos.update(memoId, {
     transcript: text,
-    parsed_fields: undefined, // force a fresh parse against the new text
     updated_at: now(),
   });
 
-  // Fire the parser asynchronously — the patient sees the transcript
-  // immediately while Claude works in the background.
   void parseVoiceMemo(memoId).catch((err) => {
     // eslint-disable-next-line no-console
     console.warn("[voice-memo] parse after re-transcribe failed", err);
