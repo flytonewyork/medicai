@@ -43,6 +43,7 @@ export interface VoiceMemo {
 }
 
 export interface VoiceMemoParsedFields {
+  // ----- Daily-tracking flat fields (Slice 2) -----
   // Subjective 0–10 scales matching DailyEntry. Only set when the
   // patient verbalises a number or a clear qualitative anchor we can
   // map (e.g. "no pain at all" → 0, "really tired" → ~3 energy).
@@ -70,11 +71,96 @@ export interface VoiceMemoParsedFields {
   cold_dysaesthesia?: boolean;
   mouth_sores?: boolean;
   fever?: boolean;
-  // Free-form catch-all for things that don't map to a daily field
-  // (taste changes, food eaten, conversations had, mood notes).
+  // Free-form catch-all the Claude parser uses for one-off observations
+  // (a taste change, a food recalled, anything that didn't fit a
+  // structured field). Stays at top level so existing rows keep working.
   notes?: string;
-  // Confidence the parser had in the extraction. Low/medium results
-  // do not write to daily_entries even when fields are present —
-  // they only show on the memo card so the patient can confirm.
+
+  // ----- Slice 3: clinical content from clinic visits + scheduling -----
+  // Set by the server-side Claude parser when the transcript discusses
+  // a clinical event. These flow into `life_events`, `appointments`,
+  // etc. through the apply step (audited in `applied_patches`).
+  clinical?: VoiceMemoClinicalParse;
+
+  // ----- Slice 3: personal content (LOCAL ONLY — never synced) -----
+  // Filled by the on-device heuristic parser. The sync hook strips
+  // this field from the cloud_rows payload so personal content never
+  // leaves the device. Family interactions, food eaten, practice
+  // notes, mood narrative, goals — kept private to the recording
+  // device unless the patient explicitly promotes a detail elsewhere.
+  personal?: VoiceMemoPersonalParse;
+
+  // ----- Slice 3: audit trail of what got written -----
+  // Each row is one Dexie patch this memo applied (which table, which
+  // field, which value). The /memos detail view renders this so the
+  // patient can see exactly which forms the AI updated for them.
+  applied_patches?: AppliedPatch[];
+
+  // Confidence in the overall parse. Only `high` triggers daily_entries
+  // safe-fill; any value still appears on the memo card so the patient
+  // can verify and correct.
   confidence: "low" | "medium" | "high";
+}
+
+export interface VoiceMemoClinicalParse {
+  // The patient describing a clinic visit they just had. Captured as
+  // a `life_events` row (category = medical, is_memory = false) so the
+  // diary timeline picks it up.
+  clinic_visit?: {
+    visit_date?: string;        // ISO date — defaults to memo's recorded_at day
+    provider?: string;          // "A/Prof Sumitra Ananda" / "Sumi" / "苏米"
+    location?: string;
+    summary: string;            // 1–3 sentences of what happened
+    key_points?: string[];      // bulleted decisions / instructions
+  };
+  // The patient mentioning a scheduled appointment. One row per
+  // distinct appointment — repeated mentions of the same appointment
+  // collapse into one. Goes into the `appointments` table when the
+  // date+title look concrete; otherwise stays as a memo-only note.
+  appointments_mentioned?: Array<{
+    title: string;
+    starts_at?: string;         // ISO datetime when stated
+    location?: string;
+    doctor?: string;
+    prep?: string;              // "fasting 6 hours", "bring imaging CDs"
+    kind?: "clinic" | "chemo" | "scan" | "blood_test" | "procedure" | "other";
+    confidence: "low" | "medium" | "high";
+  }>;
+  // Treatments / medications the patient brought up. We don't auto-
+  // file medication_events here — adherence has its own surface — but
+  // the diary card surfaces what was discussed.
+  medications_mentioned?: Array<{
+    name: string;               // "Creon" / "gemcitabine" / "abraxane"
+    detail?: string;            // "took with lunch", "skipped dinner dose"
+  }>;
+}
+
+export interface VoiceMemoPersonalParse {
+  // Everything the on-device heuristic extractor recognises. None of
+  // these fields fan out to any other Dexie table — they live on the
+  // memo for the patient's own diary review.
+  food_mentions?: string[];     // free phrases — "two boiled eggs", "soup"
+  family_mentions?: string[];   // "called mum", "Catherine visited"
+  practice_mentions?: string[]; // "qigong this morning", "20 min meditation"
+  goals?: string[];             // "tomorrow I'll walk to the corner"
+  mood_narrative?: string;      // first sentence after "felt" / "感觉"
+  observations?: string;        // anything left over the heuristic kept
+}
+
+export interface AppliedPatch {
+  // Which Dexie table the memo wrote to.
+  table:
+    | "daily_entries"
+    | "life_events"
+    | "appointments";
+  // The local id of the row written or updated.
+  row_id: number;
+  // Fields touched on that row, with the value the memo supplied. We
+  // store the value (not just the field name) so the audit view shows
+  // exactly what the AI heard.
+  fields: Record<string, string | number | boolean | null>;
+  // "create" when this memo created the row; "update" when it merged
+  // into an existing row.
+  op: "create" | "update";
+  applied_at: string;
 }

@@ -1,7 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Mic, Pause, Play, CloudUpload, CloudOff } from "lucide-react";
+import {
+  Mic,
+  Pause,
+  Play,
+  CloudUpload,
+  CloudOff,
+  ChevronRight,
+  CheckCircle2,
+} from "lucide-react";
 import type { VoiceMemo, VoiceMemoParsedFields } from "~/types/voice-memo";
 import { resolveVoiceMemoAudioUrl } from "~/lib/voice-memo/cloud";
 import { Card } from "~/components/ui/card";
@@ -136,6 +145,9 @@ export function VoiceMemoCard({ memo, locale }: VoiceMemoCardProps) {
               locale={locale}
             />
           )}
+          {memo.id && (
+            <ReviewLink memo={memo} locale={locale} />
+          )}
           {error && (
             <p className="mt-1.5 text-[11px] text-[var(--warn)]">{error}</p>
           )}
@@ -164,6 +176,46 @@ function formatDuration(ms: number): string {
   const mins = Math.floor(total / 60);
   const secs = total % 60;
   return `${mins}:${String(secs).padStart(2, "0")}`;
+}
+
+function ReviewLink({
+  memo,
+  locale,
+}: {
+  memo: VoiceMemo;
+  locale: "en" | "zh";
+}) {
+  const parsed = memo.parsed_fields;
+  const applied = parsed?.applied_patches ?? [];
+  let label: string;
+  let icon: typeof ChevronRight = ChevronRight;
+  let className = "text-[var(--tide-2)]";
+  if (!parsed) {
+    label = locale === "zh" ? "查看录音" : "Open memo";
+    className = "text-ink-500";
+  } else if (applied.length > 0) {
+    label =
+      locale === "zh"
+        ? `已登入 ${applied.length} 项 · 查看`
+        : `Logged ${applied.length} item${applied.length === 1 ? "" : "s"} · view`;
+    icon = CheckCircle2;
+    className = "text-emerald-700";
+  } else {
+    label = locale === "zh" ? "审核并登入" : "Review and log";
+  }
+  const Icon = icon;
+  return (
+    <Link
+      href={`/memos/${memo.id}`}
+      className={cn(
+        "mt-2 inline-flex items-center gap-1 text-[11.5px] font-medium hover:underline",
+        className,
+      )}
+    >
+      <Icon className="h-3 w-3" aria-hidden />
+      {label}
+    </Link>
+  );
 }
 
 function ParsedFieldsRow({

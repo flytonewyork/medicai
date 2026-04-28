@@ -2,6 +2,34 @@ import { db } from "~/lib/db/dexie";
 import { enqueueSync } from "./queue";
 import { SYNCED_TABLES, type SyncedTable } from "./tables";
 
+// Per-table scrubbers run before a row is enqueued for cloud sync.
+// They strip fields that must not leave the device — today only the
+// `voice_memos.parsed_fields.personal` block, where on-device parsing
+// stores food / family / practice / mood content the patient never
+// asked us to ship to the cloud. Keep the registry narrow: anything
+// that needs scrubbing is a privacy decision worth eyeballing.
+const TABLE_SCRUBBERS: Partial<
+  Record<SyncedTable, (row: Record<string, unknown>) => Record<string, unknown>>
+> = {
+  voice_memos: (row) => {
+    const parsed = row.parsed_fields as
+      | { personal?: unknown; [key: string]: unknown }
+      | undefined;
+    if (!parsed || !("personal" in parsed)) return row;
+    const { personal: _omit, ...rest } = parsed;
+    return { ...row, parsed_fields: rest };
+  },
+};
+
+export function scrubForSync<T extends object>(
+  table: SyncedTable,
+  row: T,
+): T {
+  const fn = TABLE_SCRUBBERS[table];
+  if (!fn) return row;
+  return fn(row as unknown as Record<string, unknown>) as unknown as T;
+}
+
 let attached = false;
 
 // Attach Dexie `creating` / `updating` / `deleting` hooks to every synced
@@ -30,11 +58,15 @@ export function attachSyncHooks(): void {
     ) {
       this.onsuccess = (assignedKey: number) => {
         trans.on("complete", () => {
+          const data = scrubForSync(name as SyncedTable, {
+            ...(obj as object),
+            id: assignedKey,
+          });
           enqueueSync({
             kind: "upsert",
             table: name as SyncedTable,
             local_id: assignedKey,
-            data: { ...(obj as object), id: assignedKey },
+            data,
           });
         });
       };
@@ -51,7 +83,11 @@ export function attachSyncHooks(): void {
     ) {
       this.onsuccess = () => {
         trans.on("complete", () => {
-          const merged = { ...(obj as object), ...(mods as object), id: primKey };
+          const merged = scrubForSync(name as SyncedTable, {
+            ...(obj as object),
+            ...(mods as object),
+            id: primKey,
+          });
           enqueueSync({
             kind: "upsert",
             table: name as SyncedTable,

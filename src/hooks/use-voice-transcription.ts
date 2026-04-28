@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { persistVoiceMemo } from "~/lib/voice-memo/persist";
 import { uploadVoiceMemoAudio } from "~/lib/voice-memo/cloud";
-import { parseAndApplyVoiceMemo } from "~/lib/voice-memo/parse";
+import { parseVoiceMemo } from "~/lib/voice-memo/parse";
 import type { VoiceMemo } from "~/types/voice-memo";
 import type { EnteredBy } from "~/types/clinical";
 
@@ -234,7 +234,7 @@ export function useVoiceTranscription(
                   console.warn("[voice-memo] cloud upload failed", err);
                 });
                 if (parseAfterPersistRef.current) {
-                  void parseAndApplyVoiceMemo(memo_id).catch((err) => {
+                  void parseVoiceMemo(memo_id).catch((err) => {
                     // eslint-disable-next-line no-console
                     console.warn("[voice-memo] parse failed", err);
                   });
