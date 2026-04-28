@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useLocale, useL } from "~/hooks/use-translate";
-import { todayISO, localeTag } from "~/lib/utils/date";
+import { todayISO } from "~/lib/utils/date";
 import { postJson } from "~/lib/utils/http";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Field, Textarea } from "~/components/ui/field";
 import { Mic, MicOff, AlertCircle, Loader2, Phone } from "lucide-react";
 import type { IngestDraft } from "~/types/ingest";
+import { useVoiceTranscription } from "~/hooks/use-voice-transcription";
 
 // Quick-capture surface for phone-call instructions. The patient (or
 // the carer on the line) types or dictates what they just heard; the
@@ -16,53 +17,10 @@ import type { IngestDraft } from "~/types/ingest";
 // so the parser prioritises prep-instruction extraction and stamps
 // `info_source: "phone"` on every prep item.
 //
-// Voice capture uses the Web Speech API (webkitSpeechRecognition on
-// Safari). Hidden entirely when the browser doesn't support it so we
-// never render a button that can't work.
-
-type SR = (typeof window) extends { webkitSpeechRecognition: infer T }
-  ? T
-  : unknown;
-
-function getSpeechRecognitionCtor():
-  | (new () => SpeechRecognition)
-  | undefined {
-  if (typeof window === "undefined") return undefined;
-  const w = window as unknown as {
-    SpeechRecognition?: new () => SpeechRecognition;
-    webkitSpeechRecognition?: new () => SpeechRecognition;
-  };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition;
-}
-
-interface SpeechRecognitionEvent extends Event {
-  resultIndex: number;
-  results: SpeechRecognitionResultList;
-}
-interface SpeechRecognitionResultList {
-  readonly length: number;
-  [index: number]: SpeechRecognitionResult;
-}
-interface SpeechRecognitionResult {
-  readonly length: number;
-  [index: number]: SpeechRecognitionAlternative;
-  isFinal: boolean;
-}
-interface SpeechRecognitionAlternative {
-  transcript: string;
-  confidence: number;
-}
-interface SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  start(): void;
-  stop(): void;
-  abort(): void;
-  onresult: ((ev: SpeechRecognitionEvent) => void) | null;
-  onerror: ((ev: Event) => void) | null;
-  onend: (() => void) | null;
-}
+// Voice capture records audio with MediaRecorder and uploads it to
+// /api/ai/transcribe (Whisper) when the patient stops. The transcript
+// is appended to the textarea once — no streaming, so the patient
+// never sees mid-utterance text repeating.
 
 export function PhoneCallNote({
   onDraft,
@@ -74,61 +32,14 @@ export function PhoneCallNote({
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [listening, setListening] = useState(false);
-  const recRef = useRef<SpeechRecognition | null>(null);
-  // Canonical finalised transcript for the current dictation session.
-  // We rebuild this from `ev.results` on every event rather than
-  // appending a delta — Chrome and Safari both re-emit overlapping
-  // result indices, so an append-style accumulator double-counts and
-  // the patient sees their words repeat.
-  const finalRef = useRef("");
-  // The text already in the textarea when dictation starts. New
-  // dictated text gets appended after this baseline so we never
-  // overwrite typing from before dictation.
-  const baseTextRef = useRef("");
-  const canSpeech = typeof getSpeechRecognitionCtor() === "function";
 
-  useEffect(() => {
-    return () => {
-      recRef.current?.abort();
-      recRef.current = null;
-    };
-  }, []);
-
-  function startListening() {
-    const Ctor = getSpeechRecognitionCtor();
-    if (!Ctor) return;
-    const rec = new Ctor();
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.lang = localeTag(locale);
-    finalRef.current = "";
-    baseTextRef.current = text;
-    rec.onresult = (ev) => {
-      let finalText = "";
-      for (let i = 0; i < ev.results.length; i += 1) {
-        const res = ev.results[i];
-        if (res && res[0] && res.isFinal) finalText += res[0].transcript;
-      }
-      const trimmed = finalText.trim();
-      if (trimmed.length <= finalRef.current.length) return;
-      finalRef.current = trimmed;
-      const base = baseTextRef.current;
-      setText(base ? `${base} ${trimmed}` : trimmed);
-    };
-    rec.onerror = (e) => {
-      setError(String((e as unknown as { error?: string }).error ?? "speech-error"));
-      setListening(false);
-    };
-    rec.onend = () => setListening(false);
-    rec.start();
-    recRef.current = rec;
-    setListening(true);
-  }
-  function stopListening() {
-    recRef.current?.stop();
-    setListening(false);
-  }
+  const voice = useVoiceTranscription({
+    locale,
+    onTranscribed: (chunk) =>
+      setText((cur) => (cur ? `${cur} ${chunk}` : chunk)),
+  });
+  const recording = voice?.status === "recording";
+  const transcribing = voice?.status === "transcribing";
 
   async function submit() {
     if (!text.trim()) return;
@@ -176,27 +87,35 @@ export function PhoneCallNote({
               "e.g. Sumi called — PET CT tomorrow 7am at Epworth Freemasons, 6-hour strict fast. Liver biopsy Tuesday 10am, fasting. Chemo Wednesday, prep to come.",
               "例如：Sumi 来电，明天 7 点 Epworth Freemasons PET CT，6 小时严格禁食。周二 10 点肝活检，需禁食。周三化疗，准备事项稍后告知。",
             )}
-            disabled={busy}
+            disabled={busy || recording}
           />
         </Field>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={submit} disabled={busy || !text.trim()}>
+          <Button onClick={submit} disabled={busy || !text.trim() || recording || transcribing}>
             {busy
               ? L("Reading…", "正在识别…")
               : L("Save", "保存")}
           </Button>
-          {canSpeech && (
+          {voice && (
             <Button
-              variant={listening ? "danger" : "secondary"}
-              onClick={listening ? stopListening : startListening}
-              disabled={busy}
+              variant={recording ? "danger" : "secondary"}
+              onClick={() => {
+                if (recording) voice.stop();
+                else void voice.start();
+              }}
+              disabled={busy || transcribing}
               size="md"
             >
-              {listening ? (
+              {recording ? (
                 <>
                   <MicOff className="h-3.5 w-3.5" />
                   {L("Stop dictating", "停止口述")}
+                </>
+              ) : transcribing ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {L("Transcribing…", "识别中…")}
                 </>
               ) : (
                 <>
@@ -214,13 +133,13 @@ export function PhoneCallNote({
           )}
         </div>
 
-        {error && (
+        {(error || voice?.error) && (
           <div
             role="alert"
             className="flex items-start gap-2 rounded-md border border-[var(--warn)]/40 bg-[var(--warn)]/10 p-2.5 text-[12.5px] text-[var(--warn)]"
           >
             <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span>{error}</span>
+            <span>{error ?? voice?.error}</span>
           </div>
         )}
       </CardContent>
