@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabaseServer } from "~/lib/supabase/server";
+import { requireSupabaseUser } from "~/lib/auth/require-supabase-user";
 
 // POST: delete the subscription row matching { user_id, endpoint }.
 // The client calls this after PushSubscription.unsubscribe() so the
@@ -12,17 +12,9 @@ interface RequestBody {
 }
 
 export async function POST(req: Request) {
-  const sb = getSupabaseServer();
-  if (!sb) {
-    return NextResponse.json(
-      { error: "Supabase is not configured." },
-      { status: 503 },
-    );
-  }
-  const { data: auth } = await sb.auth.getUser();
-  if (!auth.user) {
-    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
-  }
+  const auth = await requireSupabaseUser();
+  if (!auth.ok) return auth.error;
+  const { user, sb } = auth.data;
 
   let body: RequestBody;
   try {
@@ -37,7 +29,7 @@ export async function POST(req: Request) {
   const { error } = await sb
     .from("push_subscriptions")
     .delete()
-    .eq("user_id", auth.user.id)
+    .eq("user_id", user.id)
     .eq("endpoint", body.endpoint);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

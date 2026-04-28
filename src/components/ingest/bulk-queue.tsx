@@ -15,10 +15,11 @@ import {
   ScanText,
   Eye,
 } from "lucide-react";
+import type { LocalizedText } from "~/types/localized";
 
 const STATUS_META: Record<
   BulkItem["status"],
-  { label: { en: string; zh: string }; tone: string; icon: React.ComponentType<{ className?: string }> }
+  { label: LocalizedText; tone: string; icon: React.ComponentType<{ className?: string }> }
 > = {
   queued: {
     label: { en: "Queued", zh: "排队" },

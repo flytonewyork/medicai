@@ -19,26 +19,27 @@
 
 import { todayISO } from "~/lib/utils/date";
 import type { DailyEntry, LabResult } from "~/types/clinical";
+import type { LocalizedText } from "~/types/localized";
 
 export type DirectFileResult =
   | {
       kind: "lab";
       date: string;
       patch: Partial<LabResult> & { date: string; source: "patient_self_report" };
-      summary: { en: string; zh: string };
+      summary: LocalizedText;
       icon: "lab";
     }
   | {
       kind: "daily";
       date: string;
       patch: Partial<DailyEntry>;
-      summary: { en: string; zh: string };
+      summary: LocalizedText;
       icon: "daily";
     };
 
 const DAY_PART_RE = /\b(this morning|morning|am|afternoon|pm|evening|tonight|today|now)\b/i;
 
-function timeOfDay(text: string): { en: string; zh: string } {
+function timeOfDay(text: string): LocalizedText {
   const m = DAY_PART_RE.exec(text);
   const hit = m?.[1]?.toLowerCase();
   if (!hit) return { en: "today", zh: "今日" };

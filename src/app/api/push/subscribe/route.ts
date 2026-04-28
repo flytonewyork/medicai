@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabaseServer } from "~/lib/supabase/server";
+import { requireSupabaseUser } from "~/lib/auth/require-supabase-user";
 
 // POST: upsert a PushSubscription for the current user + device.
 // The body shape mirrors what PushSubscription.toJSON() produces on
@@ -16,17 +16,9 @@ interface RequestBody {
 }
 
 export async function POST(req: Request) {
-  const sb = getSupabaseServer();
-  if (!sb) {
-    return NextResponse.json(
-      { error: "Supabase is not configured." },
-      { status: 503 },
-    );
-  }
-  const { data: auth } = await sb.auth.getUser();
-  if (!auth.user) {
-    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
-  }
+  const auth = await requireSupabaseUser();
+  if (!auth.ok) return auth.error;
+  const { user, sb } = auth.data;
 
   let body: RequestBody;
   try {
@@ -45,7 +37,7 @@ export async function POST(req: Request) {
     .from("push_subscriptions")
     .upsert(
       {
-        user_id: auth.user.id,
+        user_id: user.id,
         endpoint: body.endpoint,
         p256dh: body.keys.p256dh,
         auth: body.keys.auth,

@@ -21,6 +21,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import type { LocalizedText } from "~/types/localized";
 
 // Shows every cross-module record an appointment is linked to. A
 // chemo appointment → its treatment cycle; a blood-test appointment
@@ -47,7 +48,7 @@ const KIND_ICON: Record<
 
 const KIND_LABEL: Record<
   AppointmentLinkedRecordKind,
-  { en: string; zh: string }
+  LocalizedText
 > = {
   treatment_cycle: { en: "Cycle", zh: "疗程" },
   lab_result: { en: "Lab", zh: "化验" },

@@ -12,6 +12,7 @@ import { cn } from "~/lib/utils/cn";
 import { localeTag } from "~/lib/utils/date";
 import { Card, CardContent } from "~/components/ui/card";
 import { Stethoscope, RotateCcw } from "lucide-react";
+import type { LocalizedText } from "~/types/localized";
 
 const TAG_STYLE: Record<SymptomTag, string> = {
   pdac: "bg-[var(--tide-soft)] text-[var(--tide-2)]",
@@ -21,7 +22,7 @@ const TAG_STYLE: Record<SymptomTag, string> = {
   safety: "bg-[var(--warn-soft)] text-[var(--warn)]",
 };
 
-const TAG_LABEL: Record<SymptomTag, { en: string; zh: string }> = {
+const TAG_LABEL: Record<SymptomTag, LocalizedText> = {
   pdac: { en: "PDAC", zh: "胰腺癌" },
   chemo: { en: "Chemo", zh: "化疗" },
   gnp: { en: "GnP", zh: "GnP" },

@@ -33,6 +33,7 @@ import {
   PencilLine,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import type { LocalizedText } from "~/types/localized";
 
 const OP_ICON: Record<IngestOpKind, React.ComponentType<{ className?: string }>> = {
   add_appointment: CalendarPlus,
@@ -51,7 +52,7 @@ const OP_ICON: Record<IngestOpKind, React.ComponentType<{ className?: string }>>
   update_settings: SettingsIcon,
 };
 
-const OP_LABEL: Record<IngestOpKind, { en: string; zh: string }> = {
+const OP_LABEL: Record<IngestOpKind, LocalizedText> = {
   add_appointment: { en: "New appointment", zh: "新增预约" },
   update_appointment: { en: "Update appointment", zh: "更新预约" },
   add_lab_result: { en: "New lab result", zh: "新增化验结果" },

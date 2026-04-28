@@ -21,6 +21,7 @@ import {
 } from "~/lib/ingest/meal-vision";
 import { todayISO } from "~/lib/utils/date";
 import { Sparkles, Check, Loader2 } from "lucide-react";
+import type { LocalizedText } from "~/types/localized";
 
 export default function MealIngestPage() {
   const locale = useLocale();
@@ -250,7 +251,7 @@ function MealResult({
   onDiscard: () => void;
   saving: boolean;
 }) {
-  const confidenceLabel: Record<MealEstimate["confidence"], { en: string; zh: string }> = {
+  const confidenceLabel: Record<MealEstimate["confidence"], LocalizedText> = {
     low: { en: "low confidence", zh: "置信度低" },
     medium: { en: "medium confidence", zh: "置信度中" },
     high: { en: "high confidence", zh: "置信度高" },

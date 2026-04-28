@@ -30,8 +30,9 @@ import {
   Keyboard,
 } from "lucide-react";
 import { useVoiceTranscription } from "~/hooks/use-voice-transcription";
+import type { LocalizedText } from "~/types/localized";
 
-const TAG_LABELS: Record<LogTag, { en: string; zh: string }> = {
+const TAG_LABELS: Record<LogTag, LocalizedText> = {
   diet: { en: "diet", zh: "饮食" },
   toxicity: { en: "toxicity", zh: "毒性反应" },
   physical: { en: "physical", zh: "活动" },
@@ -51,7 +52,7 @@ const TAG_LABELS: Record<LogTag, { en: string; zh: string }> = {
   legacy_session: { en: "legacy session", zh: "传承" },
 };
 
-const AGENT_LABELS: Record<AgentId, { en: string; zh: string }> = {
+const AGENT_LABELS: Record<AgentId, LocalizedText> = {
   nutrition: { en: "nutrition", zh: "营养" },
   toxicity: { en: "toxicity", zh: "毒性反应" },
   clinical: { en: "clinical", zh: "临床" },
@@ -67,7 +68,7 @@ type RunState =
   | { kind: "done"; ran: AgentId[]; failed: AgentId[] }
   | {
       kind: "filed";
-      summary: { en: string; zh: string };
+      summary: LocalizedText;
       target: "lab" | "daily";
       rowId: number;
       filed: DirectFileResult;

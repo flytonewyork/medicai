@@ -24,10 +24,11 @@ import {
   Minus,
   Clock,
 } from "lucide-react";
+import type { LocalizedText } from "~/types/localized";
 
 const CATEGORY_META: Record<
   TestCategory,
-  { icon: React.ComponentType<{ className?: string }>; label: { en: string; zh: string } }
+  { icon: React.ComponentType<{ className?: string }>; label: LocalizedText }
 > = {
   physical: { icon: HeartPulse, label: { en: "Physical", zh: "身体" } },
   symptoms: { icon: AlertCircle, label: { en: "Symptoms", zh: "症状" } },

@@ -8,8 +8,9 @@ import { Card, CardContent } from "~/components/ui/card";
 import { DRUG_REGISTRY } from "~/config/drug-registry";
 import { ChevronRight } from "lucide-react";
 import type { MedicationCategory, DrugInfo } from "~/types/medication";
+import type { LocalizedText } from "~/types/localized";
 
-const CATEGORY_LABELS: Record<MedicationCategory, { en: string; zh: string }> = {
+const CATEGORY_LABELS: Record<MedicationCategory, LocalizedText> = {
   chemo: { en: "Chemotherapy", zh: "化疗" },
   targeted: { en: "Targeted / Investigational", zh: "靶向 / 试验性" },
   immunotherapy: { en: "Immunotherapy", zh: "免疫治疗" },

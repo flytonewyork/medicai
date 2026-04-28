@@ -16,6 +16,7 @@ import {
   Info,
   X,
 } from "lucide-react";
+import type { LocalizedText } from "~/types/localized";
 
 const CATEGORY_ICON: Record<
   NudgeCategory,
@@ -32,7 +33,7 @@ const CATEGORY_ICON: Record<
   intimacy: Heart,
 };
 
-const CATEGORY_LABEL: Record<NudgeCategory, { en: string; zh: string }> = {
+const CATEGORY_LABEL: Record<NudgeCategory, LocalizedText> = {
   diet: { en: "Diet", zh: "饮食" },
   hygiene: { en: "Hygiene", zh: "卫生" },
   exercise: { en: "Exercise", zh: "运动" },

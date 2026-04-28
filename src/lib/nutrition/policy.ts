@@ -1,5 +1,6 @@
 import type { DailyEntry, Settings } from "~/types/clinical";
 import type { Citation } from "./sources";
+import type { LocalizedText } from "~/types/localized";
 
 // Carb-policy state machine. The /nutrition/guide page in Anchor
 // historically advocated relaxed-keto (≤ 50 g net carbs/day) per the
@@ -24,14 +25,14 @@ export type PolicyTriggerKind =
 
 export interface PolicyTrigger {
   kind: PolicyTriggerKind;
-  detail: { en: string; zh: string };
+  detail: LocalizedText;
   citations: Citation[];
 }
 
 export interface NutritionPolicyState {
   mode: NutritionMode;
   triggers: PolicyTrigger[];
-  rationale: { en: string; zh: string };
+  rationale: LocalizedText;
 }
 
 export interface PolicyInputs {

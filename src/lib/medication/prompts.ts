@@ -11,12 +11,12 @@
 import type {
   DrugInfo,
   DrugReference,
-  LocalizedText,
   Medication,
   MedicationPromptEvent,
   ReferenceSource,
 } from "~/types/medication";
 import type { ProtocolId, TreatmentCycle } from "~/types/treatment";
+import type { LocalizedText } from "~/types/localized";
 
 export interface PromptCitation {
   label: string;

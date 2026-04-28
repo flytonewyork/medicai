@@ -3,10 +3,8 @@ import { z } from "zod";
 import { parsedAppointmentSchema } from "~/lib/appointments/schema";
 import {
   DEFAULT_AI_MODEL,
-  getAnthropicClient,
-  readJsonBody,
+  createClaudeRoute,
 } from "~/lib/anthropic/route-helpers";
-import { requireSession } from "~/lib/auth/require-session";
 import { wrapUserInputBlock } from "~/lib/anthropic/wrap-user-input";
 
 // Server-side vision/text parser for appointment letters, cards, and
@@ -61,14 +59,8 @@ Fields:
 
 Return nothing for fields you can't see. Never fabricate. If the input clearly isn't an appointment, still return an object but with confidence "low" and title="Unable to parse".`;
 
-export async function POST(req: Request) {
-  const auth = await requireSession();
-  if (!auth.ok) return auth.error;
-
-  const json = await readJsonBody<unknown>(req);
-  if (json.error) return json.error;
-
-  const parsed = RequestSchema.safeParse(json.body);
+export const POST = createClaudeRoute<unknown>(async ({ body, client }) => {
+  const parsed = RequestSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Invalid request", detail: parsed.error.flatten() },
@@ -82,9 +74,6 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-
-  const gate = getAnthropicClient();
-  if (gate.error) return gate.error;
 
   const { jsonOutputFormat } = await import("~/lib/anthropic/json-output");
 
@@ -123,7 +112,7 @@ export async function POST(req: Request) {
   });
 
   try {
-    const response = await gate.client.messages.parse({
+    const response = await client.messages.parse({
       model: process.env.ANTHROPIC_LOG_MODEL || DEFAULT_AI_MODEL,
       max_tokens: 800,
       system: [
@@ -150,7 +139,7 @@ export async function POST(req: Request) {
       { status: 502 },
     );
   }
-}
+});
 
 function stripDataUrlPrefix(b64: string): string {
   const marker = "base64,";

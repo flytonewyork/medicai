@@ -2,15 +2,13 @@ import { NextResponse } from "next/server";
 import { jsonOutputFormat } from "~/lib/anthropic/json-output";
 import {
   DEFAULT_AI_MODEL,
-  getAnthropicClient,
-  readJsonBody,
+  createClaudeRoute,
   withAnthropicErrorBoundary,
 } from "~/lib/anthropic/route-helpers";
 import {
   ParsedMealSchema,
   buildNutritionSystem,
 } from "~/lib/nutrition/parser-schema";
-import { requireSession } from "~/lib/auth/require-session";
 import { loadHouseholdProfile } from "~/lib/household/profile";
 import { wrapUserInput } from "~/lib/anthropic/wrap-user-input";
 import type { PreparedImage } from "~/lib/ingest/image";
@@ -32,17 +30,7 @@ interface TextBody {
 }
 type RequestBody = PhotoBody | TextBody;
 
-export async function POST(req: Request) {
-  const auth = await requireSession();
-  if (!auth.ok) return auth.error;
-
-  const gate = getAnthropicClient();
-  if (gate.error) return gate.error;
-
-  const parsed = await readJsonBody<RequestBody>(req);
-  if (parsed.error) return parsed.error;
-  const body = parsed.body;
-
+export const POST = createClaudeRoute<RequestBody>(async ({ body, client, session }) => {
   if (!body || (body.kind !== "photo" && body.kind !== "text")) {
     return NextResponse.json(
       { error: "kind must be 'photo' or 'text'" },
@@ -56,14 +44,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "text required" }, { status: 400 });
   }
 
-  const profile = await loadHouseholdProfile(auth.session.household_id);
+  const profile = await loadHouseholdProfile(session.household_id);
   const localeNote =
     body.locale === "zh"
       ? "Reply in English keys, but populate name_zh for every item."
       : "name_zh is optional; only populate when obvious (e.g. Chinese dish).";
 
   const result = await withAnthropicErrorBoundary(() =>
-    gate.client.messages.parse({
+    client.messages.parse({
       model: body.model ?? DEFAULT_AI_MODEL,
       max_tokens: 1500,
       system: [
@@ -120,4 +108,4 @@ export async function POST(req: Request) {
     );
   }
   return NextResponse.json({ result: result.value.parsed_output });
-}
+});

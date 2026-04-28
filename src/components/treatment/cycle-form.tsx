@@ -9,6 +9,7 @@ import { Button } from "~/components/ui/button";
 import { Field, TextInput } from "~/components/ui/field";
 import { cn } from "~/lib/utils/cn";
 import type { CycleStatus, ProtocolId, TreatmentCycle } from "~/types/treatment";
+import type { LocalizedText } from "~/types/localized";
 
 export interface CycleFormValues {
   protocol_id: ProtocolId;
@@ -28,7 +29,7 @@ const STATUSES: CycleStatus[] = [
   "cancelled",
 ];
 
-const STATUS_LABEL: Record<CycleStatus, { en: string; zh: string }> = {
+const STATUS_LABEL: Record<CycleStatus, LocalizedText> = {
   planned: { en: "Planned", zh: "已计划" },
   active: { en: "Active", zh: "进行中" },
   completed: { en: "Completed", zh: "已完成" },
@@ -43,7 +44,7 @@ export function CycleForm({
   onCancel,
 }: {
   initial?: TreatmentCycle;
-  submitLabel: { en: string; zh: string };
+  submitLabel: LocalizedText;
   onSubmit: (values: CycleFormValues) => Promise<void>;
   onCancel?: () => void;
 }) {

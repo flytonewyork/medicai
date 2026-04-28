@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 import { format, parseISO } from "date-fns";
+import type { LocalizedText } from "~/types/localized";
 
 type Filter = "all" | "open" | "resolved";
 
@@ -291,7 +292,7 @@ function SignalHistoryRow({
 
 function StatusBadge({ status }: { status: ChangeSignalRow["status"] }) {
   const locale = useLocale();
-  const labels: Record<ChangeSignalRow["status"], { en: string; zh: string }> = {
+  const labels: Record<ChangeSignalRow["status"], LocalizedText> = {
     open: { en: "OPEN", zh: "未结" },
     acknowledged: { en: "ACK", zh: "已知" },
     dismissed: { en: "DISMISSED", zh: "关闭" },
@@ -317,7 +318,7 @@ function StatusBadge({ status }: { status: ChangeSignalRow["status"] }) {
 
 const EVENT_KIND_LABEL: Record<
   SignalEventKind,
-  { en: string; zh: string }
+  LocalizedText
 > = {
   emitted: { en: "signal emitted", zh: "信号触发" },
   acknowledged: { en: "acknowledged", zh: "已知" },

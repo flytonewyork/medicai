@@ -6,20 +6,21 @@ import { highestZone } from "~/lib/rules/engine";
 import { useLocale } from "~/hooks/use-translate";
 import type { Zone } from "~/types/clinical";
 import { cn } from "~/lib/utils/cn";
+import type { LocalizedText } from "~/types/localized";
 
 // A calm, one-line status banner for the family surface. Reads all open
 // zone_alerts, picks the highest, and renders a measured sentence — no
 // stacked alerts, no rule ids, no agent output. Family members just need
 // to know "is dad OK right now".
 
-const LABEL: Record<Zone, { en: string; zh: string }> = {
+const LABEL: Record<Zone, LocalizedText> = {
   green: { en: "Stable", zh: "稳定" },
   yellow: { en: "Review needed", zh: "需要复核" },
   orange: { en: "Urgent review", zh: "紧急复核" },
   red: { en: "Immediate action", zh: "立即处理" },
 };
 
-const DETAIL: Record<Zone, { en: string; zh: string }> = {
+const DETAIL: Record<Zone, LocalizedText> = {
   green: {
     en: "Nothing urgent right now.",
     zh: "目前没有紧急情况。",

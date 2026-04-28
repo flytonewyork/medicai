@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import {
+  requireSession,
+  type RequireSessionResult,
+} from "~/lib/auth/require-session";
 
 export { DEFAULT_AI_MODEL } from "./model";
 
@@ -60,4 +64,38 @@ export async function withAnthropicErrorBoundary<T>(
       error: NextResponse.json({ error: message }, { status: 502 }),
     };
   }
+}
+
+export interface ClaudeRouteContext<TBody> {
+  body: TBody;
+  client: Anthropic;
+  session: RequireSessionResult;
+  req: Request;
+}
+
+// Composes the three gates every Claude-backed route runs: requireSession()
+// (401 / 503), getAnthropicClient() (503), readJsonBody() (400). The handler
+// receives the parsed body, an authenticated client, and the session — no
+// try/catch, no early-return ladder. Validation of body shape stays inside
+// the handler since each route has different requirements.
+export function createClaudeRoute<TBody>(
+  handler: (ctx: ClaudeRouteContext<TBody>) => Promise<Response>,
+): (req: Request) => Promise<Response> {
+  return async (req) => {
+    const auth = await requireSession();
+    if (!auth.ok) return auth.error;
+
+    const gate = getAnthropicClient();
+    if (gate.error) return gate.error;
+
+    const parsed = await readJsonBody<TBody>(req);
+    if (parsed.error) return parsed.error;
+
+    return handler({
+      body: parsed.body,
+      client: gate.client,
+      session: auth.session,
+      req,
+    });
+  };
 }
