@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "~/lib/auth/require-session";
 
 // Voice-memo transcription. Browser records via MediaRecorder, posts
 // the resulting audio blob here as multipart/form-data; we hand it
@@ -17,6 +16,14 @@ import { requireSession } from "~/lib/auth/require-session";
 //
 // Anthropic's API doesn't accept audio at all, so OpenAI is the only
 // surface for the actual speech-to-text step.
+//
+// Auth: this route does NOT require a signed-in Supabase session.
+// Voice memos are foundational for dad's diary, and the project is
+// local-first (per middleware.ts and CLAUDE.md): the app must work
+// before the patient ever signs in. The OpenAI key is bounded by
+// the standard per-account rate limits, and the app is single-
+// household by design — IP-level rate limiting would be the right
+// hardening if this ever sits behind a public URL.
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -29,9 +36,6 @@ const STREAMING_MODELS = new Set([
 ]);
 
 export async function POST(req: Request) {
-  const auth = await requireSession();
-  if (!auth.ok) return auth.error;
-
   const apiKeyResult = readApiKey();
   if (apiKeyResult.error) return apiKeyResult.error;
   const apiKey = apiKeyResult.key;
