@@ -15,14 +15,23 @@ import type {
 // while loading so components can fall back; null when the user is
 // signed out or Supabase isn't configured.
 //
-// Has a hard 4-second loading-resolve timeout: if the underlying
-// Supabase calls don't finish (poor network on Capacitor / iOS, a
-// hung WebView fetch, expired session that's mid-refresh), we flip
-// any still-undefined values to null instead of leaving the UI on a
-// permanent loading spinner. The next call to refresh() (e.g. after
-// auth state change) will retry. This is a UX safety net, not a
-// correctness boundary — the actual auth check is server-side RLS.
-const LOAD_TIMEOUT_MS = 4000;
+// Two correctness notes:
+//   1. `membership` and `profile` resolve INDEPENDENTLY — we don't
+//      Promise.all them. Either query can be slow on its own (e.g.,
+//      profiles RLS doing a household-membership join), and gating
+//      both fields on the slower of the two used to keep the
+//      dashboard on a blank "return null" branch for seconds at a
+//      time. Resolving each as it lands cuts worst-case blank
+//      windows roughly in half.
+//   2. There's a hard 1.5-second loading-resolve timeout for any
+//      field still undefined: if Supabase queries don't finish
+//      (poor network on Capacitor / iOS, a hung WebView fetch,
+//      expired session that's mid-refresh), we flip undefined → null
+//      instead of leaving the UI on a permanent loading spinner.
+//      The next call to refresh() (e.g. after auth state change)
+//      will retry. This is a UX safety net, not a correctness
+//      boundary — the actual auth check is server-side RLS.
+const LOAD_TIMEOUT_MS = 1500;
 
 export function useHousehold(): {
   membership: HouseholdMembership | null | undefined;
@@ -35,12 +44,15 @@ export function useHousehold(): {
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
 
   const load = async () => {
-    const [m, p] = await Promise.all([
-      getCurrentMembership().catch(() => null),
-      getCurrentProfile().catch(() => null),
-    ]);
-    setMembership(m);
-    setProfile(p);
+    // Fire-and-forget each query so the faster one updates state
+    // immediately. Errors are caught individually; failure of one
+    // never delays the other.
+    void getCurrentMembership()
+      .catch(() => null)
+      .then(setMembership);
+    void getCurrentProfile()
+      .catch(() => null)
+      .then(setProfile);
   };
 
   useEffect(() => {
@@ -70,6 +82,8 @@ export function useHousehold(): {
     membership,
     profile,
     loading: membership === undefined || profile === undefined,
-    refresh: load,
+    refresh: async () => {
+      await load();
+    },
   };
 }

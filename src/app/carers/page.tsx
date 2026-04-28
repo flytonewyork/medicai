@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useAuthSession } from "~/hooks/use-auth-session";
 import { useHousehold } from "~/hooks/use-household";
 import {
   ensureHouseholdForCurrentUser,
+  ensureProfileForCurrentUser,
   friendlyInviteError,
   getHousehold,
   listHouseholdMembers,
@@ -57,7 +59,17 @@ export default function CarersPage() {
   const L = useL();
   const searchParams = useSearchParams();
   const settings = useSettings();
-  const { membership, profile, loading, refresh } = useHousehold();
+  // Auth check goes through useAuthSession (session-direct) rather
+  // than `profile != null` on useHousehold. A signed-in user CAN
+  // legitimately have profile=null (the handle_new_user trigger never
+  // fired, the row was wiped in dev, or the 4-second useHousehold
+  // timeout flipped it from undefined to null). We were mis-classifying
+  // those users as signed-out and showing them the "Sign in to invite"
+  // CTA — which then bounced through middleware that wiped the next=
+  // param, dropping them on the dashboard.
+  const session = useAuthSession();
+  const { membership, profile, loading: householdLoading, refresh } =
+    useHousehold();
   const householdId = membership?.household_id ?? null;
   const canInvite =
     membership?.role === "primary_carer" || membership?.role === "patient";
@@ -68,6 +80,7 @@ export default function CarersPage() {
   const [invites, setInvites] = useState<HouseholdInvite[]>([]);
   const [showInviteFlow, setShowInviteFlow] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
+  const [healingProfile, setHealingProfile] = useState(false);
   // Bootstrap state for the "I signed in but have no household" branch.
   // The /carers page is the natural home for this: a user who lands
   // here is asking to grow their team, so creating their household is
@@ -79,6 +92,41 @@ export default function CarersPage() {
 
   const patientName =
     settings?.profile_name?.trim() || profile?.display_name?.trim() || "";
+
+  // Auto-heal a missing profile. If we have a session but the profiles
+  // row is null (trigger didn't fire, dev DB reset, etc.), upsert one
+  // using the local Dexie display name so subsequent lookups work and
+  // the rest of the app's profile-gated UI starts rendering correctly.
+  // Idempotent — fires once per mount and only when the gap exists.
+  useEffect(() => {
+    if (!session?.signedIn) return;
+    if (householdLoading) return;
+    if (profile) return;
+    if (healingProfile) return;
+    setHealingProfile(true);
+    void (async () => {
+      try {
+        await ensureProfileForCurrentUser({
+          displayName: patientName || undefined,
+          locale,
+        });
+        await refresh();
+      } catch {
+        // Best-effort. The page still renders the signed-in branches
+        // because the gate is session-based now, not profile-based.
+      } finally {
+        setHealingProfile(false);
+      }
+    })();
+  }, [
+    healingProfile,
+    householdLoading,
+    locale,
+    patientName,
+    profile,
+    refresh,
+    session?.signedIn,
+  ]);
 
   const reload = useCallback(async () => {
     if (!householdId) {
@@ -134,11 +182,14 @@ export default function CarersPage() {
   // with `?action=add-carer`. We bootstrap the household if needed and
   // auto-open the invite flow so the click that started this journey
   // ("Add carer") doesn't have to be repeated. Runs once per mount.
+  // The gate is session-based (not profile-based) so a signed-in user
+  // with a missing profiles row still flows through.
   useEffect(() => {
     if (autoOpenedFromQuery) return;
-    if (loading) return;
+    if (householdLoading) return;
+    if (session === undefined) return;
     if (searchParams?.get("action") !== "add-carer") return;
-    if (!profile) return;
+    if (!session.signedIn) return;
     void (async () => {
       if (!membership) {
         const id = await bootstrapHousehold();
@@ -150,10 +201,10 @@ export default function CarersPage() {
   }, [
     autoOpenedFromQuery,
     bootstrapHousehold,
-    loading,
+    householdLoading,
     membership,
-    profile,
     searchParams,
+    session,
   ]);
 
   const activeInvites = invites.filter(
@@ -225,14 +276,14 @@ export default function CarersPage() {
             </p>
           </CardContent>
         </Card>
-      ) : loading ? (
+      ) : session === undefined || householdLoading ? (
         <Card>
           <CardContent className="flex items-center gap-2 pt-5 text-[12.5px] text-ink-500">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             {L("Checking your account…", "正在检查账号…")}
           </CardContent>
         </Card>
-      ) : !profile ? (
+      ) : !session.signedIn ? (
         <Card className="border-[var(--tide-2)]/40 bg-[var(--tide-soft)]">
           <CardContent className="space-y-3 pt-5 text-[13px]">
             <div className="flex items-center gap-2 text-ink-900">
@@ -252,6 +303,13 @@ export default function CarersPage() {
                 {L("Sign in to invite", "登录后邀请")}
               </Button>
             </Link>
+            {/* Diagnostic block. The page is gated on session.signedIn,
+                which reads the Supabase session straight from local
+                storage / cookies. If the user is convinced they're
+                signed in but the gate disagrees, the actual values
+                here tell us exactly which signal is wrong. Toggle off
+                once we trust the surface. */}
+            <SessionDiag />
           </CardContent>
         </Card>
       ) : !membership || !householdId ? (
@@ -365,7 +423,7 @@ export default function CarersPage() {
             ) : (
               <MembersList
                 members={members}
-                currentUserId={profile.id}
+                currentUserId={profile?.id ?? session?.userId ?? null}
                 isPrimary={Boolean(isPrimary)}
                 householdId={householdId}
                 onChanged={reload}
@@ -402,5 +460,92 @@ export default function CarersPage() {
         </Link>
       </section>
     </div>
+  );
+}
+
+// Inline diagnostic for the "Sign in to invite" branch on /carers.
+// Reads the Supabase session directly (separate from useAuthSession's
+// state to avoid a chicken-and-egg with the gate it controls) and
+// dumps a plain-text summary the user can read or screenshot.
+//
+// The bug we keep chasing: a user is convinced they're signed in but
+// the gate disagrees. The only way to distinguish the real cause
+// (cookies cleared / cross-origin session / expired token / browser
+// extension blocking storage) is to see what getSession actually
+// returns in their browser. Self-contained — no props.
+function SessionDiag() {
+  const [info, setInfo] = useState<string[]>(["resolving…"]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const lines: string[] = [];
+      try {
+        const { isSupabaseConfigured: isCfg, getSupabaseBrowser: getSb } =
+          await import("~/lib/supabase/client");
+        lines.push(`supabase configured: ${isCfg() ? "yes" : "no"}`);
+        // Local storage probe — surfaces "blocked by browser /
+        // private mode" cases that silently break Supabase JS auth.
+        try {
+          const probeKey = "__anchor_diag_probe";
+          window.localStorage.setItem(probeKey, "1");
+          window.localStorage.removeItem(probeKey);
+          lines.push("localStorage: writable");
+        } catch {
+          lines.push("localStorage: BLOCKED (private mode / disabled)");
+        }
+        lines.push(`cookies enabled: ${navigator.cookieEnabled ? "yes" : "no"}`);
+        const sb = getSb();
+        if (!sb) {
+          lines.push("client: not constructed");
+          if (!cancelled) setInfo(lines);
+          return;
+        }
+        const sess = await sb.auth.getSession();
+        if (sess.error) {
+          lines.push(`getSession error: ${sess.error.message}`);
+        }
+        const session = sess.data.session;
+        lines.push(`session present: ${session ? "yes" : "no"}`);
+        if (session) {
+          lines.push(`user id: ${session.user.id.slice(0, 8)}…`);
+          if (session.expires_at) {
+            const exp = new Date(session.expires_at * 1000).toISOString();
+            lines.push(`expires at: ${exp}`);
+            lines.push(
+              `expired: ${session.expires_at * 1000 < Date.now() ? "YES" : "no"}`,
+            );
+          }
+        }
+        const userResp = await sb.auth.getUser();
+        if (userResp.error) {
+          lines.push(`getUser error: ${userResp.error.message}`);
+        } else {
+          lines.push(
+            `getUser id: ${userResp.data.user?.id?.slice(0, 8) ?? "(null)"}…`,
+          );
+        }
+      } catch (err) {
+        lines.push(
+          `diag exception: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      } finally {
+        if (!cancelled) setInfo(lines);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <details className="rounded-md border border-ink-200 bg-paper-2 p-2 text-[11px] text-ink-600">
+      <summary className="cursor-pointer select-none font-medium text-ink-700">
+        Why does this say sign in?
+      </summary>
+      <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-[10.5px] leading-snug">
+        {info.join("\n")}
+      </pre>
+    </details>
   );
 }

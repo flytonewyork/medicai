@@ -84,4 +84,14 @@ INSERT INTO public.household_profile (household_id)
   SELECT id FROM public.households
   ON CONFLICT (household_id) DO NOTHING;
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.household_profile;
+-- ALTER PUBLICATION ... ADD TABLE isn't idempotent — wrap so re-running
+-- this migration doesn't error 42710.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'household_profile'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.household_profile;
+  END IF;
+END$$;

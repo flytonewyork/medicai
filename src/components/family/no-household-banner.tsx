@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useAuthSession } from "~/hooks/use-auth-session";
 import { useHousehold } from "~/hooks/use-household";
 import { isSupabaseConfigured } from "~/lib/supabase/client";
 import { useL } from "~/hooks/use-translate";
@@ -15,12 +16,17 @@ import { Loader2, UserPlus } from "lucide-react";
 // no way out. This banner gives them a deterministic next action:
 // finish caregiver onboarding (where they'll pick a patient or paste
 // an invite link). Never renders for fully-joined members.
+//
+// "Signed in" detection goes through useAuthSession (session-direct)
+// rather than `profile != null` — a user with a valid session but a
+// missing profiles row is still signed in.
 export function NoHouseholdBanner() {
   const L = useL();
-  const { membership, profile, loading } = useHousehold();
+  const session = useAuthSession();
+  const { membership, loading } = useHousehold();
 
   if (!isSupabaseConfigured()) return null;
-  if (loading) {
+  if (loading || session === undefined) {
     return (
       <Card>
         <CardContent className="flex items-center gap-2 pt-4 text-[12.5px] text-ink-500">
@@ -35,7 +41,7 @@ export function NoHouseholdBanner() {
   // Two distinct states get the same recovery destination
   // (/onboarding) but different copy so the user understands which
   // gap they're in.
-  const signedOut = !profile;
+  const signedOut = !session.signedIn;
 
   return (
     <Card className="border-[var(--tide-2)]/40 bg-[var(--tide-soft)]">

@@ -61,6 +61,51 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   return data as Profile | null;
 }
 
+// Auto-heal helper. The handle_new_user trigger normally inserts a
+// profiles row when an auth.users row appears. In dev (DB resets),
+// during pre-trigger signups, or after a schema migration that
+// dropped + recreated the trigger, a signed-in user can legitimately
+// have NO profiles row. The UI used to misclassify those users as
+// signed-out (profile=null gated the auth check), and any code path
+// that needs a profile (display name, role label) silently broke.
+//
+// This helper ensures a row exists for the current user. It uses
+// upsert so it's idempotent: callers can fire it on any page load
+// where a profile would be expected, with no risk of clobbering
+// existing data. Only the `id` is required by the RLS policy
+// ("profiles update own": id = auth.uid()).
+//
+// `displayName` is best-effort — supplied from local Dexie settings
+// or the auth user's email prefix. The profiles.display_name column
+// has a NOT NULL DEFAULT '', so we never need to send a non-empty
+// value to satisfy the schema.
+export async function ensureProfileForCurrentUser(args?: {
+  displayName?: string;
+  locale?: "en" | "zh";
+}): Promise<Profile | null> {
+  const sb = getSupabaseBrowser();
+  if (!sb) return null;
+  const uid = await currentUserId();
+  if (!uid) return null;
+  const existing = await getCurrentProfile().catch(() => null);
+  if (existing) return existing;
+  const displayName = args?.displayName?.trim();
+  const { data, error } = await sb
+    .from("profiles")
+    .upsert(
+      {
+        id: uid,
+        ...(displayName ? { display_name: displayName } : {}),
+        ...(args?.locale ? { locale: args.locale } : {}),
+      },
+      { onConflict: "id" },
+    )
+    .select("*")
+    .maybeSingle();
+  if (error) throw error;
+  return data as Profile | null;
+}
+
 export async function updateMyProfile(
   patch: Partial<
     Pick<
@@ -347,8 +392,37 @@ export function inviteUrl(token: string, origin: string): string {
   return `${origin.replace(/\/$/, "")}/invite/${token}`;
 }
 
+// Extract the most informative string out of an unknown error.
+// Supabase's PostgrestError is a plain object — `String(err)` produces
+// "[object Object]" instead of the actual message. Pull `.message`
+// (and other shape hints) when present, fall back to a JSON-ish view
+// so the UI never displays "[object Object]".
+export function unwrapErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "string") return err;
+  if (err && typeof err === "object") {
+    const e = err as {
+      message?: unknown;
+      hint?: unknown;
+      details?: unknown;
+      code?: unknown;
+    };
+    const parts: string[] = [];
+    if (typeof e.message === "string" && e.message.length > 0) parts.push(e.message);
+    if (typeof e.details === "string" && e.details.length > 0) parts.push(`details: ${e.details}`);
+    if (typeof e.hint === "string" && e.hint.length > 0) parts.push(`hint: ${e.hint}`);
+    if (typeof e.code === "string" && e.code.length > 0) parts.push(`code: ${e.code}`);
+    if (parts.length > 0) return parts.join(" — ");
+  }
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return "Something went wrong.";
+  }
+}
+
 export function friendlyInviteError(err: unknown): string {
-  const msg = err instanceof Error ? err.message : String(err);
+  const msg = unwrapErrorMessage(err);
   if (msg.includes("invite_not_found")) return "This invite link is invalid.";
   if (msg.includes("invite_revoked")) return "This invite has been revoked.";
   if (msg.includes("invite_already_accepted"))
@@ -369,6 +443,18 @@ export function friendlyInviteError(err: unknown): string {
     return "You can't change the role of the last primary carer — promote someone else first.";
   if (msg.includes("invalid_extension"))
     return "Invite extension must be between 1 and 90 days.";
+  // Common Postgres / PostgREST shape gives us a code we can map to
+  // a human-readable line so the user knows whether the problem is
+  // schema-related (migration not applied, RLS denial) vs network.
+  if (msg.includes("PGRST202") || msg.includes("could not find the function")) {
+    return "Server is missing the create_household function — the latest migrations haven't been applied to Supabase yet.";
+  }
+  if (msg.includes("PGRST301") || msg.includes("permission denied")) {
+    return "Permission denied. Sign out and sign back in, then try again — your session may be tied to a different database.";
+  }
+  if (msg.includes("violates foreign key constraint")) {
+    return "Your account isn't fully provisioned in the database. Sign out, sign back in, and try again.";
+  }
   return msg;
 }
 
