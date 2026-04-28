@@ -27,12 +27,14 @@ import { cn } from "~/lib/utils/cn";
 // optional detail — skippable via "Finish setup later" so the patient
 // isn't gated behind data they don't have on hand.
 //
-// Baselines (weight, grip, gait speed, sit-to-stand, MUAC, calf) are
-// deliberately NOT collected here. They belong in the first
-// comprehensive assessment, where they are taken with proper
-// instruments and form part of the pillar baseline that subsequent
-// assessments compare against. Onboarding's job is to get the patient
-// onto the dashboard fast; clinical measurements come later.
+// Anthropometric baselines that need calipers (MUAC, calf) and the
+// functional baselines (grip, gait speed, sit-to-stand) belong in the
+// first comprehensive assessment, where they're taken with proper
+// instruments. Onboarding only captures weight + height — values the
+// patient already knows or can read off a bathroom scale. The captured
+// weight is filed into today's daily_entries row so the metrics
+// registry, graph views, and subsequent /log entries all read from the
+// same place.
 const PATIENT_STEPS = [
   "welcome",
   "user_type",
@@ -106,6 +108,7 @@ interface FormState {
   oncall_phone: string;
   emergency_instructions: string;
   height_cm: string;
+  weight_kg: string;
   start_cycle: boolean;
   protocol_id: ProtocolId;
   cycle_start_date: string;
@@ -127,6 +130,7 @@ const EMPTY: FormState = {
   oncall_phone: "",
   emergency_instructions: "",
   height_cm: "",
+  weight_kg: "",
   start_cycle: false,
   protocol_id: "gnp_weekly",
   cycle_start_date: todayISO(),
@@ -173,6 +177,7 @@ export default function OnboardingPage() {
         oncall_phone: s.oncall_phone ?? "",
         emergency_instructions: s.emergency_instructions ?? "",
         height_cm: s.height_cm ? String(s.height_cm) : "",
+        weight_kg: s.baseline_weight_kg ? String(s.baseline_weight_kg) : "",
         locale: s.locale,
         home_city: s.home_city ?? "",
       }));
@@ -243,6 +248,8 @@ export default function OnboardingPage() {
       }
       const isCaregiver =
         form.user_type === "caregiver" || form.user_type === "clinician";
+      const weightOnboarding = isCaregiver ? undefined : toNum(form.weight_kg);
+      const today = todayISO();
       const payload: Settings = {
         user_type: form.user_type || undefined,
         // Caregivers don't own baselines, team contacts, or treatment
@@ -253,11 +260,20 @@ export default function OnboardingPage() {
         dob: isCaregiver ? undefined : form.dob || undefined,
         diagnosis_date: isCaregiver ? undefined : form.diagnosis_date || undefined,
         height_cm: isCaregiver ? undefined : toNum(form.height_cm),
-        // Baselines are deliberately NOT collected during onboarding —
-        // they belong in the first comprehensive assessment, where the
-        // measurements can be taken with proper instruments and form
-        // the pillar baseline. The settings row will pick them up the
-        // first time the patient runs through /assessment.
+        // Weight captured during onboarding seeds the baseline used by
+        // the nutrition card and the BMI / weight-change calculations
+        // in useBodyMetrics. The same value is also written into a
+        // daily_entries row below so the metrics registry / graph
+        // views see today's reading and so subsequent /log "weight 68
+        // kg" entries upsert into that same row.
+        baseline_weight_kg: weightOnboarding ?? existingSettings?.baseline_weight_kg,
+        baseline_date:
+          weightOnboarding != null
+            ? today
+            : existingSettings?.baseline_date,
+        // Functional + caliper baselines (grip, gait, MUAC, calf, etc.)
+        // are still collected on the first comprehensive assessment,
+        // where they're taken with proper instruments.
         locale: form.locale,
         managing_oncologist: isCaregiver
           ? undefined
@@ -295,13 +311,49 @@ export default function OnboardingPage() {
         await db.settings.add(payload);
       }
       setUILocale(form.locale);
-      setEnteredBy(
+      const enteredBy =
         form.user_type === "caregiver"
           ? "catherine"
           : form.user_type === "clinician"
             ? "clinician"
-            : "hulin",
-      );
+            : "hulin";
+      setEnteredBy(enteredBy);
+
+      // Seed today's daily_entries row with the onboarding weight (and
+      // height, if entered). The /log route's direct-file parser
+      // upserts into the same row keyed by date, so a later "weight
+      // 68 kg" message updates this entry rather than creating a
+      // parallel one. The metrics registry reads weight_kg straight
+      // off daily_entries, so any graph/trend view picks the value up
+      // automatically.
+      if (!isCaregiver && weightOnboarding != null) {
+        const heightOnboarding = toNum(form.height_cm);
+        const existingDaily = await db.daily_entries
+          .where("date")
+          .equals(today)
+          .first();
+        if (existingDaily?.id) {
+          await db.daily_entries.update(existingDaily.id, {
+            weight_kg: weightOnboarding,
+            ...(heightOnboarding != null
+              ? { height_cm: heightOnboarding }
+              : {}),
+            updated_at: ts,
+          });
+        } else {
+          await db.daily_entries.add({
+            date: today,
+            entered_at: ts,
+            entered_by: enteredBy,
+            weight_kg: weightOnboarding,
+            ...(heightOnboarding != null
+              ? { height_cm: heightOnboarding }
+              : {}),
+            created_at: ts,
+            updated_at: ts,
+          });
+        }
+      }
 
       if (!isCaregiver && form.start_cycle && form.cycle_start_date) {
         await db.treatment_cycles.add({
@@ -848,6 +900,8 @@ function ProfileStep({
   update: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
   locale: Locale;
 }) {
+  const isCaregiver =
+    form.user_type === "caregiver" || form.user_type === "clinician";
   return (
     <Card className="p-6 space-y-4">
       <div className="serif text-[22px] leading-tight">
@@ -877,6 +931,39 @@ function ProfileStep({
           />
         </Field>
       </div>
+      {!isCaregiver && (
+        <div className="space-y-3">
+          <p className="text-xs text-ink-500">
+            {locale === "zh"
+              ? "今天的体重和身高（可选）。会进入今日记录，并成为体重趋势图的起点；之后在「记录」里说「体重 68 kg」就会更新到同一份资料。"
+              : "Today's weight and height (optional). These seed today's check-in and the weight trend; later messages like \"weight 68 kg\" in /log update the same record."}
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label={locale === "zh" ? "体重 (kg)" : "Weight (kg)"}>
+              <TextInput
+                type="number"
+                inputMode="decimal"
+                step="0.1"
+                min="0"
+                value={form.weight_kg}
+                onChange={(e) => update("weight_kg", e.target.value)}
+                placeholder="68.0"
+              />
+            </Field>
+            <Field label={locale === "zh" ? "身高 (cm)" : "Height (cm)"}>
+              <TextInput
+                type="number"
+                inputMode="decimal"
+                step="0.1"
+                min="0"
+                value={form.height_cm}
+                onChange={(e) => update("height_cm", e.target.value)}
+                placeholder="170"
+              />
+            </Field>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
@@ -1141,10 +1228,22 @@ function DoneStep({ form, locale }: { form: FormState; locale: Locale }) {
     return `${name} · ${formatCycleDate(form.cycle_start_date, locale)}`;
   })();
 
+  const measurementsLabel = (() => {
+    const parts: string[] = [];
+    if (form.weight_kg) parts.push(`${form.weight_kg} kg`);
+    if (form.height_cm) parts.push(`${form.height_cm} cm`);
+    if (parts.length === 0) return locale === "zh" ? "未填" : "Not set";
+    return parts.join(" · ");
+  })();
+
   const rows: Array<[string, string]> = [
     [
       locale === "zh" ? "姓名" : "Name",
       form.profile_name || (locale === "zh" ? "—" : "—"),
+    ],
+    [
+      locale === "zh" ? "体重 / 身高" : "Weight / height",
+      measurementsLabel,
     ],
     [
       locale === "zh" ? "主诊" : "Oncologist",
