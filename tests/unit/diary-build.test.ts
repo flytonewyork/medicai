@@ -49,12 +49,24 @@ describe("buildDiaryDays", () => {
       entered_at: "2026-04-26T20:00:00",
       entered_by: "hulin",
       energy: 7,
+      created_at: "2026-04-26T20:00:00",
+      updated_at: "2026-04-26T20:00:00",
     });
     await db.log_events.add({
       at: "2026-04-26T15:00:00",
-      input: { text: "right hand still numb", tags: ["toxicity"], locale: "en" },
+      input: {
+        text: "right hand still numb",
+        tags: ["toxicity"],
+        locale: "en",
+        at: "2026-04-26T15:00:00",
+      },
     });
-    await db.labs.add({ date: "2026-04-26" });
+    await db.labs.add({
+      date: "2026-04-26",
+      source: "patient_self_report",
+      created_at: "2026-04-26T16:00:00",
+      updated_at: "2026-04-26T16:00:00",
+    });
     await db.agent_runs.add({
       agent_id: "toxicity",
       ran_at: "2026-04-26T20:30:00",
