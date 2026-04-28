@@ -46,6 +46,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Verify required secrets
+        # Check every required secret up front and report all missing ones
+        # in a single error, so the operator only round-trips through the
+        # Settings → Secrets UI once per missed setup.
+        env:
+          TWA_PROD_HOST: ${{ secrets.TWA_PROD_HOST }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          missing=()
+          [ -z "$TWA_PROD_HOST" ] && missing+=("TWA_PROD_HOST")
+          [ -z "$ANDROID_KEYSTORE_BASE64" ] && missing+=("ANDROID_KEYSTORE_BASE64")
+          [ -z "$ANDROID_KEYSTORE_PASSWORD" ] && missing+=("ANDROID_KEYSTORE_PASSWORD")
+          [ -z "$ANDROID_KEY_PASSWORD" ] && missing+=("ANDROID_KEY_PASSWORD")
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing required repo secrets: ${missing[*]}"
+            echo "::error::Set them at Settings → Secrets and variables → Actions. See DEPLOY-ANDROID.md for how to generate the keystore."
+            exit 1
+          fi
+          echo "All required secrets present."
+
       - uses: pnpm/action-setup@v3
         with:
           version: 10
@@ -73,13 +95,9 @@ jobs:
           TWA_PROD_HOST: ${{ secrets.TWA_PROD_HOST }}
           VERSION: ${{ inputs.version }}
         run: |
-          if [ -z "$TWA_PROD_HOST" ]; then
-            echo "TWA_PROD_HOST secret is empty" >&2
-            exit 1
-          fi
           # In-place substitution of the placeholder; commit-back is gated
           # by the publish step so the canonical file in main keeps the
-          # placeholder.
+          # placeholder. Empty-secret guard already passed in pre-flight.
           sed -i "s/REPLACE_WITH_VERCEL_PROD_HOST/${TWA_PROD_HOST}/g" twa-manifest.json
           # Bump appVersion to the release input. appVersionName is the
           # human-readable string; appVersion is the integer Play Store
