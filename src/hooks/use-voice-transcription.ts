@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { persistVoiceMemo } from "~/lib/voice-memo/persist";
 import { uploadVoiceMemoAudio } from "~/lib/voice-memo/cloud";
+import { parseAndApplyVoiceMemo } from "~/lib/voice-memo/parse";
 import type { VoiceMemo } from "~/types/voice-memo";
 import type { EnteredBy } from "~/types/clinical";
 
@@ -75,6 +76,15 @@ export interface UseVoiceTranscriptionOptions {
    * `log_event_id` onto the memo.
    */
   onPersisted?: (memo: { memo_id: number; transcript: string }) => void;
+  /**
+   * Run the Slice-2 Claude parser after persistence so the memo's
+   * structured fields land on the row and are safe-filled into
+   * `daily_entries`. Defaults to true for diary, log, and any other
+   * source — voice memos as foundational data means structured
+   * extraction is on by default. Pass false for one-off transient
+   * captures (test fixtures, fully-typed flows that bypass diary).
+   */
+  parseAfterPersist?: boolean;
 }
 
 export function useVoiceTranscription(
@@ -88,6 +98,7 @@ export function useVoiceTranscription(
     source = "diary",
     enteredBy = "hulin",
     onPersisted,
+    parseAfterPersist = true,
   } = opts;
 
   const [supported, setSupported] = useState(false);
@@ -116,6 +127,8 @@ export function useVoiceTranscription(
   sourceRef.current = source;
   const enteredByRef = useRef(enteredBy);
   enteredByRef.current = enteredBy;
+  const parseAfterPersistRef = useRef(parseAfterPersist);
+  parseAfterPersistRef.current = parseAfterPersist;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -220,6 +233,12 @@ export function useVoiceTranscription(
                   // eslint-disable-next-line no-console
                   console.warn("[voice-memo] cloud upload failed", err);
                 });
+                if (parseAfterPersistRef.current) {
+                  void parseAndApplyVoiceMemo(memo_id).catch((err) => {
+                    // eslint-disable-next-line no-console
+                    console.warn("[voice-memo] parse failed", err);
+                  });
+                }
               } catch (err) {
                 // eslint-disable-next-line no-console
                 console.warn("[voice-memo] persist failed", err);
