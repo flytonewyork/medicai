@@ -113,7 +113,6 @@ export function MealIngest({
               ref={fileRef}
               type="file"
               accept="image/*"
-              capture="environment"
               hidden
               onChange={(e) => {
                 const f = e.target.files?.[0];
