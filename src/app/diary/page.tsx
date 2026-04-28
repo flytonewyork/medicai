@@ -58,21 +58,41 @@ export default function DiaryPage() {
   const [windowDays, setWindowDays] = useState(WINDOW_DAYS_DEFAULT);
   const [days, setDays] = useState<DiaryDay[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setLoadError(null);
     const to = todayISO();
     const fromDate = new Date(to);
     fromDate.setDate(fromDate.getDate() - windowDays);
     const from = fromDate.toISOString().slice(0, 10);
-    void buildDiaryDays({ from, to, includeEmpty: true }).then((rows) => {
+    // Hard timeout so a hung Dexie query (corrupt index, OPFS lock,
+    // huge backlog) can't trap the user on an infinite spinner. 10s
+    // is well past any healthy aggregation; past that, surface an
+    // error and let the user retry / open a different page.
+    const timeout = setTimeout(() => {
       if (cancelled) return;
-      setDays(rows);
+      setLoadError("timeout");
       setLoading(false);
-    });
+    }, 10000);
+    void buildDiaryDays({ from, to, includeEmpty: true })
+      .then((rows) => {
+        if (cancelled) return;
+        clearTimeout(timeout);
+        setDays(rows);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        clearTimeout(timeout);
+        setLoadError(err instanceof Error ? err.message : "unknown");
+        setLoading(false);
+      });
     return () => {
       cancelled = true;
+      clearTimeout(timeout);
     };
     // Re-run whenever any underlying table changes row count or the
     // window expands. Cheap because the aggregator reads each table
@@ -126,7 +146,13 @@ export default function DiaryPage() {
         </Button>
       </div>
 
-      {loading && days.length === 0 ? (
+      {loadError ? (
+        <Alert variant="warn" role="alert">
+          {locale === "zh"
+            ? "日记加载失败，请刷新页面重试。"
+            : "Diary failed to load. Try refreshing the page."}
+        </Alert>
+      ) : loading && days.length === 0 ? (
         <Card className="p-5">
           <div className="flex items-center gap-2 text-[12px] text-ink-500">
             <Loader2 className="h-4 w-4 animate-spin" />

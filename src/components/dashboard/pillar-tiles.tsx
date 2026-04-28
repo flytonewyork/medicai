@@ -122,13 +122,29 @@ export function PillarTiles() {
   }, [recentCycle, locale]);
 
   // -- CA 19-9 ----------------------------------------------------------
-  const ca199Series = (labs ?? [])
-    .slice()
-    .reverse()
-    .map((l) => l.ca199)
-    .filter((v): v is number => typeof v === "number");
+  // Carry the date alongside the value so the tile can show *when* the
+  // latest result was drawn. Without this, "↓20% since start" reads
+  // identically whether the latest CA 19-9 was today or three months
+  // ago, which is clinically misleading.
+  const ca199Points = useMemo(
+    () =>
+      (labs ?? [])
+        .slice()
+        .reverse()
+        .map((l) => ({ value: l.ca199, date: l.date }))
+        .filter(
+          (p): p is { value: number; date: string } =>
+            typeof p.value === "number",
+        ),
+    [labs],
+  );
+  const ca199Series = useMemo(
+    () => ca199Points.map((p) => p.value),
+    [ca199Points],
+  );
   const ca199Latest = ca199Series[ca199Series.length - 1];
   const ca199First = ca199Series[0];
+  const ca199LatestDate = ca199Points[ca199Points.length - 1]?.date ?? null;
   const ca199Delta =
     ca199Latest && ca199First && ca199First > 0
       ? Math.round(((ca199Latest - ca199First) / ca199First) * 100)
@@ -156,7 +172,11 @@ export function PillarTiles() {
       });
     }
     if (flags.length === 0) return null;
-    return { date: latestLab.date, flags };
+    const ageDays = differenceInCalendarDays(
+      new Date(),
+      parseISO(latestLab.date),
+    );
+    return { date: latestLab.date, ageDays, flags };
   }, [latestLab, locale]);
 
   // -- Practice today --------------------------------------------------
@@ -313,6 +333,14 @@ export function PillarTiles() {
           <div className="mono mt-auto text-[10px] uppercase tracking-wider text-ink-500">
             {locale === "zh" ? "最近化验：" : "Latest labs "}
             {lftFlag.date}
+            {lftFlag.ageDays >= 1 && (
+              <span className="ml-1 text-ink-400">
+                ·{" "}
+                {locale === "zh"
+                  ? `${lftFlag.ageDays} 天前`
+                  : `${lftFlag.ageDays}d ago`}
+              </span>
+            )}
           </div>
         </Link>
       ),
@@ -359,6 +387,12 @@ export function PillarTiles() {
                 ? "第一次结果"
                 : "first result"}
           </div>
+          {ca199LatestDate && (
+            <div className="mono text-[10px] uppercase tracking-wider text-ink-400">
+              {locale === "zh" ? "最近：" : "Latest "}
+              {ca199LatestDate}
+            </div>
+          )}
           <div className="mt-auto">
             {ca199Series.length > 1 && (
               <Sparkline

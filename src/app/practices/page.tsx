@@ -159,7 +159,14 @@ function PracticeRow({
               <button
                 type="button"
                 onClick={() => {
-                  if (med.id && confirm("Delete this practice and its logs?"))
+                  if (
+                    med.id &&
+                    confirm(
+                      locale === "zh"
+                        ? "删除此修习及其全部记录？"
+                        : "Delete this practice and its logs?",
+                    )
+                  )
                     void deleteCustomPractice(med.id);
                 }}
                 className="text-[11px] text-ink-400 hover:text-[var(--warn)]"
