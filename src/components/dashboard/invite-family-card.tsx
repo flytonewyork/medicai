@@ -8,8 +8,11 @@ import { Card, CardContent } from "~/components/ui/card";
 import { useLocale, pickL } from "~/hooks/use-translate";
 
 // Shows when the user is signed in but has no household yet (so no
-// caregivers / family can see their data). Surfaces a one-tap path
-// into Settings → Care team where the create-household flow lives.
+// caregivers / family can see their data). Tapping the card deep-
+// links to /carers with `?action=add-carer`, which auto-bootstraps
+// the household and opens the invite flow in a single tap — closing
+// the user-story gap where signing in left the patient with a profile
+// but no team to invite people into.
 //
 // Hidden when:
 // - Supabase isn't configured (offline-only setup, no point inviting)
@@ -46,7 +49,7 @@ export function InviteFamilyCard() {
           </div>
         </div>
         <Link
-          href="/carers"
+          href="/carers?action=add-carer"
           className="inline-flex items-center gap-0.5 text-[12px] text-ink-500 hover:text-ink-900"
         >
           {L("Set up", "开始")}

@@ -23,7 +23,7 @@ in this iteration — simpler to reason about.
 
 | action | primary | patient | family | clinician | observer |
 |---|---|---|---|---|---|
-| invite / remove members | ✓ | · | · | · | · |
+| invite / remove members | ✓ | ✓ | · | · | · |
 | edit household settings | ✓ | · | · | · | · |
 | edit treatment plan / cycles | ✓ | · | · | ✓ | · |
 | edit medications | ✓ | ✓ | · | ✓ | · |
@@ -35,13 +35,22 @@ in this iteration — simpler to reason about.
 | see clinical data (labs / scans) | ✓ | ✓ | ✓ | ✓ | ✓ |
 | see family notes | ✓ | ✓ | ✓ | · | · |
 | see member list | ✓ | ✓ | ✓ | ✓ | ✓ |
-| see pending invites | ✓ | · | · | · | · |
+| see pending invites | ✓ | ✓ | · | · | · |
 
 Legend: ✓ allowed, · not allowed.
 
 Clinician intentionally **cannot** see family notes by default —
 those are emotional / logistical and not for the chart. Observers
 see everything but can't write anything.
+
+The patient can invite and remove carers themselves — they're
+captain of their own care team. This matters most when a patient
+self-onboards before anyone else exists in the household: they
+shouldn't have to wait for a primary_carer to be created in order
+to bring family in. Editing structural settings (household name,
+patient display, lead carer) and changing other members' roles
+stays primary_carer-only so a patient can't accidentally invert
+the chain of authority.
 
 ## User stories
 
