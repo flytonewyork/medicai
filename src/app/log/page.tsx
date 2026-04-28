@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { db } from "~/lib/db/dexie";
 import { todayISO } from "~/lib/utils/date";
@@ -83,13 +83,10 @@ export default function LogPage() {
   const [text, setText] = useState("");
   const [overrideTags, setOverrideTags] = useState<Set<LogTag> | null>(null);
   const [run, setRun] = useState<RunState>({ kind: "idle" });
-  // The page is voice-first by default. Patients who prefer typing flip
-  // this once and the surface stays in keyboard mode for the session.
+  // The page offers voice and typing modes. Voice never auto-starts —
+  // the patient taps the mic to begin recording. Switching to typing
+  // hides the mic surface for the rest of the session.
   const [editMode, setEditMode] = useState(false);
-  // Auto-start dictation on mount, but only on the first arrival. If the
-  // user stops listening or switches to typing we do not silently
-  // restart, because that would feel like the page is hijacking input.
-  const autoStartedRef = useRef(false);
 
   const enteredBy = useUIStore((s) => s.enteredBy);
 
@@ -100,20 +97,8 @@ export default function LogPage() {
   // some webviews) so we fall back to a plain textarea cleanly.
   const speech = useSpeechRecognition({
     lang: locale === "zh" ? "zh-CN" : "en-US",
-    onFinal: (chunk) => setText((cur) => `${cur} ${chunk}`.trim()),
+    onFinal: (chunk) => setText((cur) => (cur ? `${cur} ${chunk}` : chunk)),
   });
-
-  useEffect(() => {
-    if (!speech) return;
-    if (autoStartedRef.current) return;
-    if (editMode) return;
-    autoStartedRef.current = true;
-    // Safari needs a user gesture for SpeechRecognition.start(). Tapping
-    // the FAB item to land here counts on most browsers; if it doesn't,
-    // the hook's start() swallows the error and the patient sees an
-    // idle mic button that they can tap manually.
-    speech.start();
-  }, [speech, editMode]);
 
   const autoTags = useMemo(() => new Set(tagInput(text)), [text]);
   const tags = overrideTags ?? autoTags;
@@ -217,7 +202,6 @@ export default function LogPage() {
     setOverrideTags(null);
     setRun({ kind: "idle" });
     speech?.reset();
-    autoStartedRef.current = false;
   }
 
   // A direct-filed value bypasses the agent requirement.
@@ -259,7 +243,6 @@ export default function LogPage() {
             canSwitchToVoice={Boolean(speech)}
             onSwitchToVoice={() => {
               setEditMode(false);
-              autoStartedRef.current = false;
             }}
           />
         )}
@@ -440,17 +423,10 @@ function VoiceCapture({
   locale: "en" | "zh";
   onSwitchToTyping: () => void;
 }) {
-  // While listening, the hook's `transcript` carries the in-flight
-  // interim words. Final chunks have already flowed into `text` via
-  // `onFinal`, so we strip the prefix overlap and append only the
-  // unsettled tail to avoid double-rendering.
-  const interimTail = useMemo(() => {
-    if (!speech.listening) return "";
-    const t = speech.transcript.trim();
-    if (!t) return "";
-    if (text && t.startsWith(text.trim())) return t.slice(text.trim().length).trim();
-    return t;
-  }, [speech.listening, speech.transcript, text]);
+  // Final chunks already flowed into `text` via the hook's `onFinal`
+  // callback. We only render the unsettled interim tail on top, so the
+  // patient sees mid-utterance words without any duplication.
+  const interimTail = speech.listening ? speech.interim : "";
 
   return (
     <div>
