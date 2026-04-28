@@ -191,7 +191,6 @@ function SmartEntry({
           <input
             type="file"
             accept="image/*"
-            capture="environment"
             className="hidden"
             disabled={busy}
             onChange={(e) => {

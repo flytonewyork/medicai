@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { db } from "~/lib/db/dexie";
 import { todayISO } from "~/lib/utils/date";
@@ -15,11 +15,20 @@ import { useUIStore } from "~/stores/ui-store";
 import { LOG_TAGS, type AgentId, type LogTag } from "~/types/agent";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import { Field, Textarea } from "~/components/ui/field";
+import { Textarea } from "~/components/ui/field";
 import { Alert } from "~/components/ui/alert";
 import { PageHeader } from "~/components/ui/page-header";
 import { cn } from "~/lib/utils/cn";
-import { Send, Sparkles, Check, Loader2, ArrowLeft, Mic, MicOff } from "lucide-react";
+import {
+  Send,
+  Sparkles,
+  Check,
+  Loader2,
+  ArrowLeft,
+  Mic,
+  MicOff,
+  Keyboard,
+} from "lucide-react";
 import { useSpeechRecognition } from "~/hooks/use-speech-recognition";
 
 const TAG_LABELS: Record<LogTag, { en: string; zh: string }> = {
@@ -74,6 +83,13 @@ export default function LogPage() {
   const [text, setText] = useState("");
   const [overrideTags, setOverrideTags] = useState<Set<LogTag> | null>(null);
   const [run, setRun] = useState<RunState>({ kind: "idle" });
+  // The page is voice-first by default. Patients who prefer typing flip
+  // this once and the surface stays in keyboard mode for the session.
+  const [editMode, setEditMode] = useState(false);
+  // Auto-start dictation on mount, but only on the first arrival. If the
+  // user stops listening or switches to typing we do not silently
+  // restart, because that would feel like the page is hijacking input.
+  const autoStartedRef = useRef(false);
 
   const enteredBy = useUIStore((s) => s.enteredBy);
 
@@ -81,11 +97,23 @@ export default function LogPage() {
   // patient can correct what was heard before submitting. Mandarin
   // uses zh-CN; everything else en-US. The hook returns null on
   // browsers that don't expose SpeechRecognition (older Firefox,
-  // some webviews) so the button is hidden cleanly when unsupported.
+  // some webviews) so we fall back to a plain textarea cleanly.
   const speech = useSpeechRecognition({
     lang: locale === "zh" ? "zh-CN" : "en-US",
     onFinal: (chunk) => setText((cur) => `${cur} ${chunk}`.trim()),
   });
+
+  useEffect(() => {
+    if (!speech) return;
+    if (autoStartedRef.current) return;
+    if (editMode) return;
+    autoStartedRef.current = true;
+    // Safari needs a user gesture for SpeechRecognition.start(). Tapping
+    // the FAB item to land here counts on most browsers; if it doesn't,
+    // the hook's start() swallows the error and the patient sees an
+    // idle mic button that they can tap manually.
+    speech.start();
+  }, [speech, editMode]);
 
   const autoTags = useMemo(() => new Set(tagInput(text)), [text]);
   const tags = overrideTags ?? autoTags;
@@ -188,6 +216,8 @@ export default function LogPage() {
     setText("");
     setOverrideTags(null);
     setRun({ kind: "idle" });
+    speech?.reset();
+    autoStartedRef.current = false;
   }
 
   // A direct-filed value bypasses the agent requirement.
@@ -208,50 +238,31 @@ export default function LogPage() {
       />
 
       <Card className="p-5">
-        <Field label={locale === "zh" ? "记录" : "Log"}>
-          <div className="relative">
-            <Textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={5}
-              disabled={run.kind === "saving" || run.kind === "running"}
-              placeholder={
-                locale === "zh"
-                  ? "例如：早餐吃了两个鸡蛋，约 16 克蛋白；右手指尖比昨天更麻"
-                  : "e.g. two eggs at breakfast, ~16 g protein; right fingertips more numb than yesterday"
-              }
-              className="min-h-[140px] pr-12 text-base"
-            />
-            {speech && (
-              <button
-                type="button"
-                onClick={speech.toggle}
-                disabled={run.kind === "saving" || run.kind === "running"}
-                className={cn(
-                  "absolute bottom-2 right-2 inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors",
-                  speech.listening
-                    ? "bg-[var(--warn,#d97706)] text-white"
-                    : "bg-ink-100 text-ink-700 hover:bg-ink-200",
-                )}
-                aria-label={
-                  speech.listening
-                    ? locale === "zh"
-                      ? "停止录音"
-                      : "Stop dictation"
-                    : locale === "zh"
-                      ? "开始录音"
-                      : "Start dictation"
-                }
-              >
-                {speech.listening ? (
-                  <MicOff className="h-4 w-4" />
-                ) : (
-                  <Mic className="h-4 w-4" />
-                )}
-              </button>
-            )}
-          </div>
-        </Field>
+        {speech && !editMode ? (
+          <VoiceCapture
+            speech={speech}
+            text={text}
+            setText={setText}
+            disabled={run.kind === "saving" || run.kind === "running"}
+            locale={locale}
+            onSwitchToTyping={() => {
+              speech.stop();
+              setEditMode(true);
+            }}
+          />
+        ) : (
+          <TypingCapture
+            text={text}
+            setText={setText}
+            disabled={run.kind === "saving" || run.kind === "running"}
+            locale={locale}
+            canSwitchToVoice={Boolean(speech)}
+            onSwitchToVoice={() => {
+              setEditMode(false);
+              autoStartedRef.current = false;
+            }}
+          />
+        )}
 
         <div className="mt-4">
           <div className="eyebrow mb-1.5">
@@ -407,9 +418,171 @@ export default function LogPage() {
 
       <p className="text-center text-[11px] text-ink-400">
         {locale === "zh"
-          ? "也支持语音输入。需要拍照/上传文件请到「智能识别」。"
-          : "Voice dictation works. For photos or document uploads, use Smart Ingest."}
+          ? "默认语音输入，可随时切换打字。需要拍照/上传文件请到「智能识别」。"
+          : "Voice by default — switch to typing anytime. For photos or document uploads, use Smart Ingest."}
       </p>
+    </div>
+  );
+}
+
+function VoiceCapture({
+  speech,
+  text,
+  setText,
+  disabled,
+  locale,
+  onSwitchToTyping,
+}: {
+  speech: NonNullable<ReturnType<typeof useSpeechRecognition>>;
+  text: string;
+  setText: (v: string) => void;
+  disabled: boolean;
+  locale: "en" | "zh";
+  onSwitchToTyping: () => void;
+}) {
+  // While listening, the hook's `transcript` carries the in-flight
+  // interim words. Final chunks have already flowed into `text` via
+  // `onFinal`, so we strip the prefix overlap and append only the
+  // unsettled tail to avoid double-rendering.
+  const interimTail = useMemo(() => {
+    if (!speech.listening) return "";
+    const t = speech.transcript.trim();
+    if (!t) return "";
+    if (text && t.startsWith(text.trim())) return t.slice(text.trim().length).trim();
+    return t;
+  }, [speech.listening, speech.transcript, text]);
+
+  return (
+    <div>
+      <div className="flex flex-col items-center gap-3">
+        <button
+          type="button"
+          onClick={speech.toggle}
+          disabled={disabled}
+          aria-label={
+            speech.listening
+              ? locale === "zh" ? "停止录音" : "Stop recording"
+              : locale === "zh" ? "开始录音" : "Start recording"
+          }
+          aria-pressed={speech.listening}
+          className={cn(
+            "relative flex h-20 w-20 items-center justify-center rounded-full shadow-md transition-all",
+            speech.listening
+              ? "bg-[var(--warn,#d97706)] text-white"
+              : "bg-ink-900 text-paper hover:scale-105",
+            disabled && "opacity-50",
+          )}
+        >
+          {speech.listening && (
+            <span className="absolute inset-0 animate-ping rounded-full bg-[var(--warn,#d97706)]/40" />
+          )}
+          {speech.listening ? (
+            <MicOff className="relative h-7 w-7" />
+          ) : (
+            <Mic className="relative h-7 w-7" />
+          )}
+        </button>
+        <div className="text-[12px] text-ink-500" aria-live="polite">
+          {speech.listening
+            ? locale === "zh" ? "正在听…轻点停止" : "Listening — tap to stop"
+            : text.trim()
+              ? locale === "zh" ? "再次轻点继续录音" : "Tap to keep recording"
+              : locale === "zh" ? "轻点麦克风开始" : "Tap the mic to start"}
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <div className="eyebrow mb-1.5">
+          {locale === "zh" ? "听到的内容" : "Transcript"}
+        </div>
+        <Textarea
+          value={text + (interimTail ? (text ? " " : "") + interimTail : "")}
+          onChange={(e) => setText(e.target.value)}
+          rows={5}
+          disabled={disabled}
+          placeholder={
+            locale === "zh"
+              ? "例如：早餐吃了两个鸡蛋，约 16 克蛋白；右手指尖比昨天更麻"
+              : "e.g. two eggs at breakfast, ~16 g protein; right fingertips more numb than yesterday"
+          }
+          className="min-h-[120px] text-base"
+        />
+        <p className="mt-1.5 text-[11px] text-ink-400">
+          {locale === "zh"
+            ? "可以随时编辑听到的内容。"
+            : "You can edit the transcript anytime."}
+        </p>
+      </div>
+
+      {speech.error && (
+        <Alert variant="warn" role="alert" className="mt-3">
+          {locale === "zh"
+            ? `语音识别出错：${speech.error}`
+            : `Speech recognition error: ${speech.error}`}
+        </Alert>
+      )}
+
+      <div className="mt-3 flex justify-end">
+        <button
+          type="button"
+          onClick={onSwitchToTyping}
+          disabled={disabled}
+          className="inline-flex items-center gap-1.5 text-[12px] text-ink-500 hover:text-ink-900"
+        >
+          <Keyboard className="h-3.5 w-3.5" />
+          {locale === "zh" ? "改用打字" : "Type instead"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TypingCapture({
+  text,
+  setText,
+  disabled,
+  locale,
+  canSwitchToVoice,
+  onSwitchToVoice,
+}: {
+  text: string;
+  setText: (v: string) => void;
+  disabled: boolean;
+  locale: "en" | "zh";
+  canSwitchToVoice: boolean;
+  onSwitchToVoice: () => void;
+}) {
+  return (
+    <div>
+      <div className="eyebrow mb-1.5">
+        {locale === "zh" ? "记录" : "Log"}
+      </div>
+      <Textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={5}
+        disabled={disabled}
+        placeholder={
+          locale === "zh"
+            ? "例如：早餐吃了两个鸡蛋，约 16 克蛋白；右手指尖比昨天更麻"
+            : "e.g. two eggs at breakfast, ~16 g protein; right fingertips more numb than yesterday"
+        }
+        className="min-h-[140px] text-base"
+        autoFocus
+      />
+      {canSwitchToVoice && (
+        <div className="mt-3 flex justify-end">
+          <button
+            type="button"
+            onClick={onSwitchToVoice}
+            disabled={disabled}
+            className="inline-flex items-center gap-1.5 text-[12px] text-ink-500 hover:text-ink-900"
+          >
+            <Mic className="h-3.5 w-3.5" />
+            {locale === "zh" ? "改用语音" : "Use voice"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

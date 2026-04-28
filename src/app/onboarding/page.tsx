@@ -9,9 +9,14 @@ import { useSettings } from "~/hooks/use-settings";
 import { useUIStore } from "~/stores/ui-store";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
-import { Field, TextInput, Textarea } from "~/components/ui/field";
+import { Field, Select, TextInput, Textarea } from "~/components/ui/field";
 import { Alert } from "~/components/ui/alert";
 import { PROTOCOL_LIBRARY, PROTOCOL_BY_ID } from "~/config/protocols";
+import {
+  MELBOURNE_ONCOLOGISTS,
+  HOSPITAL_BY_ID,
+  ONCOLOGIST_BY_ID,
+} from "~/config/oncologists";
 import type { ProtocolId } from "~/types/treatment";
 import type { Locale, Settings } from "~/types/clinical";
 import {
@@ -977,6 +982,31 @@ function TeamStep({
   update: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
   locale: Locale;
 }) {
+  // Match the typed name back to the seed list so re-entering this
+  // step shows the correct selection. Fall back to "" (custom).
+  const pickedId =
+    MELBOURNE_ONCOLOGISTS.find((o) => o.name.en === form.managing_oncologist)
+      ?.id ?? "";
+
+  function pickOncologist(id: string) {
+    if (!id) {
+      // "Other / type my own" — clear the seeded fields so the user
+      // can enter their own without overwriting any in-progress edit.
+      update("managing_oncologist", "");
+      return;
+    }
+    const onc = ONCOLOGIST_BY_ID[id];
+    if (!onc) return;
+    const hosp = HOSPITAL_BY_ID[onc.hospital_id];
+    update("managing_oncologist", onc.name[locale] ?? onc.name.en);
+    if (hosp) {
+      update("hospital_name", hosp.name[locale] ?? hosp.name.en);
+      update("hospital_phone", hosp.phone);
+      update("hospital_address", hosp.address);
+      if (hosp.oncall_phone) update("oncall_phone", hosp.oncall_phone);
+    }
+  }
+
   return (
     <Card className="p-6 space-y-4">
       <div>
@@ -989,6 +1019,41 @@ function TeamStep({
             : "These numbers appear on the emergency card when a red-zone alert fires."}
         </p>
       </div>
+      <Field
+        label={
+          locale === "zh"
+            ? "从墨尔本肿瘤科医师中选择（可选）"
+            : "Pick a Melbourne oncologist (optional)"
+        }
+        hint={
+          locale === "zh"
+            ? "选定后会自动填写医院信息，可再次修改。"
+            : "Selecting prefills the hospital details — you can edit any field after."
+        }
+      >
+        <Select
+          value={pickedId}
+          onChange={(e) => pickOncologist(e.target.value)}
+        >
+          <option value="">
+            {locale === "zh"
+              ? "其他 / 自行输入"
+              : "Other / type my own"}
+          </option>
+          {MELBOURNE_ONCOLOGISTS.map((o) => {
+            const hosp = HOSPITAL_BY_ID[o.hospital_id];
+            const where = hosp
+              ? (hosp.name[locale] ?? hosp.name.en)
+              : "";
+            return (
+              <option key={o.id} value={o.id}>
+                {(o.name[locale] ?? o.name.en) +
+                  (where ? ` — ${where}` : "")}
+              </option>
+            );
+          })}
+        </Select>
+      </Field>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label={locale === "zh" ? "主诊肿瘤科医师" : "Managing oncologist"}>
           <TextInput
