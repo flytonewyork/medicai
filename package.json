@@ -17,7 +17,8 @@
     "test:e2e": "playwright test",
     "ios:init": "cap add ios",
     "ios:sync": "cap sync ios",
-    "ios:open": "cap open ios"
+    "ios:open": "cap open ios",
+    "apk:publish": "node scripts/apk-publish.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",
