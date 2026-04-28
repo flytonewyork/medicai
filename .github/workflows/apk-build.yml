@@ -95,10 +95,59 @@ jobs:
           TWA_PROD_HOST: ${{ secrets.TWA_PROD_HOST }}
           VERSION: ${{ inputs.version }}
         run: |
+          # Validate the host shape before substituting — common breakages:
+          #   - Markdown autolink junk from copy-pasting in iTerm/macOS
+          #     terminal: "[host.tld](http://host.tld)"
+          #   - Stray protocol prefix: "https://host.tld"
+          #   - Trailing slash: "host.tld/"
+          # All of these silently produce an "Invalid URL" inside bubblewrap
+          # later. Catch them here with a regex and a length printout, so
+          # the operator knows exactly which secret to fix.
+          if ! [[ "$TWA_PROD_HOST" =~ ^[a-zA-Z0-9.-]+$ ]]; then
+            echo "::error::TWA_PROD_HOST contains characters that aren't valid in a hostname (length=${#TWA_PROD_HOST})."
+            echo "::error::Expected only [a-zA-Z0-9.-]. Common cause: macOS terminal autolinked the value when you pasted it ([host.tld](http://host.tld) shape). Re-set the secret by typing the host manually instead of pasting."
+            exit 1
+          fi
+          echo "TWA_PROD_HOST shape OK (length=${#TWA_PROD_HOST})."
+
           # In-place substitution of the placeholder; commit-back is gated
           # by the publish step so the canonical file in main keeps the
           # placeholder. Empty-secret guard already passed in pre-flight.
           sed -i "s/REPLACE_WITH_VERCEL_PROD_HOST/${TWA_PROD_HOST}/g" twa-manifest.json
+
+          # Validate every URL in the manifest with Node's WHATWG URL
+          # parser (the same parser bubblewrap uses). If any URL fails
+          # here, name the field; otherwise bubblewrap surfaces a generic
+          # "Invalid URL" with no hint which one is broken.
+          node -e "
+            const m = JSON.parse(require('fs').readFileSync('twa-manifest.json', 'utf8'));
+            const json = JSON.stringify(m);
+            if (json.includes('REPLACE_WITH_VERCEL_PROD_HOST')) {
+              console.error('::error::Placeholder still present after sed substitution');
+              process.exit(1);
+            }
+            const fields = ['iconUrl','maskableIconUrl','webManifestUrl','fullScopeUrl'];
+            for (const f of fields) {
+              if (m[f]) {
+                try { new URL(m[f]); }
+                catch (e) {
+                  console.error('::error::Field ' + f + ' is not a valid URL: ' + JSON.stringify(m[f]));
+                  process.exit(1);
+                }
+              }
+            }
+            for (const s of m.shortcuts || []) {
+              if (s.iconUrl) {
+                try { new URL(s.iconUrl); }
+                catch (e) {
+                  console.error('::error::shortcut.iconUrl is not a valid URL: ' + JSON.stringify(s.iconUrl));
+                  process.exit(1);
+                }
+              }
+            }
+            console.log('All manifest URLs parse OK.');
+          "
+
           # Bump appVersion to the release input. appVersionName is the
           # human-readable string; appVersion is the integer Play Store
           # build code, monotonically increasing.
