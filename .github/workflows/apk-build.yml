@@ -71,6 +71,7 @@ jobs:
       - name: Substitute production host into twa-manifest.json
         env:
           TWA_PROD_HOST: ${{ secrets.TWA_PROD_HOST }}
+          VERSION: ${{ inputs.version }}
         run: |
           if [ -z "$TWA_PROD_HOST" ]; then
             echo "TWA_PROD_HOST secret is empty" >&2
@@ -90,8 +91,6 @@ jobs:
             m.appVersion = (m.appVersion ?? 0) + 1;
             fs.writeFileSync('twa-manifest.json', JSON.stringify(m, null, 2) + '\n');
           "
-        env:
-          VERSION: ${{ inputs.version }}
 
       - name: Decode keystore
         env:
