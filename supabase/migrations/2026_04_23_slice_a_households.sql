@@ -357,7 +357,24 @@ CREATE POLICY "invites update (primary)"
 -- `household_id = current_household_id()`.
 
 -- ─── realtime ────────────────────────────────────────────────────────
-ALTER PUBLICATION supabase_realtime ADD TABLE public.households;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.household_memberships;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.household_invites;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
+-- ALTER PUBLICATION ... ADD TABLE isn't idempotent — re-running this
+-- migration would error 42710 on rows already in the publication.
+-- Wrap each so the migration can be re-run safely.
+DO $$
+DECLARE
+  t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    'households',
+    'household_memberships',
+    'household_invites',
+    'profiles'
+  ] LOOP
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_publication_tables
+      WHERE pubname = 'supabase_realtime' AND tablename = t
+    ) THEN
+      EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE public.%I', t);
+    END IF;
+  END LOOP;
+END$$;

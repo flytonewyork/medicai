@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Users, ChevronRight } from "lucide-react";
+import { useAuthSession } from "~/hooks/use-auth-session";
 import { useHousehold } from "~/hooks/use-household";
 import { isSupabaseConfigured } from "~/lib/supabase/client";
 import { Card, CardContent } from "~/components/ui/card";
@@ -14,17 +15,24 @@ import { useLocale, pickL } from "~/hooks/use-translate";
 // the user-story gap where signing in left the patient with a profile
 // but no team to invite people into.
 //
+// Auth check uses the session directly (not `profile != null`).
+// Signed-in users CAN have profile=null (the handle_new_user trigger
+// didn't fire, or the row got wiped in dev) — gating on profile would
+// hide the CTA from people who actually need it.
+//
 // Hidden when:
 // - Supabase isn't configured (offline-only setup, no point inviting)
-// - The hook is still resolving membership (avoid CTA flash)
+// - Either hook is still resolving (avoid CTA flash)
+// - The user is genuinely signed out
 // - The user already has a household (PendingInvitesCard handles that)
 export function InviteFamilyCard() {
   const locale = useLocale();
-  const { membership, profile, loading } = useHousehold();
+  const session = useAuthSession();
+  const { membership, loading } = useHousehold();
 
   if (!isSupabaseConfigured()) return null;
-  if (loading) return null;
-  if (!profile) return null;     // not signed in
+  if (loading || session === undefined) return null;
+  if (!session.signedIn) return null;
   if (membership) return null;   // already in a household
 
   const L = pickL(locale);

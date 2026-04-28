@@ -61,6 +61,51 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   return data as Profile | null;
 }
 
+// Auto-heal helper. The handle_new_user trigger normally inserts a
+// profiles row when an auth.users row appears. In dev (DB resets),
+// during pre-trigger signups, or after a schema migration that
+// dropped + recreated the trigger, a signed-in user can legitimately
+// have NO profiles row. The UI used to misclassify those users as
+// signed-out (profile=null gated the auth check), and any code path
+// that needs a profile (display name, role label) silently broke.
+//
+// This helper ensures a row exists for the current user. It uses
+// upsert so it's idempotent: callers can fire it on any page load
+// where a profile would be expected, with no risk of clobbering
+// existing data. Only the `id` is required by the RLS policy
+// ("profiles update own": id = auth.uid()).
+//
+// `displayName` is best-effort — supplied from local Dexie settings
+// or the auth user's email prefix. The profiles.display_name column
+// has a NOT NULL DEFAULT '', so we never need to send a non-empty
+// value to satisfy the schema.
+export async function ensureProfileForCurrentUser(args?: {
+  displayName?: string;
+  locale?: "en" | "zh";
+}): Promise<Profile | null> {
+  const sb = getSupabaseBrowser();
+  if (!sb) return null;
+  const uid = await currentUserId();
+  if (!uid) return null;
+  const existing = await getCurrentProfile().catch(() => null);
+  if (existing) return existing;
+  const displayName = args?.displayName?.trim();
+  const { data, error } = await sb
+    .from("profiles")
+    .upsert(
+      {
+        id: uid,
+        ...(displayName ? { display_name: displayName } : {}),
+        ...(args?.locale ? { locale: args.locale } : {}),
+      },
+      { onConflict: "id" },
+    )
+    .select("*")
+    .maybeSingle();
+  if (error) throw error;
+  return data as Profile | null;
+}
+
 export async function updateMyProfile(
   patch: Partial<
     Pick<

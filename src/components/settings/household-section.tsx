@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useAuthSession } from "~/hooks/use-auth-session";
 import { useHousehold } from "~/hooks/use-household";
 import { useL } from "~/hooks/use-translate";
 import { isSupabaseConfigured } from "~/lib/supabase/client";
@@ -36,6 +37,7 @@ import { Loader2, Lock, LogOut, UserPlus, Users } from "lucide-react";
 
 export function HouseholdSection() {
   const L = useL();
+  const session = useAuthSession();
   const { membership, profile, loading, refresh } = useHousehold();
   const [household, setHousehold] = useState<Household | null>(null);
   const householdId = membership?.household_id ?? null;
@@ -55,8 +57,8 @@ export function HouseholdSection() {
       <Body
         L={L}
         configured={isSupabaseConfigured()}
-        loading={loading}
-        signedIn={!!profile}
+        loading={loading || session === undefined}
+        signedIn={!!session?.signedIn}
         membership={membership}
         household={household}
         householdId={householdId}

@@ -71,7 +71,18 @@ CREATE POLICY "authenticated delete"
   USING (true);
 
 -- Realtime: enable so the app can subscribe to changes (Tom sees dad's logs).
-ALTER PUBLICATION supabase_realtime ADD TABLE public.cloud_rows;
+-- ALTER PUBLICATION ... ADD TABLE isn't idempotent — running it twice errors
+-- 42710. Wrap in a DO block so re-running schema.sql against an existing
+-- project (e.g. when a fresh contributor is bootstrapping) doesn't fail.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'cloud_rows'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.cloud_rows;
+  END IF;
+END$$;
 
 
 -- ═══════════════════════════════════════════════════════════════════

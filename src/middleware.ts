@@ -34,9 +34,23 @@ export async function middleware(request: NextRequest) {
 
   const { data } = await supabase.auth.getUser();
   if (data.user) {
+    // Honour ?next=… when bouncing an already-signed-in visitor away
+    // from /login. Deep-link flows (e.g. "Sign in to invite" on
+    // /carers) encode the destination here so the click that started
+    // the journey doesn't have to be repeated. Only same-origin
+    // relative paths are allowed — never blindly redirect to an
+    // attacker-supplied URL.
+    const requestedNext = request.nextUrl.searchParams.get("next");
     const redirect = request.nextUrl.clone();
-    redirect.pathname = "/";
-    redirect.searchParams.delete("next");
+    if (requestedNext && requestedNext.startsWith("/") && !requestedNext.startsWith("//")) {
+      const target = new URL(requestedNext, request.url);
+      redirect.pathname = target.pathname;
+      redirect.search = target.search;
+      redirect.hash = target.hash;
+    } else {
+      redirect.pathname = "/";
+      redirect.search = "";
+    }
     return NextResponse.redirect(redirect);
   }
 

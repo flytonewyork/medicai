@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useAuthSession } from "~/hooks/use-auth-session";
 import { useHousehold } from "~/hooks/use-household";
 import {
   ensureHouseholdForCurrentUser,
+  ensureProfileForCurrentUser,
   friendlyInviteError,
   getHousehold,
   listHouseholdMembers,
@@ -57,7 +59,17 @@ export default function CarersPage() {
   const L = useL();
   const searchParams = useSearchParams();
   const settings = useSettings();
-  const { membership, profile, loading, refresh } = useHousehold();
+  // Auth check goes through useAuthSession (session-direct) rather
+  // than `profile != null` on useHousehold. A signed-in user CAN
+  // legitimately have profile=null (the handle_new_user trigger never
+  // fired, the row was wiped in dev, or the 4-second useHousehold
+  // timeout flipped it from undefined to null). We were mis-classifying
+  // those users as signed-out and showing them the "Sign in to invite"
+  // CTA — which then bounced through middleware that wiped the next=
+  // param, dropping them on the dashboard.
+  const session = useAuthSession();
+  const { membership, profile, loading: householdLoading, refresh } =
+    useHousehold();
   const householdId = membership?.household_id ?? null;
   const canInvite =
     membership?.role === "primary_carer" || membership?.role === "patient";
@@ -68,6 +80,7 @@ export default function CarersPage() {
   const [invites, setInvites] = useState<HouseholdInvite[]>([]);
   const [showInviteFlow, setShowInviteFlow] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
+  const [healingProfile, setHealingProfile] = useState(false);
   // Bootstrap state for the "I signed in but have no household" branch.
   // The /carers page is the natural home for this: a user who lands
   // here is asking to grow their team, so creating their household is
@@ -79,6 +92,41 @@ export default function CarersPage() {
 
   const patientName =
     settings?.profile_name?.trim() || profile?.display_name?.trim() || "";
+
+  // Auto-heal a missing profile. If we have a session but the profiles
+  // row is null (trigger didn't fire, dev DB reset, etc.), upsert one
+  // using the local Dexie display name so subsequent lookups work and
+  // the rest of the app's profile-gated UI starts rendering correctly.
+  // Idempotent — fires once per mount and only when the gap exists.
+  useEffect(() => {
+    if (!session?.signedIn) return;
+    if (householdLoading) return;
+    if (profile) return;
+    if (healingProfile) return;
+    setHealingProfile(true);
+    void (async () => {
+      try {
+        await ensureProfileForCurrentUser({
+          displayName: patientName || undefined,
+          locale,
+        });
+        await refresh();
+      } catch {
+        // Best-effort. The page still renders the signed-in branches
+        // because the gate is session-based now, not profile-based.
+      } finally {
+        setHealingProfile(false);
+      }
+    })();
+  }, [
+    healingProfile,
+    householdLoading,
+    locale,
+    patientName,
+    profile,
+    refresh,
+    session?.signedIn,
+  ]);
 
   const reload = useCallback(async () => {
     if (!householdId) {
@@ -134,11 +182,14 @@ export default function CarersPage() {
   // with `?action=add-carer`. We bootstrap the household if needed and
   // auto-open the invite flow so the click that started this journey
   // ("Add carer") doesn't have to be repeated. Runs once per mount.
+  // The gate is session-based (not profile-based) so a signed-in user
+  // with a missing profiles row still flows through.
   useEffect(() => {
     if (autoOpenedFromQuery) return;
-    if (loading) return;
+    if (householdLoading) return;
+    if (session === undefined) return;
     if (searchParams?.get("action") !== "add-carer") return;
-    if (!profile) return;
+    if (!session.signedIn) return;
     void (async () => {
       if (!membership) {
         const id = await bootstrapHousehold();
@@ -150,10 +201,10 @@ export default function CarersPage() {
   }, [
     autoOpenedFromQuery,
     bootstrapHousehold,
-    loading,
+    householdLoading,
     membership,
-    profile,
     searchParams,
+    session,
   ]);
 
   const activeInvites = invites.filter(
@@ -225,14 +276,14 @@ export default function CarersPage() {
             </p>
           </CardContent>
         </Card>
-      ) : loading ? (
+      ) : session === undefined || householdLoading ? (
         <Card>
           <CardContent className="flex items-center gap-2 pt-5 text-[12.5px] text-ink-500">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             {L("Checking your account…", "正在检查账号…")}
           </CardContent>
         </Card>
-      ) : !profile ? (
+      ) : !session.signedIn ? (
         <Card className="border-[var(--tide-2)]/40 bg-[var(--tide-soft)]">
           <CardContent className="space-y-3 pt-5 text-[13px]">
             <div className="flex items-center gap-2 text-ink-900">
@@ -365,7 +416,7 @@ export default function CarersPage() {
             ) : (
               <MembersList
                 members={members}
-                currentUserId={profile.id}
+                currentUserId={profile?.id ?? session?.userId ?? null}
                 isPrimary={Boolean(isPrimary)}
                 householdId={householdId}
                 onChanged={reload}
