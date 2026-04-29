@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
@@ -68,9 +68,18 @@ export function QuickCheckinCard() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [justSaved, setJustSaved] = useState(false);
 
-  // After save, the live query picks up `existing` and unmounts this card.
-  // The transient "Saved" flash below bridges the gap so the patient sees
-  // acknowledgment before the card disappears.
+  // After save, the live query picks up `existing` and would normally
+  // unmount the card. We keep a brief "Saved" acknowledgement visible
+  // for ~2.5s so the patient sees confirmation, then drop back to the
+  // existing-row path which returns null (i.e. the card cleans itself
+  // up automatically). Without this timer the saved banner stayed on
+  // the dashboard for the rest of the session.
+  useEffect(() => {
+    if (!justSaved) return;
+    const id = setTimeout(() => setJustSaved(false), 2500);
+    return () => clearTimeout(id);
+  }, [justSaved]);
+
   if (existing && !justSaved) return null;
 
   async function save() {
