@@ -36,53 +36,53 @@ export const VoiceMemoParseSchema = z.object({
   //      when the memo states it (number or clear qualitative anchor),
   //      null otherwise.
   energy: ZeroToTen
-    .nullable()
+    .nullish()
     .describe(
       "0–10 self-rated energy. 'exhausted'→2, 'sluggish'→4, 'normal'→6, 'good'→7. Null when not mentioned.",
     ),
   sleep_quality: ZeroToTen
-    .nullable()
+    .nullish()
     .describe("0–10. 'awful sleep'→2, 'broken'→4, 'okay'→6, 'great'→8."),
   appetite: ZeroToTen
-    .nullable()
+    .nullish()
     .describe("0–10. 'no appetite'→1, 'forced myself to eat'→3, 'normal'→6."),
-  pain_current: ZeroToTen.nullable().describe("Pain 0–10 right now."),
-  pain_worst: ZeroToTen.nullable().describe("Worst pain today, 0–10."),
+  pain_current: ZeroToTen.nullish().describe("Pain 0–10 right now."),
+  pain_worst: ZeroToTen.nullish().describe("Worst pain today, 0–10."),
   mood_clarity: ZeroToTen
-    .nullable()
+    .nullish()
     .describe("0–10. 'foggy'→3, 'clear-headed'→8."),
-  nausea: ZeroToTen.nullable().describe("0–10 nausea severity."),
-  fatigue: ZeroToTen.nullable(),
+  nausea: ZeroToTen.nullish().describe("0–10 nausea severity."),
+  fatigue: ZeroToTen.nullish(),
   anorexia: ZeroToTen
-    .nullable()
+    .nullish()
     .describe("0–10 loss-of-desire-to-eat severity."),
-  abdominal_pain: ZeroToTen.nullable(),
-  neuropathy_hands: NeuropathyGrade.nullable(),
-  neuropathy_feet: NeuropathyGrade.nullable(),
+  abdominal_pain: ZeroToTen.nullish(),
+  neuropathy_hands: NeuropathyGrade.nullish(),
+  neuropathy_feet: NeuropathyGrade.nullish(),
   weight_kg: z
     .number()
     .min(20)
     .max(200)
-    .nullable()
+    .nullish()
     .describe("Only when the patient states a weight. Reject implausible values."),
   diarrhoea_count: z
     .number()
     .int()
     .min(0)
     .max(20)
-    .nullable()
+    .nullish()
     .describe("Number of loose stools today, when stated."),
   cold_dysaesthesia: z
     .boolean()
-    .nullable()
+    .nullish()
     .describe(
       "True when the patient describes cold-triggered tingling or pain. Null when not mentioned. Never set false on the strength of silence.",
     ),
-  mouth_sores: z.boolean().nullable(),
-  fever: z.boolean().nullable(),
+  mouth_sores: z.boolean().nullish(),
+  fever: z.boolean().nullish(),
   notes: z
     .string()
-    .nullable()
+    .nullish()
     .describe(
       "Anything CLINICALLY noteworthy that doesn't fit a structured field — taste changes, side-effect attributions. 1–3 short sentences. Personal content (food, family, practice) belongs in `personal`, not here.",
     ),
@@ -95,27 +95,27 @@ export const VoiceMemoParseSchema = z.object({
     .object({
       visit_date: z
         .string()
-        .nullable()
+        .nullish()
         .describe("ISO date of the visit. Null when the patient didn't say."),
       provider: z
         .string()
-        .nullable()
+        .nullish()
         .describe("Provider name. 'Sumi'→'A/Prof Sumitra Ananda' when context is clear."),
-      location: z.string().nullable(),
+      location: z.string().nullish(),
       summary: z
         .string()
         .describe("1–3 sentence summary of what happened in the visit."),
       key_points: z
         .array(z.string())
-        .nullable()
+        .nullish()
         .describe("Decisions made / instructions given / dosage changes. Null when none."),
     })
-    .nullable()
+    .nullish()
     .describe(
       "Set only when the patient describes a clinical encounter that already happened. Null for symptom-only memos.",
     ),
 
-  // ---- Future appointments mentioned. Required array (possibly empty).
+  // ---- Future appointments mentioned. Tolerant of missing key.
   appointments_mentioned: z
     .array(
       z.object({
@@ -124,64 +124,70 @@ export const VoiceMemoParseSchema = z.object({
           .describe("Short label, e.g. 'Cycle 3 chemo' or 'PET-CT scan'."),
         starts_at: z
           .string()
-          .nullable()
+          .nullish()
           .describe("ISO datetime when stated; null otherwise."),
-        location: z.string().nullable(),
-        doctor: z.string().nullable(),
+        location: z.string().nullish(),
+        doctor: z.string().nullish(),
         prep: z
           .string()
-          .nullable()
+          .nullish()
           .describe("Prep instructions: fasting, items to bring, hydration."),
         kind: z
           .enum(["clinic", "chemo", "scan", "blood_test", "procedure", "other"])
-          .nullable(),
+          .nullish(),
         confidence: ConfidenceEnum.describe(
           "high only when both date and title are concrete; low/medium are surfaced as hints, not auto-scheduled.",
         ),
       }),
     )
-    .describe("Empty array when the memo mentions no future appointments."),
+    .nullish()
+    .describe("Empty array (or null/omitted) when the memo mentions no future appointments."),
 
-  // ---- Medications mentioned. Required array (possibly empty).
+  // ---- Medications mentioned. Tolerant of missing key.
   medications_mentioned: z
     .array(
       z.object({
         name: z.string().describe("Drug name as the patient said it."),
         detail: z
           .string()
-          .nullable()
+          .nullish()
           .describe("Brief context: dose timing, missed dose, side-effect attribution."),
       }),
     )
-    .describe("Empty array when no medications are discussed."),
+    .nullish()
+    .describe("Empty array (or null/omitted) when no medications are discussed."),
 
-  // ---- Personal (non-clinical) content. Required-nullable object —
-  //      null when the memo is purely clinical. Stored on the memo
-  //      only, never synced to cloud (the sync hook scrubs this key).
+  // ---- Personal (non-clinical) content. Nullable object — null when
+  //      the memo is purely clinical. Stored on the memo only, never
+  //      synced to cloud (the sync hook scrubs this key).
   personal: z
     .object({
       food_mentions: z
         .array(z.string())
-        .describe("Foods or drinks the patient mentions. Empty when none."),
+        .nullish()
+        .describe("Foods or drinks the patient mentions. Empty / null when none."),
       family_mentions: z
         .array(z.string())
-        .describe("Family or carer interactions. Empty when none."),
+        .nullish()
+        .describe("Family or carer interactions. Empty / null when none."),
       practice_mentions: z
         .array(z.string())
-        .describe("Qigong, meditation, walks, breathing. Empty when none."),
+        .nullish()
+        .describe("Qigong, meditation, walks, breathing. Empty / null when none."),
       goals: z
         .array(z.string())
-        .describe("Things the patient says they intend to do. Empty when none."),
+        .nullish()
+        .describe("Things the patient says they intend to do. Empty / null when none."),
       mood_narrative: z
         .string()
-        .nullable()
+        .nullish()
         .describe("One short sentence about how the patient feels in their own words. Null when no mood content."),
       observations: z
         .string()
-        .nullable()
+        .nullish()
         .describe("Anything else worth keeping. Null when nothing extra."),
     })
-    .nullable()
+    .nullish()
     .describe(
       "Non-clinical content. Set when the patient mentions food, family, practice, goals, or mood. Null otherwise.",
     ),
