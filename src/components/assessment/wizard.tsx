@@ -20,6 +20,7 @@ import { Alert } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
 import { CoachDrawer } from "~/components/assessment/coach-drawer";
+import { StepInstructions } from "~/components/assessment/instructions";
 import * as Steps from "~/components/assessment/steps";
 import {
   ArrowLeft,
@@ -27,8 +28,58 @@ import {
   MinusCircle,
   SkipForward,
   Check,
+  Heart,
+  User,
+  Users,
+  Stethoscope,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+
+const HELPER_ROLE_ICON = {
+  self: User,
+  family: Heart,
+  coach: Users,
+  clinician: Stethoscope,
+} as const;
+
+const HELPER_ROLE_LABEL: Record<
+  "self" | "family" | "coach" | "clinician",
+  { en: string; zh: string }
+> = {
+  self: { en: "Patient alone", zh: "患者独自" },
+  family: { en: "Family member", zh: "家人" },
+  coach: { en: "Coach / friend", zh: "教练 / 友人" },
+  clinician: { en: "Clinician", zh: "临床医生" },
+};
+
+function HelperBanner({
+  helperName,
+  helperRole,
+}: {
+  helperName?: string;
+  helperRole?: "self" | "family" | "coach" | "clinician";
+}) {
+  const locale = useLocale();
+  if (!helperRole || helperRole === "self") return null;
+  const Icon = HELPER_ROLE_ICON[helperRole];
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-ink-200 bg-paper-2/60 px-3 py-2 text-xs text-ink-700">
+      <Icon className="h-3.5 w-3.5 text-ink-500" aria-hidden />
+      <span>
+        {locale === "zh" ? "今日带做：" : "Running this with: "}
+        <span className="font-medium text-ink-900">
+          {helperName?.trim() || HELPER_ROLE_LABEL[helperRole][locale]}
+        </span>
+        {helperName?.trim() && (
+          <span className="text-ink-400">
+            {" "}
+            · {HELPER_ROLE_LABEL[helperRole][locale]}
+          </span>
+        )}
+      </span>
+    </div>
+  );
+}
 
 type AssessmentDraft = Partial<ComprehensiveAssessment>;
 
@@ -237,8 +288,19 @@ export function AssessmentWizard({ assessmentId }: WizardProps) {
 
   const Step = STEP_RENDERERS[currentId];
 
+  const stepInstructionsLocale = currentTest.instructions?.[locale] ?? [];
+  // Open by default on tests that need spoken cueing (built-in timer
+  // tests like STS-30, TUG, gait): the helper has to read the steps
+  // out loud anyway. Closed by default elsewhere — questionnaires and
+  // anthropometrics are mostly self-explanatory in the on-screen form.
+  const instructionsOpenByDefault = !!currentTest.has_builtin_timer;
+
   return (
     <div className="space-y-6">
+      <HelperBanner
+        helperName={existing.helper_name}
+        helperRole={existing.helper_role}
+      />
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs text-ink-500">
           <span
@@ -289,11 +351,20 @@ export function AssessmentWizard({ assessmentId }: WizardProps) {
             context={{
               stepKey: currentTest.id,
               stepTitle: currentTest.title.en,
-              stepInstructions: currentTest.description.en,
+              stepInstructions:
+                (currentTest.instructions?.en ?? []).join("\n") ||
+                currentTest.description.en,
             }}
           />
         </div>
       </div>
+
+      {stepInstructionsLocale.length > 0 && (
+        <StepInstructions
+          steps={stepInstructionsLocale}
+          defaultOpen={instructionsOpenByDefault}
+        />
+      )}
 
       <Card>
         <CardContent className="space-y-6 pt-6">

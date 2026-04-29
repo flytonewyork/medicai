@@ -47,6 +47,37 @@ export default function ViewAssessmentPage() {
         }
       />
 
+      {(a.helper_role && a.helper_role !== "self") || a.helper_notes ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {locale === "zh" ? "本次带做" : "Session helper"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-ink-700">
+            {a.helper_role && a.helper_role !== "self" && (
+              <div>
+                <span className="eyebrow mr-2">
+                  {locale === "zh" ? "带做人" : "Helper"}
+                </span>
+                {a.helper_name?.trim() || (locale === "zh" ? "（未填姓名）" : "(name not entered)")}
+                <span className="ml-1 text-ink-400">
+                  · {a.helper_role}
+                </span>
+              </div>
+            )}
+            {a.helper_notes && (
+              <div>
+                <div className="eyebrow">
+                  {locale === "zh" ? "环境备注" : "Setup notes"}
+                </div>
+                <p className="mt-0.5 whitespace-pre-line">{a.helper_notes}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
+
       {typeof a.anchor_index === "number" && (
         <Card>
           <CardHeader>

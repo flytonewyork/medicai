@@ -1,10 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { PageHeader } from "~/components/ui/page-header";
+import { Card, CardContent } from "~/components/ui/card";
 import { TestListBuilder } from "~/components/assessment/test-list-builder";
+import {
+  HelperKickoff,
+  type HelperKickoffValue,
+} from "~/components/assessment/helper-kickoff";
 import { todayISO } from "~/lib/utils/date";
 import { useLocale } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
@@ -22,6 +28,10 @@ export default function NewAssessmentPage() {
   );
   const hasAny = (assessments ?? []).some((a) => a.status === "complete");
 
+  const [helper, setHelper] = useState<HelperKickoffValue>({
+    helper_role: "self",
+  });
+
   async function start(testIds: string[]) {
     const trigger: ComprehensiveAssessmentTrigger = hasAny
       ? "ad_hoc"
@@ -32,6 +42,9 @@ export default function NewAssessmentPage() {
       status: "draft",
       trigger,
       entered_by: enteredBy,
+      helper_role: helper.helper_role,
+      helper_name: helper.helper_name?.trim() || undefined,
+      helper_notes: helper.helper_notes?.trim() || undefined,
       tests_included: testIds,
       tests_completed: [],
       tests_skipped: [],
@@ -45,13 +58,20 @@ export default function NewAssessmentPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-8">
       <PageHeader
-        title={locale === "zh" ? "定制测试列表" : "Build your test list"}
+        title={locale === "zh" ? "开始一次综合评估" : "Start a comprehensive assessment"}
         subtitle={
           locale === "zh"
-            ? "挑选一个预设或自行挑选。流程中随时可以跳过或删除测试。"
-            : "Pick a preset or customise. You can still skip or remove any test mid-flow."
+            ? "先记录今天是谁带做、有哪些器材，再选择测试组合。每一步都内置说明、计时器和可跳过按钮。"
+            : "Record who's running it today and what equipment is on hand, then pick the tests. Every step ships with its own instructions, timer, and skip option."
         }
       />
+
+      <Card>
+        <CardContent className="pt-5">
+          <HelperKickoff value={helper} onChange={setHelper} />
+        </CardContent>
+      </Card>
+
       <TestListBuilder onStart={(ids) => void start(ids)} />
     </div>
   );
