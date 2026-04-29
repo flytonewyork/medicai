@@ -31,6 +31,149 @@ const NeuropathyGrade = z
 
 const ConfidenceEnum = z.enum(["low", "medium", "high"]);
 
+// Tolerant enum coercion. The route uses messages.create + manual
+// JSON.parse (Anthropic structured output exceeded the 24-optional /
+// 16-union schema cap), so we don't get grammar-level enum
+// enforcement — Claude can return synonyms, casings, or empty
+// strings. Rather than 502 the parse, normalise:
+//   · empty / whitespace / null-string → null
+//   · case-insensitive direct match → use it
+//   · synonym match → use the canonical value
+//   · anything else → fallback (typically "other")
+function tolerantEnum<T extends readonly [string, ...string[]]>(
+  values: T,
+  fallback: T[number],
+  synonyms: Record<string, T[number]> = {},
+) {
+  return z.preprocess((raw) => {
+    if (raw === null || raw === undefined) return null;
+    if (typeof raw !== "string") return fallback;
+    const trimmed = raw.trim().toLowerCase();
+    if (trimmed === "" || trimmed === "null" || trimmed === "none") return null;
+    const normalised = trimmed.replace(/[\s-]+/g, "_");
+    if ((values as readonly string[]).includes(normalised)) return normalised;
+    if ((values as readonly string[]).includes(trimmed)) return trimmed;
+    // Substring synonym match — first hit wins.
+    for (const key of Object.keys(synonyms)) {
+      if (normalised.includes(key) || trimmed.includes(key)) {
+        return synonyms[key];
+      }
+    }
+    return fallback;
+  }, z.enum(values).nullable());
+}
+
+const ClinicVisitKindField = tolerantEnum(
+  ["clinic", "chemo", "scan", "blood_test", "procedure", "ed", "other"] as const,
+  "other",
+  {
+    chemo: "chemo",
+    infusion: "chemo",
+    chemotherapy: "chemo",
+    scan: "scan",
+    imaging: "scan",
+    pet: "scan",
+    ct: "scan",
+    mri: "scan",
+    blood: "blood_test",
+    bloods: "blood_test",
+    pathology: "blood_test",
+    biopsy: "procedure",
+    surgery: "procedure",
+    operation: "procedure",
+    procedure: "procedure",
+    emergency: "ed",
+    ed: "ed",
+    consult: "clinic",
+    review: "clinic",
+    appointment: "clinic",
+  },
+);
+
+const AppointmentKindField = tolerantEnum(
+  ["clinic", "chemo", "scan", "blood_test", "procedure", "other"] as const,
+  "other",
+  {
+    chemo: "chemo",
+    infusion: "chemo",
+    chemotherapy: "chemo",
+    scan: "scan",
+    imaging: "scan",
+    pet: "scan",
+    ct: "scan",
+    mri: "scan",
+    blood: "blood_test",
+    bloods: "blood_test",
+    biopsy: "procedure",
+    surgery: "procedure",
+    operation: "procedure",
+    procedure: "procedure",
+    consult: "clinic",
+    review: "clinic",
+  },
+);
+
+const ImagingModalityField = tolerantEnum(
+  ["pet", "ct", "mri", "ultrasound", "xray", "bone_scan", "other"] as const,
+  "other",
+  {
+    "pet_ct": "pet",
+    "pet/ct": "pet",
+    petct: "pet",
+    pet: "pet",
+    ct: "ct",
+    "ct_scan": "ct",
+    mri: "mri",
+    ultrasound: "ultrasound",
+    us: "ultrasound",
+    sonogram: "ultrasound",
+    xray: "xray",
+    "x_ray": "xray",
+    bone: "bone_scan",
+  },
+);
+
+const ImagingStatusField = tolerantEnum(
+  ["clear", "stable", "improvement", "progression", "unclear"] as const,
+  "unclear",
+  {
+    clear: "clear",
+    normal: "clear",
+    "all_clear": "clear",
+    stable: "stable",
+    unchanged: "stable",
+    improvement: "improvement",
+    improved: "improvement",
+    better: "improvement",
+    progression: "progression",
+    progressed: "progression",
+    worse: "progression",
+    growing: "progression",
+    unclear: "unclear",
+    unknown: "unclear",
+  },
+);
+
+const LabStatusField = tolerantEnum(
+  ["normal", "raised", "low", "abnormal", "unstated"] as const,
+  "unstated",
+  {
+    normal: "normal",
+    fine: "normal",
+    okay: "normal",
+    raised: "raised",
+    high: "raised",
+    elevated: "raised",
+    up: "raised",
+    low: "low",
+    down: "low",
+    abnormal: "abnormal",
+    off: "abnormal",
+    unstated: "unstated",
+    unknown: "unstated",
+  },
+);
+
 export const VoiceMemoParseSchema = z.object({
   // ---- Daily-tracking fields. All required-nullable. Set the value
   //      when the memo states it (number or clear qualitative anchor),
@@ -93,20 +236,9 @@ export const VoiceMemoParseSchema = z.object({
   //      nullable to keep the optional-parameter count at zero.
   clinic_visit: z
     .object({
-      kind: z
-        .enum([
-          "clinic",
-          "chemo",
-          "scan",
-          "blood_test",
-          "procedure",
-          "ed",
-          "other",
-        ])
-        .nullish()
-        .describe(
-          "Kind of clinical encounter the memo describes. Use 'chemo' for any infusion/chemotherapy session (化疗/输液), 'scan' for imaging visits, 'blood_test' for blood draws (抽血), 'procedure' for biopsies/operations (活检/手术), 'ed' for emergency-department visits, 'clinic' for consult appointments. Maps to existing appointment kinds so the apply step can flip a matching scheduled appointment to attended.",
-        ),
+      kind: ClinicVisitKindField.describe(
+        "Kind of clinical encounter the memo describes. Use 'chemo' for any infusion/chemotherapy session (化疗/输液), 'scan' for imaging visits, 'blood_test' for blood draws (抽血), 'procedure' for biopsies/operations (活检/手术), 'ed' for emergency-department visits, 'clinic' for consult appointments. Maps to existing appointment kinds so the apply step can flip a matching scheduled appointment to attended.",
+      ),
       visit_date: z
         .string()
         .nullish()
@@ -146,9 +278,7 @@ export const VoiceMemoParseSchema = z.object({
           .string()
           .nullish()
           .describe("Prep instructions: fasting, items to bring, hydration."),
-        kind: z
-          .enum(["clinic", "chemo", "scan", "blood_test", "procedure", "other"])
-          .nullish(),
+        kind: AppointmentKindField,
         confidence: ConfidenceEnum.describe(
           "high only when both date and title are concrete; low/medium are surfaced as hints, not auto-scheduled.",
         ),
@@ -214,15 +344,15 @@ export const VoiceMemoParseSchema = z.object({
   imaging_results: z
     .array(
       z.object({
-        modality: z
-          .enum(["pet", "ct", "mri", "ultrasound", "xray", "bone_scan", "other"])
-          .describe("Scan type. Use 'other' rather than guessing when ambiguous."),
+        modality: ImagingModalityField.describe(
+          "Scan type. Use 'other' rather than guessing when ambiguous.",
+        ),
         finding_summary: z
           .string()
           .describe("One short phrase: 'all clear', 'liver lesion stable', 'new node in mediastinum'."),
-        status: z
-          .enum(["clear", "stable", "improvement", "progression", "unclear"])
-          .describe("Patient's interpretation of the result."),
+        status: ImagingStatusField.describe(
+          "Patient's interpretation of the result.",
+        ),
         date: z
           .string()
           .nullish()
@@ -246,9 +376,9 @@ export const VoiceMemoParseSchema = z.object({
           .string()
           .nullish()
           .describe("Numeric value or descriptor as stated; null when not given."),
-        status: z
-          .enum(["normal", "raised", "low", "abnormal", "unstated"])
-          .describe("Patient's interpretation of the result."),
+        status: LabStatusField.describe(
+          "Patient's interpretation of the result.",
+        ),
         date: z.string().nullish(),
       }),
     )
