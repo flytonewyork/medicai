@@ -191,7 +191,7 @@ export function useVoiceTranscription(
     });
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
-      throw new Error(detail || `transcribe failed (${res.status})`);
+      throw new Error(humaniseTranscribeError(detail, res.status));
     }
     const isStream =
       res.headers.get("x-anchor-stream") === "1" ||
@@ -409,4 +409,37 @@ function extFor(mime: string): string {
     default:
       return "webm";
   }
+}
+
+// Translate raw transcribe-route error responses into a sentence the
+// patient can act on. Avoids dumping JSON envelopes into the alert.
+function humaniseTranscribeError(detail: string, status: number): string {
+  const trimmed = detail.trim();
+  // Try to unwrap `{"error":"..."}` so common server errors surface as
+  // plain prose. Falls back to the raw body when it isn't JSON.
+  let inner = trimmed;
+  if (trimmed.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(trimmed) as { error?: string };
+      if (typeof parsed.error === "string") inner = parsed.error;
+    } catch {
+      // not JSON — keep raw
+    }
+  }
+  if (status === 401 || /unauthenticated/i.test(inner)) {
+    return "Sign in not required, but the transcribe endpoint is mis-gated. Refresh the page; if the error persists, redeploy.";
+  }
+  if (status === 503 && /OPENAI_API_KEY/.test(inner)) {
+    return inner;
+  }
+  if (status === 503) {
+    return "Transcription is offline (server config). Try again in a moment.";
+  }
+  if (status === 413) {
+    return "Recording is too long for one transcription. Keep memos under ~25 minutes.";
+  }
+  if (status === 502 || status === 504) {
+    return "The transcription service didn't respond. Try again in a moment.";
+  }
+  return inner || `transcribe failed (${status})`;
 }

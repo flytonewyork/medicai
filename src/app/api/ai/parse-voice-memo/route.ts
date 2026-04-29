@@ -6,7 +6,7 @@ import {
   readJsonBody,
   withAnthropicErrorBoundary,
 } from "~/lib/anthropic/route-helpers";
-import { requireSession } from "~/lib/auth/require-session";
+import { getSupabaseServer } from "~/lib/supabase/server";
 import { loadHouseholdProfile } from "~/lib/household/profile";
 import { wrapUserInput } from "~/lib/anthropic/wrap-user-input";
 import {
@@ -21,6 +21,13 @@ import {
 // into the day's `daily_entries` row as a safe fill — never an
 // overwrite — so the diary turns voice memos into structured tracking
 // without the patient having to open the daily form.
+//
+// Auth: not required. Voice memos are foundational and the project is
+// local-first (per middleware.ts and CLAUDE.md). When a Supabase
+// session is present we use it to fetch the household profile so the
+// system prompt is interpolated against the right patient identity;
+// when it's not, we fall back to FALLBACK_HOUSEHOLD_PROFILE which is
+// generic but still produces a useful parse.
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -33,9 +40,6 @@ interface ParseBody {
 }
 
 export async function POST(req: Request) {
-  const auth = await requireSession();
-  if (!auth.ok) return auth.error;
-
   const gate = getAnthropicClient();
   if (gate.error) return gate.error;
 
@@ -47,7 +51,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "transcript required" }, { status: 400 });
   }
 
-  const profile = await loadHouseholdProfile(auth.session.household_id);
+  // Best-effort household lookup — load the patient identity envelope
+  // when a Supabase session happens to be present, fall back to the
+  // generic profile when it isn't. Never block the parse on this.
+  let householdId: string | null = null;
+  try {
+    const sb = getSupabaseServer();
+    if (sb) {
+      const { data } = await sb.auth.getUser();
+      if (data?.user) {
+        const { data: membership } = await sb
+          .from("household_memberships")
+          .select("household_id")
+          .eq("user_id", data.user.id)
+          .maybeSingle();
+        householdId = (membership?.household_id as string | undefined) ?? null;
+      }
+    }
+  } catch {
+    // unauthenticated or schema mismatch — use the fallback profile
+  }
+  const profile = await loadHouseholdProfile(householdId);
   const localeNote =
     body.locale === "zh"
       ? "The transcript is Mandarin. Translate before extracting."
