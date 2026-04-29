@@ -83,7 +83,11 @@ export async function POST(req: Request) {
   const result = await withAnthropicErrorBoundary(() =>
     gate.client.messages.parse({
       model: body.model ?? DEFAULT_AI_MODEL,
-      max_tokens: 800,
+      // Generous budget — the expanded schema (daily fields + clinic
+      // visit + appointments + medications + personal block) can
+      // legitimately produce ~1k tokens for a rich memo. Truncation
+      // here surfaces as a silent structured-output failure.
+      max_tokens: 2000,
       system: [
         {
           type: "text",

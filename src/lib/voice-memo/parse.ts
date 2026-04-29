@@ -33,11 +33,11 @@ interface ParseResponse {
 // the apply step automatically. Errors are logged, never thrown into
 // the UI; the memo detail view exposes a "Re-parse" affordance for
 // retries.
-export async function parseVoiceMemo(memoId: number): Promise<void> {
+export async function parseVoiceMemo(memoId: number): Promise<ParseAttempt> {
   const memo = await db.voice_memos.get(memoId);
-  if (!memo) return;
-  if (memo.parsed_fields) return;
-  if (!memo.transcript.trim()) return;
+  if (!memo) return { ok: false, reason: "memo not found" };
+  if (memo.parsed_fields) return { ok: true };
+  if (!memo.transcript.trim()) return { ok: false, reason: "no transcript" };
 
   let parsed: VoiceMemoParsedFields;
   try {
@@ -48,9 +48,10 @@ export async function parseVoiceMemo(memoId: number): Promise<void> {
     });
     parsed = res.parsed;
   } catch (err) {
+    const reason = humaniseParseError(err);
     // eslint-disable-next-line no-console
-    console.warn("[voice-memo] parse failed", memoId, err);
-    return;
+    console.warn("[voice-memo] parse failed", memoId, reason);
+    return { ok: false, reason };
   }
 
   await db.voice_memos.update(memoId, {
@@ -66,6 +67,29 @@ export async function parseVoiceMemo(memoId: number): Promise<void> {
       console.warn("[voice-memo] auto-apply failed", memoId, err);
     }
   }
+  return { ok: true };
+}
+
+export interface ParseAttempt {
+  ok: boolean;
+  reason?: string;
+}
+
+function humaniseParseError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+  // postJson wraps server bodies as `HTTP 502: {"error":"..."}` —
+  // unwrap so the patient-facing message is the actual cause.
+  const match = raw.match(/HTTP \d+:\s*(.+)/);
+  const body = match?.[1] ?? raw;
+  if (body.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(body) as { error?: string };
+      if (typeof parsed.error === "string") return parsed.error;
+    } catch {
+      // fall through
+    }
+  }
+  return body;
 }
 
 // Force-re-run the parser even when parsed_fields is already set.
@@ -74,10 +98,10 @@ export async function parseVoiceMemo(memoId: number): Promise<void> {
 // previously applied patches' record — but does NOT roll back the
 // rows those patches wrote, so re-applying after a re-parse is the
 // patient's call.
-export async function reparseVoiceMemo(memoId: number): Promise<void> {
+export async function reparseVoiceMemo(memoId: number): Promise<ParseAttempt> {
   const memo = await db.voice_memos.get(memoId);
-  if (!memo) return;
-  if (!memo.transcript.trim()) return;
+  if (!memo) return { ok: false, reason: "memo not found" };
+  if (!memo.transcript.trim()) return { ok: false, reason: "no transcript" };
   let parsed: VoiceMemoParsedFields;
   try {
     const res = await postJson<ParseResponse>("/api/ai/parse-voice-memo", {
@@ -87,12 +111,14 @@ export async function reparseVoiceMemo(memoId: number): Promise<void> {
     });
     parsed = res.parsed;
   } catch (err) {
+    const reason = humaniseParseError(err);
     // eslint-disable-next-line no-console
-    console.warn("[voice-memo] re-parse failed", memoId, err);
-    return;
+    console.warn("[voice-memo] re-parse failed", memoId, reason);
+    return { ok: false, reason };
   }
   await db.voice_memos.update(memoId, {
     parsed_fields: { ...parsed, applied_patches: undefined },
     updated_at: now(),
   });
+  return { ok: true };
 }
