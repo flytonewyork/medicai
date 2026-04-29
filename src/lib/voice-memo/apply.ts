@@ -437,6 +437,10 @@ async function applyImagingResult(
   createNew: boolean,
 ): Promise<AppliedPatch[]> {
   const patches: AppliedPatch[] = [];
+  // Drop entries Claude couldn't pin a finding to. Nullish strings
+  // are how the schema lets a glitchy parse through without 502'ing.
+  const findingSummary = result.finding_summary?.trim();
+  if (!findingSummary) return patches;
   const day = result.date ?? memo.day ?? localDayISO(memo.recorded_at);
 
   const matched = await findAppointmentForImaging(result.modality, day);
@@ -444,7 +448,7 @@ async function applyImagingResult(
     const linkPatch = await linkAppointment(
       memo,
       matched,
-      `From voice memo: ${result.modality.toUpperCase()} — ${result.finding_summary} (${result.status}).`,
+      `From voice memo: ${result.modality.toUpperCase()} — ${findingSummary} (${result.status}).`,
     );
     if (linkPatch) patches.push(linkPatch);
   }
@@ -454,7 +458,7 @@ async function applyImagingResult(
     const row: Imaging = {
       date: day,
       modality: mapModality(result.modality),
-      findings_summary: result.finding_summary,
+      findings_summary: findingSummary,
       notes: `Patient interpretation: ${result.status}.`,
       source_memo_id: memo.id,
       source_appointment_id: matched?.id,
@@ -490,6 +494,9 @@ async function applyLabResult(
   createNew: boolean,
 ): Promise<AppliedPatch[]> {
   const patches: AppliedPatch[] = [];
+  // Drop entries Claude couldn't pin a name to.
+  const labName = result.name?.trim();
+  if (!labName) return patches;
   const day = result.date ?? memo.day ?? localDayISO(memo.recorded_at);
 
   // Always try to link a matching bloods appointment first — silent.
@@ -498,7 +505,7 @@ async function applyLabResult(
     const linkPatch = await linkAppointment(
       memo,
       matched,
-      `From voice memo: ${result.name} — ${result.value ?? result.status}.`,
+      `From voice memo: ${labName} — ${result.value ?? result.status}.`,
     );
     if (linkPatch) patches.push(linkPatch);
   }
@@ -506,7 +513,7 @@ async function applyLabResult(
   if (!createNew) return patches;
 
   const numeric = extractNumericValue(result.value);
-  const fieldKey = mapLabName(result.name);
+  const fieldKey = mapLabName(labName);
   // Without a numeric value mapped to a known typed analyte we don't
   // touch the labs table — the qualitative mention stays on the memo
   // (and on the linked appointment's notes). Per the user's design.
@@ -567,7 +574,13 @@ async function applyNutritionMeal(
   memo: VoiceMemo,
   meal: NonNullable<NonNullable<VoiceMemoParsedFields["nutrition"]>["meals"]>[number],
 ): Promise<AppliedPatch[]> {
-  if (!meal.items?.length) return [];
+  // Drop items Claude returned with null/empty names — schema lets
+  // them through (nullish) but they have no value as meal items.
+  const cleanItems = (meal.items ?? []).filter(
+    (it): it is typeof it & { name: string } =>
+      typeof it.name === "string" && it.name.trim().length > 0,
+  );
+  if (cleanItems.length === 0) return [];
   const patches: AppliedPatch[] = [];
   const ts = now();
   const day = memo.day || localDayISO(memo.recorded_at);
@@ -595,14 +608,14 @@ async function applyNutritionMeal(
     fields: {
       meal_type: meal.meal_type,
       date: day,
-      items: meal.items.map((it) => it.name).join(", "),
+      items: cleanItems.map((it) => it.name).join(", "),
     },
     op: "create",
     applied_at: ts,
   });
 
   const itemIds: number[] = [];
-  for (const it of meal.items) {
+  for (const it of cleanItems) {
     const item: MealItem = {
       meal_entry_id: entryId,
       food_name: it.name,
@@ -639,7 +652,11 @@ async function estimateMacrosAndPatch(
   meal: NonNullable<NonNullable<VoiceMemoParsedFields["nutrition"]>["meals"]>[number],
 ): Promise<void> {
   // Build a free-text description Claude can parse like a meal log.
-  const text = meal.items
+  const cleanItems = (meal.items ?? []).filter(
+    (it): it is typeof it & { name: string } =>
+      typeof it.name === "string" && it.name.trim().length > 0,
+  );
+  const text = cleanItems
     .map((it) => {
       const name = it.name_zh ? `${it.name} (${it.name_zh})` : it.name;
       return it.qty_label ? `${it.qty_label} ${name}` : name;

@@ -295,7 +295,8 @@ export const VoiceMemoParseSchema = z.object({
       location: z.string().nullish(),
       summary: z
         .string()
-        .describe("1–3 sentence summary of what happened in the visit."),
+        .nullish()
+        .describe("1–3 sentence summary of what happened in the visit. Null when no summary is appropriate — the apply step drops the visit when this is empty."),
       key_points: z
         .array(z.string())
         .nullish()
@@ -312,7 +313,8 @@ export const VoiceMemoParseSchema = z.object({
       z.object({
         title: z
           .string()
-          .describe("Short label, e.g. 'Cycle 3 chemo' or 'PET-CT scan'."),
+          .nullish()
+          .describe("Short label, e.g. 'Cycle 3 chemo' or 'PET-CT scan'. Null when no concrete title — apply step drops the entry."),
         starts_at: z
           .string()
           .nullish()
@@ -336,7 +338,10 @@ export const VoiceMemoParseSchema = z.object({
   medications_mentioned: z
     .array(
       z.object({
-        name: z.string().describe("Drug name as the patient said it."),
+        name: z
+          .string()
+          .nullish()
+          .describe("Drug name as the patient said it. Null when not nameable — apply step drops the entry."),
         detail: z
           .string()
           .nullish()
@@ -394,7 +399,8 @@ export const VoiceMemoParseSchema = z.object({
         ),
         finding_summary: z
           .string()
-          .describe("One short phrase: 'all clear', 'liver lesion stable', 'new node in mediastinum'."),
+          .nullish()
+          .describe("One short phrase: 'all clear', 'liver lesion stable', 'new node in mediastinum'. Null when no specific finding — apply step drops the entry."),
         status: ImagingStatusField.describe(
           "Patient's interpretation of the result.",
         ),
@@ -416,7 +422,8 @@ export const VoiceMemoParseSchema = z.object({
       z.object({
         name: z
           .string()
-          .describe("Lab name as the patient said it: 'white cells', 'CA 19-9', 'liver enzymes'."),
+          .nullish()
+          .describe("Lab name as the patient said it: 'white cells', 'CA 19-9', 'liver enzymes'. Null when not nameable — apply step drops the entry."),
         value: z
           .string()
           .nullish()
@@ -450,7 +457,8 @@ export const VoiceMemoParseSchema = z.object({
                 z.object({
                   name: z
                     .string()
-                    .describe("Food name in English when straightforward, otherwise the patient's wording."),
+                    .nullish()
+                    .describe("Food name in English when straightforward, otherwise the patient's wording. Null when not nameable — apply step drops the item."),
                   name_zh: z
                     .string()
                     .nullish()

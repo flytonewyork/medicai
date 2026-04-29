@@ -101,12 +101,12 @@ export interface VoiceMemoParsedFields {
   // — those tables have stricter schemas. Stays on the memo only.
   imaging_results?: Array<{
     modality: "pet" | "ct" | "mri" | "ultrasound" | "xray" | "bone_scan" | "other";
-    finding_summary: string;
+    finding_summary?: string | null;
     status: "clear" | "stable" | "improvement" | "progression" | "unclear";
     date?: string;
   }>;
   lab_results?: Array<{
-    name: string;
+    name?: string | null;
     value?: string;
     status: "normal" | "raised" | "low" | "abnormal" | "unstated";
     date?: string;
@@ -120,7 +120,7 @@ export interface VoiceMemoParsedFields {
     meals?: Array<{
       meal_type: "breakfast" | "lunch" | "dinner" | "snack";
       items: Array<{
-        name: string;
+        name?: string | null;
         name_zh?: string;
         qty_label?: string;
         est_grams?: number;
@@ -164,7 +164,11 @@ export interface VoiceMemoClinicalParse {
     visit_date?: string;        // ISO date — defaults to memo's recorded_at day
     provider?: string;          // "A/Prof Sumitra Ananda" / "Sumi" / "苏米"
     location?: string;
-    summary: string;            // 1–3 sentences of what happened
+    // Slice 8: nullable to absorb glitchy parses without 502'ing the
+    // whole memo. The apply step drops the visit when summary is
+    // null / empty so we never write a clinic_visit life_event with
+    // no actual content.
+    summary?: string | null;
     key_points?: string[];      // bulleted decisions / instructions
   };
   // The patient mentioning a scheduled appointment. One row per
@@ -172,7 +176,7 @@ export interface VoiceMemoClinicalParse {
   // collapse into one. Goes into the `appointments` table when the
   // date+title look concrete; otherwise stays as a memo-only note.
   appointments_mentioned?: Array<{
-    title: string;
+    title?: string | null;
     starts_at?: string;         // ISO datetime when stated
     location?: string;
     doctor?: string;
@@ -184,7 +188,7 @@ export interface VoiceMemoClinicalParse {
   // file medication_events here — adherence has its own surface — but
   // the diary card surfaces what was discussed.
   medications_mentioned?: Array<{
-    name: string;               // "Creon" / "gemcitabine" / "abraxane"
+    name?: string | null;       // "Creon" / "gemcitabine" / "abraxane"
     detail?: string;            // "took with lunch", "skipped dinner dose"
   }>;
 }

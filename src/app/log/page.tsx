@@ -74,6 +74,14 @@ type RunState =
       parsed?: VoiceMemoParsedFields;
     }
   | {
+      // Parse hit a server / schema error. The memo row exists with
+      // its transcript so nothing's lost — the patient just needs to
+      // retry the parse (one tap) and we'll surface AppliedPatches.
+      kind: "parse_failed";
+      memo_id: number;
+      reason: string;
+    }
+  | {
       kind: "filed";
       summary: { en: string; zh: string };
       target: "lab" | "daily";
@@ -227,9 +235,40 @@ export default function LogPage() {
 
     // parseVoiceMemo persists parsed_fields and auto-applies patches
     // when confidence === "high". For low/medium parses, the memo
-    // detail page handles the explicit confirm.
-    await parseVoiceMemo(memoId);
+    // detail page handles the explicit confirm. When the parse
+    // itself fails (Zod schema rejection, server 5xx, network), we
+    // surface a clear retry path — the memo + transcript are safe.
+    const r = await parseVoiceMemo(memoId);
+    if (!r.ok) {
+      setRun({
+        kind: "parse_failed",
+        memo_id: memoId,
+        reason: r.reason ?? "parse failed",
+      });
+      return;
+    }
 
+    const memo = await db.voice_memos.get(memoId);
+    const patches = memo?.parsed_fields?.applied_patches ?? [];
+    setRun({
+      kind: "memo_saved",
+      memo_id: memoId,
+      patches,
+      parsed: memo?.parsed_fields,
+    });
+  }
+
+  async function retryParse(memoId: number) {
+    setRun({ kind: "parsing" });
+    const r = await parseVoiceMemo(memoId);
+    if (!r.ok) {
+      setRun({
+        kind: "parse_failed",
+        memo_id: memoId,
+        reason: r.reason ?? "parse failed",
+      });
+      return;
+    }
     const memo = await db.voice_memos.get(memoId);
     const patches = memo?.parsed_fields?.applied_patches ?? [];
     setRun({
@@ -382,59 +421,45 @@ export default function LogPage() {
           </Alert>
         )}
 
-        {run.kind === "memo_saved" && (
-          <Alert
-            variant="ok"
-            role="status"
-            title={
-              run.patches.length > 0
-                ? locale === "zh"
-                  ? `已保存 ${run.patches.length} 项`
-                  : `Saved ${run.patches.length} item${run.patches.length === 1 ? "" : "s"}`
-                : locale === "zh"
-                  ? "录音已保存"
-                  : "Memo saved"
-            }
-            className="mt-4"
-          >
-            {run.patches.length > 0 ? (
-              <ul className="space-y-0.5 text-[12.5px]">
-                {run.patches.map((p, i) => (
-                  <li key={i} className="flex items-baseline gap-1.5">
-                    <Check className="mt-[3px] h-3 w-3 shrink-0 text-emerald-700" />
-                    <span>
-                      <span className="font-medium">
-                        {patchTableLabel(p.table, locale)}
-                      </span>
-                      <span className="text-ink-500">
-                        {" "}— {summariseFields(p.fields)}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-[12.5px]">
-                {locale === "zh"
-                  ? run.parsed?.confidence === "high"
-                    ? "AI 没有从这段记录里抽出可写入表单的内容。"
-                    : "AI 信心不高，请到录音详情页审核。"
-                  : run.parsed?.confidence === "high"
-                    ? "Nothing structured to log this time — saved as a memo."
-                    : "Confidence not high enough to auto-apply — review on the memo detail page."}
-              </p>
-            )}
-            <Link
-              href={`/memos/${run.memo_id}`}
-              className="mt-2 inline-flex items-center gap-1 text-[11.5px] font-medium text-[var(--tide-2)] hover:underline"
-            >
-              {locale === "zh" ? "打开录音详情" : "Open memo detail"}
-            </Link>
+        {run.kind === "parse_failed" && (
+          <Alert variant="warn" role="alert" className="mt-4">
+            <div className="text-[13px] font-medium">
+              {locale === "zh"
+                ? "AI 解读失败 — 录音已保存，可重试。"
+                : "AI couldn't read this memo — recording saved, you can retry."}
+            </div>
+            <p className="mt-1 text-[11.5px] text-ink-500">{run.reason}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => retryParse(run.memo_id)}
+              >
+                <Loader2 className="h-3.5 w-3.5" />
+                {locale === "zh" ? "重试解读" : "Retry parse"}
+              </Button>
+              <Link
+                href={`/memos/${run.memo_id}`}
+                className="text-[11.5px] font-medium text-[var(--tide-2)] hover:underline"
+              >
+                {locale === "zh" ? "查看录音详情" : "Open memo"}
+              </Link>
+            </div>
           </Alert>
         )}
 
+        {run.kind === "memo_saved" && (
+          <SavedSummary
+            memoId={run.memo_id}
+            patches={run.patches}
+            parsed={run.parsed}
+            transcript={text}
+            locale={locale}
+          />
+        )}
+
         <div className="mt-5 flex items-center justify-between gap-3">
-          {run.kind === "memo_saved" || run.kind === "filed" ? (
+          {run.kind === "memo_saved" || run.kind === "filed" || run.kind === "parse_failed" ? (
             <>
               <Button variant="ghost" onClick={() => router.push("/")}>
                 <ArrowLeft className="h-4 w-4" />
@@ -673,4 +698,153 @@ function summariseFields(fields: AppliedPatch["fields"]): string {
     .slice(0, 3)
     .map(([k, v]) => `${k}: ${v}`)
     .join(" · ");
+}
+
+// Slice 8 follow-up: the "fixed preview" the user asked for. Right
+// after Save the patient sees, inline:
+//   · big checkmark with "Saved as memo"
+//   · the AppliedPatch list when high-confidence auto-applied
+//   · the personal-content card (food, family, practice, mood) when
+//     present
+//   · the AI-nurse follow-up questions when present
+//   · a "Open memo detail" link for the full review form
+// No navigation chase. Confidence-low parses still surface, with
+// patches at zero, the parsed sections still informational, and a
+// hint that the detail page has the editable preview.
+function SavedSummary({
+  memoId,
+  patches,
+  parsed,
+  transcript,
+  locale,
+}: {
+  memoId: number;
+  patches: AppliedPatch[];
+  parsed?: VoiceMemoParsedFields;
+  transcript: string;
+  locale: "en" | "zh";
+}) {
+  const personal = parsed?.personal;
+  const followUps = parsed?.follow_up_questions ?? [];
+  const confidence = parsed?.confidence;
+
+  return (
+    <div className="mt-4 space-y-3">
+      <Alert
+        variant="ok"
+        role="status"
+        title={
+          patches.length > 0
+            ? locale === "zh"
+              ? `已保存 ${patches.length} 项`
+              : `Saved ${patches.length} item${patches.length === 1 ? "" : "s"}`
+            : locale === "zh"
+              ? "录音已保存"
+              : "Memo saved"
+        }
+      >
+        {patches.length > 0 ? (
+          <ul className="space-y-0.5 text-[12.5px]">
+            {patches.map((p, i) => (
+              <li key={i} className="flex items-baseline gap-1.5">
+                <Check className="mt-[3px] h-3 w-3 shrink-0 text-emerald-700" />
+                <span>
+                  <span className="font-medium">
+                    {patchTableLabel(p.table, locale)}
+                  </span>
+                  <span className="text-ink-500">
+                    {" "}— {summariseFields(p.fields)}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-[12.5px]">
+            {confidence === "high"
+              ? locale === "zh"
+                ? "AI 没有从这段记录里抽出可写入表单的内容 — 已作为录音存档。"
+                : "Nothing structured to log this time — saved as a memo."
+              : locale === "zh"
+                ? `AI 信心：${confidence === "medium" ? "中" : "低"} — 在录音详情页确认后才会写入。`
+                : `AI confidence: ${confidence ?? "low"} — open the memo detail to review and confirm before writing.`}
+          </p>
+        )}
+        <Link
+          href={`/memos/${memoId}`}
+          className="mt-2 inline-flex items-center gap-1 text-[11.5px] font-medium text-[var(--tide-2)] hover:underline"
+        >
+          {locale === "zh" ? "查看完整录音详情" : "Open full memo detail"}
+        </Link>
+      </Alert>
+
+      {transcript.trim() && (
+        <Card className="p-3">
+          <div className="eyebrow mb-1">
+            {locale === "zh" ? "听到的内容" : "What was heard"}
+          </div>
+          <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-ink-900">
+            {transcript}
+          </p>
+        </Card>
+      )}
+
+      {personal &&
+        ((personal.food_mentions?.length ?? 0) > 0 ||
+          (personal.family_mentions?.length ?? 0) > 0 ||
+          (personal.practice_mentions?.length ?? 0) > 0 ||
+          (personal.goals?.length ?? 0) > 0 ||
+          personal.mood_narrative ||
+          personal.observations) && (
+        <Card className="p-3">
+          <div className="text-[10.5px] font-medium uppercase tracking-wider text-ink-400">
+            {locale === "zh" ? "个人 · 仅本机" : "Personal · local only"}
+          </div>
+          {personal.mood_narrative && (
+            <p className="mt-1 text-[13px] italic text-ink-700">
+              &ldquo;{personal.mood_narrative}&rdquo;
+            </p>
+          )}
+          {(["food_mentions", "family_mentions", "practice_mentions", "goals"] as const).map(
+            (k) => {
+              const items = personal[k];
+              if (!items?.length) return null;
+              const label = locale === "zh"
+                ? { food_mentions: "饮食", family_mentions: "家人", practice_mentions: "修习", goals: "目标" }[k]
+                : { food_mentions: "Food", family_mentions: "Family", practice_mentions: "Practice", goals: "Goals" }[k];
+              return (
+                <div key={k} className="mt-1.5 text-[12.5px]">
+                  <span className="font-medium text-ink-700">{label}:</span>{" "}
+                  <span className="text-ink-700">{items.join(" · ")}</span>
+                </div>
+              );
+            },
+          )}
+          {personal.observations && (
+            <p className="mt-1 text-[12px] text-ink-500">{personal.observations}</p>
+          )}
+        </Card>
+      )}
+
+      {followUps.length > 0 && (
+        <Card className="p-3">
+          <div className="text-[10.5px] font-medium uppercase tracking-wider text-[var(--tide-2)]">
+            {locale === "zh" ? "AI 想问" : "AI nurse asks"}
+          </div>
+          <ul className="mt-1.5 space-y-1">
+            {followUps.slice(0, 2).map((q, i) => (
+              <li key={i} className="text-[13px] italic text-ink-900">
+                {q}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1.5 text-[10.5px] text-ink-400">
+            {locale === "zh"
+              ? "想回答的话，再录一段就行。"
+              : "Want to answer? Just record again — Claude will read it."}
+          </p>
+        </Card>
+      )}
+    </div>
+  );
 }
