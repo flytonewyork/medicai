@@ -150,6 +150,13 @@ function MemoDetail({
 
       {parsed?.personal && <PersonalCard personal={parsed.personal} locale={locale} />}
 
+      {(parsed?.follow_up_questions?.length ?? 0) > 0 && (
+        <FollowUpsCard
+          questions={parsed!.follow_up_questions!}
+          locale={locale}
+        />
+      )}
+
       {applied.length > 0 && (
         <AuditCard memoId={memo.id!} patches={applied} locale={locale} />
       )}
@@ -217,7 +224,7 @@ function ParsePendingCard({
           </Alert>
           <Button size="sm" variant="secondary" onClick={attempt}>
             <RefreshCw className="h-3.5 w-3.5" />
-            {locale === "zh" ? "重试" : "Try again"}
+            {locale === "zh" ? "重试" : "Retry"}
           </Button>
         </div>
       ) : (
@@ -476,22 +483,23 @@ function PreviewForm({
           <div className="text-[12px] text-ink-500">
             {locale === "zh"
               ? "勾选要写入表单的内容，可以先调整数值。"
-              : "Pick what to log. Adjust values first if anything's off."}
+              : "Pick what to save. Adjust first if anything's off."}
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
+        <button
+          type="button"
           onClick={onReparse}
           disabled={reparsing || busy}
+          aria-label={locale === "zh" ? "重新识别" : "Re-parse"}
+          title={locale === "zh" ? "重新识别" : "Re-parse"}
+          className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-500 hover:bg-ink-100 hover:text-ink-900 disabled:opacity-50"
         >
           {reparsing ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <RefreshCw className="h-3.5 w-3.5" />
+            <RefreshCw className="h-4 w-4" />
           )}
-          {locale === "zh" ? "重新识别" : "Re-parse"}
-        </Button>
+        </button>
       </div>
 
       {parsed.confidence !== "high" && (
@@ -499,7 +507,7 @@ function PreviewForm({
           {locale === "zh"
             ? "AI 信心：" + (parsed.confidence === "medium" ? "中" : "低")
               + "。建议你确认每一项再登入。"
-            : `Confidence: ${parsed.confidence}. Double-check each value before logging.`}
+            : `Confidence: ${parsed.confidence}. Double-check each value before saving.`}
         </Alert>
       )}
 
@@ -533,6 +541,17 @@ function PreviewForm({
 
       {meds.length > 0 && <MedsSection locale={locale} meds={meds} />}
 
+      {(parsed.imaging_results?.length ?? 0) > 0 && (
+        <ImagingSection
+          locale={locale}
+          results={parsed.imaging_results!}
+        />
+      )}
+
+      {(parsed.lab_results?.length ?? 0) > 0 && (
+        <LabsSection locale={locale} results={parsed.lab_results!} />
+      )}
+
       {parsed.notes && (
         <div>
           <div className="eyebrow mb-1">
@@ -542,7 +561,7 @@ function PreviewForm({
         </div>
       )}
 
-      {!hasDaily && !visit?.summary && appts.length === 0 && meds.length === 0 && (
+      {!hasDaily && !visit?.summary && appts.length === 0 && meds.length === 0 && (parsed.imaging_results?.length ?? 0) === 0 && (parsed.lab_results?.length ?? 0) === 0 && (
         <Alert variant="info" role="status">
           {locale === "zh"
             ? "AI 没有从这段录音里抽出任何临床数据。可以重新识别，或者就把它当作个人日记保存。"
@@ -579,7 +598,7 @@ function PreviewForm({
           ) : (
             <Send className="h-4 w-4" />
           )}
-          {locale === "zh" ? "登入到表单" : "Log to forms"}
+          {locale === "zh" ? "保存" : "Save"}
         </Button>
       </div>
     </Card>
@@ -844,6 +863,167 @@ function MedsSection({
           : "Captured for reference. Adherence rows aren't auto-created from memos."}
       </p>
     </div>
+  );
+}
+
+function ImagingSection({
+  locale,
+  results,
+}: {
+  locale: "en" | "zh";
+  results: NonNullable<VoiceMemoParsedFields["imaging_results"]>;
+}) {
+  return (
+    <div>
+      <div className="eyebrow mb-1">
+        {locale === "zh" ? "影像" : "Imaging"}
+      </div>
+      <ul className="space-y-1.5 text-[13px]">
+        {results.map((r, i) => (
+          <li key={i} className="flex items-start gap-2">
+            <span
+              className={cn(
+                "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium uppercase",
+                r.status === "clear" || r.status === "improvement"
+                  ? "bg-emerald-50 text-emerald-700"
+                  : r.status === "stable"
+                    ? "bg-ink-100 text-ink-700"
+                    : r.status === "progression"
+                      ? "bg-[var(--warn,#d97706)]/12 text-[var(--warn,#d97706)]"
+                      : "bg-ink-100 text-ink-500",
+              )}
+            >
+              {r.modality}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="text-ink-900">{r.finding_summary}</div>
+              <div className="text-[10.5px] text-ink-500">
+                {imagingStatusLabel(r.status, locale)}
+                {r.date ? ` · ${r.date}` : ""}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1 text-[11px] text-ink-400">
+        {locale === "zh"
+          ? "记录在录音上，不会自动写入「化验/影像」表。"
+          : "Captured on the memo. Not auto-filed into /imaging."}
+      </p>
+    </div>
+  );
+}
+
+function LabsSection({
+  locale,
+  results,
+}: {
+  locale: "en" | "zh";
+  results: NonNullable<VoiceMemoParsedFields["lab_results"]>;
+}) {
+  return (
+    <div>
+      <div className="eyebrow mb-1">
+        {locale === "zh" ? "化验" : "Labs"}
+      </div>
+      <ul className="space-y-1 text-[13px]">
+        {results.map((r, i) => (
+          <li key={i} className="flex items-baseline gap-2">
+            <span className="font-medium text-ink-900">{r.name}</span>
+            {r.value && <span className="text-ink-700">{r.value}</span>}
+            <span
+              className={cn(
+                "rounded-full px-1.5 py-0 text-[10px] font-medium",
+                r.status === "normal"
+                  ? "bg-emerald-50 text-emerald-700"
+                  : r.status === "raised" || r.status === "abnormal"
+                    ? "bg-[var(--warn,#d97706)]/12 text-[var(--warn,#d97706)]"
+                    : r.status === "low"
+                      ? "bg-amber-50 text-amber-700"
+                      : "bg-ink-100 text-ink-500",
+              )}
+            >
+              {labStatusLabel(r.status, locale)}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1 text-[11px] text-ink-400">
+        {locale === "zh"
+          ? "记录在录音上，不会自动写入「化验」表。"
+          : "Captured on the memo. Not auto-filed into /labs."}
+      </p>
+    </div>
+  );
+}
+
+function imagingStatusLabel(
+  s: NonNullable<VoiceMemoParsedFields["imaging_results"]>[number]["status"],
+  locale: "en" | "zh",
+): string {
+  if (locale === "zh") {
+    return {
+      clear: "干净",
+      stable: "稳定",
+      improvement: "好转",
+      progression: "进展",
+      unclear: "不确定",
+    }[s];
+  }
+  return s;
+}
+
+function labStatusLabel(
+  s: NonNullable<VoiceMemoParsedFields["lab_results"]>[number]["status"],
+  locale: "en" | "zh",
+): string {
+  if (locale === "zh") {
+    return {
+      normal: "正常",
+      raised: "偏高",
+      low: "偏低",
+      abnormal: "异常",
+      unstated: "未说",
+    }[s];
+  }
+  return s;
+}
+
+function FollowUpsCard({
+  questions,
+  locale,
+}: {
+  questions: string[];
+  locale: "en" | "zh";
+}) {
+  return (
+    <Card className="p-4">
+      <div className="text-[11px] font-medium uppercase tracking-wider text-[var(--tide-2)]">
+        {locale === "zh" ? "AI 的随访问题" : "From your AI nurse"}
+      </div>
+      <ul className="mt-2 space-y-2">
+        {questions.slice(0, 2).map((q, i) => (
+          <li
+            key={i}
+            className="flex items-start justify-between gap-3 rounded-md border border-ink-100 px-3 py-2"
+          >
+            <span className="text-[13.5px] italic text-ink-900">{q}</span>
+            <Link
+              href="/diary"
+              className="shrink-0 inline-flex items-center gap-1 text-[11.5px] font-medium text-[var(--tide-2)] hover:underline"
+            >
+              <Mic className="h-3 w-3" aria-hidden />
+              {locale === "zh" ? "录音回答" : "Record answer"}
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1 text-[11px] text-ink-400">
+        {locale === "zh"
+          ? "回答会保存为新的录音，AI 自动整理。"
+          : "Your answer becomes a new memo — Claude reads it the same way."}
+      </p>
+    </Card>
   );
 }
 
