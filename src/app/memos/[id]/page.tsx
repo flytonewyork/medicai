@@ -589,11 +589,19 @@ function PreviewForm({
       )}
 
       {!hasDaily && !visit?.summary && appts.length === 0 && meds.length === 0 && (parsed.imaging_results?.length ?? 0) === 0 && (parsed.lab_results?.length ?? 0) === 0 && (
-        <Alert variant="info" role="status">
-          {locale === "zh"
-            ? "AI 没有从这段录音里抽出任何临床数据。可以重新识别，或者就把它当作个人日记保存。"
-            : "Claude didn't pull any clinical data from this memo. You can re-parse, or just keep it as a diary entry."}
-        </Alert>
+        parsed.personal ? (
+          <Alert variant="info" role="status">
+            {locale === "zh"
+              ? "AI 没有抽出可写入表单的临床字段，但下方的个人日记内容已记录。觉得遗漏了什么可以重新识别。"
+              : "No structured clinical fields to save, but the personal diary content was captured below. Re-parse if you think something was missed."}
+          </Alert>
+        ) : (
+          <Alert variant="info" role="status">
+            {locale === "zh"
+              ? "AI 没有从这段录音里抽出任何内容。可以重新识别，或者就把它当作纯录音保存。"
+              : "Claude didn't pull anything from this memo. You can re-parse, or just keep it as a recording."}
+          </Alert>
+        )
       )}
 
       {error && (

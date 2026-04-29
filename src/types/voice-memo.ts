@@ -128,8 +128,18 @@ export interface VoiceMemoParsedFields {
 export interface VoiceMemoClinicalParse {
   // The patient describing a clinic visit they just had. Captured as
   // a `life_events` row (category = medical, is_memory = false) so the
-  // diary timeline picks it up.
+  // diary timeline picks it up. `kind` matches Appointment.kind so the
+  // apply step can flip a previously-scheduled appointment to attended
+  // (chemo session → matching chemo appointment, etc.).
   clinic_visit?: {
+    kind?:
+      | "clinic"
+      | "chemo"
+      | "scan"
+      | "blood_test"
+      | "procedure"
+      | "ed"
+      | "other";
     visit_date?: string;        // ISO date — defaults to memo's recorded_at day
     provider?: string;          // "A/Prof Sumitra Ananda" / "Sumi" / "苏米"
     location?: string;

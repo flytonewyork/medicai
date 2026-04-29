@@ -204,6 +204,73 @@ function scoreLabMatch(appt: Appointment): number {
   return score;
 }
 
+// Find a recent appointment that this clinic-visit memo is most
+// likely reporting on. Maps memo-side kinds (including "ed", which
+// has no Appointment.kind counterpart) to the closest Appointment
+// kind. Provider name fuzzy-match adds to the score so a "Sumi
+// consult" appointment beats a generic clinic on the same day.
+type ClinicVisitKind =
+  | "clinic"
+  | "chemo"
+  | "scan"
+  | "blood_test"
+  | "procedure"
+  | "ed"
+  | "other";
+
+export async function findAppointmentForClinicVisit(
+  kind: ClinicVisitKind | undefined,
+  provider: string | undefined,
+  memoDay: string,
+): Promise<Appointment | null> {
+  const window = appointmentWindow(memoDay);
+  const rows = await db.appointments
+    .where("starts_at")
+    .between(window.from, window.to, true, true)
+    .toArray();
+  const scored = rows
+    .filter((a) => a.status !== "cancelled")
+    .map((a) => ({ row: a, score: scoreVisitMatch(a, kind, provider) }))
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score);
+  return scored[0]?.row ?? null;
+}
+
+function scoreVisitMatch(
+  appt: Appointment,
+  kind: ClinicVisitKind | undefined,
+  provider: string | undefined,
+): number {
+  let score = 0;
+  // Map the memo's kind to the Appointment table's kind. ED visits
+  // don't have a dedicated Appointment kind — match against "other"
+  // appointments that mention emergency in the title.
+  const want: Appointment["kind"] | "ed_other" =
+    kind === "ed" ? "ed_other" : (kind ?? "clinic");
+  if (want !== "ed_other" && appt.kind === want) score += 5;
+  else if (want === "clinic" && appt.kind === "clinic") score += 5;
+  else if (want === "ed_other" && appt.kind === "other") {
+    const t = `${appt.title ?? ""} ${appt.notes ?? ""}`.toLowerCase();
+    if (/(emergency|ed |急诊)/.test(t)) score += 4;
+  }
+  // Provider name fuzzy-match — matches first name OR last name OR
+  // the full string the patient said. Case-insensitive substring.
+  if (provider) {
+    const haystack = `${appt.doctor ?? ""} ${appt.title ?? ""}`.toLowerCase();
+    const tokens = provider
+      .toLowerCase()
+      .split(/[\s\-/]+/)
+      .filter((t) => t.length >= 3);
+    for (const t of tokens) {
+      if (haystack.includes(t)) {
+        score += 3;
+        break;
+      }
+    }
+  }
+  return score;
+}
+
 // 14 days back, 7 days forward — clipped to a reasonable timestamp
 // range so Dexie's between() index walk stays small.
 function appointmentWindow(memoDay: string): { from: string; to: string } {
