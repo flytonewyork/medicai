@@ -174,6 +174,51 @@ const LabStatusField = tolerantEnum(
   },
 );
 
+const MealTypeField = tolerantEnum(
+  ["breakfast", "lunch", "dinner", "snack"] as const,
+  "snack",
+  {
+    breakfast: "breakfast",
+    早餐: "breakfast",
+    早饭: "breakfast",
+    morning: "breakfast",
+    lunch: "lunch",
+    午餐: "lunch",
+    午饭: "lunch",
+    noon: "lunch",
+    dinner: "dinner",
+    晚餐: "dinner",
+    晚饭: "dinner",
+    supper: "dinner",
+    snack: "snack",
+    宵夜: "snack",
+    加餐: "snack",
+  },
+);
+
+const FluidKindField = tolerantEnum(
+  // Aligned with nutrition.ts FluidKind so the apply step writes
+  // straight into fluid_logs without mapping.
+  ["water", "tea", "coffee", "broth", "electrolyte", "soup", "other"] as const,
+  "water",
+  {
+    water: "water",
+    水: "water",
+    tea: "tea",
+    茶: "tea",
+    coffee: "coffee",
+    咖啡: "coffee",
+    juice: "other",
+    果汁: "other",
+    broth: "broth",
+    汤: "soup",
+    soup: "soup",
+    electrolyte: "electrolyte",
+    sports: "electrolyte",
+    "gatorade": "electrolyte",
+  },
+);
+
 export const VoiceMemoParseSchema = z.object({
   // ---- Daily-tracking fields. All required-nullable. Set the value
   //      when the memo states it (number or clear qualitative anchor),
@@ -390,6 +435,63 @@ export const VoiceMemoParseSchema = z.object({
   // ---- Follow-up questions to surface back to the patient. Lets the
   //      app feel like a thoughtful nurse / dietician / physio gently
   //      asking what's missing. Max 2 — we don't interrogate.
+  // ---- Nutrition: foods + drinks the patient actually consumed.
+  //      Drives the meal_entries / meal_items / fluid_logs tables.
+  //      Different from `personal.food_mentions` (which is for
+  //      narrative reflection) — this block writes the structured log.
+  nutrition: z
+    .object({
+      meals: z
+        .array(
+          z.object({
+            meal_type: MealTypeField,
+            items: z
+              .array(
+                z.object({
+                  name: z
+                    .string()
+                    .describe("Food name in English when straightforward, otherwise the patient's wording."),
+                  name_zh: z
+                    .string()
+                    .nullish()
+                    .describe("Mandarin name when the patient said it in zh."),
+                  qty_label: z
+                    .string()
+                    .nullish()
+                    .describe("Patient's quantity wording: '2 pieces', '一碗', 'small bowl'. Null when not stated."),
+                  est_grams: z
+                    .number()
+                    .nullish()
+                    .describe("Estimated serving in grams when you can defend it (cheese slice ≈ 20g, sandwich ≈ 150g, egg ≈ 50g). Null when truly unknowable."),
+                }),
+              )
+              .describe("One item per distinct food the patient mentioned eating."),
+          }),
+        )
+        .nullish()
+        .describe("Empty / null when the memo doesn't describe eating."),
+      fluids: z
+        .array(
+          z.object({
+            kind: FluidKindField,
+            est_ml: z
+              .number()
+              .nullish()
+              .describe("Estimated millilitres when the patient gave a quantity (a cup ≈ 250ml, a glass ≈ 200ml). Null when truly unknown."),
+            qty_label: z
+              .string()
+              .nullish()
+              .describe("Patient's quantity wording: '一杯', 'a glass'. Null when not stated."),
+          }),
+        )
+        .nullish()
+        .describe("Empty / null when the memo doesn't describe drinking."),
+    })
+    .nullish()
+    .describe(
+      "Drives the meal log + hydration log. Always populate when the patient mentions eating or drinking (including snacks during chemo / clinic visits). Estimate grams / ml when you can; leave null when you'd be guessing.",
+    ),
+
   follow_up_questions: z
     .array(z.string())
     .nullish()
@@ -414,6 +516,44 @@ The memo is the patient's diary — sometimes a symptom log, sometimes a clinic 
 Mandarin or mixed Mandarin/English memos: translate internally before extracting. Free-text fields (\`notes\`, \`mood_narrative\`, \`observations\`, family/practice/food phrases) preserve the memo's original language so the patient sees their own words; structured numerics and enum-typed fields are language-neutral.
 
 Required-nullable schema: every field is required, but you set it to \`null\` (or to an empty array for list fields) when the memo doesn't carry that signal. Never invent values. The downstream system treats \`null\` as "the patient didn't say."
+
+HARD CHECK before finalising the JSON. Scan the transcript for these anchors. If ANY appears, the corresponding structured field MUST be set — no exceptions, even when the rest of the memo is personal narrative:
+
+  · 化疗 / chemo / chemotherapy / infusion / 输液 → \`clinic_visit.kind\` = "chemo"
+  · 扫描 / scan / CT / MRI / PET / ultrasound / 超声 → \`clinic_visit.kind\` = "scan" AND \`imaging_results\` populated when a result is reported
+  · 抽血 / blood test / bloods / pathology → \`clinic_visit.kind\` = "blood_test" AND \`lab_results\` populated when a value is reported
+  · 活检 / biopsy / 手术 / surgery / 操作 / procedure → \`clinic_visit.kind\` = "procedure"
+  · 急诊 / emergency / ED → \`clinic_visit.kind\` = "ed"
+  · 看医生 / 复诊 / 会诊 / consult / clinic visit → \`clinic_visit.kind\` = "clinic"
+  · ANY food or drink the patient mentions consuming → \`nutrition.meals\` (food items) and/or \`nutrition.fluids\` (drinks). DO NOT only put food in \`personal.food_mentions\` when it's eaten — the personal block is for narrative reflection, the nutrition block drives the meal log.
+
+Few-shot example (chemo + nutrition + family):
+
+Transcript: "今天儿子陪我去做化疗,过程很顺利,中间吃了三明治和两片cheese,喝了水,上了两次厕所。"
+Output:
+{
+  "clinic_visit": {
+    "kind": "chemo",
+    "summary": "First chemo session, went smoothly. Family member accompanied. Patient ate during the infusion and reports normal bathroom function.",
+    "key_points": ["Ate sandwich + 2 pieces cheese during infusion", "Drank water", "Two bathroom visits — felt normal"],
+    "visit_date": null, "provider": null, "location": null
+  },
+  "personal": {
+    "family_mentions": ["儿子陪我去做化疗"],
+    "food_mentions": [], "practice_mentions": [], "goals": [],
+    "mood_narrative": null, "observations": null
+  },
+  "nutrition": {
+    "meals": [
+      { "meal_type": "snack", "items": [{ "name": "sandwich" }, { "name": "cheese", "qty_label": "2 pieces" }] }
+    ],
+    "fluids": [
+      { "kind": "water" }
+    ]
+  },
+  "confidence": "high",
+  ... (other fields null)
+}
 
 Output rules:
 1. Numeric scales are 0–10 unless noted. Map clear qualitative anchors when an explicit number isn't given (see field descriptions). Set \`null\` whenever you'd be guessing.

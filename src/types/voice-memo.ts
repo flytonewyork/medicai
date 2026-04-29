@@ -112,6 +112,27 @@ export interface VoiceMemoParsedFields {
     date?: string;
   }>;
 
+  // ----- Slice 7: nutrition (foods + drinks consumed) -----
+  // Drives the meal_entries / meal_items / fluid_logs tables on
+  // confidence: high. Different from `personal.food_mentions` (which
+  // is narrative reflection) — this block is the structured log.
+  nutrition?: {
+    meals?: Array<{
+      meal_type: "breakfast" | "lunch" | "dinner" | "snack";
+      items: Array<{
+        name: string;
+        name_zh?: string;
+        qty_label?: string;
+        est_grams?: number;
+      }>;
+    }>;
+    fluids?: Array<{
+      kind: "water" | "tea" | "coffee" | "broth" | "electrolyte" | "soup" | "other";
+      est_ml?: number;
+      qty_label?: string;
+    }>;
+  };
+
   // ----- Slice 4: dialogue-vibe follow-up questions -----
   // 0–2 short questions Claude would ask if it were a thoughtful
   // nurse / dietician / physio reading the memo. Surfaced under the
@@ -187,7 +208,9 @@ export interface AppliedPatch {
     | "life_events"
     | "appointments"
     | "imaging"
-    | "labs";
+    | "labs"
+    | "meal_entries"
+    | "fluid_logs";
   // The local id of the row written or updated.
   row_id: number;
   // Fields touched on that row, with the value the memo supplied. We

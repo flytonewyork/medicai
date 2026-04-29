@@ -2,6 +2,11 @@ import { db, now } from "~/lib/db/dexie";
 import type { DailyEntry, EnteredBy, Imaging, LabResult, LifeEvent } from "~/types/clinical";
 import type { Appointment } from "~/types/appointment";
 import type {
+  FluidLog,
+  MealEntry,
+  MealItem,
+} from "~/types/nutrition";
+import type {
   AppliedPatch,
   VoiceMemo,
   VoiceMemoParsedFields,
@@ -50,6 +55,12 @@ export interface ApplyOptions {
   // When omitted, no new clinical rows are created.
   imaging_create?: boolean[];
   lab_create?: boolean[];
+  // Slice 7: per-meal / per-fluid include toggles. Default ON when
+  // confidence is high — nutrition is a frequent, low-risk write.
+  // Patients can untick individual items (e.g. when Claude over-
+  // counted) before saving.
+  nutrition_include_meals?: boolean[];
+  nutrition_include_fluids?: boolean[];
 }
 
 export type DailyOverridePatch = Partial<
@@ -135,6 +146,28 @@ export async function applyMemoPatches(
       const create = opts.lab_create?.[i] ?? false;
       const labPatches = await applyLabResult(memo, result, create);
       patches.push(...labPatches);
+    }
+  }
+
+  // Slice 7: nutrition. Auto-applies on confidence: high (default),
+  // since meal logging is a frequent low-risk write. Per-row toggles
+  // let the patient opt out of any specific meal / fluid before save.
+  if (parsed.nutrition?.meals?.length) {
+    for (let i = 0; i < parsed.nutrition.meals.length; i++) {
+      const meal = parsed.nutrition.meals[i]!;
+      const include = opts.nutrition_include_meals?.[i] ?? true;
+      if (!include) continue;
+      const mealPatches = await applyNutritionMeal(memo, meal);
+      patches.push(...mealPatches);
+    }
+  }
+  if (parsed.nutrition?.fluids?.length) {
+    for (let i = 0; i < parsed.nutrition.fluids.length; i++) {
+      const fluid = parsed.nutrition.fluids[i]!;
+      const include = opts.nutrition_include_fluids?.[i] ?? true;
+      if (!include) continue;
+      const fluidPatch = await applyNutritionFluid(memo, fluid);
+      if (fluidPatch) patches.push(fluidPatch);
     }
   }
 
@@ -524,6 +557,125 @@ async function applyLabResult(
   return patches;
 }
 
+// Slice 7: write a meal_entry + meal_items from a parsed nutrition
+// meal. Macros land at zero with confidence: low — the patient (or
+// the existing /nutrition meal-ingest flow) can backfill numbers
+// later. Saving the structure now means the meal shows up on the
+// nutrition timeline immediately, rather than being lost in the
+// memo's personal block.
+async function applyNutritionMeal(
+  memo: VoiceMemo,
+  meal: NonNullable<NonNullable<VoiceMemoParsedFields["nutrition"]>["meals"]>[number],
+): Promise<AppliedPatch[]> {
+  if (!meal.items?.length) return [];
+  const patches: AppliedPatch[] = [];
+  const ts = now();
+  const day = memo.day || localDayISO(memo.recorded_at);
+  const entry: MealEntry = {
+    date: day,
+    meal_type: meal.meal_type,
+    logged_at: memo.recorded_at,
+    notes: "From voice memo — macros pending; tap into the meal to refine.",
+    source: "voice",
+    confidence: "low",
+    total_calories: 0,
+    total_protein_g: 0,
+    total_fat_g: 0,
+    total_carbs_g: 0,
+    total_fiber_g: 0,
+    total_net_carbs_g: 0,
+    entered_by: memo.entered_by,
+    created_at: ts,
+    updated_at: ts,
+  };
+  const entryId = (await db.meal_entries.add(entry)) as number;
+  patches.push({
+    table: "meal_entries",
+    row_id: entryId,
+    fields: {
+      meal_type: meal.meal_type,
+      date: day,
+      items: meal.items.map((it) => it.name).join(", "),
+    },
+    op: "create",
+    applied_at: ts,
+  });
+
+  for (const it of meal.items) {
+    const item: MealItem = {
+      meal_entry_id: entryId,
+      food_name: it.name,
+      food_name_zh: it.name_zh ?? undefined,
+      serving_grams: typeof it.est_grams === "number" ? it.est_grams : 0,
+      calories: 0,
+      protein_g: 0,
+      fat_g: 0,
+      carbs_total_g: 0,
+      fiber_g: 0,
+      net_carbs_g: 0,
+      notes: it.qty_label ?? undefined,
+      created_at: ts,
+    };
+    await db.meal_items.add(item);
+  }
+  return patches;
+}
+
+async function applyNutritionFluid(
+  memo: VoiceMemo,
+  fluid: NonNullable<NonNullable<VoiceMemoParsedFields["nutrition"]>["fluids"]>[number],
+): Promise<AppliedPatch | null> {
+  const ts = now();
+  const day = memo.day || localDayISO(memo.recorded_at);
+  const ml =
+    typeof fluid.est_ml === "number" && fluid.est_ml > 0
+      ? fluid.est_ml
+      : defaultFluidMl(fluid.kind);
+  const row: FluidLog = {
+    date: day,
+    logged_at: memo.recorded_at,
+    kind: fluid.kind,
+    volume_ml: ml,
+    notes: fluid.qty_label
+      ? `From voice memo — "${fluid.qty_label}".`
+      : "From voice memo.",
+    entered_by: memo.entered_by,
+    created_at: ts,
+  };
+  const id = (await db.fluid_logs.add(row)) as number;
+  return {
+    table: "fluid_logs",
+    row_id: id,
+    fields: { kind: fluid.kind, volume_ml: ml, date: day },
+    op: "create",
+    applied_at: ts,
+  };
+}
+
+function defaultFluidMl(
+  kind: NonNullable<
+    NonNullable<VoiceMemoParsedFields["nutrition"]>["fluids"]
+  >[number]["kind"],
+): number {
+  // Conservative defaults when the patient said "drank water" without
+  // a quantity. The patient (or carer) can edit on /nutrition.
+  switch (kind) {
+    case "water":
+      return 250;
+    case "tea":
+    case "coffee":
+      return 200;
+    case "broth":
+    case "soup":
+      return 200;
+    case "electrolyte":
+      return 250;
+    case "other":
+    default:
+      return 200;
+  }
+}
+
 // Pull just the daily-form shape out of a parsed result. Keeps the
 // apply step decoupled from VoiceMemoParsedFields' broader structure.
 export function extractDailyShape(
@@ -710,6 +862,23 @@ async function deleteRow(
   else if (table === "appointments") await db.appointments.delete(id);
   else if (table === "imaging") await db.imaging.delete(id);
   else if (table === "labs") await db.labs.delete(id);
+  else if (table === "meal_entries") {
+    // Cascade — meal_items reference meal_entry_id and would be
+    // orphaned otherwise.
+    const items = await db.meal_items
+      .where("meal_entry_id")
+      .equals(id)
+      .toArray();
+    await Promise.all(
+      items
+        .map((item) => item.id)
+        .filter((x): x is number => typeof x === "number")
+        .map((itemId) => db.meal_items.delete(itemId)),
+    );
+    await db.meal_entries.delete(id);
+  } else if (table === "fluid_logs") {
+    await db.fluid_logs.delete(id);
+  }
 }
 
 async function revertUpdate(patch: import("~/types/voice-memo").AppliedPatch): Promise<void> {
