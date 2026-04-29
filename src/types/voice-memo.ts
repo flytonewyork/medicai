@@ -175,7 +175,9 @@ export interface AppliedPatch {
   table:
     | "daily_entries"
     | "life_events"
-    | "appointments";
+    | "appointments"
+    | "imaging"
+    | "labs";
   // The local id of the row written or updated.
   row_id: number;
   // Fields touched on that row, with the value the memo supplied. We

@@ -1,5 +1,5 @@
 import { db, now } from "~/lib/db/dexie";
-import type { DailyEntry, EnteredBy, LifeEvent } from "~/types/clinical";
+import type { DailyEntry, EnteredBy, Imaging, LabResult, LifeEvent } from "~/types/clinical";
 import type { Appointment } from "~/types/appointment";
 import type {
   AppliedPatch,
@@ -7,6 +7,14 @@ import type {
   VoiceMemoParsedFields,
 } from "~/types/voice-memo";
 import { localDayISO } from "~/lib/utils/date";
+import {
+  extractNumericValue,
+  findAppointmentForImaging,
+  findAppointmentForLab,
+  findExistingLabRow,
+  mapLabName,
+  mapModality,
+} from "./match";
 
 // Slice 3: turn a memo's parsed_fields into actual rows in the
 // appropriate tables — only when the patient has reviewed and
@@ -25,13 +33,22 @@ import { localDayISO } from "~/lib/utils/date";
 export interface ApplyOptions {
   // What the patient confirmed in the preview form. Each toggle lets
   // them include or exclude one section of the parse from the apply.
-  // Defaults: all true when the patient just hits "Log to forms".
+  // Defaults: all true when the patient just hits "Save".
   apply_daily?: boolean;
   apply_clinic_visit?: boolean;
   apply_appointments?: boolean;
   // Subset of the parsed daily values the patient may have edited
   // before applying. Falls back to memo.parsed_fields when omitted.
   daily_overrides?: DailyOverridePatch;
+  // Slice 5: per-result toggles for imaging + lab creates. The
+  // linking step (mark a matched appointment attended, append the
+  // memo's interpretation to its notes) is silent and always runs;
+  // creating a NEW imaging or labs row when no appointment matched
+  // requires an explicit tap. Index in the array maps 1:1 to the
+  // memo's `parsed_fields.imaging_results[]` / `lab_results[]`.
+  // When omitted, no new clinical rows are created.
+  imaging_create?: boolean[];
+  lab_create?: boolean[];
 }
 
 export type DailyOverridePatch = Partial<
@@ -90,6 +107,30 @@ export async function applyMemoPatches(
       if (appt.confidence !== "high") continue;
       const apptPatch = await applyAppointment(memo, appt);
       if (apptPatch) patches.push(apptPatch);
+    }
+  }
+
+  // Slice 5: imaging results. Always try to link to a matching
+  // appointment (auto). Only create a new imaging row when the caller
+  // opted in via `imaging_create[i]`.
+  if (parsed.imaging_results?.length) {
+    for (let i = 0; i < parsed.imaging_results.length; i++) {
+      const result = parsed.imaging_results[i]!;
+      const create = opts.imaging_create?.[i] ?? false;
+      const imagingPatches = await applyImagingResult(memo, result, create);
+      patches.push(...imagingPatches);
+    }
+  }
+
+  // Slice 5: lab results. Same rule — link silently to a matched
+  // appointment, only create a labs row when there's a numeric value
+  // AND the caller opted in.
+  if (parsed.lab_results?.length) {
+    for (let i = 0; i < parsed.lab_results.length; i++) {
+      const result = parsed.lab_results[i]!;
+      const create = opts.lab_create?.[i] ?? false;
+      const labPatches = await applyLabResult(memo, result, create);
+      patches.push(...labPatches);
     }
   }
 
@@ -258,6 +299,184 @@ async function applyAppointment(
     op: "create",
     applied_at: ts,
   };
+}
+
+// Slice 5: link a memo to an existing appointment. Auto-applied
+// silently when a fuzzy match is found. Flips status `scheduled` →
+// `attended`, appends a one-line attribution to notes (preserving
+// any existing notes), and stamps `source_memo_id` for provenance.
+// `prior_fields` records the pre-link state so undo can restore.
+async function linkAppointment(
+  memo: VoiceMemo,
+  appt: Appointment,
+  attribution: string,
+): Promise<AppliedPatch | null> {
+  if (!appt.id) return null;
+  const ts = now();
+  const priorStatus = appt.status;
+  const priorNotes = appt.notes ?? "";
+  const newNotes = priorNotes
+    ? `${priorNotes}\n\n${attribution}`
+    : attribution;
+
+  const flipStatus =
+    priorStatus === "scheduled" ? ("attended" as const) : priorStatus;
+
+  await db.appointments.update(appt.id, {
+    status: flipStatus,
+    notes: newNotes,
+    source_memo_id: memo.id,
+    updated_at: ts,
+  });
+
+  const fields: Record<string, string | number> = {
+    status: flipStatus,
+    notes_appended: attribution,
+  };
+  return {
+    table: "appointments",
+    row_id: appt.id,
+    fields,
+    prior_fields: {
+      status: priorStatus,
+      notes: priorNotes,
+    },
+    op: "update",
+    applied_at: ts,
+  };
+}
+
+// Slice 5: apply an imaging result from a memo. Two-step:
+//   1. Try to link to a recent matching appointment (always silent
+//      auto-link). Only fires when the apply step finds a match in
+//      the 14-day-back / 7-day-forward window.
+//   2. When `createNew` is true, also create an imaging row tied to
+//      the matched appointment (when present) and the memo. Driven
+//      by the patient tapping "Add new scan/test" in the preview.
+async function applyImagingResult(
+  memo: VoiceMemo,
+  result: NonNullable<VoiceMemoParsedFields["imaging_results"]>[number],
+  createNew: boolean,
+): Promise<AppliedPatch[]> {
+  const patches: AppliedPatch[] = [];
+  const day = result.date ?? memo.day ?? localDayISO(memo.recorded_at);
+
+  const matched = await findAppointmentForImaging(result.modality, day);
+  if (matched?.id) {
+    const linkPatch = await linkAppointment(
+      memo,
+      matched,
+      `From voice memo: ${result.modality.toUpperCase()} — ${result.finding_summary} (${result.status}).`,
+    );
+    if (linkPatch) patches.push(linkPatch);
+  }
+
+  if (createNew) {
+    const ts = now();
+    const row: Imaging = {
+      date: day,
+      modality: mapModality(result.modality),
+      findings_summary: result.finding_summary,
+      notes: `Patient interpretation: ${result.status}.`,
+      source_memo_id: memo.id,
+      source_appointment_id: matched?.id,
+      created_at: ts,
+      updated_at: ts,
+    };
+    const id = (await db.imaging.add(row)) as number;
+    patches.push({
+      table: "imaging",
+      row_id: id,
+      fields: {
+        modality: row.modality,
+        findings_summary: row.findings_summary,
+        date: row.date,
+      },
+      op: "create",
+      applied_at: ts,
+    });
+  }
+  return patches;
+}
+
+// Slice 5: apply a lab result from a memo. Three branches:
+//   1. Numeric value + match in known LabResult typed fields →
+//      create a new labs row (when createNew=true) with the typed
+//      analyte filled and source: "patient_self_report".
+//   2. Match against an existing same-day labs row → safe-fill the
+//      missing analyte if present (when createNew=true).
+//   3. Always — link to the matched bloods appointment (auto).
+async function applyLabResult(
+  memo: VoiceMemo,
+  result: NonNullable<VoiceMemoParsedFields["lab_results"]>[number],
+  createNew: boolean,
+): Promise<AppliedPatch[]> {
+  const patches: AppliedPatch[] = [];
+  const day = result.date ?? memo.day ?? localDayISO(memo.recorded_at);
+
+  // Always try to link a matching bloods appointment first — silent.
+  const matched = await findAppointmentForLab(day);
+  if (matched?.id) {
+    const linkPatch = await linkAppointment(
+      memo,
+      matched,
+      `From voice memo: ${result.name} — ${result.value ?? result.status}.`,
+    );
+    if (linkPatch) patches.push(linkPatch);
+  }
+
+  if (!createNew) return patches;
+
+  const numeric = extractNumericValue(result.value);
+  const fieldKey = mapLabName(result.name);
+  // Without a numeric value mapped to a known typed analyte we don't
+  // touch the labs table — the qualitative mention stays on the memo
+  // (and on the linked appointment's notes). Per the user's design.
+  if (numeric === null || !fieldKey) return patches;
+
+  const ts = now();
+  const existing = await findExistingLabRow(day);
+
+  if (existing?.id) {
+    // Safe-fill: only write when the analyte slot is empty. Don't
+    // overwrite a value Thomas imported from Epworth earlier.
+    const existingValue = (existing as unknown as Record<string, unknown>)[
+      fieldKey
+    ];
+    if (typeof existingValue === "number") return patches;
+    await db.labs.update(existing.id, {
+      [fieldKey]: numeric,
+      updated_at: ts,
+    });
+    patches.push({
+      table: "labs",
+      row_id: existing.id,
+      fields: { [fieldKey]: numeric },
+      prior_fields: { [fieldKey]: null },
+      op: "update",
+      applied_at: ts,
+    });
+    return patches;
+  }
+
+  const row: LabResult = {
+    date: day,
+    [fieldKey]: numeric,
+    source: "patient_self_report",
+    source_memo_id: memo.id,
+    source_appointment_id: matched?.id,
+    created_at: ts,
+    updated_at: ts,
+  } as LabResult;
+  const id = (await db.labs.add(row)) as number;
+  patches.push({
+    table: "labs",
+    row_id: id,
+    fields: { date: day, [fieldKey]: numeric, source: "patient_self_report" },
+    op: "create",
+    applied_at: ts,
+  });
+  return patches;
 }
 
 // Pull just the daily-form shape out of a parsed result. Keeps the
@@ -438,12 +657,14 @@ export async function undoAppliedPatch(
 }
 
 async function deleteRow(
-  table: "daily_entries" | "life_events" | "appointments",
+  table: AppliedPatch["table"],
   id: number,
 ): Promise<void> {
   if (table === "daily_entries") await db.daily_entries.delete(id);
   else if (table === "life_events") await db.life_events.delete(id);
-  else await db.appointments.delete(id);
+  else if (table === "appointments") await db.appointments.delete(id);
+  else if (table === "imaging") await db.imaging.delete(id);
+  else if (table === "labs") await db.labs.delete(id);
 }
 
 async function revertUpdate(patch: import("~/types/voice-memo").AppliedPatch): Promise<void> {
@@ -469,6 +690,42 @@ async function revertUpdate(patch: import("~/types/voice-memo").AppliedPatch): P
     }
     next.updated_at = ts;
     await db.daily_entries.put(next);
+    return;
+  }
+  if (patch.table === "appointments") {
+    // Slice 5: undoing a memo→appointment link restores the prior
+    // status (e.g. "scheduled") and notes, and clears the
+    // source_memo_id we stamped.
+    const row = await db.appointments.get(patch.row_id);
+    if (!row) return;
+    const prior = patch.prior_fields ?? {};
+    const next: Appointment = { ...row, updated_at: ts };
+    if (typeof prior.status === "string") {
+      next.status = prior.status as Appointment["status"];
+    }
+    if ("notes" in prior) {
+      const v = prior.notes;
+      next.notes = typeof v === "string" && v.length > 0 ? v : undefined;
+    }
+    delete (next as unknown as Record<string, unknown>).source_memo_id;
+    await db.appointments.put(next);
+    return;
+  }
+  if (patch.table === "labs") {
+    const row = await db.labs.get(patch.row_id);
+    if (!row) return;
+    const next = { ...row, updated_at: ts } as LabResult;
+    const prior = patch.prior_fields ?? {};
+    const nextRecord = next as unknown as Record<string, unknown>;
+    for (const k of keys) {
+      const restoredValue = prior[k];
+      if (restoredValue === null || restoredValue === undefined) {
+        delete nextRecord[k];
+      } else {
+        nextRecord[k] = restoredValue;
+      }
+    }
+    await db.labs.put(next);
     return;
   }
   // life_events and appointments don't currently emit `update` patches

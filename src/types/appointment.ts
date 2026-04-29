@@ -152,6 +152,11 @@ export interface Appointment {
   // MHR appointment PDF). See SourceSystem / PdfBlob in ~/types/clinical.
   source_system?: SourceSystem;
   source_pdf_id?: number;
+  // Slice 5: voice-memo provenance. When a memo was matched to this
+  // appointment (e.g. dad reporting on a PET CT result for a
+  // previously-scheduled scan), the most recent memo id that linked
+  // here. Future linkings can use linked_records[] for full history.
+  source_memo_id?: number;
   created_at: string;
   updated_at: string;
 }

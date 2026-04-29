@@ -242,6 +242,13 @@ export interface LabResult {
   // Provenance — see SourceSystem / PdfBlob above.
   source_system?: SourceSystem;
   source_pdf_id?: number;
+  // Slice 5: voice-memo provenance. When the patient quoted a lab
+  // value in a memo, source_memo_id ties the labs row back to the
+  // recording; source_appointment_id ties it to the bloods
+  // appointment that produced the value. Both non-indexed → no
+  // Dexie schema bump needed.
+  source_memo_id?: number;
+  source_appointment_id?: number;
   created_at: string;
   updated_at: string;
 }
@@ -255,6 +262,9 @@ export interface Imaging {
   notes?: string;
   source_system?: SourceSystem;
   source_pdf_id?: number;
+  // Slice 5: same voice-memo provenance pair as LabResult above.
+  source_memo_id?: number;
+  source_appointment_id?: number;
   created_at: string;
   updated_at: string;
 }

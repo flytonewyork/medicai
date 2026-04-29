@@ -429,6 +429,20 @@ function PreviewForm({
   const [includeAppts, setIncludeAppts] = useState(
     Boolean(parsed.clinical?.appointments_mentioned?.some((a) => a.confidence === "high")),
   );
+  // Slice 5: per-row "Add new scan/test" / "Add to /labs" toggles.
+  // Default OFF — linking to an existing appointment runs silently;
+  // creating a new clinical row needs an explicit tap.
+  const [imagingCreate, setImagingCreate] = useState<boolean[]>(
+    () => (parsed.imaging_results ?? []).map(() => false),
+  );
+  const [labCreate, setLabCreate] = useState<boolean[]>(
+    () => (parsed.lab_results ?? []).map(() => false),
+  );
+  useEffect(() => {
+    setImagingCreate((parsed.imaging_results ?? []).map(() => false));
+    setLabCreate((parsed.lab_results ?? []).map(() => false));
+  }, [parsed.imaging_results, parsed.lab_results]);
+
   const [busy, setBusy] = useState(false);
   const [reparsing, setReparsing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -439,11 +453,15 @@ function PreviewForm({
   const visit = parsed.clinical?.clinic_visit;
   const appts = parsed.clinical?.appointments_mentioned ?? [];
   const meds = parsed.clinical?.medications_mentioned ?? [];
+  const imagingResults = parsed.imaging_results ?? [];
+  const labResults = parsed.lab_results ?? [];
 
   const nothingToApply =
     (!includeDaily || !hasDaily) &&
     (!includeVisit || !visit?.summary) &&
-    (!includeAppts || appts.every((a) => a.confidence !== "high"));
+    (!includeAppts || appts.every((a) => a.confidence !== "high")) &&
+    imagingResults.length === 0 &&
+    labResults.length === 0;
 
   async function onApply() {
     if (!memo.id) return;
@@ -455,6 +473,8 @@ function PreviewForm({
         apply_clinic_visit: includeVisit,
         apply_appointments: includeAppts,
         daily_overrides: edits,
+        imaging_create: imagingCreate,
+        lab_create: labCreate,
       });
       setAppliedRecently(true);
     } catch (e) {
@@ -541,15 +561,22 @@ function PreviewForm({
 
       {meds.length > 0 && <MedsSection locale={locale} meds={meds} />}
 
-      {(parsed.imaging_results?.length ?? 0) > 0 && (
+      {imagingResults.length > 0 && (
         <ImagingSection
           locale={locale}
-          results={parsed.imaging_results!}
+          results={imagingResults}
+          create={imagingCreate}
+          setCreate={setImagingCreate}
         />
       )}
 
-      {(parsed.lab_results?.length ?? 0) > 0 && (
-        <LabsSection locale={locale} results={parsed.lab_results!} />
+      {labResults.length > 0 && (
+        <LabsSection
+          locale={locale}
+          results={labResults}
+          create={labCreate}
+          setCreate={setLabCreate}
+        />
       )}
 
       {parsed.notes && (
@@ -869,18 +896,30 @@ function MedsSection({
 function ImagingSection({
   locale,
   results,
+  create,
+  setCreate,
 }: {
   locale: "en" | "zh";
   results: NonNullable<VoiceMemoParsedFields["imaging_results"]>;
+  create: boolean[];
+  setCreate: (v: boolean[]) => void;
 }) {
+  function toggle(i: number) {
+    const next = create.slice();
+    next[i] = !next[i];
+    setCreate(next);
+  }
   return (
     <div>
       <div className="eyebrow mb-1">
         {locale === "zh" ? "影像" : "Imaging"}
       </div>
-      <ul className="space-y-1.5 text-[13px]">
+      <ul className="space-y-2 text-[13px]">
         {results.map((r, i) => (
-          <li key={i} className="flex items-start gap-2">
+          <li
+            key={i}
+            className="flex items-start gap-2 rounded-md border border-ink-100 px-2.5 py-2"
+          >
             <span
               className={cn(
                 "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium uppercase",
@@ -901,14 +940,25 @@ function ImagingSection({
                 {imagingStatusLabel(r.status, locale)}
                 {r.date ? ` · ${r.date}` : ""}
               </div>
+              <label className="mt-1.5 inline-flex items-center gap-1.5 cursor-pointer text-[11.5px] text-ink-700">
+                <input
+                  type="checkbox"
+                  checked={create[i] ?? false}
+                  onChange={() => toggle(i)}
+                  className="h-3.5 w-3.5"
+                />
+                {locale === "zh"
+                  ? "新增到「影像」记录"
+                  : "Add new scan/test entry"}
+              </label>
             </div>
           </li>
         ))}
       </ul>
       <p className="mt-1 text-[11px] text-ink-400">
         {locale === "zh"
-          ? "记录在录音上，不会自动写入「化验/影像」表。"
-          : "Captured on the memo. Not auto-filed into /imaging."}
+          ? "已有的预约会自动标为「已完成」并附上你说的内容。仅勾选时才新建影像条目。"
+          : "Matching appointment is auto-marked attended with your interpretation appended. New imaging row only when ticked."}
       </p>
     </div>
   );
@@ -917,41 +967,77 @@ function ImagingSection({
 function LabsSection({
   locale,
   results,
+  create,
+  setCreate,
 }: {
   locale: "en" | "zh";
   results: NonNullable<VoiceMemoParsedFields["lab_results"]>;
+  create: boolean[];
+  setCreate: (v: boolean[]) => void;
 }) {
+  function toggle(i: number) {
+    const next = create.slice();
+    next[i] = !next[i];
+    setCreate(next);
+  }
   return (
     <div>
       <div className="eyebrow mb-1">
         {locale === "zh" ? "化验" : "Labs"}
       </div>
-      <ul className="space-y-1 text-[13px]">
-        {results.map((r, i) => (
-          <li key={i} className="flex items-baseline gap-2">
-            <span className="font-medium text-ink-900">{r.name}</span>
-            {r.value && <span className="text-ink-700">{r.value}</span>}
-            <span
-              className={cn(
-                "rounded-full px-1.5 py-0 text-[10px] font-medium",
-                r.status === "normal"
-                  ? "bg-emerald-50 text-emerald-700"
-                  : r.status === "raised" || r.status === "abnormal"
-                    ? "bg-[var(--warn,#d97706)]/12 text-[var(--warn,#d97706)]"
-                    : r.status === "low"
-                      ? "bg-amber-50 text-amber-700"
-                      : "bg-ink-100 text-ink-500",
-              )}
+      <ul className="space-y-2 text-[13px]">
+        {results.map((r, i) => {
+          const numeric = /\d/.test(r.value ?? "");
+          return (
+            <li
+              key={i}
+              className="rounded-md border border-ink-100 px-2.5 py-2"
             >
-              {labStatusLabel(r.status, locale)}
-            </span>
-          </li>
-        ))}
+              <div className="flex items-baseline gap-2">
+                <span className="font-medium text-ink-900">{r.name}</span>
+                {r.value && <span className="text-ink-700">{r.value}</span>}
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 py-0 text-[10px] font-medium",
+                    r.status === "normal"
+                      ? "bg-emerald-50 text-emerald-700"
+                      : r.status === "raised" || r.status === "abnormal"
+                        ? "bg-[var(--warn,#d97706)]/12 text-[var(--warn,#d97706)]"
+                        : r.status === "low"
+                          ? "bg-amber-50 text-amber-700"
+                          : "bg-ink-100 text-ink-500",
+                  )}
+                >
+                  {labStatusLabel(r.status, locale)}
+                </span>
+              </div>
+              {numeric ? (
+                <label className="mt-1.5 inline-flex items-center gap-1.5 cursor-pointer text-[11.5px] text-ink-700">
+                  <input
+                    type="checkbox"
+                    checked={create[i] ?? false}
+                    onChange={() => toggle(i)}
+                    className="h-3.5 w-3.5"
+                  />
+                  {locale === "zh"
+                    ? "新增到「化验」记录"
+                    : "Add to /labs"}
+                </label>
+              ) : (
+                <p className="mt-1 text-[10.5px] italic text-ink-400">
+                  {locale === "zh"
+                    ? "无具体数值，会附在已匹配的预约里。"
+                    : "No numeric value — appended to the linked appointment instead."}
+                </p>
+              )}
+            </li>
+          );
+        })}
       </ul>
       <p className="mt-1 text-[11px] text-ink-400">
         {locale === "zh"
-          ? "记录在录音上，不会自动写入「化验」表。"
-          : "Captured on the memo. Not auto-filed into /labs."}
+          ? "已有的抽血预约会自动标为「已完成」。仅勾选有数值的项才新建化验条目。"
+          : "Matching bloods appointment is auto-marked attended. Only numeric values can be saved as new lab entries."}
       </p>
     </div>
   );
@@ -1231,6 +1317,10 @@ function tableLabel(
         return "时间线事件";
       case "appointments":
         return "预约";
+      case "imaging":
+        return "影像";
+      case "labs":
+        return "化验";
     }
   }
   switch (table) {
@@ -1240,6 +1330,10 @@ function tableLabel(
       return "Life event";
     case "appointments":
       return "Appointment";
+    case "imaging":
+      return "Imaging";
+    case "labs":
+      return "Lab result";
   }
 }
 
@@ -1251,6 +1345,10 @@ function hrefForPatch(patch: AppliedPatch): string {
       return "/diary";
     case "life_events":
       return "/family/timeline";
+    case "imaging":
+      return "/labs";
+    case "labs":
+      return "/labs";
   }
 }
 
