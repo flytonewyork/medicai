@@ -25,6 +25,7 @@ export interface PersistVoiceMemoInput {
   source_screen?: VoiceMemo["source_screen"];
   log_event_id?: number;
   recorded_at?: string;
+  category?: VoiceMemo["category"];
 }
 
 export interface PersistVoiceMemoResult {
@@ -59,6 +60,7 @@ export async function persistVoiceMemo(
         audio_size_bytes: size,
         log_event_id: input.log_event_id,
         source_screen: input.source_screen,
+        category: input.category,
         entered_by: input.entered_by,
         created_at: created,
         updated_at: created,
@@ -97,6 +99,7 @@ export interface PersistTextMemoInput {
   entered_by: EnteredBy;
   source_screen?: VoiceMemo["source_screen"];
   recorded_at?: string;
+  category?: VoiceMemo["category"];
 }
 
 export async function persistTextMemo(
@@ -114,6 +117,7 @@ export async function persistTextMemo(
     audio_mime: "text/plain",
     audio_size_bytes: 0,
     source_screen: input.source_screen,
+    category: input.category,
     entered_by: input.entered_by,
     created_at: created,
     updated_at: created,

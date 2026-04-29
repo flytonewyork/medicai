@@ -33,6 +33,17 @@ export interface VoiceMemo {
   // Lets the diary show the resulting agent reports inline with the memo.
   log_event_id?: number;
   source_screen?: "log" | "meal_ingest" | "phone_note" | "diary";
+  // Slice 9: optional category the patient picked from the /log
+  // wizard chips before recording. Threaded into the Claude prompt
+  // so extraction focuses on the matching schema sections, and
+  // surfaced in the diary so the patient can see what they meant
+  // to log.
+  category?:
+    | "symptom"
+    | "nutrition"
+    | "visit_treatment"
+    | "test_result"
+    | "appointment";
   entered_by: EnteredBy;
   // Filled by Slice 2 — Claude extracts daily-form fields (energy,
   // sleep, pain, mood, symptoms, foods) from the transcript and merges

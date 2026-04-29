@@ -45,6 +45,7 @@ export async function parseVoiceMemo(memoId: number): Promise<ParseAttempt> {
       transcript: memo.transcript,
       locale: memo.locale,
       recorded_at: memo.recorded_at,
+      category: memo.category,
     });
     parsed = res.parsed;
   } catch (err) {
@@ -108,6 +109,7 @@ export async function reparseVoiceMemo(memoId: number): Promise<ParseAttempt> {
       transcript: memo.transcript,
       locale: memo.locale,
       recorded_at: memo.recorded_at,
+      category: memo.category,
     });
     parsed = res.parsed;
   } catch (err) {

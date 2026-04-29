@@ -47,6 +47,17 @@ interface ParseBody {
   locale?: "en" | "zh";
   recorded_at?: string;
   model?: string;
+  // Slice 9: optional category hint from /log's wizard chips. When
+  // the patient picked "Symptom" before recording, we tell Claude to
+  // focus extraction on the daily-tracking + clinic_visit sections
+  // and leave the rest null. Cleaner parse than free-form because
+  // Claude isn't scanning for everything at once.
+  category?:
+    | "symptom"
+    | "nutrition"
+    | "visit_treatment"
+    | "test_result"
+    | "appointment";
 }
 
 export async function POST(req: Request) {
@@ -86,6 +97,9 @@ export async function POST(req: Request) {
   const recordedHint = body.recorded_at
     ? `The memo was recorded at ${body.recorded_at}.`
     : "";
+  const categoryHint = body.category
+    ? buildCategoryFocus(body.category)
+    : "";
 
   const result = await withAnthropicErrorBoundary(() =>
     gate.client.messages.create({
@@ -102,6 +116,7 @@ export async function POST(req: Request) {
             buildVoiceMemoParseSystem(profile),
             localeNote,
             recordedHint,
+            categoryHint,
             JSON_OUTPUT_INSTRUCTIONS,
           ]
             .filter(Boolean)
@@ -176,6 +191,49 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ parsed: safe.data });
+}
+
+// Slice 9: targeted prompt that matches the wizard chip the patient
+// picked on /log. The category narrows Claude's attention so the
+// extraction is reliable: a "Symptom" memo doesn't need to be
+// scanned for clinic-visit summaries; a "Test result" memo doesn't
+// need a daily-form sweep. Other sections still get extracted when
+// the patient mentions them in passing — the hint is a guide, not a
+// gate.
+function buildCategoryFocus(
+  category: NonNullable<ParseBody["category"]>,
+): string {
+  const lines: string[] = [
+    "CATEGORY HINT — the patient picked a category before recording. Focus your extraction on the matching schema sections; leave unrelated ones null. The patient may still mention other things in passing — capture those too, but don't over-search.",
+  ];
+  switch (category) {
+    case "symptom":
+      lines.push(
+        "Picked: Symptom. Prioritise the daily-tracking 0–10 numerics (pain_current, pain_worst, nausea, fatigue, anorexia, abdominal_pain, energy, sleep_quality, mood_clarity, appetite), the CTCAE neuropathy grades, and the symptom booleans (cold_dysaesthesia, mouth_sores, fever). \`notes\` for clinical addenda. Skip clinic_visit / appointments_mentioned / nutrition unless the patient explicitly mentions them.",
+      );
+      break;
+    case "nutrition":
+      lines.push(
+        "Picked: Food/Fluid. Prioritise the nutrition block (meals + fluids). Estimate grams / ml when defensible. Skip clinic_visit / appointments_mentioned / imaging_results / lab_results unless mentioned in passing.",
+      );
+      break;
+    case "visit_treatment":
+      lines.push(
+        "Picked: Visit/Treatment. Prioritise clinic_visit (set kind to chemo / scan / blood_test / procedure / clinic / ed accordingly). Imaging or lab results that came up during the visit go in their own structured fields. Skip future appointments_mentioned unless the patient explicitly says something is scheduled.",
+      );
+      break;
+    case "test_result":
+      lines.push(
+        "Picked: Test result. Prioritise imaging_results (modality, finding_summary, status) for scans, and lab_results (name, value, status) for blood-tests. Both can apply when the patient is describing a panel of results. Skip clinic_visit unless the patient is also recapping the visit where the result was discussed.",
+      );
+      break;
+    case "appointment":
+      lines.push(
+        "Picked: Future appointment. Prioritise appointments_mentioned (title + starts_at + prep + kind + confidence). Set confidence: high only when both date and title are concrete. Skip clinic_visit (that's for past encounters).",
+      );
+      break;
+  }
+  return lines.join("\n");
 }
 
 const JSON_OUTPUT_INSTRUCTIONS = [

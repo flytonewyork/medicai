@@ -103,6 +103,11 @@ export default function LogPage() {
   // the patient taps the mic to begin recording. Switching to typing
   // hides the mic surface for the rest of the session.
   const [editMode, setEditMode] = useState(false);
+  // Slice 9: optional wizard category. null = free-form (current
+  // behaviour, default). When set, the prompt above the recorder
+  // narrows the patient's attention and Claude focuses extraction
+  // on the matching schema sections.
+  const [category, setCategory] = useState<WizardCategory | null>(null);
   // Slice 8: when the patient records via the mic, useVoiceTranscription
   // persists a `voice_memos` row. We capture the id so submit() reuses
   // that memo (with the patient's edited transcript) instead of
@@ -119,6 +124,7 @@ export default function LogPage() {
   const voice = useVoiceTranscription({
     locale,
     source: "log",
+    category: category ?? undefined,
     enteredBy,
     // Slice 8: parse/apply runs at /log submit time (so we get tags +
     // direct-file detection paths), not at record time. parseAfterPersist
@@ -190,6 +196,7 @@ export default function LogPage() {
           locale,
           entered_by: enteredBy,
           source_screen: "log",
+          category: category ?? undefined,
         });
         memoId = r.memo_id;
       } else {
@@ -283,6 +290,7 @@ export default function LogPage() {
     setText("");
     setOverrideTags(null);
     setRun({ kind: "idle" });
+    setCategory(null);
     recordedMemoIdRef.current = null;
     voice?.cancel();
   }
@@ -304,6 +312,14 @@ export default function LogPage() {
       />
 
       <Card className="p-5">
+        {run.kind === "idle" && (
+          <CategoryWizard
+            category={category}
+            setCategory={setCategory}
+            locale={locale}
+          />
+        )}
+
         {voice && !editMode ? (
           <VoiceCapture
             voice={voice}
@@ -847,4 +863,113 @@ function SavedSummary({
       )}
     </div>
   );
+}
+
+type WizardCategory =
+  | "symptom"
+  | "nutrition"
+  | "visit_treatment"
+  | "test_result"
+  | "appointment";
+
+// Slice 9: optional branching layer above the recorder. Free-form
+// stays the default (one tap to talk, no wizard required); the chips
+// are an opt-in that anchors the patient on a specific topic and
+// gives Claude a focused prompt path. Two chips → one focused
+// prompt → cleaner parse than the catch-all free-form sweep.
+function CategoryWizard({
+  category,
+  setCategory,
+  locale,
+}: {
+  category: WizardCategory | null;
+  setCategory: (c: WizardCategory | null) => void;
+  locale: "en" | "zh";
+}) {
+  const items: { id: WizardCategory; en: string; zh: string; emoji: string }[] = [
+    { id: "symptom", en: "Symptom", zh: "症状", emoji: "🩺" },
+    { id: "nutrition", en: "Food / Fluid", zh: "饮食", emoji: "🍽" },
+    { id: "visit_treatment", en: "Visit / Treatment", zh: "看诊 / 治疗", emoji: "🏥" },
+    { id: "test_result", en: "Test result", zh: "化验 / 影像结果", emoji: "📋" },
+    { id: "appointment", en: "Future appointment", zh: "未来预约", emoji: "📅" },
+  ];
+
+  if (category) {
+    const active = items.find((i) => i.id === category);
+    return (
+      <div className="mb-3 rounded-md border border-[var(--tide-2)]/40 bg-[var(--tide-2)]/5 px-3 py-2">
+        <div className="flex items-baseline justify-between gap-2">
+          <div className="text-[12px] font-medium text-[var(--tide-2)]">
+            {active?.emoji}{" "}
+            {locale === "zh" ? active?.zh : active?.en}
+          </div>
+          <button
+            type="button"
+            onClick={() => setCategory(null)}
+            className="text-[11px] text-ink-500 hover:text-ink-900"
+          >
+            {locale === "zh" ? "改回自由模式" : "Switch back to free-form"}
+          </button>
+        </div>
+        <p className="mt-1 text-[12px] leading-snug text-ink-700">
+          {focusedPrompt(category, locale)}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-3">
+      <div className="text-[10.5px] font-medium uppercase tracking-wider text-ink-400">
+        {locale === "zh" ? "想聚焦的话（可选）" : "Quick log (optional)"}
+      </div>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {items.map((it) => (
+          <button
+            key={it.id}
+            type="button"
+            onClick={() => setCategory(it.id)}
+            className="inline-flex items-center gap-1 rounded-full border border-ink-200 bg-paper-2 px-2.5 py-1 text-[11.5px] font-medium text-ink-700 hover:border-[var(--tide-2)] hover:text-[var(--tide-2)]"
+          >
+            <span aria-hidden>{it.emoji}</span>
+            {locale === "zh" ? it.zh : it.en}
+          </button>
+        ))}
+      </div>
+      <p className="mt-1 text-[10.5px] text-ink-400">
+        {locale === "zh"
+          ? "或直接讲，AI 会自动整理。"
+          : "Or just talk below — AI will sort it out."}
+      </p>
+    </div>
+  );
+}
+
+function focusedPrompt(c: WizardCategory, locale: "en" | "zh"): string {
+  if (locale === "zh") {
+    switch (c) {
+      case "symptom":
+        return "讲一下症状：什么时候开始的、0–10 多严重、什么让它变好或变差。";
+      case "nutrition":
+        return "讲一下吃喝了什么、大概的量、什么时候。";
+      case "visit_treatment":
+        return "讲一下看诊或治疗：见了谁、做了什么、有没有特别的指示或感觉。";
+      case "test_result":
+        return "讲一下化验或影像结果：什么检查、什么发现、什么时候告诉你的。";
+      case "appointment":
+        return "讲一下要去的预约：什么时候、什么科、需要什么准备。";
+    }
+  }
+  switch (c) {
+    case "symptom":
+      return "Tell me about a symptom — when it started, how strong (0–10), what made it better or worse.";
+    case "nutrition":
+      return "Tell me what you ate or drank, roughly how much, and when.";
+    case "visit_treatment":
+      return "Tell me about a visit or treatment that just happened — who you saw, what was done, anything notable.";
+    case "test_result":
+      return "Tell me about a test or scan result — what test, what the finding was, when they told you.";
+    case "appointment":
+      return "Tell me about an upcoming appointment — when, what for, any prep instructions.";
+  }
 }
