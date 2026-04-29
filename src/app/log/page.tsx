@@ -1,18 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { db } from "~/lib/db/dexie";
+import Link from "next/link";
+import { db, now } from "~/lib/db/dexie";
 import { todayISO } from "~/lib/utils/date";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { tagInput } from "~/lib/log/tag";
 import { agentsForTags } from "~/agents/routing";
-import { runAgentClient } from "~/lib/log/run-agents";
 import { parseDirectFile, type DirectFileResult } from "~/lib/log/direct-file";
 import { applyDirectFile } from "~/lib/log/direct-file-apply";
 import { FollowUpsCard } from "~/components/log/follow-ups-card";
+import { persistTextMemo } from "~/lib/voice-memo/persist";
+import { parseVoiceMemo } from "~/lib/voice-memo/parse";
 import { useUIStore } from "~/stores/ui-store";
 import { LOG_TAGS, type AgentId, type LogTag } from "~/types/agent";
+import type { AppliedPatch, VoiceMemoParsedFields } from "~/types/voice-memo";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Textarea } from "~/components/ui/field";
@@ -63,8 +66,13 @@ const AGENT_LABELS: Record<AgentId, { en: string; zh: string }> = {
 type RunState =
   | { kind: "idle" }
   | { kind: "saving" }
-  | { kind: "running"; total: number; done: AgentId[]; failed: AgentId[] }
-  | { kind: "done"; ran: AgentId[]; failed: AgentId[] }
+  | { kind: "parsing" }
+  | {
+      kind: "memo_saved";
+      memo_id: number;
+      patches: AppliedPatch[];
+      parsed?: VoiceMemoParsedFields;
+    }
   | {
       kind: "filed";
       summary: { en: string; zh: string };
@@ -87,6 +95,11 @@ export default function LogPage() {
   // the patient taps the mic to begin recording. Switching to typing
   // hides the mic surface for the rest of the session.
   const [editMode, setEditMode] = useState(false);
+  // Slice 8: when the patient records via the mic, useVoiceTranscription
+  // persists a `voice_memos` row. We capture the id so submit() reuses
+  // that memo (with the patient's edited transcript) instead of
+  // creating a duplicate text-only one.
+  const recordedMemoIdRef = useRef<number | null>(null);
 
   const enteredBy = useUIStore((s) => s.enteredBy);
 
@@ -99,6 +112,14 @@ export default function LogPage() {
     locale,
     source: "log",
     enteredBy,
+    // Slice 8: parse/apply runs at /log submit time (so we get tags +
+    // direct-file detection paths), not at record time. parseAfterPersist
+    // false here keeps the memo's parsed_fields empty until the patient
+    // taps Save — they may type-edit the transcript first.
+    parseAfterPersist: false,
+    onPersisted: ({ memo_id }) => {
+      recordedMemoIdRef.current = memo_id;
+    },
     onTranscribed: (chunk) => setText((cur) => (cur ? `${cur} ${chunk}` : chunk)),
   });
 
@@ -128,7 +149,7 @@ export default function LogPage() {
     setRun({ kind: "saving" });
 
     // Fast path: a single structured value like "blood sugar 7.9" goes
-    // straight into the right Dexie table and skips the agent run.
+    // straight into the right Dexie table and skips the AI parse.
     if (directFile) {
       try {
         const applied = await applyDirectFile(directFile, enteredBy);
@@ -148,19 +169,30 @@ export default function LogPage() {
       return;
     }
 
-    if (agentIds.length === 0) return;
-
-    let logId: number;
+    // Slice 8: route /log submissions through the same memo pipeline
+    // /diary uses. Voice recordings already created a memo via the
+    // hook; for text-only entries we create one here. Either way,
+    // parseVoiceMemo + applyMemoPatches produce the structured fan-out
+    // (daily fields, clinic visits, imaging, labs, nutrition, etc.).
+    let memoId = recordedMemoIdRef.current;
     try {
-      logId = await db.log_events.add({
-        at: new Date().toISOString(),
-        input: {
-          text: text.trim(),
-          tags: Array.from(tags),
+      if (memoId === null) {
+        const r = await persistTextMemo({
+          transcript: text.trim(),
           locale,
-          at: new Date().toISOString(),
-        },
-      });
+          entered_by: enteredBy,
+          source_screen: "log",
+        });
+        memoId = r.memo_id;
+      } else {
+        // Voice memo already exists. The patient may have edited the
+        // transcript before submitting — patch the memo so the parse
+        // sees their corrected text.
+        await db.voice_memos.update(memoId, {
+          transcript: text.trim(),
+          updated_at: now(),
+        });
+      }
     } catch (err) {
       setRun({
         kind: "error",
@@ -169,48 +201,57 @@ export default function LogPage() {
       return;
     }
 
-    setRun({
-      kind: "running",
-      total: agentIds.length,
-      done: [],
-      failed: [],
-    });
+    // Best-effort log_events row keeps the legacy /history surfaces +
+    // any code that joins log_events back to memos working. It's no
+    // longer the source of truth — the memo is.
+    try {
+      const logId = (await db.log_events.add({
+        at: new Date().toISOString(),
+        input: {
+          text: text.trim(),
+          tags: Array.from(tags),
+          locale,
+          at: new Date().toISOString(),
+        },
+      })) as number;
+      await db.voice_memos.update(memoId, {
+        log_event_id: logId,
+        updated_at: now(),
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn("[log] log_events write failed (non-fatal)", err);
+    }
 
-    const settled = await Promise.all(
-      agentIds.map(async (id) => {
-        try {
-          await runAgentClient({
-            agentId: id,
-            date: today,
-            locale,
-            trigger: "on_demand",
-            referralIds: [logId],
-          });
-          return { id, ok: true as const };
-        } catch (err) {
-          // eslint-disable-next-line no-console
-          console.warn(`[log] agent ${id} failed`, err);
-          return { id, ok: false as const };
-        }
-      }),
-    );
-    const done = settled.filter((s) => s.ok).map((s) => s.id);
-    const failed = settled.filter((s) => !s.ok).map((s) => s.id);
-    setRun({ kind: "done", ran: done, failed });
+    setRun({ kind: "parsing" });
+
+    // parseVoiceMemo persists parsed_fields and auto-applies patches
+    // when confidence === "high". For low/medium parses, the memo
+    // detail page handles the explicit confirm.
+    await parseVoiceMemo(memoId);
+
+    const memo = await db.voice_memos.get(memoId);
+    const patches = memo?.parsed_fields?.applied_patches ?? [];
+    setRun({
+      kind: "memo_saved",
+      memo_id: memoId,
+      patches,
+      parsed: memo?.parsed_fields,
+    });
   }
 
   function reset() {
     setText("");
     setOverrideTags(null);
     setRun({ kind: "idle" });
+    recordedMemoIdRef.current = null;
     voice?.cancel();
   }
 
-  // A direct-filed value bypasses the agent requirement.
-  const canSubmit =
-    run.kind === "idle" &&
-    text.trim().length > 0 &&
-    (directFile !== null || agentIds.length > 0);
+  // Submit is enabled whenever there's text to save. The memo
+  // pipeline handles classification (no per-tag agent gate); the
+  // direct-file fast path still kicks in for unambiguous values.
+  const canSubmit = run.kind === "idle" && text.trim().length > 0;
 
   return (
     <div className="mx-auto max-w-xl space-y-5 p-4 md:p-8">
@@ -229,7 +270,7 @@ export default function LogPage() {
             voice={voice}
             text={text}
             setText={setText}
-            disabled={run.kind === "saving" || run.kind === "running"}
+            disabled={run.kind === "saving" || run.kind === "parsing"}
             locale={locale}
             onSwitchToTyping={() => {
               voice.cancel();
@@ -240,7 +281,7 @@ export default function LogPage() {
           <TypingCapture
             text={text}
             setText={setText}
-            disabled={run.kind === "saving" || run.kind === "running"}
+            disabled={run.kind === "saving" || run.kind === "parsing"}
             locale={locale}
             canSwitchToVoice={Boolean(voice)}
             onSwitchToVoice={() => {
@@ -261,7 +302,7 @@ export default function LogPage() {
                   key={tag}
                   type="button"
                   onClick={() => toggleTag(tag)}
-                  disabled={run.kind === "saving" || run.kind === "running"}
+                  disabled={run.kind === "saving" || run.kind === "parsing"}
                   className={cn(
                     "h-9 rounded-full border px-3 text-xs font-medium transition-colors",
                     on
@@ -304,7 +345,7 @@ export default function LogPage() {
           </Alert>
         )}
 
-        {(run.kind === "saving" || run.kind === "running") && (
+        {(run.kind === "saving" || run.kind === "parsing") && (
           <Alert
             variant="info"
             role="status"
@@ -316,8 +357,8 @@ export default function LogPage() {
                 ? "保存中…"
                 : "Saving…"
               : locale === "zh"
-                ? `${run.total} 个智能体在整理…`
-                : `${run.total} agent${run.total === 1 ? "" : "s"} thinking…`}
+                ? "AI 正在解读并写入相关表单…"
+                : "AI is reading and writing the relevant forms…"}
           </Alert>
         )}
 
@@ -341,35 +382,59 @@ export default function LogPage() {
           </Alert>
         )}
 
-        {run.kind === "done" && (
+        {run.kind === "memo_saved" && (
           <Alert
             variant="ok"
             role="status"
-            title={locale === "zh" ? "已记录" : "Logged"}
+            title={
+              run.patches.length > 0
+                ? locale === "zh"
+                  ? `已保存 ${run.patches.length} 项`
+                  : `Saved ${run.patches.length} item${run.patches.length === 1 ? "" : "s"}`
+                : locale === "zh"
+                  ? "录音已保存"
+                  : "Memo saved"
+            }
             className="mt-4"
           >
-            <ul className="space-y-1 text-[12.5px]">
-              {run.ran.map((id) => (
-                <li key={id} className="flex items-center gap-1.5">
-                  <Sparkles className="h-3 w-3" />
-                  {AGENT_LABELS[id][locale]}
-                </li>
-              ))}
-              {run.failed.map((id) => (
-                <li
-                  key={id}
-                  className="flex items-center gap-1.5 text-[var(--warn)]"
-                >
-                  · {AGENT_LABELS[id][locale]} —{" "}
-                  {locale === "zh" ? "失败" : "failed"}
-                </li>
-              ))}
-            </ul>
+            {run.patches.length > 0 ? (
+              <ul className="space-y-0.5 text-[12.5px]">
+                {run.patches.map((p, i) => (
+                  <li key={i} className="flex items-baseline gap-1.5">
+                    <Check className="mt-[3px] h-3 w-3 shrink-0 text-emerald-700" />
+                    <span>
+                      <span className="font-medium">
+                        {patchTableLabel(p.table, locale)}
+                      </span>
+                      <span className="text-ink-500">
+                        {" "}— {summariseFields(p.fields)}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[12.5px]">
+                {locale === "zh"
+                  ? run.parsed?.confidence === "high"
+                    ? "AI 没有从这段记录里抽出可写入表单的内容。"
+                    : "AI 信心不高，请到录音详情页审核。"
+                  : run.parsed?.confidence === "high"
+                    ? "Nothing structured to log this time — saved as a memo."
+                    : "Confidence not high enough to auto-apply — review on the memo detail page."}
+              </p>
+            )}
+            <Link
+              href={`/memos/${run.memo_id}`}
+              className="mt-2 inline-flex items-center gap-1 text-[11.5px] font-medium text-[var(--tide-2)] hover:underline"
+            >
+              {locale === "zh" ? "打开录音详情" : "Open memo detail"}
+            </Link>
           </Alert>
         )}
 
         <div className="mt-5 flex items-center justify-between gap-3">
-          {run.kind === "done" || run.kind === "filed" ? (
+          {run.kind === "memo_saved" || run.kind === "filed" ? (
             <>
               <Button variant="ghost" onClick={() => router.push("/")}>
                 <ArrowLeft className="h-4 w-4" />
@@ -574,4 +639,38 @@ function TypingCapture({
       )}
     </div>
   );
+}
+
+
+function patchTableLabel(
+  table: AppliedPatch["table"],
+  locale: "en" | "zh",
+): string {
+  if (locale === "zh") {
+    switch (table) {
+      case "daily_entries": return "日常表";
+      case "life_events": return "门诊记录";
+      case "appointments": return "预约";
+      case "imaging": return "影像";
+      case "labs": return "化验";
+      case "meal_entries": return "饮食";
+      case "fluid_logs": return "饮水";
+    }
+  }
+  switch (table) {
+    case "daily_entries": return "Daily form";
+    case "life_events": return "Clinic visit";
+    case "appointments": return "Appointment";
+    case "imaging": return "Imaging";
+    case "labs": return "Lab result";
+    case "meal_entries": return "Meal";
+    case "fluid_logs": return "Fluid";
+  }
+}
+
+function summariseFields(fields: AppliedPatch["fields"]): string {
+  return Object.entries(fields)
+    .slice(0, 3)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join(" · ");
 }

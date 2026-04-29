@@ -86,3 +86,37 @@ export async function persistVoiceMemo(
     },
   );
 }
+
+// Slice 8: text-only memo persistence. /log accepts typed entries
+// alongside voice; the typed path needs a memo row but no audio
+// blob. Same shape as persistVoiceMemo minus the timeline_media
+// write. parseVoiceMemo runs the same way once the row's in.
+export interface PersistTextMemoInput {
+  transcript: string;
+  locale: Locale;
+  entered_by: EnteredBy;
+  source_screen?: VoiceMemo["source_screen"];
+  recorded_at?: string;
+}
+
+export async function persistTextMemo(
+  input: PersistTextMemoInput,
+): Promise<{ memo_id: number }> {
+  const recordedAt = input.recorded_at ?? now();
+  const day = localDayISO(recordedAt);
+  const created = now();
+  const memoId = (await db.voice_memos.add({
+    recorded_at: recordedAt,
+    day,
+    duration_ms: 0,
+    transcript: input.transcript,
+    locale: input.locale,
+    audio_mime: "text/plain",
+    audio_size_bytes: 0,
+    source_screen: input.source_screen,
+    entered_by: input.entered_by,
+    created_at: created,
+    updated_at: created,
+  })) as number;
+  return { memo_id: memoId };
+}
