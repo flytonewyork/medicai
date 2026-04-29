@@ -6,12 +6,12 @@ import {
   readJsonBody,
   withAnthropicErrorBoundary,
 } from "~/lib/anthropic/route-helpers";
+import { getSupabaseServer } from "~/lib/supabase/server";
+import { loadHouseholdProfile } from "~/lib/household/profile";
 import {
   ParsedMealSchema,
   buildNutritionSystem,
 } from "~/lib/nutrition/parser-schema";
-import { requireSession } from "~/lib/auth/require-session";
-import { loadHouseholdProfile } from "~/lib/household/profile";
 import { wrapUserInput } from "~/lib/anthropic/wrap-user-input";
 import type { PreparedImage } from "~/lib/ingest/image";
 
@@ -33,9 +33,6 @@ interface TextBody {
 type RequestBody = PhotoBody | TextBody;
 
 export async function POST(req: Request) {
-  const auth = await requireSession();
-  if (!auth.ok) return auth.error;
-
   const gate = getAnthropicClient();
   if (gate.error) return gate.error;
 
@@ -56,7 +53,29 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "text required" }, { status: 400 });
   }
 
-  const profile = await loadHouseholdProfile(auth.session.household_id);
+  // Local-first: this route is called from /nutrition meal-ingest AND
+  // from the voice-memo apply step (macro fill on parsed meals). Both
+  // surfaces work pre-sign-in per middleware.ts. Best-effort household
+  // lookup so the prompt can still personalise when a session exists;
+  // falls back to FALLBACK_HOUSEHOLD_PROFILE otherwise.
+  let householdId: string | null = null;
+  try {
+    const sb = getSupabaseServer();
+    if (sb) {
+      const { data } = await sb.auth.getUser();
+      if (data?.user) {
+        const { data: membership } = await sb
+          .from("household_memberships")
+          .select("household_id")
+          .eq("user_id", data.user.id)
+          .maybeSingle();
+        householdId = (membership?.household_id as string | undefined) ?? null;
+      }
+    }
+  } catch {
+    // unauthenticated — use the fallback profile
+  }
+  const profile = await loadHouseholdProfile(householdId);
   const localeNote =
     body.locale === "zh"
       ? "Reply in English keys, but populate name_zh for every item."

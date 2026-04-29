@@ -1,8 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// Phase 1.1 acceptance: every AI / agent route rejects unauthenticated
-// callers with a 401. The cron and push routes have their own auth
-// surface (CRON_SECRET, push session) and aren't covered here.
+// Phase 1.1 acceptance: AI / agent routes that depend on a household
+// context reject unauthenticated callers with a 401. The cron and
+// push routes have their own auth surface (CRON_SECRET, push
+// session) and aren't covered here.
+//
+// Local-first exceptions — these AI routes intentionally do NOT
+// require auth (per middleware.ts: "anyone can use it without an
+// account") and are excluded from the list below:
+//   /api/ai/transcribe          (voice-memo recording)
+//   /api/ai/parse-voice-memo    (voice-memo structured extraction)
+//   /api/ai/parse-meal          (meal-ingest + voice-memo macro fill)
 
 // We mock the supabase server client so requireSession() can resolve
 // without a live Supabase. When the client returns `data.user = null`,
@@ -34,7 +42,6 @@ interface RouteCase {
 
 const ROUTES: RouteCase[] = [
   { path: "/api/ai/coach", module: "~/app/api/ai/coach/route", body: {} },
-  { path: "/api/ai/parse-meal", module: "~/app/api/ai/parse-meal/route", body: {} },
   { path: "/api/ai/ingest-meal", module: "~/app/api/ai/ingest-meal/route", body: {} },
   { path: "/api/ai/ingest-notes", module: "~/app/api/ai/ingest-notes/route", body: {} },
   { path: "/api/ai/ingest-report", module: "~/app/api/ai/ingest-report/route", body: {} },

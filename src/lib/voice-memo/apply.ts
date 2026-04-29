@@ -558,11 +558,11 @@ async function applyLabResult(
 }
 
 // Slice 7: write a meal_entry + meal_items from a parsed nutrition
-// meal. Macros land at zero with confidence: low — the patient (or
-// the existing /nutrition meal-ingest flow) can backfill numbers
-// later. Saving the structure now means the meal shows up on the
-// nutrition timeline immediately, rather than being lost in the
-// memo's personal block.
+// meal. The row lands fast with placeholder macros, then we kick off
+// a background fill that calls /api/ai/parse-meal to estimate
+// calories / protein / fat / carbs / fibre and patches the row +
+// items in place. useLiveQuery on /nutrition picks up the macro
+// update automatically.
 async function applyNutritionMeal(
   memo: VoiceMemo,
   meal: NonNullable<NonNullable<VoiceMemoParsedFields["nutrition"]>["meals"]>[number],
@@ -575,7 +575,7 @@ async function applyNutritionMeal(
     date: day,
     meal_type: meal.meal_type,
     logged_at: memo.recorded_at,
-    notes: "From voice memo — macros pending; tap into the meal to refine.",
+    notes: "From voice memo — estimating macros…",
     source: "voice",
     confidence: "low",
     total_calories: 0,
@@ -601,6 +601,7 @@ async function applyNutritionMeal(
     applied_at: ts,
   });
 
+  const itemIds: number[] = [];
   for (const it of meal.items) {
     const item: MealItem = {
       meal_entry_id: entryId,
@@ -616,9 +617,112 @@ async function applyNutritionMeal(
       notes: it.qty_label ?? undefined,
       created_at: ts,
     };
-    await db.meal_items.add(item);
+    const itemId = (await db.meal_items.add(item)) as number;
+    itemIds.push(itemId);
   }
+
+  // Background macro fill — don't await. The /nutrition surface
+  // re-renders on Dexie change so the patient sees macros land
+  // automatically a beat after the meal appears.
+  void estimateMacrosAndPatch(memo, entryId, itemIds, meal).catch((err) => {
+    // eslint-disable-next-line no-console
+    console.warn("[voice-memo] macro estimation failed", err);
+  });
+
   return patches;
+}
+
+async function estimateMacrosAndPatch(
+  memo: VoiceMemo,
+  entryId: number,
+  itemIds: number[],
+  meal: NonNullable<NonNullable<VoiceMemoParsedFields["nutrition"]>["meals"]>[number],
+): Promise<void> {
+  // Build a free-text description Claude can parse like a meal log.
+  const text = meal.items
+    .map((it) => {
+      const name = it.name_zh ? `${it.name} (${it.name_zh})` : it.name;
+      return it.qty_label ? `${it.qty_label} ${name}` : name;
+    })
+    .join(", ");
+  if (!text.trim()) return;
+
+  const { parseMealText } = await import("~/lib/nutrition/parser-client");
+  const parsed = await parseMealText({
+    text,
+    locale: memo.locale,
+  });
+  if (!parsed.items?.length) return;
+
+  // Match parsed items back to my meal_items by index first, then
+  // by name fallback. The meal-parser preserves input order, so
+  // index match is correct in the typical case.
+  const items = await db.meal_items
+    .where("meal_entry_id")
+    .equals(entryId)
+    .toArray();
+  const ts = now();
+
+  let total_calories = 0;
+  let total_protein_g = 0;
+  let total_fat_g = 0;
+  let total_carbs_g = 0;
+  let total_fiber_g = 0;
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]!;
+    const est = parsed.items[i] ?? findEstimateByName(parsed.items, item.food_name);
+    if (!est || !item.id) continue;
+    const grams =
+      item.serving_grams && item.serving_grams > 0
+        ? item.serving_grams
+        : est.serving_grams;
+    const fiber = est.fiber_g ?? 0;
+    const carbs = est.carbs_total_g ?? 0;
+    await db.meal_items.update(item.id, {
+      serving_grams: grams,
+      calories: est.calories,
+      protein_g: est.protein_g,
+      fat_g: est.fat_g,
+      carbs_total_g: carbs,
+      fiber_g: fiber,
+      net_carbs_g: Math.max(0, carbs - fiber),
+      notes: est.notes ?? item.notes,
+    });
+    total_calories += est.calories;
+    total_protein_g += est.protein_g;
+    total_fat_g += est.fat_g;
+    total_carbs_g += carbs;
+    total_fiber_g += fiber;
+  }
+
+  await db.meal_entries.update(entryId, {
+    total_calories,
+    total_protein_g,
+    total_fat_g,
+    total_carbs_g,
+    total_fiber_g,
+    total_net_carbs_g: Math.max(0, total_carbs_g - total_fiber_g),
+    confidence: parsed.confidence ?? "medium",
+    notes:
+      "From voice memo — macros AI-estimated. Tap into the meal to refine.",
+    updated_at: ts,
+  });
+  void itemIds; // keep ref to avoid lint warning
+}
+
+function findEstimateByName(
+  estimates: Array<{ name: string; name_zh?: string | null }>,
+  target: string,
+): typeof estimates[number] | undefined {
+  const lower = target.toLowerCase();
+  return estimates.find((e) => {
+    const n = e.name.toLowerCase();
+    if (n === lower) return true;
+    if (n.includes(lower) || lower.includes(n)) return true;
+    if (e.name_zh && (e.name_zh === target || e.name_zh.includes(target))) return true;
+    return false;
+  });
 }
 
 async function applyNutritionFluid(
