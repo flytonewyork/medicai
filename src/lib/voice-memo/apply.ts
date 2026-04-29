@@ -131,6 +131,14 @@ async function applyDailyFields(
   if (existing?.id) {
     const patch = buildSafeFillPatch(existing, source);
     if (Object.keys(patch).length === 0) return null;
+    // Capture prior values for undo. Safe-fill only writes to
+    // undefined keys, so prior_fields will always be all-undefined,
+    // but we still record the keys explicitly so undoAppliedPatch
+    // can drop them deterministically without a get() round-trip.
+    const prior_fields: Record<string, null> = {};
+    for (const k of Object.keys(patch)) {
+      prior_fields[k] = null;
+    }
     await db.daily_entries.update(existing.id, {
       ...patch,
       updated_at: ts,
@@ -139,6 +147,7 @@ async function applyDailyFields(
       table: "daily_entries",
       row_id: existing.id,
       fields: patchToFieldsRecord(patch),
+      prior_fields,
       op: "update",
       applied_at: ts,
     };
@@ -384,3 +393,85 @@ type NumericFillKey =
   | "diarrhoea_count";
 
 type BoolFillKey = "cold_dysaesthesia" | "mouth_sores" | "fever";
+
+// Reverse a single AppliedPatch and mark it `undone_at` on the memo.
+// `create` patches simply delete the row; `update` patches restore
+// each touched key to its prior value (or remove the key if it had
+// no prior value, which is the safe-fill case). The audit row stays
+// in place — undone, not deleted — so the patient can see that the
+// memo logged then unlogged a value.
+export async function undoAppliedPatch(
+  memoId: number,
+  patchIndex: number,
+): Promise<{ ok: boolean; error?: string }> {
+  const memo = await db.voice_memos.get(memoId);
+  if (!memo?.parsed_fields?.applied_patches) {
+    return { ok: false, error: "no patches on memo" };
+  }
+  const patches = memo.parsed_fields.applied_patches;
+  const target = patches[patchIndex];
+  if (!target) return { ok: false, error: "patch not found" };
+  if (target.undone_at) return { ok: false, error: "patch already undone" };
+
+  const ts = now();
+  try {
+    if (target.op === "create") {
+      await deleteRow(target.table, target.row_id);
+    } else {
+      await revertUpdate(target);
+    }
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  const next = patches.map((p, i) =>
+    i === patchIndex ? { ...p, undone_at: ts } : p,
+  );
+  await db.voice_memos.update(memoId, {
+    parsed_fields: { ...memo.parsed_fields, applied_patches: next },
+    updated_at: ts,
+  });
+  return { ok: true };
+}
+
+async function deleteRow(
+  table: "daily_entries" | "life_events" | "appointments",
+  id: number,
+): Promise<void> {
+  if (table === "daily_entries") await db.daily_entries.delete(id);
+  else if (table === "life_events") await db.life_events.delete(id);
+  else await db.appointments.delete(id);
+}
+
+async function revertUpdate(patch: import("~/types/voice-memo").AppliedPatch): Promise<void> {
+  const ts = now();
+  // Read the current row, set the touched keys back to their prior
+  // values (null in our records means "the key was undefined before"),
+  // and put() it back. We don't use Dexie.update({key: undefined})
+  // because semantics around dropping keys vs. keeping them as
+  // explicit `undefined` aren't portable across Dexie versions.
+  const keys = Object.keys(patch.fields);
+  if (patch.table === "daily_entries") {
+    const row = await db.daily_entries.get(patch.row_id);
+    if (!row) return;
+    const next = { ...row };
+    const prior = patch.prior_fields ?? {};
+    for (const k of keys) {
+      const restoredValue = prior[k];
+      if (restoredValue === null || restoredValue === undefined) {
+        delete (next as Record<string, unknown>)[k];
+      } else {
+        (next as Record<string, unknown>)[k] = restoredValue;
+      }
+    }
+    next.updated_at = ts;
+    await db.daily_entries.put(next);
+    return;
+  }
+  // life_events and appointments don't currently emit `update` patches
+  // (we always create rows for them), but keep the branch typed so a
+  // future widening doesn't silently no-op.
+}

@@ -1,32 +1,38 @@
 import { db, now } from "~/lib/db/dexie";
 import { postJson } from "~/lib/utils/http";
 import type { VoiceMemoParsedFields } from "~/types/voice-memo";
+import { applyMemoPatches } from "./apply";
 
-// Slice 3: Claude reads every memo end-to-end and returns a structured
-// picture of it (daily-tracking fields, clinic visits, future
-// appointments, medications mentioned, plus personal content like
-// food / family / practice / goals / mood). The result lands on the
-// memo as `parsed_fields`. Crucially we no longer fan out to
-// `daily_entries` automatically — the patient reviews the parse on
-// the memo detail page and clicks "Log to forms" before any clinical
-// table is touched.
+// Slice 3 → ship: Claude reads every memo end-to-end and returns a
+// structured picture of it (daily-tracking fields, clinic visits,
+// future appointments, medications mentioned, plus personal content
+// like food / family / practice / goals / mood). The result lands on
+// the memo as `parsed_fields`.
 //
-// Why preview-then-apply?
-//   1. Whisper + Claude both make mistakes; silent overwrites would
-//      poison tracking with no recovery affordance.
-//   2. The patient gets to correct miscaptured numbers before they
-//      drive zone evaluation downstream.
-//   3. Personal content stays visible on the memo without any
-//      auto-fan-out at all (no clinical patches to track for it).
+// Auto-apply rule: when the parse comes back with `confidence: high`
+// AND there's something patchable (a daily field, a clinic visit, or
+// a high-confidence appointment), we run applyMemoPatches() right
+// away. The recorder card shows what landed inline with an Undo
+// button, so the patient sees the system update at a glance and can
+// reverse any single patch without leaving the page. Medium / low
+// confidence parses skip the auto-apply and surface a "Review" CTA
+// on the memo card; the detail page handles those explicitly.
+//
+// Why not always require manual confirm? Voice memos are dad's
+// primary capture surface — if every recording requires a review tap,
+// the friction defeats the foundational-data goal. Confidence high
+// means Claude was confident in unambiguous numerics or clear
+// descriptions, and Undo is one tap away.
 
 interface ParseResponse {
   parsed: VoiceMemoParsedFields;
 }
 
-// Run Claude on a memo's transcript and persist the parsed shape onto
-// the memo row. Idempotent — does nothing if `parsed_fields` is
-// already set. Errors are logged, not thrown into the UI; the memo
-// detail view exposes a "Re-parse" affordance for retries.
+// Run Claude on a memo's transcript, persist the parsed shape, and —
+// when confidence is high and there's content worth applying — run
+// the apply step automatically. Errors are logged, never thrown into
+// the UI; the memo detail view exposes a "Re-parse" affordance for
+// retries.
 export async function parseVoiceMemo(memoId: number): Promise<void> {
   const memo = await db.voice_memos.get(memoId);
   if (!memo) return;
@@ -51,6 +57,15 @@ export async function parseVoiceMemo(memoId: number): Promise<void> {
     parsed_fields: parsed,
     updated_at: now(),
   });
+
+  if (parsed.confidence === "high") {
+    try {
+      await applyMemoPatches(memoId);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn("[voice-memo] auto-apply failed", memoId, err);
+    }
+  }
 }
 
 // Force-re-run the parser even when parsed_fields is already set.

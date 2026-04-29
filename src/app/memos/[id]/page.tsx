@@ -1,8 +1,8 @@
 "use client";
 
-import { use, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { format, parseISO } from "date-fns";
 import {
@@ -18,6 +18,7 @@ import {
   ClipboardList,
   Heart,
   ChevronRight,
+  Undo2,
 } from "lucide-react";
 import { useLocale } from "~/hooks/use-translate";
 import { db } from "~/lib/db/dexie";
@@ -26,6 +27,7 @@ import { retranscribeVoiceMemo } from "~/lib/voice-memo/retranscribe";
 import {
   applyMemoPatches,
   extractDailyShape,
+  undoAppliedPatch,
   type DailyOverridePatch,
 } from "~/lib/voice-memo/apply";
 import { resolveVoiceMemoAudioUrl } from "~/lib/voice-memo/cloud";
@@ -46,13 +48,9 @@ import { cn } from "~/lib/utils/cn";
 // Once applied, the audit trail at the bottom records exactly what
 // got written to which Dexie table.
 
-export default function MemoDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id: idStr } = use(params);
-  const id = Number(idStr);
+export default function MemoDetailPage() {
+  const params = useParams<{ id: string }>();
+  const id = Number(params?.id);
   const locale = useLocale();
   const router = useRouter();
 
@@ -159,7 +157,7 @@ function MemoDetail({
       {parsed?.personal && <PersonalCard personal={parsed.personal} locale={locale} />}
 
       {applied.length > 0 && (
-        <AuditCard patches={applied} locale={locale} />
+        <AuditCard memoId={memo.id!} patches={applied} locale={locale} />
       )}
     </div>
   );
@@ -843,12 +841,25 @@ function PersonalCard({
 }
 
 function AuditCard({
+  memoId,
   patches,
   locale,
 }: {
+  memoId: number;
   patches: AppliedPatch[];
   locale: "en" | "zh";
 }) {
+  const [busy, setBusy] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onUndo(index: number) {
+    setBusy(index);
+    setError(null);
+    const r = await undoAppliedPatch(memoId, index);
+    setBusy(null);
+    if (!r.ok) setError(r.error ?? "Undo failed");
+  }
+
   return (
     <Card className="p-4">
       <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-ink-400">
@@ -856,32 +867,70 @@ function AuditCard({
         {locale === "zh" ? "已写入表单" : "What got logged"}
       </div>
       <ul className="mt-2 space-y-2">
-        {patches.map((p, i) => (
-          <li key={i} className="text-[12.5px]">
-            <Link
-              href={hrefForPatch(p)}
-              className="inline-flex items-center gap-1 font-medium text-[var(--tide-2)] hover:underline"
+        {patches.map((p, i) => {
+          const undone = Boolean(p.undone_at);
+          return (
+            <li
+              key={`${p.applied_at}-${i}`}
+              className={cn("text-[12.5px]", undone && "opacity-50")}
             >
-              {tableLabel(p.table, locale)} · #{p.row_id}
-              <ChevronRight className="h-3 w-3" aria-hidden />
-            </Link>
-            <div className="text-[11.5px] text-ink-500">
-              {p.op === "create"
-                ? locale === "zh" ? "新建" : "created"
-                : locale === "zh" ? "更新" : "updated"}{" "}
-              · {format(parseISO(p.applied_at), "HH:mm")}
-            </div>
-            <ul className="mt-1 space-y-0.5 text-[11.5px] text-ink-700">
-              {Object.entries(p.fields).map(([k, v]) => (
-                <li key={k}>
-                  <span className="text-ink-500">{k}:</span>{" "}
-                  <span className="font-medium">{String(v)}</span>
-                </li>
-              ))}
-            </ul>
-          </li>
-        ))}
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <Link
+                    href={hrefForPatch(p)}
+                    className={cn(
+                      "inline-flex items-center gap-1 font-medium hover:underline",
+                      undone ? "text-ink-500 line-through" : "text-[var(--tide-2)]",
+                    )}
+                  >
+                    {tableLabel(p.table, locale)} · #{p.row_id}
+                    {!undone && <ChevronRight className="h-3 w-3" aria-hidden />}
+                  </Link>
+                  <div className="text-[11.5px] text-ink-500">
+                    {p.op === "create"
+                      ? locale === "zh" ? "新建" : "created"
+                      : locale === "zh" ? "更新" : "updated"}{" "}
+                    · {format(parseISO(p.applied_at), "HH:mm")}
+                    {undone && (
+                      <>
+                        {" · "}
+                        {locale === "zh" ? "已撤销" : "undone"}{" "}
+                        {format(parseISO(p.undone_at!), "HH:mm")}
+                      </>
+                    )}
+                  </div>
+                  <ul className="mt-1 space-y-0.5 text-[11.5px] text-ink-700">
+                    {Object.entries(p.fields).map(([k, v]) => (
+                      <li key={k}>
+                        <span className="text-ink-500">{k}:</span>{" "}
+                        <span className="font-medium">{String(v)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                {!undone && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onUndo(i)}
+                    disabled={busy === i}
+                  >
+                    {busy === i ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Undo2 className="h-3.5 w-3.5" />
+                    )}
+                    {locale === "zh" ? "撤销" : "Undo"}
+                  </Button>
+                )}
+              </div>
+            </li>
+          );
+        })}
       </ul>
+      {error && (
+        <p className="mt-2 text-[11.5px] text-[var(--warn)]">{error}</p>
+      )}
     </Card>
   );
 }
