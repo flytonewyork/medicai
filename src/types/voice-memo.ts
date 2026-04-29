@@ -159,8 +159,19 @@ export interface AppliedPatch {
   // store the value (not just the field name) so the audit view shows
   // exactly what the AI heard.
   fields: Record<string, string | number | boolean | null>;
+  // For `update` patches: what the row had at the touched keys before
+  // the memo wrote to them. Lets Undo restore the prior state without
+  // having to know upfront which call modified which key. Empty for
+  // safe-fill patches (since safe-fill only writes to undefined keys),
+  // but we still record explicit `undefined` markers so undo can drop
+  // the keys cleanly.
+  prior_fields?: Record<string, string | number | boolean | null>;
   // "create" when this memo created the row; "update" when it merged
   // into an existing row.
   op: "create" | "update";
   applied_at: string;
+  // Set true after the patient taps Undo. We never delete the entry —
+  // keeping the audit trail intact lets the patient see "this got
+  // logged then undone" rather than have it silently disappear.
+  undone_at?: string;
 }

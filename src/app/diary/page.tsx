@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { format, parseISO } from "date-fns";
@@ -11,11 +12,16 @@ import {
   ClipboardList,
   Sparkles,
   CalendarDays,
+  CheckCircle2,
+  X,
+  Undo2,
+  ChevronRight,
 } from "lucide-react";
 import { useLocale } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
 import { useVoiceTranscription } from "~/hooks/use-voice-transcription";
 import { syncPendingVoiceMemoAudio } from "~/lib/voice-memo/cloud";
+import { undoAppliedPatch } from "~/lib/voice-memo/apply";
 import { db } from "~/lib/db/dexie";
 import { buildDiaryDays, type DiaryDay } from "~/lib/diary/build";
 import { todayISO } from "~/lib/utils/date";
@@ -27,6 +33,7 @@ import { EmptyState } from "~/components/ui/empty-state";
 import { VoiceMemoCard } from "~/components/diary/voice-memo-card";
 import { cn } from "~/lib/utils/cn";
 import type { AgentRunRow } from "~/types/agent";
+import type { AppliedPatch, VoiceMemo } from "~/types/voice-memo";
 
 // /diary — the patient's daily timeline. One section per day, newest
 // first, combining:
@@ -105,16 +112,25 @@ export default function DiaryPage() {
     void syncPendingVoiceMemoAudio();
   }, []);
 
+  // The most recently captured memo id — used to drive the inline
+  // preview/undo card under the recorder. Cleared when the patient
+  // dismisses the preview or starts a new recording.
+  const [lastMemoId, setLastMemoId] = useState<number | null>(null);
   const voice = useVoiceTranscription({
     locale,
     source: "diary",
     enteredBy,
+    onPersisted: ({ memo_id }) => setLastMemoId(memo_id),
     onTranscribed: () => {
       // Persistence is handled by the hook; we just need to refresh
       // the visible window. Counting Dexie tables already triggers
       // useLiveQuery, so this callback can stay no-op.
     },
   });
+  const recording = voice?.status === "recording";
+  useEffect(() => {
+    if (recording) setLastMemoId(null);
+  }, [recording]);
 
   return (
     <div className="mx-auto max-w-2xl space-y-5 p-4 md:p-8">
@@ -129,6 +145,14 @@ export default function DiaryPage() {
       />
 
       <RecorderCard voice={voice} locale={locale} />
+
+      {lastMemoId !== null && (
+        <RecentMemoCard
+          memoId={lastMemoId}
+          locale={locale}
+          onDismiss={() => setLastMemoId(null)}
+        />
+      )}
 
       <div className="flex items-center justify-between gap-2">
         <div className="text-[11px] text-ink-500">
@@ -431,4 +455,192 @@ function buildDailySummary(
     return locale === "zh" ? "已记录（无数值）" : "Logged (no numerics)";
   }
   return parts.join(" · ");
+}
+
+// Inline preview that follows the recorder. Drives the post-record UX:
+// transcribing → showing applied patches with Undo → showing a Review
+// CTA when the parse came back medium/low confidence and nothing
+// auto-applied. Dismissible — the patient closes it when they're done.
+function RecentMemoCard({
+  memoId,
+  locale,
+  onDismiss,
+}: {
+  memoId: number;
+  locale: "en" | "zh";
+  onDismiss: () => void;
+}) {
+  const memo = useLiveQuery<VoiceMemo | undefined>(
+    () => db.voice_memos.get(memoId) as Promise<VoiceMemo | undefined>,
+    [memoId],
+  );
+  if (!memo) return null;
+
+  const parsed = memo.parsed_fields;
+  const liveApplied = (parsed?.applied_patches ?? []).filter(
+    (p) => !p.undone_at,
+  );
+  const transcribing = !memo.transcript.trim();
+  const parsing = Boolean(memo.transcript.trim()) && !parsed;
+
+  let body: React.ReactNode;
+  if (transcribing) {
+    body = (
+      <span className="inline-flex items-center gap-1.5 text-[12px] text-ink-500">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        {locale === "zh" ? "正在识别…" : "Transcribing…"}
+      </span>
+    );
+  } else if (parsing) {
+    body = (
+      <span className="inline-flex items-center gap-1.5 text-[12px] text-ink-500">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        {locale === "zh" ? "AI 正在解读…" : "Claude reading the memo…"}
+      </span>
+    );
+  } else if (liveApplied.length > 0) {
+    body = (
+      <AppliedSummary
+        memoId={memoId}
+        patches={liveApplied}
+        locale={locale}
+      />
+    );
+  } else if (parsed && parsed.confidence !== "high") {
+    body = (
+      <Link
+        href={`/memos/${memoId}`}
+        className="inline-flex items-center gap-1 text-[12.5px] font-medium text-[var(--tide-2)] hover:underline"
+      >
+        {locale === "zh"
+          ? `识别可信度：${parsed.confidence === "medium" ? "中" : "低"} — 审核并登入`
+          : `Confidence: ${parsed.confidence} — review and log`}
+        <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+      </Link>
+    );
+  } else {
+    body = (
+      <span className="text-[12px] text-ink-500">
+        {locale === "zh"
+          ? "AI 没有从这段录音里抽出可登入的内容。"
+          : "Claude didn't pull anything loggable from this memo."}
+      </span>
+    );
+  }
+
+  return (
+    <Card className="p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="text-[10.5px] font-medium uppercase tracking-wider text-ink-400">
+            {locale === "zh" ? "刚才的录音" : "Just recorded"}
+          </div>
+          <div className="mt-1.5">{body}</div>
+        </div>
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label={locale === "zh" ? "关闭" : "Dismiss"}
+          className="-mr-1 -mt-1 flex h-7 w-7 items-center justify-center rounded-full text-ink-400 hover:text-ink-700"
+        >
+          <X className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      </div>
+    </Card>
+  );
+}
+
+function AppliedSummary({
+  memoId,
+  patches,
+  locale,
+}: {
+  memoId: number;
+  patches: AppliedPatch[];
+  locale: "en" | "zh";
+}) {
+  const [busy, setBusy] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onUndo(index: number) {
+    setBusy(index);
+    setError(null);
+    const r = await undoAppliedPatch(memoId, index);
+    setBusy(null);
+    if (!r.ok) setError(r.error ?? "Undo failed");
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="inline-flex items-center gap-1.5 text-[12px] font-medium text-emerald-700">
+        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+        {locale === "zh"
+          ? `已登入 ${patches.length} 项`
+          : `Logged ${patches.length} item${patches.length === 1 ? "" : "s"}`}
+      </div>
+      <ul className="space-y-1.5">
+        {patches.map((p, i) => (
+          <li
+            key={`${p.applied_at}-${i}`}
+            className="flex items-start justify-between gap-3 rounded-md border border-ink-100 px-3 py-2"
+          >
+            <div className="min-w-0 flex-1">
+              <div className="text-[12px] font-medium text-ink-900">
+                {tableLabel(p.table, locale)}
+              </div>
+              <div className="text-[11.5px] text-ink-700">
+                {summariseFields(p.fields)}
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onUndo(i)}
+              disabled={busy === i}
+            >
+              {busy === i ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Undo2 className="h-3.5 w-3.5" />
+              )}
+              {locale === "zh" ? "撤销" : "Undo"}
+            </Button>
+          </li>
+        ))}
+      </ul>
+      <Link
+        href={`/memos/${memoId}`}
+        className="inline-flex items-center gap-1 text-[11.5px] text-ink-500 hover:text-ink-900 hover:underline"
+      >
+        {locale === "zh" ? "查看详情" : "Open memo"}
+        <ChevronRight className="h-3 w-3" aria-hidden />
+      </Link>
+      {error && (
+        <p className="text-[11.5px] text-[var(--warn)]">{error}</p>
+      )}
+    </div>
+  );
+}
+
+function tableLabel(
+  table: AppliedPatch["table"],
+  locale: "en" | "zh",
+): string {
+  if (locale === "zh") {
+    if (table === "daily_entries") return "日常表";
+    if (table === "life_events") return "门诊记录";
+    return "预约";
+  }
+  if (table === "daily_entries") return "Daily form";
+  if (table === "life_events") return "Clinic visit";
+  return "Appointment";
+}
+
+function summariseFields(
+  fields: AppliedPatch["fields"],
+): string {
+  return Object.entries(fields)
+    .slice(0, 4)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join(" · ");
 }

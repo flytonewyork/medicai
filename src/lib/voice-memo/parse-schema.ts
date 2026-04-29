@@ -4,19 +4,21 @@ import {
   type HouseholdProfile,
 } from "~/types/household-profile";
 
-// Schema for the daily-form fields Claude extracts from a patient
-// voice memo. Every field is optional — Claude only sets values it
-// can defend from the transcript. Anything ambiguous goes into
-// `notes` instead so the patient can confirm without losing context.
+// Schema for the structured fields Claude extracts from a patient's
+// voice memo. Anthropic's structured-output endpoint caps optional
+// parameters at 24 across the entire schema (counted recursively),
+// and this surface is broad — daily-tracking + clinic visit + future
+// appointments + medications + personal content. We keep every field
+// required-but-nullable instead: Claude MUST emit every key, with
+// `null` (or `[]` for arrays) when the memo didn't mention that
+// field. Same semantic, zero optional-parameter count.
 //
-// Fields mirror `DailyEntry` so the safe-merge step can copy them
-// straight across. Confidence drives whether daily_entries gets
-// written — low/medium results stay on the memo card only.
+// The shipped flow is preview-then-confirm on `/memos/[id]` (and an
+// auto-apply on `confidence: high`), so the safe-merge step copies
+// only those numerics + booleans the patient actually verbalised —
+// nulls are dropped before they reach `daily_entries`.
 
-const ZeroToTen = z
-  .number()
-  .min(0)
-  .max(10);
+const ZeroToTen = z.number().min(0).max(10);
 
 const NeuropathyGrade = z
   .number()
@@ -27,105 +29,93 @@ const NeuropathyGrade = z
     "CTCAE 0–4. 0=none, 1=tingling/cold dysaesthesia only, 2=interferes with fine motor (buttons, keys), 3=limits ADLs, 4=disabling.",
   );
 
+const ConfidenceEnum = z.enum(["low", "medium", "high"]);
+
 export const VoiceMemoParseSchema = z.object({
+  // ---- Daily-tracking fields. All required-nullable. Set the value
+  //      when the memo states it (number or clear qualitative anchor),
+  //      null otherwise.
   energy: ZeroToTen
-    .nullable()
-    .optional()
+    .nullish()
     .describe(
-      "0–10 self-rated energy. Set only when verbalised: a number, a clear word like 'exhausted'→2, 'sluggish'→4, 'normal'→6, 'good'→7.",
+      "0–10 self-rated energy. 'exhausted'→2, 'sluggish'→4, 'normal'→6, 'good'→7. Null when not mentioned.",
     ),
   sleep_quality: ZeroToTen
-    .nullable()
-    .optional()
+    .nullish()
     .describe("0–10. 'awful sleep'→2, 'broken'→4, 'okay'→6, 'great'→8."),
   appetite: ZeroToTen
-    .nullable()
-    .optional()
+    .nullish()
     .describe("0–10. 'no appetite'→1, 'forced myself to eat'→3, 'normal'→6."),
-  pain_current: ZeroToTen
-    .nullable()
-    .optional()
-    .describe("Pain 0–10 right now."),
-  pain_worst: ZeroToTen
-    .nullable()
-    .optional()
-    .describe("Worst pain today, 0–10."),
+  pain_current: ZeroToTen.nullish().describe("Pain 0–10 right now."),
+  pain_worst: ZeroToTen.nullish().describe("Worst pain today, 0–10."),
   mood_clarity: ZeroToTen
-    .nullable()
-    .optional()
+    .nullish()
     .describe("0–10. 'foggy'→3, 'clear-headed'→8."),
-  nausea: ZeroToTen.nullable().optional().describe("0–10 nausea severity."),
-  fatigue: ZeroToTen.nullable().optional(),
+  nausea: ZeroToTen.nullish().describe("0–10 nausea severity."),
+  fatigue: ZeroToTen.nullish(),
   anorexia: ZeroToTen
-    .nullable()
-    .optional()
+    .nullish()
     .describe("0–10 loss-of-desire-to-eat severity."),
-  abdominal_pain: ZeroToTen.nullable().optional(),
-  neuropathy_hands: NeuropathyGrade.nullable().optional(),
-  neuropathy_feet: NeuropathyGrade.nullable().optional(),
+  abdominal_pain: ZeroToTen.nullish(),
+  neuropathy_hands: NeuropathyGrade.nullish(),
+  neuropathy_feet: NeuropathyGrade.nullish(),
   weight_kg: z
     .number()
     .min(20)
     .max(200)
-    .nullable()
-    .optional()
+    .nullish()
     .describe("Only when the patient states a weight. Reject implausible values."),
   diarrhoea_count: z
     .number()
     .int()
     .min(0)
     .max(20)
-    .nullable()
-    .optional()
+    .nullish()
     .describe("Number of loose stools today, when stated."),
   cold_dysaesthesia: z
     .boolean()
-    .nullable()
-    .optional()
+    .nullish()
     .describe(
-      "True when the patient describes cold-triggered tingling or pain (e.g. 'fridge feels electric'). Never set false on a memo that doesn't mention it.",
+      "True when the patient describes cold-triggered tingling or pain. Null when not mentioned. Never set false on the strength of silence.",
     ),
-  mouth_sores: z.boolean().nullable().optional(),
-  fever: z.boolean().nullable().optional(),
+  mouth_sores: z.boolean().nullish(),
+  fever: z.boolean().nullish(),
   notes: z
     .string()
-    .nullable()
-    .optional()
+    .nullish()
     .describe(
-      "Anything CLINICALLY noteworthy that doesn't fit a structured field — taste changes, observations about side-effects, response to medication. Keep concise: 1–3 short sentences. Do NOT include personal content (food, family, practice) — those are parsed on-device separately.",
+      "Anything CLINICALLY noteworthy that doesn't fit a structured field — taste changes, side-effect attributions. 1–3 short sentences. Personal content (food, family, practice) belongs in `personal`, not here.",
     ),
-  // Slice 3: clinic visit summary. Set when the memo describes a
-  // medical encounter that already happened (consult, phone call,
-  // chemo session). Goes into life_events as a medical/non-memory row.
+
+  // ---- Clinic visit summary. Required-nullable object. Null when
+  //      the memo doesn't describe a clinical encounter that already
+  //      happened. When present, every inner field is also required-
+  //      nullable to keep the optional-parameter count at zero.
   clinic_visit: z
     .object({
       visit_date: z
         .string()
-        .nullable()
-        .optional()
-        .describe("ISO date of the visit. Default to today if the patient says 'just got back'."),
+        .nullish()
+        .describe("ISO date of the visit. Null when the patient didn't say."),
       provider: z
         .string()
-        .nullable()
-        .optional()
-        .describe("Provider name. Resolve nicknames: 'Sumi'→'A/Prof Sumitra Ananda', 'Mark'→'Mark Cullinan' when context fits."),
-      location: z.string().nullable().optional(),
+        .nullish()
+        .describe("Provider name. 'Sumi'→'A/Prof Sumitra Ananda' when context is clear."),
+      location: z.string().nullish(),
       summary: z
         .string()
         .describe("1–3 sentence summary of what happened in the visit."),
       key_points: z
         .array(z.string())
-        .nullable()
-        .optional()
-        .describe("Decisions made, instructions given, dosage changes — one short bullet each."),
+        .nullish()
+        .describe("Decisions made / instructions given / dosage changes. Null when none."),
     })
-    .nullable()
-    .optional()
-    .describe("Set only when the patient describes a clinical encounter that already happened. Skip when the memo is purely symptom logging."),
-  // Slice 3: future appointments mentioned in the memo. Goes into the
-  // appointments table when the date+title look concrete. We never
-  // overwrite an existing appointment — the apply step inserts new
-  // rows and the patient confirms in /schedule.
+    .nullish()
+    .describe(
+      "Set only when the patient describes a clinical encounter that already happened. Null for symptom-only memos.",
+    ),
+
+  // ---- Future appointments mentioned. Tolerant of missing key.
   appointments_mentioned: z
     .array(
       z.object({
@@ -134,90 +124,77 @@ export const VoiceMemoParseSchema = z.object({
           .describe("Short label, e.g. 'Cycle 3 chemo' or 'PET-CT scan'."),
         starts_at: z
           .string()
-          .nullable()
-          .optional()
-          .describe("ISO datetime if the patient stated a specific date and time. Leave null if vague."),
-        location: z.string().nullable().optional(),
-        doctor: z.string().nullable().optional(),
+          .nullish()
+          .describe("ISO datetime when stated; null otherwise."),
+        location: z.string().nullish(),
+        doctor: z.string().nullish(),
         prep: z
           .string()
-          .nullable()
-          .optional()
-          .describe("Prep instructions: fasting hours, items to bring, hydration etc."),
+          .nullish()
+          .describe("Prep instructions: fasting, items to bring, hydration."),
         kind: z
           .enum(["clinic", "chemo", "scan", "blood_test", "procedure", "other"])
-          .nullable()
-          .optional(),
-        confidence: z
-          .enum(["low", "medium", "high"])
-          .describe("high only when both date and title are concrete. low/medium are surfaced on the memo card but not auto-scheduled."),
+          .nullish(),
+        confidence: ConfidenceEnum.describe(
+          "high only when both date and title are concrete; low/medium are surfaced as hints, not auto-scheduled.",
+        ),
       }),
     )
-    .nullable()
-    .optional(),
-  // Slice 3: medications the patient discussed. We don't auto-file
-  // medication_events here — adherence has its own surface — but the
-  // diary card surfaces what was discussed for context.
+    .nullish()
+    .describe("Empty array (or null/omitted) when the memo mentions no future appointments."),
+
+  // ---- Medications mentioned. Tolerant of missing key.
   medications_mentioned: z
     .array(
       z.object({
         name: z.string().describe("Drug name as the patient said it."),
         detail: z
           .string()
-          .nullable()
-          .optional()
-          .describe("Brief context: dose timing, missed dose, side effect attribution."),
+          .nullish()
+          .describe("Brief context: dose timing, missed dose, side-effect attribution."),
       }),
     )
-    .nullable()
-    .optional(),
-  // Slice 3: personal content extracted by Claude. These fields hold
-  // non-clinical detail — food eaten, family interactions, spiritual
-  // practice notes, mood narrative, goals. They sit on the memo so the
-  // patient can review their own day; the apply step does NOT fan them
-  // out to clinical tables, and the sync hook scrubs them before push
-  // so personal content stays on the recording device.
+    .nullish()
+    .describe("Empty array (or null/omitted) when no medications are discussed."),
+
+  // ---- Personal (non-clinical) content. Nullable object — null when
+  //      the memo is purely clinical. Stored on the memo only, never
+  //      synced to cloud (the sync hook scrubs this key).
   personal: z
     .object({
       food_mentions: z
         .array(z.string())
-        .nullable()
-        .optional()
-        .describe("Foods or drinks the patient mentions, kept as short phrases."),
+        .nullish()
+        .describe("Foods or drinks the patient mentions. Empty / null when none."),
       family_mentions: z
         .array(z.string())
-        .nullable()
-        .optional()
-        .describe("Family or carer interactions — phone calls, visits, conversations."),
+        .nullish()
+        .describe("Family or carer interactions. Empty / null when none."),
       practice_mentions: z
         .array(z.string())
-        .nullable()
-        .optional()
-        .describe("Qigong, meditation, walks, breathing — patient's spiritual / movement practice."),
+        .nullish()
+        .describe("Qigong, meditation, walks, breathing. Empty / null when none."),
       goals: z
         .array(z.string())
-        .nullable()
-        .optional()
-        .describe("Things the patient says they intend to do (later today, tomorrow, this week)."),
+        .nullish()
+        .describe("Things the patient says they intend to do. Empty / null when none."),
       mood_narrative: z
         .string()
-        .nullable()
-        .optional()
-        .describe("One short sentence describing how the patient feels in their own words."),
+        .nullish()
+        .describe("One short sentence about how the patient feels in their own words. Null when no mood content."),
       observations: z
         .string()
-        .nullable()
-        .optional()
-        .describe("Anything else worth keeping that didn't fit a structured slot."),
+        .nullish()
+        .describe("Anything else worth keeping. Null when nothing extra."),
     })
-    .nullable()
-    .optional()
-    .describe("Non-clinical content. Always extract when present — this is what makes the memo a diary, not just a symptom log."),
-  confidence: z
-    .enum(["low", "medium", "high"])
+    .nullish()
     .describe(
-      "Overall extraction confidence. high: explicit numerics or unambiguous descriptions. medium: clear qualitative anchors. low: only vague mentions, transcript noise, or speech-recognition garbage.",
+      "Non-clinical content. Set when the patient mentions food, family, practice, goals, or mood. Null otherwise.",
     ),
+
+  confidence: ConfidenceEnum.describe(
+    "Overall extraction confidence. high: explicit numerics or unambiguous descriptions. medium: clear qualitative anchors. low: only vague mentions, transcript noise, or speech-recognition garbage.",
+  ),
 });
 
 export type VoiceMemoParseResult = z.infer<typeof VoiceMemoParseSchema>;
@@ -231,15 +208,16 @@ The memo is the patient's diary — sometimes a symptom log, sometimes a clinic 
 
 Mandarin or mixed Mandarin/English memos: translate internally before extracting. Free-text fields (\`notes\`, \`mood_narrative\`, \`observations\`, family/practice/food phrases) preserve the memo's original language so the patient sees their own words; structured numerics and enum-typed fields are language-neutral.
 
+Required-nullable schema: every field is required, but you set it to \`null\` (or to an empty array for list fields) when the memo doesn't carry that signal. Never invent values. The downstream system treats \`null\` as "the patient didn't say."
+
 Output rules:
-1. Every field is optional. Set a value only if the transcript supports it.
-2. Numeric scales are 0–10 unless noted. Map clear qualitative anchors when an explicit number isn't given (see field descriptions). Reject anything you'd guess.
-3. Neuropathy is CTCAE 0–4. Be conservative: vague tingling is grade 1, only set ≥2 if the patient describes interference with hand or foot function.
-4. Booleans only flip true. Never set a boolean false on the strength of silence — silence is not denial.
-5. \`notes\` is reserved for short clinical addenda that didn't fit a structured field (a taste change, a side-effect attribution). Personal content (food, family, practice, goals, mood) belongs in the \`personal\` block — never in \`notes\`.
-6. \`clinic_visit\` only when the patient describes a clinical encounter that already happened. Do not invent providers; resolve nicknames only when context is clear ("Sumi" → "A/Prof Sumitra Ananda" when the memo is about oncology).
-7. \`appointments_mentioned\` only for events that haven't happened yet. Set \`confidence: high\` only when both date and title are concrete; vague mentions ("scan sometime next week") are medium or low and won't auto-schedule downstream.
-8. \`personal\` is the diary half — always populate when the patient mentions food, family, practice, goals, or mood. Keep phrases short and faithful; don't add analysis.
-9. Set the top-level \`confidence\` honestly. low when transcripts are short, garbled, or only mention vague feelings. high only when the memo carries clear, unambiguous structured signal.
-10. Never invent specific numbers, weights, dates, or medications. If the whole memo is vague, return \`{"confidence": "low"}\` with whatever personal fields apply and no clinical structured values.`;
+1. Numeric scales are 0–10 unless noted. Map clear qualitative anchors when an explicit number isn't given (see field descriptions). Set \`null\` whenever you'd be guessing.
+2. Neuropathy is CTCAE 0–4. Be conservative: vague tingling is grade 1, only set ≥2 if the patient describes interference with hand or foot function. \`null\` otherwise.
+3. Booleans only flip true. Set \`null\` rather than \`false\` when the patient doesn't mention the symptom — silence is not denial.
+4. \`notes\` is reserved for short clinical addenda that didn't fit a structured field (a taste change, a side-effect attribution). Personal content (food, family, practice, goals, mood) belongs in the \`personal\` block — never in \`notes\`.
+5. \`clinic_visit\` only when the patient describes a clinical encounter that already happened. Do not invent providers; resolve nicknames only when context is clear ("Sumi" → "A/Prof Sumitra Ananda" when the memo is about oncology). \`null\` otherwise.
+6. \`appointments_mentioned\` only for events that haven't happened yet. Set \`confidence: high\` only when both date and title are concrete; vague mentions ("scan sometime next week") are medium or low and won't auto-schedule downstream. Empty array when nothing concrete.
+7. \`personal\` is the diary half — populate when the patient mentions food, family, practice, goals, or mood. Inner string-array fields are empty arrays when nothing matches; \`mood_narrative\` and \`observations\` are \`null\` when nothing matches. Set the whole \`personal\` object to \`null\` only when the memo is purely clinical with no personal flavour at all.
+8. Set the top-level \`confidence\` honestly. low when transcripts are short, garbled, or only mention vague feelings. high only when the memo carries clear, unambiguous structured signal.
+9. Never invent specific numbers, weights, dates, or medications.`;
 }

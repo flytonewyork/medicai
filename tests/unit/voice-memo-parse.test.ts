@@ -5,6 +5,7 @@ import {
   applyMemoPatches,
   buildSafeFillPatch,
   extractDailyShape,
+  undoAppliedPatch,
 } from "~/lib/voice-memo/apply";
 import { persistVoiceMemo } from "~/lib/voice-memo/persist";
 import { scrubForSync } from "~/lib/sync/hooks";
@@ -236,5 +237,94 @@ describe("scrubForSync", () => {
     const row = { id: 1, transcript: "" };
     const out = scrubForSync("voice_memos", row);
     expect(out).toEqual(row);
+  });
+});
+
+describe("undoAppliedPatch", () => {
+  async function makeMemo(parsed: VoiceMemoParsedFields, day = "2026-04-29") {
+    const { memo_id } = await persistVoiceMemo({
+      blob: new Blob([new Uint8Array(8)], { type: "audio/webm" }),
+      mime: "audio/webm",
+      duration_ms: 4000,
+      transcript: "test",
+      locale: "en",
+      entered_by: "hulin",
+      source_screen: "diary",
+      recorded_at: `${day}T08:00:00`,
+    });
+    await db.voice_memos.update(memo_id, {
+      parsed_fields: parsed,
+      updated_at: new Date().toISOString(),
+    });
+    return memo_id;
+  }
+
+  it("deletes a row created by a `create` patch and marks the audit undone", async () => {
+    const memoId = await makeMemo({
+      confidence: "high",
+      clinical: {
+        clinic_visit: { summary: "Saw Sumi" },
+      },
+    });
+    await applyMemoPatches(memoId);
+    const before = await db.voice_memos.get(memoId);
+    const patch = before?.parsed_fields?.applied_patches?.[0];
+    expect(patch?.table).toBe("life_events");
+    const rowId = patch!.row_id;
+    expect(await db.life_events.get(rowId)).toBeTruthy();
+
+    const r = await undoAppliedPatch(memoId, 0);
+    expect(r.ok).toBe(true);
+    expect(await db.life_events.get(rowId)).toBeUndefined();
+
+    const after = await db.voice_memos.get(memoId);
+    const undonePatch = after?.parsed_fields?.applied_patches?.[0];
+    expect(undonePatch?.undone_at).toBeTruthy();
+    // Audit row stays — undone, not deleted.
+    expect(after?.parsed_fields?.applied_patches).toHaveLength(1);
+  });
+
+  it("removes safe-filled keys from an existing daily_entries row on undo", async () => {
+    const ts = "2026-04-29T07:00:00";
+    await db.daily_entries.add({
+      date: "2026-04-29",
+      entered_at: ts,
+      entered_by: "hulin",
+      energy: 8, // pre-existing — should stay
+      created_at: ts,
+      updated_at: ts,
+    });
+    const memoId = await makeMemo({
+      sleep_quality: 5,
+      pain_current: 2,
+      confidence: "high",
+    });
+    await applyMemoPatches(memoId);
+    const filledRow = await db.daily_entries.where("date").equals("2026-04-29").first();
+    expect(filledRow?.energy).toBe(8);
+    expect(filledRow?.sleep_quality).toBe(5);
+    expect(filledRow?.pain_current).toBe(2);
+
+    const r = await undoAppliedPatch(memoId, 0);
+    expect(r.ok).toBe(true);
+    const restored = await db.daily_entries.where("date").equals("2026-04-29").first();
+    // Undo dropped the memo's safe-fill keys; the patient's pre-existing
+    // energy=8 is preserved untouched.
+    expect(restored?.energy).toBe(8);
+    expect(restored?.sleep_quality).toBeUndefined();
+    expect(restored?.pain_current).toBeUndefined();
+  });
+
+  it("refuses to undo a patch that's already been undone", async () => {
+    const memoId = await makeMemo({
+      confidence: "high",
+      clinical: { clinic_visit: { summary: "Saw Sumi" } },
+    });
+    await applyMemoPatches(memoId);
+    const first = await undoAppliedPatch(memoId, 0);
+    expect(first.ok).toBe(true);
+    const second = await undoAppliedPatch(memoId, 0);
+    expect(second.ok).toBe(false);
+    expect(second.error).toMatch(/already undone/);
   });
 });
