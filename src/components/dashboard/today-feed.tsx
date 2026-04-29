@@ -9,7 +9,6 @@ import { useLocale, useT } from "~/hooks/use-translate";
 import { useDefaultAiModel } from "~/hooks/use-settings";
 import { generateNarrative } from "~/lib/nudges/ai-narrative";
 import { Card } from "~/components/ui/card";
-import { Button } from "~/components/ui/button";
 import { localize, type FeedItem } from "~/types/feed";
 import { AgentFeedbackControls } from "./agent-feedback-controls";
 import type { AgentId } from "~/types/agent";
@@ -33,6 +32,10 @@ import {
   Circle,
   CheckCircle2,
 } from "lucide-react";
+
+// Bumped when the narrative prompt or shape changes so that stale
+// payloads in localStorage are ignored without forcing a manual clear.
+const NARRATIVE_CACHE_VERSION = "v2";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   thermo: Thermometer,
@@ -111,9 +114,19 @@ export function TodayFeed({
   // Narrative fetch — cached daily per locale. Uses the server-side
   // ANTHROPIC_API_KEY via /api/ai/feed-narrative; no per-user key needed.
   useEffect(() => {
-    if (feed.length === 0) return;
+    if (feed.length === 0) {
+      // Clear any stale narrative left over from a previous render
+      // when the feed has emptied out (e.g. user removed an item that
+      // was the last remaining feed entry).
+      setNarrative(null);
+      setNarrativeLoading(false);
+      return;
+    }
     const today = todayISO();
-    const cacheTag = `${today}_${locale}`;
+    // Cache key includes locale + version so that switching language
+    // mid-day, or shipping a new prompt, fetches a fresh narrative
+    // instead of showing the old one in the wrong language.
+    const cacheTag = `${today}_${locale}_${NARRATIVE_CACHE_VERSION}`;
     try {
       const raw = localStorage.getItem(CACHE_KEY);
       if (raw) {
@@ -126,6 +139,10 @@ export function TodayFeed({
     } catch {
       // ignore
     }
+    // Cache miss: drop any prior locale's narrative immediately so we
+    // don't display English text under a Chinese eyebrow while the
+    // new fetch is in flight.
+    setNarrative(null);
     setNarrativeLoading(true);
     void (async () => {
       try {
@@ -158,30 +175,11 @@ export function TodayFeed({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [model, locale, feedSignature]);
 
-  if (feed.length === 0) {
-    return (
-      <Card className="p-5">
-        <div className="flex items-start gap-3">
-          <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
-            style={{ background: "var(--tide-soft)", color: "var(--tide-2)" }}
-          >
-            <Sparkles className="h-4 w-4" />
-          </div>
-          <div className="space-y-1">
-            <div className="text-[13px] font-semibold text-ink-900">
-              {locale === "zh" ? "今天的动态会显示在这里" : "Your feed will appear here"}
-            </div>
-            <p className="text-[12.5px] text-ink-500 leading-relaxed">
-              {locale === "zh"
-                ? "完成今日记录后，这里会显示摘要、提醒和趋势。先从上方的快速记录开始。"
-                : "After you log today's check-in, this feed will show your summary, alerts, and trends. Start with the quick check-in above."}
-            </p>
-          </div>
-        </div>
-      </Card>
-    );
-  }
+  // Empty feed: render nothing. The dashboard already shows a
+  // QuickCheckinCard / capture surface above; a "your feed will
+  // appear here" placeholder is dead UI on day one and pushes real
+  // content (invites, baseline nudges) further down for no payoff.
+  if (feed.length === 0) return null;
 
   return (
     <div className="space-y-3">
