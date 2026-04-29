@@ -2,11 +2,9 @@ import { NextResponse } from "next/server";
 import { buildNarrativeSystem } from "~/lib/nudges/ai-narrative";
 import {
   DEFAULT_AI_MODEL,
-  getAnthropicClient,
-  readJsonBody,
+  createClaudeRoute,
   withAnthropicErrorBoundary,
 } from "~/lib/anthropic/route-helpers";
-import { requireSession } from "~/lib/auth/require-session";
 import { loadHouseholdProfile } from "~/lib/household/profile";
 import { wrapUserInputBlock } from "~/lib/anthropic/wrap-user-input";
 import type { FeedItem } from "~/types/feed";
@@ -21,23 +19,13 @@ interface RequestBody {
   model?: string;
 }
 
-export async function POST(req: Request) {
-  const auth = await requireSession();
-  if (!auth.ok) return auth.error;
-
-  const gate = getAnthropicClient();
-  if (gate.error) return gate.error;
-
-  const parsed = await readJsonBody<RequestBody>(req);
-  if (parsed.error) return parsed.error;
-  const body = parsed.body;
-
+export const POST = createClaudeRoute<RequestBody>(async ({ body, client, session }) => {
   if (!Array.isArray(body?.items)) {
     return NextResponse.json({ error: "items[] required" }, { status: 400 });
   }
 
   const { locale = "en", items, model = DEFAULT_AI_MODEL } = body;
-  const profile = await loadHouseholdProfile(auth.session.household_id);
+  const profile = await loadHouseholdProfile(session.household_id);
   const signals = items
     .slice(0, 8)
     .map((item, i) => {
@@ -48,7 +36,7 @@ export async function POST(req: Request) {
     .join("\n");
 
   const result = await withAnthropicErrorBoundary(() =>
-    gate.client.messages.create({
+    client.messages.create({
       model,
       max_tokens: 300,
       system: [
@@ -81,4 +69,4 @@ export async function POST(req: Request) {
     );
   }
   return NextResponse.json({ narrative: block.text.trim() });
-}
+});

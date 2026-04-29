@@ -12,6 +12,7 @@ import type {
 import { Field, TextInput } from "~/components/ui/field";
 import { Button } from "~/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
+import type { LocalizedText } from "~/types/localized";
 
 // Reusable prep-item editor — used in the appointment form (on
 // create / edit) and surfaced on the detail page when the patient
@@ -40,7 +41,7 @@ const SOURCE_OPTIONS: AppointmentPrepSource[] = [
   "other",
 ];
 
-const SOURCE_LABEL: Record<AppointmentPrepSource, { en: string; zh: string }> = {
+const SOURCE_LABEL: Record<AppointmentPrepSource, LocalizedText> = {
   phone: { en: "Phone", zh: "电话" },
   email: { en: "Email", zh: "邮件" },
   letter: { en: "Letter", zh: "信函" },

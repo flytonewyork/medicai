@@ -1,3 +1,5 @@
+import type { LocalizedText } from "~/types/localized";
+
 export type TestCategory =
   | "physical"
   | "symptoms"
@@ -36,10 +38,10 @@ export type TestId =
 export interface TestDef {
   id: TestId;
   category: TestCategory;
-  title: { en: string; zh: string };
-  description: { en: string; zh: string };
+  title: LocalizedText;
+  description: LocalizedText;
   est_minutes: number;
-  equipment?: { en: string; zh: string };
+  equipment?: LocalizedText;
   default_on: boolean;
 }
 
@@ -347,7 +349,7 @@ export type PresetId = "comprehensive" | "quick" | "function" | "custom";
 
 export const PRESETS: Record<
   PresetId,
-  { title: { en: string; zh: string }; description: { en: string; zh: string }; tests: TestId[] }
+  { title: LocalizedText; description: LocalizedText; tests: TestId[] }
 > = {
   comprehensive: {
     title: { en: "Comprehensive baseline", zh: "完整基线" },

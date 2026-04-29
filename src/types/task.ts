@@ -1,4 +1,5 @@
 import type { Locale } from "./clinical";
+import type { LocalizedText } from "./localized";
 import type { PhaseKey } from "./treatment";
 
 export type TaskCategory =
@@ -88,9 +89,9 @@ export interface TaskInstance {
 
 export interface TaskPreset {
   id: string;
-  title: { en: string; zh: string };
+  title: LocalizedText;
   category: TaskCategory;
-  notes?: { en: string; zh: string };
+  notes?: LocalizedText;
   schedule_kind: TaskScheduleKind;
   recurrence_interval_days?: number;
   cycle_day?: number;
@@ -98,7 +99,7 @@ export interface TaskPreset {
   lead_time_days: number;
   priority: TaskPriority;
   default_due_offset_days?: number; // for one-off, set due N days from now
-  rationale: { en: string; zh: string };
+  rationale: LocalizedText;
 }
 
 export function localizedTitle(task: PatientTask, locale: Locale): string {

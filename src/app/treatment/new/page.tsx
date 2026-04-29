@@ -27,6 +27,7 @@ import type {
 } from "~/types/medication";
 import type { Appointment } from "~/types/appointment";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import type { LocalizedText } from "~/types/localized";
 
 // Three-step wizard for setting up a chemo cycle. Replaces the previous
 // one-shot CycleForm so the patient (or carer) can preview every linked
@@ -302,7 +303,7 @@ export default function NewTreatmentCyclePage() {
 }
 
 function Stepper({ step, locale }: { step: Step; locale: "en" | "zh" }) {
-  const labels: Array<{ en: string; zh: string }> = [
+  const labels: Array<LocalizedText> = [
     { en: "Protocol", zh: "方案" },
     { en: "Schedule", zh: "细节" },
     { en: "Review", zh: "检查" },

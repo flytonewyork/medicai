@@ -4,6 +4,7 @@ import type {
   AppointmentPrepKind,
 } from "~/types/appointment";
 import type { PatientTask } from "~/types/task";
+import type { LocalizedText } from "~/types/localized";
 
 // Slice I helpers. Pure functions around AppointmentPrep so the UI
 // can answer three questions without duplicating clock logic:
@@ -149,7 +150,7 @@ export function deriveAwaitingPrepTasks(args: {
 // Small label helpers for the UI.
 export const PREP_KIND_LABEL: Record<
   AppointmentPrepKind,
-  { en: string; zh: string }
+  LocalizedText
 > = {
   fast: { en: "Fast", zh: "禁食" },
   medication_hold: { en: "Hold medication", zh: "停药" },

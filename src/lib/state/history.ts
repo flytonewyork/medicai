@@ -15,6 +15,7 @@ import type {
 } from "~/types/clinical";
 import type { TreatmentCycle } from "~/types/treatment";
 import type { Medication, MedicationEvent } from "~/types/medication";
+import type { LocalizedText } from "~/types/localized";
 
 export type HistoryCategory =
   | "signal"
@@ -29,11 +30,6 @@ export type HistoryCategory =
   | "life_event";
 
 export type HistoryTone = "info" | "positive" | "caution" | "warning";
-
-export interface LocalizedText {
-  en: string;
-  zh: string;
-}
 
 export interface HistoryEntry {
   // Stable identifier composed from source table + id + variant, so the

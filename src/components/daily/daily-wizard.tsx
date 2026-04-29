@@ -16,6 +16,7 @@ import { Toggle } from "./toggle";
 import { SymptomStep } from "./symptom-step";
 import { isInChemoWindow } from "~/lib/daily/symptom-catalog";
 import type { DailyEntry } from "~/types/clinical";
+import type { LocalizedText } from "~/types/localized";
 import {
   Activity,
   Bed,
@@ -35,17 +36,16 @@ import {
 import { cn } from "~/lib/utils/cn";
 
 type Draft = Partial<DailyEntry>;
-type Bilingual = { en: string; zh: string };
 
 const CATS = [
   {
     id: "feelings",
     icon: Activity,
-    title: { en: "How you feel", zh: "整体感受" } as Bilingual,
+    title: { en: "How you feel", zh: "整体感受" } as LocalizedText,
     hint: {
       en: "Energy, pain, mood, appetite",
       zh: "精力、疼痛、情绪、食欲",
-    } as Bilingual,
+    } as LocalizedText,
     fields: [
       "energy",
       "pain_current",
@@ -57,22 +57,22 @@ const CATS = [
   {
     id: "sleep",
     icon: Bed,
-    title: { en: "Sleep", zh: "睡眠" } as Bilingual,
-    hint: { en: "Last night's sleep", zh: "昨晚的睡眠" } as Bilingual,
+    title: { en: "Sleep", zh: "睡眠" } as LocalizedText,
+    hint: { en: "Last night's sleep", zh: "昨晚的睡眠" } as LocalizedText,
     fields: ["sleep_quality"],
   },
   {
     id: "weight",
     icon: Scale,
-    title: { en: "Weight", zh: "体重" } as Bilingual,
-    hint: { en: "Only if you weighed in", zh: "若今天称重了再填" } as Bilingual,
+    title: { en: "Weight", zh: "体重" } as LocalizedText,
+    hint: { en: "Only if you weighed in", zh: "若今天称重了再填" } as LocalizedText,
     fields: ["weight_kg"],
   },
   {
     id: "practice",
     icon: Sparkles,
-    title: { en: "Practice", zh: "修习" } as Bilingual,
-    hint: { en: "Qigong, meditation", zh: "气功、冥想" } as Bilingual,
+    title: { en: "Practice", zh: "修习" } as LocalizedText,
+    hint: { en: "Qigong, meditation", zh: "气功、冥想" } as LocalizedText,
     fields: [
       "practice_morning_completed",
       "practice_morning_quality",
@@ -83,18 +83,18 @@ const CATS = [
   {
     id: "food",
     icon: Utensils,
-    title: { en: "Food", zh: "饮食" } as Bilingual,
-    hint: { en: "Protein, meals, fluids", zh: "蛋白质、正餐、饮水" } as Bilingual,
+    title: { en: "Food", zh: "饮食" } as LocalizedText,
+    hint: { en: "Protein, meals, fluids", zh: "蛋白质、正餐、饮水" } as LocalizedText,
     fields: ["protein_grams", "meals_count", "snacks_count", "fluids_ml"],
   },
   {
     id: "movement",
     icon: Footprints,
-    title: { en: "Movement", zh: "活动" } as Bilingual,
+    title: { en: "Movement", zh: "活动" } as LocalizedText,
     hint: {
       en: "Walking, resistance, steps",
       zh: "步行、阻力训练、步数",
-    } as Bilingual,
+    } as LocalizedText,
     fields: [
       "walking_minutes",
       "resistance_training",
@@ -105,11 +105,11 @@ const CATS = [
   {
     id: "symptoms",
     icon: AlertTriangle,
-    title: { en: "Symptoms", zh: "症状" } as Bilingual,
+    title: { en: "Symptoms", zh: "症状" } as LocalizedText,
     hint: {
       en: "Only record what's actually present",
       zh: "只记今日出现的",
-    } as Bilingual,
+    } as LocalizedText,
     fields: [
       "nausea",
       "fever",
@@ -126,8 +126,8 @@ const CATS = [
   {
     id: "reflection",
     icon: PenLine,
-    title: { en: "Reflection", zh: "反思" } as Bilingual,
-    hint: { en: "Anything worth noting", zh: "想记下的一点" } as Bilingual,
+    title: { en: "Reflection", zh: "反思" } as LocalizedText,
+    hint: { en: "Anything worth noting", zh: "想记下的一点" } as LocalizedText,
     fields: ["reflection"],
   },
 ] as const;

@@ -6,6 +6,7 @@ import { db } from "~/lib/db/dexie";
 import { useLocale, useL } from "~/hooks/use-translate";
 import type { CareTeamMember, CareTeamRole } from "~/types/care-team";
 import { Phone, Mail, Star } from "lucide-react";
+import type { LocalizedText } from "~/types/localized";
 
 // Tap-to-call directory, grouped by role. Reads the care-team
 // registry; no opinions, no fallbacks — if it's empty, we point the
@@ -22,7 +23,7 @@ const ROLE_ORDER: CareTeamRole[] = [
   "other",
 ];
 
-const ROLE_LABEL: Record<CareTeamRole, { en: string; zh: string }> = {
+const ROLE_LABEL: Record<CareTeamRole, LocalizedText> = {
   oncologist: { en: "Oncology", zh: "肿瘤科" },
   surgeon: { en: "Surgery", zh: "外科" },
   nurse: { en: "Nursing", zh: "护理" },

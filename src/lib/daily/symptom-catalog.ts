@@ -1,4 +1,5 @@
 import type { DailyEntry } from "~/types/clinical";
+import type { LocalizedText } from "~/types/localized";
 
 // The curated mPDAC/ GnP symptom catalog. Each entry is one checkable
 // item on the daily-wizard "Symptoms" step. The catalog is the single
@@ -37,8 +38,8 @@ export type SymptomTag =
 
 export interface SymptomDefinition {
   id: string;
-  label: { en: string; zh: string };
-  hint?: { en: string; zh: string };
+  label: LocalizedText;
+  hint?: LocalizedText;
   scale: SymptomScale;
   tags: readonly SymptomTag[];
   defaultTracked: boolean;

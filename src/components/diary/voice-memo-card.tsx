@@ -12,6 +12,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import type { VoiceMemo, VoiceMemoParsedFields } from "~/types/voice-memo";
+import type { LocalizedText } from "~/types/localized";
 import { resolveVoiceMemoAudioUrl } from "~/lib/voice-memo/cloud";
 import { Card } from "~/components/ui/card";
 import { cn } from "~/lib/utils/cn";
@@ -284,14 +285,14 @@ function collectChips(
   locale: "en" | "zh",
 ): { label: string; value: string }[] {
   const chips: { label: string; value: string }[] = [];
-  function num(label: { en: string; zh: string }, val: number | undefined, suffix = "/10") {
+  function num(label: LocalizedText, val: number | undefined, suffix = "/10") {
     if (typeof val !== "number") return;
     chips.push({
       label: locale === "zh" ? label.zh : label.en,
       value: `${val}${suffix}`,
     });
   }
-  function bool(label: { en: string; zh: string }, val: boolean | undefined) {
+  function bool(label: LocalizedText, val: boolean | undefined) {
     if (val !== true) return;
     chips.push({
       label: locale === "zh" ? label.zh : label.en,

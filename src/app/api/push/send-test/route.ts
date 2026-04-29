@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabaseServer } from "~/lib/supabase/server";
+import { requireSupabaseUser } from "~/lib/auth/require-supabase-user";
 import { getServiceRoleClient, sendPushToUser } from "~/lib/push/server";
 
 // Dev helper: sends a test push to every subscription belonging to the
@@ -20,17 +20,10 @@ export async function POST() {
       { status: 403 },
     );
   }
-  const sb = getSupabaseServer();
-  if (!sb) {
-    return NextResponse.json(
-      { error: "Supabase is not configured." },
-      { status: 503 },
-    );
-  }
-  const { data: auth } = await sb.auth.getUser();
-  if (!auth.user) {
-    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
-  }
+  const auth = await requireSupabaseUser();
+  if (!auth.ok) return auth.error;
+  const { user } = auth.data;
+
   const service = getServiceRoleClient();
   if (!service) {
     return NextResponse.json(
@@ -39,7 +32,7 @@ export async function POST() {
     );
   }
 
-  const result = await sendPushToUser(service, auth.user.id, {
+  const result = await sendPushToUser(service, user.id, {
     title: "Anchor test",
     body: "Push is wired up.",
     url: "/",

@@ -11,11 +11,12 @@ import {
 } from "~/types/treatment";
 import { cycleDayFor, currentPhase } from "~/lib/treatment/engine";
 import { FlaskConical } from "lucide-react";
+import type { LocalizedText } from "~/types/localized";
 
 type Swatch = {
   bg: string;
   color: string;
-  label: { en: string; zh: string };
+  label: LocalizedText;
 };
 
 const SWATCHES: Record<string, Swatch> = {

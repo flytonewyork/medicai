@@ -31,6 +31,7 @@ import {
   CircleAlert,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import type { LocalizedText } from "~/types/localized";
 
 // Local contacts directory — phone numbers, specialties, and notes for
 // people in the patient's external care orbit (oncologist, surgeon, GP,
@@ -59,7 +60,7 @@ const ROLES: CareTeamRole[] = [
   "other",
 ];
 
-const ROLE_LABELS: Record<CareTeamRole, { en: string; zh: string }> = {
+const ROLE_LABELS: Record<CareTeamRole, LocalizedText> = {
   family: { en: "Family", zh: "家人" },
   oncologist: { en: "Oncologist", zh: "肿瘤科" },
   surgeon: { en: "Surgeon", zh: "外科" },

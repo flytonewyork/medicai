@@ -34,6 +34,7 @@ import { VoiceMemoCard } from "~/components/diary/voice-memo-card";
 import { cn } from "~/lib/utils/cn";
 import type { AgentRunRow } from "~/types/agent";
 import type { AppliedPatch, VoiceMemo } from "~/types/voice-memo";
+import type { LocalizedText } from "~/types/localized";
 
 // /diary — the patient's daily timeline. One section per day, newest
 // first, combining:
@@ -433,7 +434,7 @@ function buildDailySummary(
   locale: "en" | "zh",
 ): string {
   const parts: string[] = [];
-  function push(label: { en: string; zh: string }, value: string) {
+  function push(label: LocalizedText, value: string) {
     parts.push(`${locale === "zh" ? label.zh : label.en} ${value}`);
   }
   if (typeof entry.energy === "number") {

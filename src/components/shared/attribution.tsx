@@ -4,6 +4,7 @@ import { useHouseholdProfiles } from "~/hooks/use-household-profiles";
 import { useLocale } from "~/hooks/use-translate";
 import { cn } from "~/lib/utils/cn";
 import { localeTag } from "~/lib/utils/date";
+import type { LocalizedText } from "~/types/localized";
 
 // Small inline chip: "Thomas · 2h ago" when a profile exists for the
 // given auth uid; falls back to the legacy `entered_by` label for rows
@@ -14,7 +15,7 @@ import { localeTag } from "~/lib/utils/date";
 // household profile / per-user profile lookup — these are only used
 // when a row was saved by a legacy `entered_by` string and we don't
 // have an auth uid to resolve to a profile row.
-const STRING_LABELS: Record<string, { en: string; zh: string }> = {
+const STRING_LABELS: Record<string, LocalizedText> = {
   patient: { en: "Patient", zh: "患者" },
   carer: { en: "Carer", zh: "照护者" },
   clinician: { en: "Clinician", zh: "医师" },

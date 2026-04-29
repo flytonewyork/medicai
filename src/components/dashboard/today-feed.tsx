@@ -10,6 +10,7 @@ import { useDefaultAiModel } from "~/hooks/use-settings";
 import { generateNarrative } from "~/lib/nudges/ai-narrative";
 import { Card } from "~/components/ui/card";
 import { localize, type FeedItem } from "~/types/feed";
+import type { LocalizedText } from "~/types/localized";
 import { AgentFeedbackControls } from "./agent-feedback-controls";
 import type { AgentId } from "~/types/agent";
 import { cn } from "~/lib/utils/cn";
@@ -318,7 +319,7 @@ function categoryLabel(
   c: FeedItem["category"],
   locale: "en" | "zh",
 ): string {
-  const labels: Record<FeedItem["category"], { en: string; zh: string }> = {
+  const labels: Record<FeedItem["category"], LocalizedText> = {
     safety: { en: "Safety", zh: "安全" },
     checkin: { en: "Check-in", zh: "记录" },
     treatment: { en: "Treatment", zh: "治疗" },

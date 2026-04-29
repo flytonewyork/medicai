@@ -14,8 +14,9 @@ import type {
 import { differenceInCalendarDays, format, parseISO } from "date-fns";
 import { cn } from "~/lib/utils/cn";
 import { todayISO } from "~/lib/utils/date";
+import type { LocalizedText } from "~/types/localized";
 
-const KIND_LABELS: Record<CareTeamContactKind, { en: string; zh: string }> = {
+const KIND_LABELS: Record<CareTeamContactKind, LocalizedText> = {
   clinic_visit: { en: "Clinic visit", zh: "门诊" },
   clinician_call: { en: "Phone / telehealth", zh: "电话 / 远程医疗" },
   specialist_visit: { en: "Specialist visit", zh: "专科门诊" },

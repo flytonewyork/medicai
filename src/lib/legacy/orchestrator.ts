@@ -2,6 +2,7 @@ import type { FeedItem } from "~/types/feed";
 import type { Zone } from "~/types/clinical";
 import type { BiographicalOutline } from "~/types/legacy";
 import type { TreatmentCycle } from "~/types/treatment";
+import type { LocalizedText } from "~/types/localized";
 
 // Orchestrator — deterministic event-suggestion layer.
 //
@@ -32,8 +33,8 @@ export interface OrchestratorInputs {
 export interface EventSuggestion {
   id: string;
   theme: "lightness" | "seasonal" | "chapter_gap" | "recovery";
-  title: { en: string; zh: string };
-  body: { en: string; zh: string };
+  title: LocalizedText;
+  body: LocalizedText;
   chapter_hint?: string;
 }
 

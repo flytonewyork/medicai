@@ -8,9 +8,11 @@
 // type. Direct office numbers are not seeded because they vary by
 // secretary; the user fills them in if they have them on hand.
 
+import type { LocalizedText } from "~/types/localized";
+
 export interface MelbourneHospital {
   id: string;
-  name: { en: string; zh: string };
+  name: LocalizedText;
   phone: string;
   address: string;
   // 24/7 on-call number when the hospital publishes one distinct from
@@ -20,14 +22,14 @@ export interface MelbourneHospital {
 
 export interface MelbourneOncologist {
   id: string;
-  name: { en: string; zh: string };
+  name: LocalizedText;
   // Primary hospital affiliation used to pre-fill hospital fields. Some
   // clinicians work across multiple sites; this is the dominant one for
   // GI / pancreas care.
   hospital_id: string;
   // Optional secondary affiliation shown in the picker label.
   also_at?: string;
-  specialty: { en: string; zh: string };
+  specialty: LocalizedText;
 }
 
 export const MELBOURNE_HOSPITALS: MelbourneHospital[] = [

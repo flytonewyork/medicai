@@ -2,15 +2,13 @@ import { NextResponse } from "next/server";
 import { jsonOutputFormat } from "~/lib/anthropic/json-output";
 import {
   DEFAULT_AI_MODEL,
-  getAnthropicClient,
-  readJsonBody,
+  createClaudeRoute,
   withAnthropicErrorBoundary,
 } from "~/lib/anthropic/route-helpers";
 import {
   buildIngestSystem,
   ingestDraftSchema,
 } from "~/lib/ingest/draft-schema";
-import { requireSession } from "~/lib/auth/require-session";
 import { loadHouseholdProfile } from "~/lib/household/profile";
 import { wrapUserInputBlock } from "~/lib/anthropic/wrap-user-input";
 import type { PreparedImage } from "~/lib/ingest/image";
@@ -35,17 +33,7 @@ interface RequestBody {
   model?: string;
 }
 
-export async function POST(req: Request) {
-  const auth = await requireSession();
-  if (!auth.ok) return auth.error;
-
-  const gate = getAnthropicClient();
-  if (gate.error) return gate.error;
-
-  const parsed = await readJsonBody<RequestBody>(req);
-  if (parsed.error) return parsed.error;
-  const body = parsed.body;
-
+export const POST = createClaudeRoute<RequestBody>(async ({ body, client, session }) => {
   if (!body?.text && !body?.image) {
     return NextResponse.json(
       { error: "text or image required" },
@@ -58,7 +46,7 @@ export async function POST(req: Request) {
 
   const today = body.today ?? todayISO();
   const locale = body.locale ?? "en";
-  const profile = await loadHouseholdProfile(auth.session.household_id);
+  const profile = await loadHouseholdProfile(session.household_id);
 
   const content: Array<
     | { type: "text"; text: string }
@@ -98,7 +86,7 @@ export async function POST(req: Request) {
   }
 
   const result = await withAnthropicErrorBoundary(() =>
-    gate.client.messages.parse({
+    client.messages.parse({
       model: body.model ?? DEFAULT_AI_MODEL,
       max_tokens: 4096,
       system: [
@@ -125,4 +113,4 @@ export async function POST(req: Request) {
     ...result.value.parsed_output,
   };
   return NextResponse.json({ draft });
-}
+});

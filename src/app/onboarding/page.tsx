@@ -27,6 +27,7 @@ import {
   Check,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import type { LocalizedText } from "~/types/localized";
 
 // Order is load-bearing: welcome + profile + preferences is the "core" path
 // that gets every user onto the dashboard quickly. Team / treatment are
@@ -611,8 +612,8 @@ function UserTypeStep({
 }) {
   const options: Array<{
     id: "patient" | "caregiver" | "clinician";
-    title: { en: string; zh: string };
-    body: { en: string; zh: string };
+    title: LocalizedText;
+    body: LocalizedText;
   }> = [
     {
       id: "patient",

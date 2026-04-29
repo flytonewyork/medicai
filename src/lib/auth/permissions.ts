@@ -1,5 +1,6 @@
 import type { HouseholdRole } from "~/types/household";
 import type { SyncedTable } from "~/lib/sync/tables";
+import type { LocalizedText } from "~/types/localized";
 
 // Authoritative permission matrix. This file is the single source of
 // truth — the client-side gates read from `PERMISSIONS`, and the
@@ -92,7 +93,7 @@ export function actionsFor(role: HouseholdRole): PermissionAction[] {
 // post-invite welcome screen and any "permission denied" toast.
 export const ACTION_LABEL: Record<
   PermissionAction,
-  { en: string; zh: string }
+  LocalizedText
 > = {
   invite_members: { en: "Invite new members", zh: "邀请新成员" },
   remove_members: { en: "Remove members", zh: "移除成员" },
@@ -117,7 +118,7 @@ export const ACTION_LABEL: Record<
 };
 
 // Roles expanded with their user-facing label, sorted for display.
-export const ROLE_LABEL: Record<HouseholdRole, { en: string; zh: string }> = {
+export const ROLE_LABEL: Record<HouseholdRole, LocalizedText> = {
   primary_carer: { en: "Primary carer", zh: "主要照护者" },
   patient: { en: "Patient", zh: "患者" },
   family: { en: "Family", zh: "家人" },
@@ -170,7 +171,7 @@ export const TABLE_WRITE_ACTION: Partial<Record<SyncedTable, PermissionAction>> 
 // on the welcome screen after acceptance.
 export const ROLE_DESCRIPTION: Record<
   HouseholdRole,
-  { en: string; zh: string }
+  LocalizedText
 > = {
   primary_carer: {
     en: "Runs the household — can invite, remove, and edit the treatment plan.",

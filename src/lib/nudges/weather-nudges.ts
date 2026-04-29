@@ -2,6 +2,7 @@ import type { FeedItem } from "~/types/feed";
 import type { CurrentWeather } from "~/lib/weather/open-meteo";
 import { weatherCondition } from "~/lib/weather/open-meteo";
 import type { CycleContext } from "~/types/treatment";
+import type { LocalizedText } from "~/types/localized";
 
 export interface WeatherNudgeInputs {
   weather: CurrentWeather | null;
@@ -187,7 +188,7 @@ function conditionLabel(
   c: ReturnType<typeof weatherCondition>,
   locale: "en" | "zh",
 ): string {
-  const labels: Record<typeof c, { en: string; zh: string }> = {
+  const labels: Record<typeof c, LocalizedText> = {
     clear: { en: "Clear", zh: "晴天" },
     cloud: { en: "Cloudy", zh: "多云" },
     rain: { en: "Rain", zh: "有雨" },

@@ -1,6 +1,7 @@
 import { db } from "~/lib/db/dexie";
 import { todayISO } from "~/lib/utils/date";
 import type { DailyEntry } from "~/types/clinical";
+import type { LocalizedText } from "~/types/localized";
 
 // Symptom-aware context for the food picker and JPCC playbooks.
 // Reads today's DailyEntry (and yesterday's as a fallback so a
@@ -97,7 +98,7 @@ function daysAgo(iso: string, n: number): string {
 
 export const SYMPTOM_LABEL: Record<
   SymptomFlag,
-  { en: string; zh: string }
+  LocalizedText
 > = {
   nausea: { en: "nausea", zh: "恶心" },
   mucositis: { en: "mouth sores", zh: "口腔溃疡" },

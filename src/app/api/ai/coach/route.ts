@@ -6,11 +6,9 @@ import {
 } from "~/lib/ai/coach";
 import {
   DEFAULT_AI_MODEL,
-  getAnthropicClient,
-  readJsonBody,
+  createClaudeRoute,
   withAnthropicErrorBoundary,
 } from "~/lib/anthropic/route-helpers";
-import { requireSession } from "~/lib/auth/require-session";
 import { loadHouseholdProfile } from "~/lib/household/profile";
 import { wrapUserInputBlock } from "~/lib/anthropic/wrap-user-input";
 import type { Locale } from "~/types/clinical";
@@ -25,17 +23,7 @@ interface RequestBody {
   locale?: Locale;
 }
 
-export async function POST(req: Request) {
-  const auth = await requireSession();
-  if (!auth.ok) return auth.error;
-
-  const gate = getAnthropicClient();
-  if (gate.error) return gate.error;
-
-  const parsed = await readJsonBody<RequestBody>(req);
-  if (parsed.error) return parsed.error;
-  const body = parsed.body;
-
+export const POST = createClaudeRoute<RequestBody>(async ({ body, client, session }) => {
   if (!body?.context || !Array.isArray(body?.history)) {
     return NextResponse.json(
       { error: "context and history[] required" },
@@ -44,11 +32,11 @@ export async function POST(req: Request) {
   }
 
   const { model = DEFAULT_AI_MODEL, context, history, locale = "en" } = body;
-  const profile = await loadHouseholdProfile(auth.session.household_id);
+  const profile = await loadHouseholdProfile(session.household_id);
   const contextBlock = `Current step: ${context.stepTitle}\nKey: ${context.stepKey}\nInstructions shown to the user:\n${context.stepInstructions}\n\nRespond in ${locale === "zh" ? "Simplified Chinese (简体中文)" : "English"}.`;
 
   const result = await withAnthropicErrorBoundary(() =>
-    gate.client.messages.create({
+    client.messages.create({
       model,
       max_tokens: 600,
       system: [
@@ -77,4 +65,4 @@ export async function POST(req: Request) {
     );
   }
   return NextResponse.json({ reply: block.text });
-}
+});

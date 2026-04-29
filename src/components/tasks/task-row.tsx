@@ -6,12 +6,13 @@ import { cn } from "~/lib/utils/cn";
 import { useLocale } from "~/hooks/use-translate";
 import type { TaskBucket, TaskInstance } from "~/types/task";
 import { localizedTitle } from "~/types/task";
+import type { LocalizedText } from "~/types/localized";
 import { Button } from "~/components/ui/button";
 import { Check, Clock, AlertTriangle, CalendarClock, MoonStar } from "lucide-react";
 
 const BUCKET_META: Record<
   TaskBucket,
-  { tone: string; icon: React.ComponentType<{ className?: string }>; label: { en: string; zh: string } }
+  { tone: string; icon: React.ComponentType<{ className?: string }>; label: LocalizedText }
 > = {
   overdue: {
     tone: "border-[var(--warn)]/50 bg-[var(--warn-soft)] text-[var(--warn)]",
