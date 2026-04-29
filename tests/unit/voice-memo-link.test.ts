@@ -185,6 +185,88 @@ describe("applyMemoPatches — imaging linking", () => {
   });
 });
 
+describe("applyMemoPatches — clinic_visit linking", () => {
+  it("links a chemo memo to a scheduled chemo appointment + creates the life_event", async () => {
+    const apptId = await makeAppointment({
+      kind: "chemo",
+      title: "Cycle 1 chemo",
+      starts_at: "2026-04-29T11:00:00",
+      status: "scheduled",
+    });
+    const memoId = await makeMemo({
+      confidence: "high",
+      clinical: {
+        clinic_visit: {
+          kind: "chemo",
+          summary: "First chemo session, felt normal throughout. Wife and son came along.",
+          key_points: ["Ate sandwich and cheese during infusion", "Drank water"],
+        },
+      },
+    });
+
+    const patches = await applyMemoPatches(memoId);
+
+    // Two patches: appointment status flip + life_events create.
+    expect(patches.some((p) => p.table === "appointments" && p.op === "update")).toBe(true);
+    expect(patches.some((p) => p.table === "life_events" && p.op === "create")).toBe(true);
+
+    const after = await db.appointments.get(apptId);
+    expect(after?.status).toBe("attended");
+    expect(after?.notes).toContain("First chemo session");
+    expect(after?.notes).toContain("Ate sandwich");
+    expect(after?.source_memo_id).toBe(memoId);
+  });
+
+  it("creates a life_event without linking when no matching appointment exists", async () => {
+    const memoId = await makeMemo({
+      confidence: "high",
+      clinical: {
+        clinic_visit: {
+          kind: "chemo",
+          summary: "Unscheduled chemo at private clinic.",
+        },
+      },
+    });
+
+    const patches = await applyMemoPatches(memoId);
+
+    expect(patches.some((p) => p.table === "appointments")).toBe(false);
+    const lifePatch = patches.find((p) => p.table === "life_events");
+    expect(lifePatch?.op).toBe("create");
+    const event = await db.life_events.get(lifePatch!.row_id);
+    expect(event?.title).toContain("Chemo session");
+    expect(event?.category).toBe("medical");
+  });
+
+  it("scores the matching appointment higher when provider name overlaps", async () => {
+    await makeAppointment({
+      kind: "clinic",
+      title: "Generic clinic",
+      starts_at: "2026-04-29T09:00:00",
+    });
+    const sumiId = await makeAppointment({
+      kind: "clinic",
+      title: "A/Prof Sumitra Ananda — review",
+      doctor: "A/Prof Sumitra Ananda",
+      starts_at: "2026-04-29T10:00:00",
+    });
+    const memoId = await makeMemo({
+      confidence: "high",
+      clinical: {
+        clinic_visit: {
+          kind: "clinic",
+          provider: "Sumitra Ananda",
+          summary: "Reviewed scan results, holding gem next week.",
+        },
+      },
+    });
+
+    const patches = await applyMemoPatches(memoId);
+    const apptPatch = patches.find((p) => p.table === "appointments");
+    expect(apptPatch?.row_id).toBe(sumiId);
+  });
+});
+
 describe("applyMemoPatches — lab linking", () => {
   it("links a bloods appointment but skips /labs when value is qualitative", async () => {
     const apptId = await makeAppointment({

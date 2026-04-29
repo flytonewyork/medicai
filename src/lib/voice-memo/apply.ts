@@ -9,6 +9,7 @@ import type {
 import { localDayISO } from "~/lib/utils/date";
 import {
   extractNumericValue,
+  findAppointmentForClinicVisit,
   findAppointmentForImaging,
   findAppointmentForLab,
   findExistingLabRow,
@@ -95,8 +96,11 @@ export async function applyMemoPatches(
   }
 
   if (apply_visit && parsed.clinical?.clinic_visit) {
-    const visitPatch = await applyClinicVisit(memo, parsed.clinical.clinic_visit);
-    if (visitPatch) patches.push(visitPatch);
+    const visitPatches = await applyClinicVisit(
+      memo,
+      parsed.clinical.clinic_visit,
+    );
+    patches.push(...visitPatches);
   }
 
   if (apply_appts && parsed.clinical?.appointments_mentioned?.length) {
@@ -217,13 +221,39 @@ async function applyDailyFields(
 async function applyClinicVisit(
   memo: VoiceMemo,
   visit: NonNullable<NonNullable<VoiceMemoParsedFields["clinical"]>["clinic_visit"]>,
-): Promise<AppliedPatch | null> {
-  if (!visit.summary) return null;
+): Promise<AppliedPatch[]> {
+  if (!visit.summary) return [];
   const ts = now();
   const event_date = visit.visit_date ?? memo.day ?? localDayISO(memo.recorded_at);
+  const patches: AppliedPatch[] = [];
+
+  // Auto-link first: if there's a matching appointment in the
+  // window, flip its status to attended and append the memo's
+  // summary/key-points to its notes. Source of truth stays on the
+  // schedule; the life_events row below becomes the human-readable
+  // timeline anchor.
+  const matched = await findAppointmentForClinicVisit(
+    visit.kind,
+    visit.provider ?? undefined,
+    event_date,
+  );
+  if (matched?.id) {
+    const linkPatch = await linkAppointment(
+      memo,
+      matched,
+      formatVisitAttribution(visit),
+    );
+    if (linkPatch) patches.push(linkPatch);
+  }
+
   const titleParts: string[] = [];
-  if (visit.provider) titleParts.push(`Visit — ${visit.provider}`);
+  if (visit.kind === "chemo") titleParts.push("Chemo session");
+  else if (visit.kind === "scan") titleParts.push("Scan visit");
+  else if (visit.kind === "blood_test") titleParts.push("Bloods");
+  else if (visit.kind === "procedure") titleParts.push("Procedure");
+  else if (visit.kind === "ed") titleParts.push("ED visit");
   else titleParts.push("Clinic visit");
+  if (visit.provider) titleParts.push(`— ${visit.provider}`);
   const title = titleParts.join(" ");
 
   const notesLines: string[] = [visit.summary];
@@ -252,15 +282,30 @@ async function applyClinicVisit(
     category: "medical",
     summary: visit.summary,
   };
+  if (visit.kind) fields.kind = visit.kind;
   if (visit.provider) fields.provider = visit.provider;
   if (visit.location) fields.location = visit.location;
-  return {
+  patches.push({
     table: "life_events",
     row_id: id,
     fields,
     op: "create",
     applied_at: ts,
-  };
+  });
+
+  return patches;
+}
+
+function formatVisitAttribution(
+  visit: NonNullable<
+    NonNullable<VoiceMemoParsedFields["clinical"]>["clinic_visit"]
+  >,
+): string {
+  const lines: string[] = [`From voice memo: ${visit.summary}`];
+  if (visit.key_points?.length) {
+    for (const k of visit.key_points) lines.push(`• ${k}`);
+  }
+  return lines.join("\n");
 }
 
 async function applyAppointment(

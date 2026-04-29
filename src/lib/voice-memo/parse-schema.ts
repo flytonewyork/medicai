@@ -93,6 +93,20 @@ export const VoiceMemoParseSchema = z.object({
   //      nullable to keep the optional-parameter count at zero.
   clinic_visit: z
     .object({
+      kind: z
+        .enum([
+          "clinic",
+          "chemo",
+          "scan",
+          "blood_test",
+          "procedure",
+          "ed",
+          "other",
+        ])
+        .nullish()
+        .describe(
+          "Kind of clinical encounter the memo describes. Use 'chemo' for any infusion/chemotherapy session (化疗/输液), 'scan' for imaging visits, 'blood_test' for blood draws (抽血), 'procedure' for biopsies/operations (活检/手术), 'ed' for emergency-department visits, 'clinic' for consult appointments. Maps to existing appointment kinds so the apply step can flip a matching scheduled appointment to attended.",
+        ),
       visit_date: z
         .string()
         .nullish()
@@ -108,11 +122,11 @@ export const VoiceMemoParseSchema = z.object({
       key_points: z
         .array(z.string())
         .nullish()
-        .describe("Decisions made / instructions given / dosage changes. Null when none."),
+        .describe("Decisions made / instructions given / dosage changes / observations during the encounter (e.g. 'felt normal during the infusion', 'ate a sandwich, drank water'). Null when none."),
     })
     .nullish()
     .describe(
-      "Set only when the patient describes a clinical encounter that already happened. Null for symptom-only memos.",
+      "Set whenever the memo describes a clinical encounter that already happened — clinic consult, chemo / infusion session, scan, blood draw, procedure, or ED visit. Set even when the memo is narratively personal (e.g. 'wife came with me to chemo'); the encounter still warrants a clinic_visit. Null only when the memo is pure symptom logging or non-clinical.",
     ),
 
   // ---- Future appointments mentioned. Tolerant of missing key.
@@ -250,7 +264,7 @@ export const VoiceMemoParseSchema = z.object({
     .array(z.string())
     .nullish()
     .describe(
-      "0–2 short questions you'd ask if you were a thoughtful nurse / dietician / physio reviewing this memo. Ask only when something feels genuinely incomplete or worth probing (e.g. duration, severity, what triggered it). Phrase warmly, in the memo's language. Skip entirely when the memo is comprehensive.",
+      "0–2 short questions a thoughtful clinical-tracking nurse would ask. Each question MUST elicit an objective rating or count, never a yes/no. Anchor on the project's standard scales: 0–10 for energy / sleep_quality / appetite / pain / mood / nausea / fatigue / anorexia / abdominal_pain, CTCAE 0–4 for neuropathy, hours for sleep duration, kg for weight, count for diarrhoea episodes. Examples: 'On a 0–10 scale, how strong was the nausea during the infusion?' / '今天最痛的时候 0 到 10 是几分？' / 'How many hours did you sleep last night?'. NEVER ask 'did you feel X' or 'was it Y'. Skip entirely when the memo is already concrete. Phrase warmly, in the memo's language.",
     ),
 
   confidence: ConfidenceEnum.describe(
@@ -276,11 +290,11 @@ Output rules:
 2. Neuropathy is CTCAE 0–4. Be conservative: vague tingling is grade 1, only set ≥2 if the patient describes interference with hand or foot function. \`null\` otherwise.
 3. Booleans only flip true. Set \`null\` rather than \`false\` when the patient doesn't mention the symptom — silence is not denial.
 4. \`notes\` is reserved for short clinical addenda that didn't fit a structured field (a taste change, a side-effect attribution). Personal content (food, family, practice, goals, mood) belongs in the \`personal\` block — never in \`notes\`.
-5. \`clinic_visit\` only when the patient describes a clinical encounter that already happened. Do not invent providers; resolve nicknames only when context is clear ("Sumi" → "A/Prof Sumitra Ananda" when the memo is about oncology). \`null\` otherwise.
+5. \`clinic_visit\` covers ANY past clinical encounter — clinic consult, chemo / infusion session, scan, blood draw, procedure, ED visit. Set it whenever the memo says "had / went to / just got back from / 化疗 / 来做 / 看了医生 / 抽血 / 扫描 / 活检", even when the rest of the memo is narratively personal (e.g. who came with the patient, what they ate during the infusion). Set \`kind\` to map the encounter to the matching appointment kind. Do not invent providers; resolve nicknames only when context is clear ("Sumi" → "A/Prof Sumitra Ananda" when the memo is about oncology). \`null\` only for pure symptom-log or non-clinical memos.
 6. \`appointments_mentioned\` only for events that haven't happened yet. Set \`confidence: high\` only when both date and title are concrete; vague mentions ("scan sometime next week") are medium or low and won't auto-schedule downstream. Empty array when nothing concrete.
 7. \`imaging_results\` and \`lab_results\` are STRICTLY clinical — never put scan or blood-test mentions in \`personal\` or \`notes\`. "PET CT clear", "CT stable", "white cells normal", "CA 19-9 dropped" are imaging or lab entries with their own structured fields. Empty / null when none.
-8. \`personal\` is the diary half — populate when the patient mentions food, family, practice, goals, or mood. Inner string-array fields are empty arrays when nothing matches; \`mood_narrative\` and \`observations\` are \`null\` when nothing matches. Set the whole \`personal\` object to \`null\` only when the memo is purely clinical with no personal flavour at all. Scan / lab / medication mentions belong to their clinical fields, NOT here.
-9. \`follow_up_questions\`: act like a thoughtful nurse / dietician / physio reading dad's memo. If something feels incomplete or worth probing — duration, severity, what triggered it, what helped — ask 1 or 2 short, warm questions in the memo's language. Skip entirely when the memo is comprehensive. Never ask more than 2.
+8. \`personal\` is the diary half — populate when the patient mentions food, family, practice, goals, or mood. Inner string-array fields are empty arrays when nothing matches; \`mood_narrative\` and \`observations\` are \`null\` when nothing matches. Set the whole \`personal\` object to \`null\` only when the memo is purely clinical with no personal flavour at all. Scan / lab / medication mentions belong to their clinical fields, NOT here. Family / food / practice / goals during a clinical encounter still go here, AND the encounter itself goes in \`clinic_visit\` — both can be populated together.
+9. \`follow_up_questions\`: act like a clinical-tracking nurse who needs objective ratings to log. Each question MUST anchor on a numeric scale or concrete count — NEVER yes/no. Use 0–10 for energy / sleep / appetite / pain / mood / nausea / fatigue / abdominal pain, CTCAE 0–4 for neuropathy, hours for sleep duration, count for diarrhoea, kg for weight. Bad: "did you feel tired?" / "was the nausea bad?". Good: "On a 0–10 scale, how strong was the nausea during the infusion?" / "今天最累的时候 0 到 10 是几分？". Skip entirely when the memo is already concrete. Never ask more than 2.
 10. Set the top-level \`confidence\` honestly. low when transcripts are short, garbled, or only mention vague feelings. high only when the memo carries clear, unambiguous structured signal.
 11. Never invent specific numbers, weights, dates, or medications.`;
 }
