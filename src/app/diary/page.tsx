@@ -288,6 +288,16 @@ function RecorderCard({
           </div>
         </div>
       </div>
+      {!recording && !transcribing && (
+        <div className="mt-3 rounded-md border border-ink-100 bg-paper-2/40 px-3 py-2 text-[11.5px] leading-relaxed text-ink-500">
+          <span className="text-ink-700 font-medium">
+            {locale === "zh" ? "可以聊：" : "Try mentioning: "}
+          </span>
+          {locale === "zh"
+            ? "睡眠、精力、症状、饮食、活动、家人、化验或扫描结果。"
+            : "sleep, energy, symptoms, food, activity, family, scan or lab results."}
+        </div>
+      )}
       {transcribing && voice.liveText && (
         <div className="mt-3 rounded-md bg-paper-2/60 px-3 py-2 text-[13px] leading-relaxed text-ink-900">
           <span className="text-ink-500 text-[10.5px] uppercase tracking-wider">
@@ -513,8 +523,8 @@ function RecentMemoCard({
         className="inline-flex items-center gap-1 text-[12.5px] font-medium text-[var(--tide-2)] hover:underline"
       >
         {locale === "zh"
-          ? `识别可信度：${parsed.confidence === "medium" ? "中" : "低"} — 审核并登入`
-          : `Confidence: ${parsed.confidence} — review and log`}
+          ? `识别可信度：${parsed.confidence === "medium" ? "中" : "低"} — 审核并保存`
+          : `Confidence: ${parsed.confidence} — review and save`}
         <ChevronRight className="h-3.5 w-3.5" aria-hidden />
       </Link>
     );
@@ -527,6 +537,8 @@ function RecentMemoCard({
       </span>
     );
   }
+
+  const followUps = (parsed?.follow_up_questions ?? []).slice(0, 2);
 
   return (
     <Card className="p-4">
@@ -546,6 +558,28 @@ function RecentMemoCard({
           <X className="h-3.5 w-3.5" aria-hidden />
         </button>
       </div>
+      {followUps.length > 0 && (
+        <div className="mt-3 border-t border-ink-100 pt-3">
+          <div className="text-[10.5px] font-medium uppercase tracking-wider text-[var(--tide-2)]">
+            {locale === "zh" ? "AI 想问" : "From your AI nurse"}
+          </div>
+          <ul className="mt-1.5 space-y-1">
+            {followUps.map((q, i) => (
+              <li
+                key={i}
+                className="text-[12.5px] italic text-ink-700"
+              >
+                {q}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-[10.5px] text-ink-400">
+            {locale === "zh"
+              ? "想回答的话，再录一段就行。"
+              : "Want to answer? Just record again — Claude will read it."}
+          </p>
+        </div>
+      )}
     </Card>
   );
 }
@@ -575,8 +609,8 @@ function AppliedSummary({
       <div className="inline-flex items-center gap-1.5 text-[12px] font-medium text-emerald-700">
         <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
         {locale === "zh"
-          ? `已登入 ${patches.length} 项`
-          : `Logged ${patches.length} item${patches.length === 1 ? "" : "s"}`}
+          ? `已保存 ${patches.length} 项`
+          : `Saved ${patches.length} item${patches.length === 1 ? "" : "s"}`}
       </div>
       <ul className="space-y-1.5">
         {patches.map((p, i) => (

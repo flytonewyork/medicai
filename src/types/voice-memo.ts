@@ -96,6 +96,29 @@ export interface VoiceMemoParsedFields {
   // patient can see exactly which forms the AI updated for them.
   applied_patches?: AppliedPatch[];
 
+  // ----- Slice 4: imaging + lab results the patient mentioned -----
+  // Surfaced as preview chips. NOT auto-filed into /imaging or /labs
+  // — those tables have stricter schemas. Stays on the memo only.
+  imaging_results?: Array<{
+    modality: "pet" | "ct" | "mri" | "ultrasound" | "xray" | "bone_scan" | "other";
+    finding_summary: string;
+    status: "clear" | "stable" | "improvement" | "progression" | "unclear";
+    date?: string;
+  }>;
+  lab_results?: Array<{
+    name: string;
+    value?: string;
+    status: "normal" | "raised" | "low" | "abnormal" | "unstated";
+    date?: string;
+  }>;
+
+  // ----- Slice 4: dialogue-vibe follow-up questions -----
+  // 0–2 short questions Claude would ask if it were a thoughtful
+  // nurse / dietician / physio reading the memo. Surfaced under the
+  // preview; each one offers a "Record answer" affordance that opens
+  // the diary recorder.
+  follow_up_questions?: string[];
+
   // Confidence in the overall parse. Only `high` triggers daily_entries
   // safe-fill; any value still appears on the memo card so the patient
   // can verify and correct.
@@ -152,7 +175,9 @@ export interface AppliedPatch {
   table:
     | "daily_entries"
     | "life_events"
-    | "appointments";
+    | "appointments"
+    | "imaging"
+    | "labs";
   // The local id of the row written or updated.
   row_id: number;
   // Fields touched on that row, with the value the memo supplied. We

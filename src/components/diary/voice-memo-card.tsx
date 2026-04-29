@@ -196,8 +196,8 @@ function ReviewLink({
   } else if (applied.length > 0) {
     label =
       locale === "zh"
-        ? `已登入 ${applied.length} 项 · 查看`
-        : `Logged ${applied.length} item${applied.length === 1 ? "" : "s"} · view`;
+        ? `已保存 ${applied.length} 项 · 查看`
+        : `Saved ${applied.length} item${applied.length === 1 ? "" : "s"} · view`;
     icon = CheckCircle2;
     className = "text-emerald-700";
   } else {

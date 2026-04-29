@@ -192,6 +192,67 @@ export const VoiceMemoParseSchema = z.object({
       "Non-clinical content. Set when the patient mentions food, family, practice, goals, or mood. Null otherwise.",
     ),
 
+  // ---- Imaging results the patient mentions (PET, CT, MRI, ultrasound,
+  //      bone scan). Strictly clinical — NEVER goes into the personal
+  //      block. Surfaced in the preview as info chips; not auto-filed
+  //      into /imaging because those rows have stricter schemas that
+  //      need explicit confirmation.
+  imaging_results: z
+    .array(
+      z.object({
+        modality: z
+          .enum(["pet", "ct", "mri", "ultrasound", "xray", "bone_scan", "other"])
+          .describe("Scan type. Use 'other' rather than guessing when ambiguous."),
+        finding_summary: z
+          .string()
+          .describe("One short phrase: 'all clear', 'liver lesion stable', 'new node in mediastinum'."),
+        status: z
+          .enum(["clear", "stable", "improvement", "progression", "unclear"])
+          .describe("Patient's interpretation of the result."),
+        date: z
+          .string()
+          .nullish()
+          .describe("ISO date when stated; null otherwise."),
+      }),
+    )
+    .nullish()
+    .describe(
+      "Imaging the patient is reporting on. Empty / null when none. Always clinical, never personal.",
+    ),
+
+  // ---- Lab / blood results the patient mentions (white cells, CA 19-9,
+  //      CEA, LFTs, etc.). Strictly clinical, surfaced as preview chips.
+  lab_results: z
+    .array(
+      z.object({
+        name: z
+          .string()
+          .describe("Lab name as the patient said it: 'white cells', 'CA 19-9', 'liver enzymes'."),
+        value: z
+          .string()
+          .nullish()
+          .describe("Numeric value or descriptor as stated; null when not given."),
+        status: z
+          .enum(["normal", "raised", "low", "abnormal", "unstated"])
+          .describe("Patient's interpretation of the result."),
+        date: z.string().nullish(),
+      }),
+    )
+    .nullish()
+    .describe(
+      "Lab / blood-test mentions. Empty / null when none. Always clinical, never personal.",
+    ),
+
+  // ---- Follow-up questions to surface back to the patient. Lets the
+  //      app feel like a thoughtful nurse / dietician / physio gently
+  //      asking what's missing. Max 2 — we don't interrogate.
+  follow_up_questions: z
+    .array(z.string())
+    .nullish()
+    .describe(
+      "0–2 short questions you'd ask if you were a thoughtful nurse / dietician / physio reviewing this memo. Ask only when something feels genuinely incomplete or worth probing (e.g. duration, severity, what triggered it). Phrase warmly, in the memo's language. Skip entirely when the memo is comprehensive.",
+    ),
+
   confidence: ConfidenceEnum.describe(
     "Overall extraction confidence. high: explicit numerics or unambiguous descriptions. medium: clear qualitative anchors. low: only vague mentions, transcript noise, or speech-recognition garbage.",
   ),
@@ -217,7 +278,9 @@ Output rules:
 4. \`notes\` is reserved for short clinical addenda that didn't fit a structured field (a taste change, a side-effect attribution). Personal content (food, family, practice, goals, mood) belongs in the \`personal\` block — never in \`notes\`.
 5. \`clinic_visit\` only when the patient describes a clinical encounter that already happened. Do not invent providers; resolve nicknames only when context is clear ("Sumi" → "A/Prof Sumitra Ananda" when the memo is about oncology). \`null\` otherwise.
 6. \`appointments_mentioned\` only for events that haven't happened yet. Set \`confidence: high\` only when both date and title are concrete; vague mentions ("scan sometime next week") are medium or low and won't auto-schedule downstream. Empty array when nothing concrete.
-7. \`personal\` is the diary half — populate when the patient mentions food, family, practice, goals, or mood. Inner string-array fields are empty arrays when nothing matches; \`mood_narrative\` and \`observations\` are \`null\` when nothing matches. Set the whole \`personal\` object to \`null\` only when the memo is purely clinical with no personal flavour at all.
-8. Set the top-level \`confidence\` honestly. low when transcripts are short, garbled, or only mention vague feelings. high only when the memo carries clear, unambiguous structured signal.
-9. Never invent specific numbers, weights, dates, or medications.`;
+7. \`imaging_results\` and \`lab_results\` are STRICTLY clinical — never put scan or blood-test mentions in \`personal\` or \`notes\`. "PET CT clear", "CT stable", "white cells normal", "CA 19-9 dropped" are imaging or lab entries with their own structured fields. Empty / null when none.
+8. \`personal\` is the diary half — populate when the patient mentions food, family, practice, goals, or mood. Inner string-array fields are empty arrays when nothing matches; \`mood_narrative\` and \`observations\` are \`null\` when nothing matches. Set the whole \`personal\` object to \`null\` only when the memo is purely clinical with no personal flavour at all. Scan / lab / medication mentions belong to their clinical fields, NOT here.
+9. \`follow_up_questions\`: act like a thoughtful nurse / dietician / physio reading dad's memo. If something feels incomplete or worth probing — duration, severity, what triggered it, what helped — ask 1 or 2 short, warm questions in the memo's language. Skip entirely when the memo is comprehensive. Never ask more than 2.
+10. Set the top-level \`confidence\` honestly. low when transcripts are short, garbled, or only mention vague feelings. high only when the memo carries clear, unambiguous structured signal.
+11. Never invent specific numbers, weights, dates, or medications.`;
 }
