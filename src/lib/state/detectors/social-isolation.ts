@@ -24,6 +24,7 @@ import type {
   SignalEvidence,
   SuggestedAction,
 } from "./types";
+import { isoWeekKey, shiftIsoDays as shiftDays } from "~/lib/utils/date";
 
 const DETECTOR_ID = "social_isolation";
 const METRIC_ID = "meaningful_interactions";
@@ -178,31 +179,6 @@ function actionsForCause(causeId: string): SuggestedAction[] {
         },
       ];
   }
-}
-
-function isoWeekKey(iso: string): string {
-  const d = new Date(iso);
-  const target = new Date(d.valueOf());
-  const dayNr = (d.getUTCDay() + 6) % 7;
-  target.setUTCDate(target.getUTCDate() - dayNr + 3);
-  const firstThursday = new Date(
-    Date.UTC(target.getUTCFullYear(), 0, 4),
-  );
-  const weekNr =
-    1 +
-    Math.round(
-      ((target.valueOf() - firstThursday.valueOf()) / 86_400_000 -
-        3 +
-        ((firstThursday.getUTCDay() + 6) % 7)) /
-        7,
-    );
-  return `${target.getUTCFullYear()}-W${String(weekNr).padStart(2, "0")}`;
-}
-
-function shiftDays(iso: string, days: number): string {
-  const d = new Date(iso);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString();
 }
 
 export const socialIsolationDetector: Detector = {

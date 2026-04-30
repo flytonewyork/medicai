@@ -1,5 +1,5 @@
 import { db } from "~/lib/db/dexie";
-import { todayISO } from "~/lib/utils/date";
+import { shiftDateISO, todayISO } from "~/lib/utils/date";
 import type { DailyEntry } from "~/types/clinical";
 
 // Symptom-aware context for the food picker and JPCC playbooks.
@@ -45,7 +45,7 @@ export async function loadSymptomContext(
   date = todayISO(),
 ): Promise<NutritionSymptomContext> {
   const today = await loadDayEntry(date);
-  const fallback = today ? null : await loadDayEntry(daysAgo(date, 1));
+  const fallback = today ? null : await loadDayEntry(shiftDateISO(date, -1));
   const entry = today ?? fallback;
   if (!entry) {
     return { flags: [], recommendEasyDigest: false };
@@ -86,14 +86,6 @@ async function loadDayEntry(date: string): Promise<DailyEntry | undefined> {
   return db.daily_entries.where("date").equals(date).first();
 }
 
-function daysAgo(iso: string, n: number): string {
-  const d = new Date(iso);
-  d.setDate(d.getDate() - n);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
 
 export const SYMPTOM_LABEL: Record<
   SymptomFlag,

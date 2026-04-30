@@ -14,6 +14,7 @@ import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Field, TextInput, Textarea } from "~/components/ui/field";
 import { PrepEditor } from "~/components/schedule/prep-editor";
+import { toDatetimeLocalInput as toLocalInput } from "~/lib/utils/date";
 import { AttendeeChips } from "~/components/schedule/attendee-chips";
 
 const KINDS: AppointmentKind[] = [
@@ -351,10 +352,3 @@ export function AppointmentForm({
   );
 }
 
-function toLocalInput(iso: string | undefined): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}

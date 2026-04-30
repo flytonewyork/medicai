@@ -19,6 +19,7 @@ import { Card } from "~/components/ui/card";
 import { PageHeader } from "~/components/ui/page-header";
 import { EmptyState } from "~/components/ui/empty-state";
 import type { VoiceMemo } from "~/types/voice-memo";
+import { formatDurationMs } from "~/lib/utils/date";
 
 // Reverse-chronological list of every voice memo. Each row shows
 // timestamp, duration, a transcript snippet, the source (diary / log
@@ -89,7 +90,7 @@ export default function MemosPage() {
 function MemoRow({ memo, locale }: { memo: VoiceMemo; locale: "en" | "zh" }) {
   const state = parseState(memo);
   const time = formatWhen(memo.recorded_at, locale);
-  const duration = formatDuration(memo.duration_ms);
+  const duration = formatDurationMs(memo.duration_ms);
   const snippet = describe(memo, locale);
   const cloudSynced = Boolean(memo.audio_path);
 
@@ -232,13 +233,6 @@ function formatWhen(iso: string, locale: "en" | "zh"): string {
     return format(d, "HH:mm");
   }
   return format(d, locale === "zh" ? "M月d日 HH:mm" : "d MMM, HH:mm");
-}
-
-function formatDuration(ms: number): string {
-  const total = Math.max(0, Math.round(ms / 1000));
-  const mins = Math.floor(total / 60);
-  const secs = total % 60;
-  return `${mins}:${String(secs).padStart(2, "0")}`;
 }
 
 function sourceLabel(

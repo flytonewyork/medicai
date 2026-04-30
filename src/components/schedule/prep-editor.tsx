@@ -12,6 +12,7 @@ import type {
 import { Field, TextInput } from "~/components/ui/field";
 import { Button } from "~/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
+import { toDatetimeLocalInput as toLocalInput } from "~/lib/utils/date";
 
 // Reusable prep-item editor — used in the appointment form (on
 // create / edit) and surfaced on the detail page when the patient
@@ -192,10 +193,3 @@ export function PrepEditor({
   );
 }
 
-function toLocalInput(iso: string | undefined): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}

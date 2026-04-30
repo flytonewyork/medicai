@@ -42,6 +42,7 @@ import type {
   VoiceMemoParsedFields,
 } from "~/types/voice-memo";
 import { cn } from "~/lib/utils/cn";
+import { formatDurationMs } from "~/lib/utils/date";
 
 // Memo detail. Shows the full transcript, audio playback, and Claude's
 // structured parse as a PREVIEW FORM the patient confirms before any
@@ -298,7 +299,7 @@ function PlaybackCard({
     }
   }
 
-  const duration = formatDuration(memo.duration_ms);
+  const duration = formatDurationMs(memo.duration_ms);
 
   return (
     <Card className="p-4">
@@ -1360,9 +1361,3 @@ function hrefForPatch(patch: AppliedPatch): string {
   }
 }
 
-function formatDuration(ms: number): string {
-  const total = Math.max(0, Math.round(ms / 1000));
-  const mins = Math.floor(total / 60);
-  const secs = total % 60;
-  return `${mins}:${String(secs).padStart(2, "0")}`;
-}

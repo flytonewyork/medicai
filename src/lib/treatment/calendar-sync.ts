@@ -15,6 +15,7 @@
 
 import { db, now } from "~/lib/db/dexie";
 import { PROTOCOL_BY_ID } from "~/config/protocols";
+import { formatLocalDateISO, formatHHMM } from "~/lib/utils/date";
 import type { Appointment } from "~/types/appointment";
 import type { Protocol, TreatmentCycle } from "~/types/treatment";
 import type { LocalizedText } from "~/types/treatment";
@@ -89,10 +90,7 @@ export function deriveCycleAppointments(
       const end = new Date(start.getTime() + defaultDurationMinutes * 60_000);
       // Match the offset-free "YYYY-MM-DDTHH:MM:SS" shape of starts_at
       // so the two align visually in the schedule form.
-      const pad = (n: number) => String(n).padStart(2, "0");
-      return `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(
-        end.getDate(),
-      )}T${pad(end.getHours())}:${pad(end.getMinutes())}:00`;
+      return `${formatLocalDateISO(end)}T${formatHHMM(end)}:00`;
     })();
     const record = cycle.day_records?.find((r) => r.day === day);
     out.push({
