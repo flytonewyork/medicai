@@ -15,7 +15,6 @@ import { useLocale } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
 import { useVoiceTranscription } from "~/hooks/use-voice-transcription";
 import { Card } from "~/components/ui/card";
-import { Alert } from "~/components/ui/alert";
 import { cn } from "~/lib/utils/cn";
 
 // Dashboard surface for the AI nurse's follow-up questions. Reads
@@ -100,14 +99,9 @@ export function MemoFollowUpsCard() {
         </Link>
       </div>
 
+      {voice && (
       <div className="mt-3 border-t border-ink-100 pt-3">
-        {!voice ? (
-          <Alert variant="info" role="status" className="text-[12px]">
-            {locale === "zh"
-              ? "此浏览器不支持录音，去 /diary 用其他设备答复。"
-              : "This browser can't record audio. Open /diary on another device to answer."}
-          </Alert>
-        ) : !showRecorder && !recording && !transcribing ? (
+        {!showRecorder && !recording && !transcribing ? (
           <button
             type="button"
             onClick={() => {
@@ -168,12 +162,13 @@ export function MemoFollowUpsCard() {
             </div>
           </div>
         )}
-        {voice?.error && (
+        {voice.error && (
           <p className="mt-2 text-[11.5px] text-[var(--warn)]">
             {voice.error}
           </p>
         )}
       </div>
+      )}
     </Card>
   );
 }

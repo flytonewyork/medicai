@@ -35,6 +35,10 @@ export function NextClinicCard() {
   }, [appointments]);
 
   if (!next) return null;
+  // Without a row id we can't deep-link into the appointment detail —
+  // falling back to the /schedule list is a backtracking dead-end where
+  // the patient lands on a list and has to find the row again.
+  if (!next.id) return null;
   // ScheduleCard already shows today + tomorrow appointments. Suppress this
   // dedicated card when the next clinic is already in that window so the
   // dashboard doesn't surface the same appointment twice.
@@ -118,7 +122,7 @@ export function NextClinicCard() {
           </div>
         </div>
         <Link
-          href={next.id ? `/schedule/${next.id}` : "/schedule"}
+          href={`/schedule/${next.id}`}
           className="inline-flex shrink-0 items-center gap-1 rounded-md border border-ink-200 px-2 py-1 text-[11px] text-ink-700 hover:border-[var(--tide-2)] hover:text-[var(--tide-2)]"
         >
           {locale === "zh" ? "打开" : "Open"}
