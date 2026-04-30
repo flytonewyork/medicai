@@ -15,8 +15,6 @@ import type { AgentId } from "~/types/agent";
 import { cn } from "~/lib/utils/cn";
 import {
   Sparkles,
-  ChevronDown,
-  ChevronUp,
   Sun,
   Cloud,
   ShieldAlert,
@@ -98,11 +96,8 @@ export function TodayFeed({
   );
   const model = useDefaultAiModel();
 
-  const [expanded, setExpanded] = useState(false);
   const [narrative, setNarrative] = useState<string | null>(null);
   const [narrativeLoading, setNarrativeLoading] = useState(false);
-
-  const visible = expanded ? feed : feed.slice(0, 6);
 
   // Signature of feed contents — stable unless the feed actually changes.
   // Prevents the narrative fetch from re-firing on every parent re-render.
@@ -223,31 +218,10 @@ export function TodayFeed({
       )}
 
       <ul className="space-y-2">
-        {visible.map((item) => (
+        {feed.map((item) => (
           <FeedRow key={item.id} item={item} />
         ))}
       </ul>
-
-      {feed.length > 6 && (
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className="eyebrow mx-auto flex items-center gap-1.5 text-ink-500 hover:text-ink-900"
-        >
-          {expanded
-            ? locale === "zh"
-              ? "收起"
-              : "Show less"
-            : locale === "zh"
-              ? `再看 ${feed.length - 6} 条`
-              : `Show ${feed.length - 6} more`}
-          {expanded ? (
-            <ChevronUp className="h-3 w-3" />
-          ) : (
-            <ChevronDown className="h-3 w-3" />
-          )}
-        </button>
-      )}
     </div>
   );
 }
