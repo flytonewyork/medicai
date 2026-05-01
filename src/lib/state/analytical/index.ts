@@ -35,6 +35,11 @@ export {
   type AcuteContext,
 } from "./red-flag";
 
+export {
+  cusumPosterior,
+  type CusumOptions,
+} from "./changepoint";
+
 export type {
   AcuteFlag,
   AcuteKind,
