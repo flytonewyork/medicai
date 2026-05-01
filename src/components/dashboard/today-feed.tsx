@@ -31,7 +31,11 @@ import {
   Check,
   Circle,
   CheckCircle2,
+  Salad,
+  X,
 } from "lucide-react";
+import { snoozeCoverageField } from "~/lib/coverage/snooze";
+import { todayISO as todayIsoFn } from "~/lib/utils/date";
 
 // Bumped when the narrative prompt or shape changes so that stale
 // payloads in localStorage are ignored without forcing a manual clear.
@@ -52,6 +56,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   clock: Clock,
   user: User,
   pulse: Sparkles,
+  salad: Salad,
   dot: Circle,
 };
 
@@ -257,6 +262,10 @@ function FeedRow({ item }: { item: FeedItem }) {
   const tone = TONE_STYLES[item.tone];
   const Icon = ICONS[item.icon ?? "dot"] ?? Circle;
   const isAgentRun = item.meta?.kind === "agent_run";
+  const isCoverage = item.meta?.kind === "coverage";
+  const coverageMeta = isCoverage
+    ? (item.meta as { kind: "coverage"; field_key: string })
+    : null;
   const body = (
     <div
       className={cn(
@@ -277,18 +286,39 @@ function FeedRow({ item }: { item: FeedItem }) {
           <div className="text-[13.5px] font-semibold text-ink-900">
             {localize(item.title, locale)}
           </div>
-          <span
-            className={cn(
-              "mono shrink-0 text-[9.5px] uppercase tracking-[0.12em]",
-              item.tone === "warning"
-                ? "text-[var(--warn)]"
-                : item.tone === "positive"
-                  ? "text-[var(--ok)]"
-                  : "text-ink-400",
+          <div className="flex items-center gap-1.5">
+            <span
+              className={cn(
+                "mono shrink-0 text-[9.5px] uppercase tracking-[0.12em]",
+                item.tone === "warning"
+                  ? "text-[var(--warn)]"
+                  : item.tone === "positive"
+                    ? "text-[var(--ok)]"
+                    : "text-ink-400",
+              )}
+            >
+              {categoryLabel(item.category, locale)}
+            </span>
+            {coverageMeta && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  void snoozeCoverageField(
+                    coverageMeta.field_key,
+                    todayIsoFn(),
+                  );
+                }}
+                className="rounded-md p-0.5 text-ink-400 hover:bg-paper hover:text-ink-700"
+                aria-label={
+                  locale === "zh" ? "暂时收起" : "Dismiss"
+                }
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
             )}
-          >
-            {categoryLabel(item.category, locale)}
-          </span>
+          </div>
         </div>
         <p className="mt-1 text-[12.5px] leading-relaxed text-ink-700">
           {localize(item.body, locale)}
@@ -303,7 +333,9 @@ function FeedRow({ item }: { item: FeedItem }) {
     </div>
   );
   // Agent-run cards never wrap in a Link — the embedded feedback controls
-  // need their own click surface.
+  // need their own click surface. Coverage cards do wrap in a Link but
+  // the dismiss button stops propagation to keep the X click out of the
+  // navigation event.
   if (item.cta && !isAgentRun) {
     return (
       <Link href={item.cta.href} className="block">
@@ -328,6 +360,7 @@ function categoryLabel(
     trend: { en: "Trend", zh: "趋势" },
     encouragement: { en: "Going well", zh: "进展良好" },
     nutrition: { en: "Nutrition", zh: "营养" },
+    coverage: { en: "Log", zh: "记录" },
     memory: { en: "Memory", zh: "回忆" },
     invitation: { en: "Gathering", zh: "聚会" },
   };

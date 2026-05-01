@@ -9,6 +9,7 @@ import type { CycleContext, NudgeTemplate } from "~/types/treatment";
 import type { CurrentWeather } from "~/lib/weather/open-meteo";
 import type { FeedItem } from "~/types/feed";
 import type { AgentFollowUpRow, AgentRunRow } from "~/types/agent";
+import type { CoverageSnoozeRow } from "~/types/coverage";
 import { computeTrendNudges } from "./trend-nudges";
 import { computeWeatherNudges } from "./weather-nudges";
 import { computeNutritionNudges } from "./nutrition-nudges";
@@ -18,6 +19,8 @@ import { agentRunsToFeedItems } from "./agent-runs";
 import { resurfaceFollowUps } from "./follow-up-resurface";
 import { computeCadencePrompts } from "./cadence-prompts";
 import { computeGiTileNudges } from "./gi-tile-nudges";
+import { computeCoverageGaps } from "~/lib/coverage/log-coverage";
+import { coverageGapsToFeedItems } from "./coverage-cards";
 import { getActiveTaskInstances } from "~/lib/tasks/engine";
 
 export interface ComposeInputs {
@@ -34,6 +37,9 @@ export interface ComposeInputs {
   // filters by `due_at <= today` and ranks them. Pass an empty array
   // if the caller has no follow-up state yet.
   followUps?: AgentFollowUpRow[];
+  // Active coverage-prompt snoozes. Pass all rows from the
+  // coverage_snoozes table; the engine filters expired ones.
+  coverageSnoozes?: CoverageSnoozeRow[];
 }
 
 export function composeTodayFeed(inputs: ComposeInputs): FeedItem[] {
@@ -144,6 +150,22 @@ export function composeTodayFeed(inputs: ComposeInputs): FeedItem[] {
       activeAlerts: inputs.activeAlerts,
     }),
   );
+
+  // ── 9. Coverage prompts (calm gap detector) ────────────────────────
+  // Reaches out only as far as the patient's recent engagement allows
+  // — full quota when active today, smaller when light, one when
+  // quiet, none at all during a rough patch. Cards are dismissible
+  // (snooze stored in coverage_snoozes); the engine respects active
+  // snoozes here.
+  const coverage = computeCoverageGaps({
+    todayISO: inputs.todayISO,
+    recentDailies: inputs.recentDailies,
+    settings: inputs.settings,
+    cycleContext: inputs.cycleContext,
+    activeAlerts: inputs.activeAlerts,
+    snoozes: inputs.coverageSnoozes ?? [],
+  });
+  feed.push(...coverageGapsToFeedItems(coverage.gaps));
 
   // ── Dedupe + sort + cap ────────────────────────────────────────────
   const seen = new Set<string>();
