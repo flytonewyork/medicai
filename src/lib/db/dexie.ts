@@ -33,6 +33,7 @@ import type {
 } from "~/types/medication";
 import type {
   AgentFeedbackRow,
+  AgentFollowUpRow,
   AgentRunRow,
   AgentStateRow,
   LogEventRow,
@@ -88,6 +89,10 @@ export class AnchorDB extends Dexie {
   log_events!: Table<LogEventRow, number>;
   agent_runs!: Table<AgentRunRow, number>;
   agent_feedback!: Table<AgentFeedbackRow, number>;
+  // v23: multi-day follow-up loop. Each row is one question an agent
+  // promised to revisit; the feed composer re-surfaces it when `due_at`
+  // matures.
+  agent_followups!: Table<AgentFollowUpRow, number>;
   appointments!: Table<Appointment, number>;
   appointment_links!: Table<AppointmentLink, number>;
   care_team!: Table<CareTeamMember, number>;
@@ -368,6 +373,19 @@ export class AnchorDB extends Dexie {
       voice_memos:
         "++id, recorded_at, day, log_event_id, audio_media_id, " +
         "source_screen, entered_by",
+    });
+    // v23: agent multi-day follow-up loop. One row per outstanding
+    // question an agent promised to revisit. The feed composer reads
+    // unresolved rows whose `due_at <= today`. Compound
+    // [agent_id+question_key] supports the supersede path: when an
+    // agent re-emits a follow-up with the same key, we resolve the
+    // older row and add a fresh one. `due_at` is indexed because the
+    // composer's hot query is "show me all matured, unresolved
+    // follow-ups across all agents".
+    this.version(23).stores({
+      agent_followups:
+        "++id, agent_id, question_key, due_at, asked_at, resolved_at, " +
+        "[agent_id+question_key]",
     });
   }
 }

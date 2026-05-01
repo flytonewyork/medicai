@@ -36,6 +36,16 @@ const followUpQuestionSchema = z.object({
   kind: z.enum(["numeric", "yesno", "text", "scale_0_10"]),
 });
 
+// Multi-day follow-up. Mirrors AgentFollowUp in src/types/agent.ts.
+// Persisted into agent_followups; re-surfaces in the feed when due.
+const followUpSchema = z.object({
+  question_key: z.string(),
+  ask_in_days: z.number().int().min(0).max(30),
+  prompt: localizedString,
+  reason: localizedString.optional(),
+  priority: z.number().optional(),
+});
+
 const feedItemSchema = z.object({
   id: z.string(),
   priority: z.number(),
@@ -68,6 +78,7 @@ export const AgentOutputSchema = z.object({
   filings: z.array(dexiePatchSchema),
   questions: z.array(followUpQuestionSchema),
   nudges: z.array(feedItemSchema),
+  follow_ups: z.array(followUpSchema).optional(),
   state_diff: z.string(),
 });
 

@@ -8,13 +8,15 @@ import type { PatientTask, TaskInstance } from "~/types/task";
 import type { CycleContext, NudgeTemplate } from "~/types/treatment";
 import type { CurrentWeather } from "~/lib/weather/open-meteo";
 import type { FeedItem } from "~/types/feed";
-import type { AgentRunRow } from "~/types/agent";
+import type { AgentFollowUpRow, AgentRunRow } from "~/types/agent";
 import { computeTrendNudges } from "./trend-nudges";
 import { computeWeatherNudges } from "./weather-nudges";
 import { computeNutritionNudges } from "./nutrition-nudges";
 import { computeFoodSafetyNudges } from "./food-safety-nudges";
 import { computeChemoBodyFluidNudges } from "./chemo-body-fluid-nudges";
 import { agentRunsToFeedItems } from "./agent-runs";
+import { resurfaceFollowUps } from "./follow-up-resurface";
+import { computeCadencePrompts } from "./cadence-prompts";
 import { getActiveTaskInstances } from "~/lib/tasks/engine";
 
 export interface ComposeInputs {
@@ -27,6 +29,10 @@ export interface ComposeInputs {
   cycleContext: CycleContext | null;
   weather: CurrentWeather | null;
   agentRuns?: AgentRunRow[];
+  // Outstanding multi-day follow-ups across all agents. The composer
+  // filters by `due_at <= today` and ranks them. Pass an empty array
+  // if the caller has no follow-up state yet.
+  followUps?: AgentFollowUpRow[];
 }
 
 export function composeTodayFeed(inputs: ComposeInputs): FeedItem[] {
@@ -101,6 +107,34 @@ export function composeTodayFeed(inputs: ComposeInputs): FeedItem[] {
   if (inputs.agentRuns && inputs.agentRuns.length > 0) {
     feed.push(...agentRunsToFeedItems(inputs.agentRuns));
   }
+
+  // ── 7. Multi-day follow-ups (resurfaced when due) ──────────────────
+  if (inputs.followUps && inputs.followUps.length > 0) {
+    const redActive = inputs.activeAlerts.some(
+      (a) => !a.resolved && a.zone === "red",
+    );
+    feed.push(
+      ...resurfaceFollowUps({
+        todayISO: inputs.todayISO,
+        followUps: inputs.followUps,
+        redZoneActive: redActive,
+      }),
+    );
+  }
+
+  // ── 8. Per-discipline cadence prompts (AI Nurse / Dietician / …) ───
+  // The single channel out gets at most a couple of these per day; the
+  // cadence module suppresses entirely if any red zone alert is active.
+  const todayDaily =
+    inputs.recentDailies.find((d) => d.date === inputs.todayISO) ?? null;
+  feed.push(
+    ...computeCadencePrompts({
+      todayISO: inputs.todayISO,
+      cycleContext: inputs.cycleContext,
+      todayDaily,
+      activeAlerts: inputs.activeAlerts,
+    }),
+  );
 
   // ── Dedupe + sort + cap ────────────────────────────────────────────
   const seen = new Set<string>();

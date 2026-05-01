@@ -27,10 +27,62 @@ function gripDeclinePct(s: ClinicalSnapshot): number | null {
 const latestAlbumin = (s: ClinicalSnapshot): number | undefined =>
   s.recentLabs[s.recentLabs.length - 1]?.albumin;
 
+// Count how many of the last `windowDays` daily entries (most recent
+// first) reported loose stools — Bristol ≥ 6 OR raw count above the
+// yellow threshold OR explicit steatorrhoea/oil flag. Used by the
+// "persistent loose stools" rule below; PERT under-titration usually
+// shows up as 3+ days running rather than a single bad day.
+function loosStoolDayStreak(s: ClinicalSnapshot, windowDays: number): number {
+  const recent = [...s.recentDailies]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, windowDays);
+  let streak = 0;
+  for (const d of recent) {
+    const looseByBristol =
+      typeof d.stool_bristol === "number" &&
+      d.stool_bristol >= GI.loose_stool_bristol_min;
+    const looseByCount =
+      typeof d.stool_count === "number" &&
+      d.stool_count >= GI.stool_count_yellow;
+    const looseByDiarrhoeaCount =
+      typeof d.diarrhoea_count === "number" &&
+      d.diarrhoea_count >= GI.stool_count_yellow;
+    const looseByOil = d.stool_oil === true || d.steatorrhoea === true;
+    if (looseByBristol || looseByCount || looseByDiarrhoeaCount || looseByOil) {
+      streak += 1;
+    } else if (streak > 0) {
+      // Break the streak on the first non-loose day; we want consecutive
+      // recent days, not "any 3 of the last 5".
+      break;
+    }
+  }
+  return streak;
+}
+
+function constipationDayStreak(
+  s: ClinicalSnapshot,
+  windowDays: number,
+): number {
+  const recent = [...s.recentDailies]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, windowDays);
+  let streak = 0;
+  for (const d of recent) {
+    const constipated =
+      (typeof d.stool_bristol === "number" &&
+        d.stool_bristol <= GI.constipation_bristol_max) ||
+      (typeof d.stool_count === "number" && d.stool_count === 0);
+    if (constipated) streak += 1;
+    else if (streak > 0) break;
+  }
+  return streak;
+}
+
 const FN = thresholds.function;
 const PSY = thresholds.psychological;
 const NUT = thresholds.nutrition;
 const DIS = thresholds.disease;
+const GI = thresholds.gi;
 
 const MS_PER_DAY = 24 * 3600 * 1000;
 
@@ -291,6 +343,108 @@ export const ZONE_RULES: ZoneRule[] = [
     recommendationZh:
       "下肢力量低。每周 2–3 次抗阻训练，转介肿瘤运动生理学家。",
     suggestedLevers: ["physical.resistance", "physical.exercise_phys"],
+  },
+  {
+    id: "stool_blood_red",
+    name: "Visible blood or black stool",
+    zone: "red",
+    category: "disease",
+    triggersReview: true,
+    evaluator: ({ latestDaily }) =>
+      latestDaily?.stool_blood === true ||
+      latestDaily?.stool_color === "black" ||
+      latestDaily?.stool_color === "red",
+    recommendation:
+      "GI bleed concern — call the oncology line today. Black or red stools require same-day clinical review even if you feel well.",
+    recommendationZh:
+      "疑似消化道出血 —— 请于今日联系肿瘤科。黑便或鲜血便即使感觉良好也需当日就诊。",
+    suggestedLevers: ["emergency.hospital", "intensity.hold"],
+  },
+  {
+    id: "loose_stools_persistent_yellow",
+    name: "Loose stools 3+ days running",
+    zone: "yellow",
+    category: "toxicity",
+    triggersReview: true,
+    evaluator: (s) =>
+      loosStoolDayStreak(s, GI.loose_stool_persistent_orange_days) >=
+        GI.loose_stool_persistent_yellow_days &&
+      loosStoolDayStreak(s, GI.loose_stool_persistent_orange_days) <
+        GI.loose_stool_persistent_orange_days,
+    recommendation:
+      "Persistent loose stools — review PERT (Creon) timing with fatty meals; ensure hydration and electrolytes; raise at next clinic.",
+    recommendationZh:
+      "持续稀便 —— 复核胰酶替代治疗（Creon）与高脂餐的服用时机；确保补液与电解质；下次就诊时提出。",
+    suggestedLevers: ["supportive.pert", "nutrition.dietitian"],
+  },
+  {
+    id: "loose_stools_persistent_orange",
+    name: "Loose stools 5+ days running",
+    zone: "orange",
+    category: "toxicity",
+    triggersReview: true,
+    evaluator: (s) =>
+      loosStoolDayStreak(s, GI.loose_stool_persistent_orange_days * 2) >=
+      GI.loose_stool_persistent_orange_days,
+    recommendation:
+      "Diarrhoea now sustained — call the oncology line for advice on loperamide and fluids. Risk of dehydration, electrolyte loss, and PERT-titration failure.",
+    recommendationZh:
+      "腹泻持续较久 —— 请联系肿瘤科咨询洛哌丁胺与补液方案。需警惕脱水、电解质紊乱及胰酶替代未达标。",
+    suggestedLevers: ["emergency.hospital", "supportive.pert"],
+  },
+  {
+    id: "stool_count_orange",
+    name: "≥7 bowel motions in a day",
+    zone: "orange",
+    category: "toxicity",
+    triggersReview: true,
+    evaluator: ({ latestDaily }) => {
+      const a = latestDaily?.stool_count ?? 0;
+      const b = latestDaily?.diarrhoea_count ?? 0;
+      return Math.max(a, b) >= GI.stool_count_orange;
+    },
+    recommendation:
+      "High-volume diarrhoea (CTCAE grade 2+ territory) — call the oncology line today; assume risk of dehydration and reduced PERT/oral-medication absorption.",
+    recommendationZh:
+      "大量腹泻（CTCAE ≥ 2 级）—— 请于今日联系肿瘤科；考虑脱水及胰酶/口服药吸收下降的风险。",
+    suggestedLevers: ["emergency.hospital", "intensity.hold"],
+  },
+  {
+    id: "steatorrhoea_with_loose_yellow",
+    name: "Oily / floating stools with loose form",
+    zone: "yellow",
+    category: "nutrition",
+    triggersReview: true,
+    evaluator: ({ latestDaily }) => {
+      const oily =
+        latestDaily?.stool_oil === true || latestDaily?.steatorrhoea === true;
+      const loose =
+        (typeof latestDaily?.stool_bristol === "number" &&
+          latestDaily.stool_bristol >= GI.loose_stool_bristol_min) ||
+        (typeof latestDaily?.stool_count === "number" &&
+          latestDaily.stool_count >= GI.stool_count_yellow);
+      return oily && loose;
+    },
+    recommendation:
+      "Steatorrhoea pattern — PERT (Creon) is likely under-dosed for today's fat intake. Confirm dose was taken with the meal, not before or after; raise titration at next clinic.",
+    recommendationZh:
+      "脂肪泻表现 —— 当前胰酶替代治疗（Creon）剂量可能不足。请确认与餐同服，下次就诊时讨论加量。",
+    suggestedLevers: ["supportive.pert", "nutrition.dietitian"],
+  },
+  {
+    id: "constipation_persistent_yellow",
+    name: "Constipation 3+ days running",
+    zone: "yellow",
+    category: "toxicity",
+    triggersReview: true,
+    evaluator: (s) =>
+      constipationDayStreak(s, GI.constipation_yellow_days * 2) >=
+      GI.constipation_yellow_days,
+    recommendation:
+      "Constipation building — common with anti-emetics and opioids. Increase fluids, gentle movement, and review the bowel-care plan with the team if no movement in another day.",
+    recommendationZh:
+      "便秘持续累积 —— 止吐药与镇痛药常见副作用。增加饮水、温和活动；若再无排便请与团队复核肠道方案。",
+    suggestedLevers: ["supportive.laxative", "physical.walking"],
   },
   {
     id: "pending_result_stale_yellow",
