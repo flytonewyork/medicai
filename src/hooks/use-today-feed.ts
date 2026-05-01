@@ -31,6 +31,7 @@ export function useTodayFeed({
   const alerts = useLiveQuery(() => db.zone_alerts.toArray());
   const cycles = useLiveQuery(() => latestTreatmentCycles(1));
   const agentRuns = useLiveQuery(() => latestAgentRuns(40));
+  const coverageSnoozes = useLiveQuery(() => db.coverage_snoozes.toArray());
 
   return useMemo(() => {
     const s = settings ?? null;
@@ -76,6 +77,17 @@ export function useTodayFeed({
       cycleContext: ctx,
       weather,
       agentRuns: agentRuns ?? [],
+      coverageSnoozes: coverageSnoozes ?? [],
     });
-  }, [settings, dailies, labs, tasks, alerts, cycles, weather, agentRuns]);
+  }, [
+    settings,
+    dailies,
+    labs,
+    tasks,
+    alerts,
+    cycles,
+    weather,
+    agentRuns,
+    coverageSnoozes,
+  ]);
 }

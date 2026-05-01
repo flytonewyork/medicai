@@ -59,6 +59,7 @@ import type {
 } from "~/types/nutrition";
 import type { HouseholdProfile as HouseholdProfileRow } from "~/types/household-profile";
 import type { VoiceMemo } from "~/types/voice-memo";
+import type { CoverageSnoozeRow } from "~/types/coverage";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -127,6 +128,12 @@ export class AnchorDB extends Dexie {
   // labels that supervise axis-attribution priors and calibration audit.
   provisional_signals!: Table<ProvisionalSignalRow, string>;
   signal_labels!: Table<SignalLabelRow, string>;
+  // v25: Coverage-engine snoozes. Patient's dismiss action on a
+  // coverage card writes a row here; the engine reads the table on
+  // every feed compose and suppresses the matching field_key until
+  // snoozed_until expires. Calm-engagement complement to the
+  // detector itself.
+  coverage_snoozes!: Table<CoverageSnoozeRow, number>;
 
   constructor() {
     super("anchor_db");
@@ -410,6 +417,16 @@ export class AnchorDB extends Dexie {
         "&id, detector_id, metric_id, status, created_at, expires_at",
       signal_labels:
         "&id, signal_id, visit_date, label, applied_at",
+    });
+    // v25: Coverage-engine snoozes. One row per dismissed coverage
+    // prompt; `snoozed_until` is an ISO YYYY-MM-DD that the detector
+    // compares against today on every feed compose. Indexed on
+    // field_key so the active-snooze query is O(unique fields), and
+    // on snoozed_until so the periodic prune ("drop expired rows")
+    // stays cheap.
+    this.version(25).stores({
+      coverage_snoozes:
+        "++id, field_key, snoozed_until, snoozed_at",
     });
   }
 }

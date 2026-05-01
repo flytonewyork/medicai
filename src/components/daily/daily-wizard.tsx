@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import Link from "next/link";
 import { db, now } from "~/lib/db/dexie";
@@ -192,6 +192,8 @@ export function DailyWizard({ entryId, date }: Props) {
   const locale = useLocale();
   const t = useT();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialStep = searchParams?.get("step") as CatId | null;
   const enteredBy = useUIStore((s) => s.enteredBy);
 
   const existing = useLiveQuery(
@@ -255,6 +257,26 @@ export function DailyWizard({ entryId, date }: Props) {
     if (!inChemoWindow || existing) return;
     setPicked((p) => (p.includes("symptoms") ? p : [...p, "symptoms"]));
   }, [inChemoWindow, existing]);
+
+  // Coverage cards (and any future deep link) can land the patient
+  // on the wizard with `?step=digestion` (or any other CatId). When
+  // that's the case we pre-pick that one category and jump straight
+  // into stepping mode — keeps the calm-engagement contract by
+  // skipping the picker screen for a single targeted task. Runs once
+  // on mount; the patient can still add other steps from the review
+  // screen afterwards.
+  useEffect(() => {
+    if (!initialStep) return;
+    if (existing) return;
+    const valid = CATS.some((c) => c.id === initialStep);
+    if (!valid) return;
+    setPicked([initialStep]);
+    setCursor(0);
+    setPhase("stepping");
+    // We intentionally fire once on mount; subsequent renders shouldn't
+    // re-trigger the jump after the patient navigates within the wizard.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function patch<K extends keyof DailyEntry>(k: K, v: DailyEntry[K] | undefined) {
     setDraft((d) => {

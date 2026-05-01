@@ -16,6 +16,11 @@ export type FeedCategory =
   // physical signal) and `trend` (statistical drift) — these carry
   // dietitian-grade recommendations with explicit citations.
   | "nutrition"
+  // Coverage-engine prompts: a curated, dismissible nudge that the
+  // patient hasn't logged a particular field today / this week. Calm
+  // by design — capped per day by engagement state, suppressed
+  // entirely during a rough patch. See src/lib/coverage.
+  | "coverage"
   // Legacy-module categories. `memory` resurfaces anniversary items at
   // low priority; `invitation` carries orchestrator event suggestions
   // (slice 15). Both are always lower-priority than clinical items.
@@ -36,12 +41,18 @@ export interface FeedItem {
   source?: string;
   // Optional structured meta for sources that need to thread state back
   // to the renderer (e.g. agent_run cards rendering thumbs/correction
-  // controls). Discriminated by `kind`.
-  meta?: AgentRunMeta;
+  // controls, coverage cards rendering a dismiss button). Discriminated
+  // by `kind`.
+  meta?: AgentRunMeta | CoverageMeta;
 }
 
 export type AgentRunMeta = {
   kind: "agent_run";
   agent_id: string;
   run_id: number;
+};
+
+export type CoverageMeta = {
+  kind: "coverage";
+  field_key: string;
 };
