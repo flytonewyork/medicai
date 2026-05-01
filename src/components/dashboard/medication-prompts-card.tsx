@@ -119,15 +119,10 @@ function PromptRow({ prompt }: { prompt: MedicationPrompt }) {
     });
   };
 
-  const onPrimary = async () => {
-    if (prompt.primary_action.kind === "ack") {
-      await handleAction("acknowledged");
-    } else {
-      // For non-ack actions, surface a link below; we still mark acknowledged
-      // so the prompt doesn't re-show in the same window.
-      await handleAction("acknowledged");
-    }
-  };
+  // For non-ack actions the navigation/tel handler still fires from the
+  // PrimaryAction link; we mark the prompt acknowledged either way so it
+  // doesn't re-appear in the same session.
+  const onPrimary = () => handleAction("acknowledged");
 
   const onDismiss = () => {
     void handleAction("dismissed");

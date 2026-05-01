@@ -81,7 +81,7 @@ export function MemoFollowUpsCard() {
             {locale === "zh" ? "AI 想问" : "AI nurse asks"}
           </div>
           <ul className="mt-2 space-y-1.5">
-            {questions.slice(0, 2).map((q, i) => (
+            {questions.map((q, i) => (
               <li
                 key={i}
                 className="text-[13.5px] italic leading-snug text-ink-900"
