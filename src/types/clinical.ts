@@ -370,6 +370,67 @@ export interface SignalEventRow {
   created_at: string;
 }
 
+// v23 — analytical layer foundation.
+//
+// A provisional signal is a detector candidate that has crossed the
+// "confirm" threshold of its change-point posterior but not the "fire"
+// threshold. Instead of emitting a ChangeSignal immediately, the
+// analytical layer asks for one corroborating reading via the unified
+// channel and integrates the result back into the posterior. Status
+// transitions: candidate → awaiting_confirm → (confirmed | refuted |
+// timed_out). At most one prompt-bearing provisional may be active at
+// any time across the whole system.
+export type ProvisionalSignalStatus =
+  | "candidate"
+  | "awaiting_confirm"
+  | "confirmed"
+  | "refuted"
+  | "timed_out";
+
+export interface ProvisionalSignalRow {
+  id: string;                          // string PK; matches detector dedupe style
+  detector_id: string;                 // mirrors ChangeSignal.detector
+  metric_id: string;                   // primary metric being probed
+  status: ProvisionalSignalStatus;
+  // Serialised ChangePosterior at the moment the provisional was created.
+  // JSON so the analytical layer can evolve its posterior schema without
+  // a Dexie migration. Consumers JSON.parse on read.
+  posterior_json: string;
+  // The elicitation request emitted to the unified feed. JSON because
+  // the LocalizedText prompt + measurement kind aren't worth indexing.
+  request_json: string;
+  created_at: string;
+  expires_at: string;                  // 72h hard cap from created_at
+  resolved_at?: string;
+  // Posterior at resolution; null until status leaves the candidate band.
+  resolution_posterior_json?: string;
+  // For status="confirmed", the ChangeSignalRow.id this provisional
+  // promoted into. Null for refuted / timed_out outcomes.
+  promoted_signal_id?: number;
+}
+
+// Thomas's post-clinic ground-truth label on a fired ChangeSignal. The
+// supervision signal for axis-attribution priors and calibration audit.
+// One row per (signal_id, visit_date). Multiple labels for the same
+// signal across visits are allowed (escalation paths).
+export type ClinicLabel =
+  | "concur"
+  | "escalate"
+  | "downgrade"
+  | "reattribute"
+  | "unrelated";
+
+export interface SignalLabelRow {
+  id: string;                          // string PK, generated client-side
+  signal_id: number;                   // fk → change_signals.id
+  visit_date: string;                  // ISO date of the clinic visit
+  label: ClinicLabel;
+  // For label="reattribute" — the axis Thomas reassigned the signal to.
+  reattributed_axis?: "individual" | "external" | "tumour" | "drug";
+  thomas_note?: string;                // optional one-liner
+  applied_at: string;                  // ISO datetime of the labelling action
+}
+
 // External-axis: log of care-team touchpoints (clinician calls, clinic
 // visits, community nurse, allied health). Powers the clinician-gap
 // detector and lets the patient see their support-network activity over

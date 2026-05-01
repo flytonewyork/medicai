@@ -21,6 +21,8 @@ import type {
   ComprehensiveAssessment,
   PdfBlob,
   SignalEventRow,
+  ProvisionalSignalRow,
+  SignalLabelRow,
 } from "~/types/clinical";
 import type { Trial } from "~/types/bridge";
 import type { TreatmentCycle } from "~/types/treatment";
@@ -114,6 +116,12 @@ export class AnchorDB extends Dexie {
   // carry transcript + metadata, while the audio Blob lives in
   // `timeline_media` (`owner_type: "voice_memo"`).
   voice_memos!: Table<VoiceMemo, number>;
+  // v23: Analytical-layer foundation. Provisional signals carry detector
+  // candidates that need a confirming reading before they fire as full
+  // ChangeSignals; signal labels carry Thomas's post-clinic ground-truth
+  // labels that supervise axis-attribution priors and calibration audit.
+  provisional_signals!: Table<ProvisionalSignalRow, string>;
+  signal_labels!: Table<SignalLabelRow, string>;
 
   constructor() {
     super("anchor_db");
@@ -368,6 +376,22 @@ export class AnchorDB extends Dexie {
       voice_memos:
         "++id, recorded_at, day, log_event_id, audio_media_id, " +
         "source_screen, entered_by",
+    });
+    // v23: Analytical-layer foundation. `provisional_signals` are
+    // detector candidates whose change-point posterior is in the
+    // confirm-but-not-fire band; the analytical layer prompts for a
+    // corroborating reading and integrates the result. At most one
+    // prompt-bearing row may be active at any time across the system
+    // (the cap is enforced in code, not in schema). `signal_labels`
+    // hold Thomas's post-clinic ground-truth labels — the supervision
+    // signal that lets axis-attribution priors and detector calibration
+    // tune themselves over time. See docs/ANALYTICAL_LAYER.md for the
+    // design and tests/unit/analytical-* for the property-based tests.
+    this.version(23).stores({
+      provisional_signals:
+        "&id, detector_id, metric_id, status, created_at, expires_at",
+      signal_labels:
+        "&id, signal_id, visit_date, label, applied_at",
     });
   }
 }

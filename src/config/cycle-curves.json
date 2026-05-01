@@ -282,6 +282,9 @@
     "median_time_grade3_to_grade1_days": 29,
     "lifetime_overall_pct_grade_ge1": 54,
     "lifetime_overall_pct_grade_ge3": 17,
+    "detector_guards": {
+      "no_auto_resolve_on_curve_flatten": "The cumulative incidence curve flattens at cycles 9-12 because patients who progress neuropathy stop or dose-reduce — the flattening is selection bias, not biological stability. Detectors MUST NOT interpret a flat cumulative trajectory as recovery; once a neuropathy signal is confirmed, it cannot be auto-resolved against this curve."
+    },
     "citations": ["vonhoff_nejm_2013", "andre_neuropathy_2016", "scheithauer_jgo_2016", "hertz_calgb40502_2018", "kang_jcancer_2024"]
   },
 
@@ -434,6 +437,14 @@
       "noise_band_pct": 35,
       "meaningful_change_band_pct": 65,
       "source_population": "healthy individuals; assume CV is at least as large in PDAC patients with biliary involvement"
+    },
+    "patient_specific_overrides": {
+      "biliary_stent_present": {
+        "intra_individual_cv_pct_estimated": 42,
+        "noise_band_pct": 50,
+        "meaningful_change_band_pct": 100,
+        "rationale": "Biliary stenting + intermittent cholestasis widens within-patient CA 19-9 CV to an estimated 40-50% (vs 27% in healthy individuals). Stent dysfunction itself drives transient CA 19-9 elevations that are not disease-axis signal. The platform should select this override when household_profile.biliary_stent_present === true and require >2 consecutive crossings of the wider band before flagging."
+      }
     },
     "confounders": [
       "biliary obstruction / cholestasis (can elevate CA19-9 acutely)",
