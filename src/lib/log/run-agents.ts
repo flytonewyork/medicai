@@ -1,12 +1,14 @@
 import { db, now } from "~/lib/db/dexie";
 import type {
   AgentFeedbackRow,
+  AgentFollowUp,
   AgentId,
   AgentOutput,
   AgentRunRow,
   DexiePatch,
   LogEventRow,
 } from "~/types/agent";
+import { FOLLOW_UP_PRIORITY } from "~/config/agent-cadence";
 import type { Locale } from "~/types/clinical";
 import { agentsForTags } from "~/agents/routing";
 import { HttpError, postJson } from "~/lib/utils/http";
@@ -100,6 +102,12 @@ export async function runAgentClient(
   await rewriteAgentState(args.agentId, body.output.state_diff);
   await applyFilings(body.output.filings);
   await promoteSafetyFlags(args.agentId, body.output.safety_flags, body.ran_at);
+  await persistFollowUps(
+    args.agentId,
+    body.output.follow_ups ?? [],
+    body.ran_at,
+    runId,
+  );
   await markConsumed(referralIds, runId);
 
   return runId;
@@ -247,6 +255,57 @@ async function promoteSafetyFlags(
       created_at: ts,
       updated_at: ts,
     });
+  }
+}
+
+// Persist multi-day follow-ups emitted by an agent. Supersede semantics:
+// when a fresh row arrives with the same (agent_id, question_key) as an
+// older unresolved row, mark the old row resolved (`agent_supersede`)
+// and add the new one. This means an agent can re-emit the same
+// question on every run while a condition persists; the patient sees
+// the freshest copy in the feed, never duplicates.
+async function persistFollowUps(
+  agentId: AgentId,
+  followUps: readonly AgentFollowUp[],
+  ranAt: string,
+  runId: number,
+): Promise<void> {
+  for (const fu of followUps) {
+    try {
+      const due = new Date(ranAt);
+      due.setUTCDate(due.getUTCDate() + Math.max(0, fu.ask_in_days));
+      const dueIso = due.toISOString();
+
+      const existing = await db.agent_followups
+        .where("[agent_id+question_key]")
+        .equals([agentId, fu.question_key])
+        .filter((r) => !r.resolved_at)
+        .toArray();
+      for (const old of existing) {
+        if (typeof old.id === "number") {
+          await db.agent_followups.update(old.id, {
+            resolved_at: ranAt,
+            resolved_by: "agent_supersede",
+          });
+        }
+      }
+
+      await db.agent_followups.add({
+        agent_id: agentId,
+        question_key: fu.question_key,
+        asked_at: ranAt,
+        due_at: dueIso,
+        prompt_en: fu.prompt.en,
+        prompt_zh: fu.prompt.zh,
+        reason_en: fu.reason?.en,
+        reason_zh: fu.reason?.zh,
+        priority: fu.priority ?? FOLLOW_UP_PRIORITY,
+        source_run_id: runId,
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn("[log] follow-up persist failed", fu, err);
+    }
   }
 }
 

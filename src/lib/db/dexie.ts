@@ -35,6 +35,7 @@ import type {
 } from "~/types/medication";
 import type {
   AgentFeedbackRow,
+  AgentFollowUpRow,
   AgentRunRow,
   AgentStateRow,
   LogEventRow,
@@ -90,6 +91,10 @@ export class AnchorDB extends Dexie {
   log_events!: Table<LogEventRow, number>;
   agent_runs!: Table<AgentRunRow, number>;
   agent_feedback!: Table<AgentFeedbackRow, number>;
+  // v23: multi-day follow-up loop. Each row is one question an agent
+  // promised to revisit; the feed composer re-surfaces it when `due_at`
+  // matures.
+  agent_followups!: Table<AgentFollowUpRow, number>;
   appointments!: Table<Appointment, number>;
   appointment_links!: Table<AppointmentLink, number>;
   care_team!: Table<CareTeamMember, number>;
@@ -116,7 +121,7 @@ export class AnchorDB extends Dexie {
   // carry transcript + metadata, while the audio Blob lives in
   // `timeline_media` (`owner_type: "voice_memo"`).
   voice_memos!: Table<VoiceMemo, number>;
-  // v23: Analytical-layer foundation. Provisional signals carry detector
+  // v24: Analytical-layer foundation. Provisional signals carry detector
   // candidates that need a confirming reading before they fire as full
   // ChangeSignals; signal labels carry Thomas's post-clinic ground-truth
   // labels that supervise axis-attribution priors and calibration audit.
@@ -377,7 +382,20 @@ export class AnchorDB extends Dexie {
         "++id, recorded_at, day, log_event_id, audio_media_id, " +
         "source_screen, entered_by",
     });
-    // v23: Analytical-layer foundation. `provisional_signals` are
+    // v23: agent multi-day follow-up loop. One row per outstanding
+    // question an agent promised to revisit. The feed composer reads
+    // unresolved rows whose `due_at <= today`. Compound
+    // [agent_id+question_key] supports the supersede path: when an
+    // agent re-emits a follow-up with the same key, we resolve the
+    // older row and add a fresh one. `due_at` is indexed because the
+    // composer's hot query is "show me all matured, unresolved
+    // follow-ups across all agents".
+    this.version(23).stores({
+      agent_followups:
+        "++id, agent_id, question_key, due_at, asked_at, resolved_at, " +
+        "[agent_id+question_key]",
+    });
+    // v24: Analytical-layer foundation. `provisional_signals` are
     // detector candidates whose change-point posterior is in the
     // confirm-but-not-fire band; the analytical layer prompts for a
     // corroborating reading and integrates the result. At most one
@@ -387,7 +405,7 @@ export class AnchorDB extends Dexie {
     // signal that lets axis-attribution priors and detector calibration
     // tune themselves over time. See docs/ANALYTICAL_LAYER.md for the
     // design and tests/unit/analytical-* for the property-based tests.
-    this.version(23).stores({
+    this.version(24).stores({
       provisional_signals:
         "&id, detector_id, metric_id, status, created_at, expires_at",
       signal_labels:

@@ -1,5 +1,6 @@
 import type { AgentRunRow, AgentId } from "~/types/agent";
 import type { FeedItem } from "~/types/feed";
+import { AGENT_VOICES } from "~/config/agent-cadence";
 
 // Convert the latest run per agent into feed items. Each agent's most
 // recent run becomes one card; older runs are not surfaced (they live in
@@ -42,14 +43,15 @@ function runToFeedItem(run: AgentRunRow): FeedItem | null {
         ? "caution"
         : "info";
 
+  const voice = AGENT_VOICES[run.agent_id];
   return {
     id: `agent_run_${run.agent_id}_${run.id}`,
     priority,
     category: AGENT_FEED_CATEGORY[run.agent_id],
     tone,
-    title: AGENT_FEED_TITLE[run.agent_id],
+    title: voice.display_name,
     body: report,
-    icon: AGENT_ICON[run.agent_id],
+    icon: voice.icon,
     source: `agent:${run.agent_id}`,
     meta: {
       kind: "agent_run",
@@ -66,22 +68,4 @@ const AGENT_FEED_CATEGORY: Record<AgentId, FeedItem["category"]> = {
   rehabilitation: "body",
   treatment: "treatment",
   psychology: "encouragement",
-};
-
-const AGENT_FEED_TITLE: Record<AgentId, FeedItem["title"]> = {
-  nutrition: { en: "Nutrition", zh: "营养" },
-  toxicity: { en: "Toxicity", zh: "毒性反应" },
-  clinical: { en: "Clinical", zh: "临床" },
-  rehabilitation: { en: "Rehabilitation", zh: "康复" },
-  treatment: { en: "Treatment", zh: "化疗" },
-  psychology: { en: "Mind", zh: "心境" },
-};
-
-const AGENT_ICON: Record<AgentId, string> = {
-  nutrition: "food",
-  toxicity: "thermo",
-  clinical: "pulse",
-  rehabilitation: "walk",
-  treatment: "pill",
-  psychology: "moon",
 };

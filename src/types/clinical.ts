@@ -103,6 +103,43 @@ export interface DailyEntry {
   dry_mouth?: boolean;
   early_satiety?: boolean;
   steatorrhoea?: boolean;
+  // Stool / digestive output (v23). Optional — captured only when the
+  // patient touches the Digestion step on the daily wizard or when the
+  // nutrition/toxicity agent files them from a free-text/voice log.
+  // The boolean `steatorrhoea` field above remains a coarse fallback;
+  // these add structure for PERT titration and trend detection.
+  //
+  //   stool_count       — total bowel movements in the past 24 h.
+  //   stool_bristol     — predominant Bristol Stool Scale type (1–7).
+  //                       1–2 = constipation; 3–4 = normal; 5 = soft;
+  //                       6–7 = loose / liquid (PERT under-titration cue).
+  //   stool_urgency     — true if any BM came with urgency / near-incontinence.
+  //   stool_blood       — true for visible red blood, melaena, or black stools.
+  //                       Drives the red-zone GI bleed rule.
+  //   stool_oil         — true for visible oil droplets, oily film, or
+  //                       sticky/floating stool — the specific steatorrhoea
+  //                       signature beyond loose form alone.
+  //   stool_color       — coarse colour bucket. Pale / clay flags biliary
+  //                       obstruction (PDAC-relevant), dark/black flags
+  //                       upper GI bleed.
+  //   pert_with_meals_today — patient-reported PERT (Creon) coverage of
+  //                       the day's fatty meals. "all" = took with every
+  //                       fatty meal; "some" = missed one or more; "none"
+  //                       = took none today; "na" = no fatty meals.
+  stool_count?: number;
+  stool_bristol?: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  stool_urgency?: boolean;
+  stool_blood?: boolean;
+  stool_oil?: boolean;
+  stool_color?:
+    | "normal"
+    | "pale"
+    | "yellow"
+    | "green"
+    | "dark"
+    | "black"
+    | "red";
+  pert_with_meals_today?: "all" | "some" | "none" | "na";
   reflection?: string;
   reflection_lang?: Locale;
   protein_grams?: number;
@@ -370,7 +407,7 @@ export interface SignalEventRow {
   created_at: string;
 }
 
-// v23 — analytical layer foundation.
+// v24 — analytical layer foundation.
 //
 // A provisional signal is a detector candidate that has crossed the
 // "confirm" threshold of its change-point posterior but not the "fire"
@@ -617,6 +654,8 @@ export interface PillarScores {
   anchor_index: number;
 }
 
+export type AssessmentHelperRole = "self" | "family" | "coach" | "clinician";
+
 export interface ComprehensiveAssessment {
   id?: number;
   assessment_date: string;
@@ -625,6 +664,13 @@ export interface ComprehensiveAssessment {
   status: ComprehensiveAssessmentStatus;
   trigger: ComprehensiveAssessmentTrigger;
   entered_by: EnteredBy;
+
+  // Who walked the patient through this session (for "with a coach or
+  // family member" guided flow). entered_by stays generic; these fields
+  // capture the human running the session.
+  helper_name?: string;
+  helper_role?: AssessmentHelperRole;
+  helper_notes?: string;
 
   // Anthropometrics
   weight_kg?: number;

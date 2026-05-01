@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Camera, Loader2, Sparkles, Type, Mic, MicOff } from "lucide-react";
 import { prepareImageForVision } from "~/lib/ingest/image";
 import { useVoiceTranscription } from "~/hooks/use-voice-transcription";
@@ -12,7 +14,9 @@ import type { ParsedMealResult } from "~/lib/nutrition/parser-schema";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/field";
 import { Card } from "~/components/ui/card";
+import { Alert } from "~/components/ui/alert";
 import { useLocale } from "~/hooks/use-translate";
+import { HttpError } from "~/lib/utils/http";
 import { cn } from "~/lib/utils/cn";
 
 // Two-tab ingest. Photo and text both produce the same ParsedMealResult
@@ -23,10 +27,26 @@ export function MealIngest({
   onParsed: (result: ParsedMealResult, source: "photo" | "text", photoDataUrl?: string) => void;
 }) {
   const locale = useLocale();
+  const pathname = usePathname();
   const [tab, setTab] = useState<"photo" | "text">("photo");
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [signInRequired, setSignInRequired] = useState(false);
+
+  // 401 from the AI route means the Supabase session is missing or
+  // expired (per Phase 1.1 acceptance, /api/ai/* requires auth). Swap
+  // the raw "HTTP 401: ..." text for a sign-in prompt that bounces
+  // back to wherever this component is mounted.
+  function recordError(e: unknown) {
+    if (e instanceof HttpError && e.status === 401) {
+      setSignInRequired(true);
+      setError(null);
+      return;
+    }
+    setSignInRequired(false);
+    setError(e instanceof Error ? e.message : String(e));
+  }
   // Click-to-record voice memo. Tap once to record, tap again to stop;
   // the audio uploads to /api/ai/transcribe (Whisper) and the finalised
   // text appears once. No streaming — what the patient sees is what
@@ -42,13 +62,14 @@ export function MealIngest({
   async function handleFile(file: File) {
     setBusy(true);
     setError(null);
+    setSignInRequired(false);
     try {
       const prepared = await prepareImageForVision(file, { maxEdge: 1600 });
       const result = await parseMealPhoto({ image: prepared, locale });
       const dataUrl = `data:${prepared.mediaType};base64,${prepared.base64}`;
       onParsed(result, "photo", dataUrl);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      recordError(e);
     } finally {
       setBusy(false);
     }
@@ -58,12 +79,13 @@ export function MealIngest({
     if (!text.trim()) return;
     setBusy(true);
     setError(null);
+    setSignInRequired(false);
     try {
       const result = await parseMealText({ text, locale });
       onParsed(result, "text");
       setText("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      recordError(e);
     } finally {
       setBusy(false);
     }
@@ -190,6 +212,26 @@ export function MealIngest({
               </div>
             )}
           </div>
+        )}
+
+        {signInRequired && (
+          <Alert variant="warn" dense>
+            <div className="flex flex-col gap-1.5">
+              <span>
+                {locale === "zh"
+                  ? "AI 餐食识别需要登录后使用。"
+                  : "Sign in to use AI meal analysis."}
+              </span>
+              <Link
+                href={`/login?next=${encodeURIComponent(pathname ?? "/nutrition/log")}`}
+                className="self-start"
+              >
+                <Button size="sm" variant="primary">
+                  {locale === "zh" ? "登录" : "Sign in"}
+                </Button>
+              </Link>
+            </div>
+          </Alert>
         )}
 
         {error && (

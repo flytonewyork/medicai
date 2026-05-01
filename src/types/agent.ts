@@ -106,6 +106,27 @@ export interface FollowUpQuestion {
   kind: "numeric" | "yesno" | "text" | "scale_0_10";
 }
 
+// Multi-day follow-up emitted by an agent. Persisted in `agent_followups`
+// and re-surfaced into the unified feed when its `due_at` matures.
+//
+// Shape rules:
+//   - `question_key` must be stable across runs of the same condition so
+//     dedup works (e.g. `nutrition.loose_stools_3d`). Same key with a
+//     later `asked_at` supersedes the earlier row.
+//   - `ask_in_days` is relative to the producing run's `ran_at`. The
+//     run-agents persistence layer turns it into an absolute `due_at`.
+//   - `priority` lets the producer hint the feed renderer; lower number
+//     = higher rank. If absent, the feed defaults to 50 (above gentle
+//     trend nudges, below safety alerts).
+export interface AgentFollowUp {
+  question_key: string;
+  ask_in_days: number;
+  prompt: LocalizedText;
+  // Optional patient-facing one-line reason ("loose stools 3 days running").
+  reason?: LocalizedText;
+  priority?: number;
+}
+
 // Everything a specialist returns on one batch run (a day's referrals or
 // an on-demand invocation). The same shape is used for both the daily
 // scheduled run and an explicit "run now" trigger from the patient or
@@ -118,7 +139,36 @@ export interface AgentOutput {
   filings: DexiePatch[];
   questions: FollowUpQuestion[];
   nudges: FeedItem[];
+  // Optional. Multi-day follow-up loop: each entry becomes one row in
+  // `agent_followups` and re-surfaces in the feed when due. Absent on
+  // older runs / agents that don't emit them.
+  follow_ups?: AgentFollowUp[];
   state_diff: string; // full rewrite of the agent's state.md content
+}
+
+// Persisted follow-up row. One per AgentFollowUp emission; the resurface
+// engine reads this table on every feed compose and includes any row
+// whose due_at <= today and resolved_at is null.
+//
+// Resolution semantics: a follow-up resolves when (a) the same agent
+// emits a fresh row with the same `question_key` (the new row supersedes
+// the old; the old gets resolved_at set), (b) the patient marks it done
+// from the feed, or (c) the rule that triggered it stops being true (the
+// agent omits it on its next run).
+export interface AgentFollowUpRow {
+  id?: number;
+  agent_id: AgentId;
+  question_key: string;
+  asked_at: string;        // when the producing run completed
+  due_at: string;          // when this should resurface (asked_at + ask_in_days)
+  prompt_en: string;
+  prompt_zh: string;
+  reason_en?: string;
+  reason_zh?: string;
+  priority: number;        // lower = higher rank in the feed
+  source_run_id?: number;  // agent_runs.id that emitted this
+  resolved_at?: string;
+  resolved_by?: "agent_supersede" | "patient_acknowledged" | "stale";
 }
 
 // Persisted per-agent state summary (one row per agent).

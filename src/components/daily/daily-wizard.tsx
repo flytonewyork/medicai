@@ -31,6 +31,7 @@ import {
   SkipForward,
   Check,
   X,
+  Droplet,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 
@@ -121,6 +122,24 @@ const CATS = [
       "diarrhoea_count",
       "new_bruising",
       "dyspnoea",
+    ],
+  },
+  {
+    id: "digestion",
+    icon: Droplet,
+    title: { en: "Digestion", zh: "消化" } as Bilingual,
+    hint: {
+      en: "Stools, oil/colour, PERT (Creon)",
+      zh: "排便、油脂/颜色、胰酶 (Creon)",
+    } as Bilingual,
+    fields: [
+      "stool_count",
+      "stool_bristol",
+      "stool_urgency",
+      "stool_oil",
+      "stool_blood",
+      "stool_color",
+      "pert_with_meals_today",
     ],
   },
   {
@@ -871,6 +890,10 @@ function CategoryFields({
     );
   }
 
+  if (catId === "digestion") {
+    return <DigestionFields draft={draft} patch={patch} locale={locale} />;
+  }
+
   if (catId === "reflection") {
     return (
       <Field label={L("Reflection", "反思")}>
@@ -893,6 +916,213 @@ function CategoryFields({
   }
 
   return null;
+}
+
+function DigestionFields({
+  draft,
+  patch,
+  locale,
+}: {
+  draft: Draft;
+  patch: <K extends keyof DailyEntry>(k: K, v: DailyEntry[K] | undefined) => void;
+  locale: "en" | "zh";
+}) {
+  const L = useL();
+  // Bristol scale picker — 7 segmented buttons, short bilingual label
+  // under each. We deliberately use plain numbers + words (no images)
+  // to keep this small, fast, and acceptable in tone (no graphics of
+  // stool on the daily wizard).
+  const BRISTOL: Array<{
+    n: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+    label: { en: string; zh: string };
+  }> = [
+    { n: 1, label: { en: "Hard lumps", zh: "硬块" } },
+    { n: 2, label: { en: "Lumpy", zh: "成块" } },
+    { n: 3, label: { en: "Cracked", zh: "条裂" } },
+    { n: 4, label: { en: "Smooth", zh: "光滑" } },
+    { n: 5, label: { en: "Soft", zh: "软" } },
+    { n: 6, label: { en: "Mushy", zh: "糊状" } },
+    { n: 7, label: { en: "Liquid", zh: "水样" } },
+  ];
+  const COLORS: Array<{
+    v: NonNullable<DailyEntry["stool_color"]>;
+    label: { en: string; zh: string };
+  }> = [
+    { v: "normal", label: { en: "Brown", zh: "棕色" } },
+    { v: "pale", label: { en: "Pale / clay", zh: "灰白" } },
+    { v: "yellow", label: { en: "Yellow", zh: "黄色" } },
+    { v: "green", label: { en: "Green", zh: "绿色" } },
+    { v: "dark", label: { en: "Dark", zh: "深色" } },
+    { v: "black", label: { en: "Black", zh: "黑色" } },
+    { v: "red", label: { en: "Red", zh: "红色" } },
+  ];
+  const PERT: Array<{
+    v: NonNullable<DailyEntry["pert_with_meals_today"]>;
+    label: { en: string; zh: string };
+  }> = [
+    { v: "all", label: { en: "Every fatty meal", zh: "每次高脂餐" } },
+    { v: "some", label: { en: "Missed some", zh: "漏了几次" } },
+    { v: "none", label: { en: "None today", zh: "今天没吃" } },
+    { v: "na", label: { en: "No fatty meals", zh: "无高脂餐" } },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <Field
+        label={L("Bowel motions in 24 h", "24 小时排便次数")}
+        hint={L(
+          "Total count, including any loose ones",
+          "包含稀便在内的总次数",
+        )}
+      >
+        <TextInput
+          type="number"
+          inputMode="numeric"
+          value={draft.stool_count ?? ""}
+          onChange={(e) =>
+            patch(
+              "stool_count",
+              e.target.value === "" ? undefined : Number(e.target.value),
+            )
+          }
+        />
+      </Field>
+
+      <div className="space-y-1.5">
+        <div className="text-[12.5px] text-ink-700">
+          {L(
+            "Bristol type (predominant)",
+            "Bristol 类型（主要形态）",
+          )}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {BRISTOL.map((b) => {
+            const active = draft.stool_bristol === b.n;
+            return (
+              <button
+                key={b.n}
+                type="button"
+                onClick={() =>
+                  patch("stool_bristol", active ? undefined : b.n)
+                }
+                aria-pressed={active}
+                className={cn(
+                  "rounded-md border px-1 py-2 text-center text-[11px] transition-colors",
+                  active
+                    ? "border-ink-900 bg-ink-900 text-paper"
+                    : "border-ink-100 bg-paper-2 hover:border-ink-300",
+                )}
+              >
+                <div className="mono text-[12px] font-semibold tabular-nums">
+                  {b.n}
+                </div>
+                <div
+                  className={cn(
+                    "mt-0.5 text-[10px] leading-tight",
+                    active ? "text-paper/70" : "text-ink-500",
+                  )}
+                >
+                  {b.label[locale]}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <div className="text-[10.5px] text-ink-400">
+          {L(
+            "1–2 constipated · 3–4 normal · 5 soft · 6–7 loose",
+            "1–2 便秘 · 3–4 正常 · 5 偏软 · 6–7 稀便",
+          )}
+        </div>
+      </div>
+
+      <Toggle
+        label={L("Urgency or near-incontinence", "便急或近失禁")}
+        checked={draft.stool_urgency ?? false}
+        onChange={(v) => patch("stool_urgency", v ? true : undefined)}
+      />
+      <Toggle
+        label={L(
+          "Oily, floating, or sticky stool",
+          "油腻 / 漂浮 / 黏腻便",
+        )}
+        checked={draft.stool_oil ?? false}
+        onChange={(v) => patch("stool_oil", v ? true : undefined)}
+      />
+      <Toggle
+        label={L(
+          "Visible blood, melaena, or black stool (call the team)",
+          "可见血便、柏油样或黑便（请联系团队）",
+        )}
+        checked={draft.stool_blood ?? false}
+        onChange={(v) => patch("stool_blood", v ? true : undefined)}
+      />
+
+      <div className="space-y-1.5">
+        <div className="text-[12.5px] text-ink-700">
+          {L("Colour", "颜色")}
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {COLORS.map((c) => {
+            const active = draft.stool_color === c.v;
+            return (
+              <button
+                key={c.v}
+                type="button"
+                onClick={() =>
+                  patch("stool_color", active ? undefined : c.v)
+                }
+                aria-pressed={active}
+                className={cn(
+                  "rounded-full border px-2.5 py-1 text-[11.5px] transition-colors",
+                  active
+                    ? "border-ink-900 bg-ink-900 text-paper"
+                    : "border-ink-100 bg-paper-2 hover:border-ink-300",
+                )}
+              >
+                {c.label[locale]}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <div className="text-[12.5px] text-ink-700">
+          {L(
+            "PERT (Creon) with fatty meals today",
+            "今天高脂餐时的胰酶 (Creon)",
+          )}
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {PERT.map((p) => {
+            const active = draft.pert_with_meals_today === p.v;
+            return (
+              <button
+                key={p.v}
+                type="button"
+                onClick={() =>
+                  patch(
+                    "pert_with_meals_today",
+                    active ? undefined : p.v,
+                  )
+                }
+                aria-pressed={active}
+                className={cn(
+                  "rounded-full border px-2.5 py-1 text-[11.5px] transition-colors",
+                  active
+                    ? "border-ink-900 bg-ink-900 text-paper"
+                    : "border-ink-100 bg-paper-2 hover:border-ink-300",
+                )}
+              >
+                {p.label[locale]}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function PracticeFields({

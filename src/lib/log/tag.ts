@@ -23,6 +23,12 @@ const RULES: Rule[] = [
       /\b(protein|meal|ate|eat|eating|breakfast|lunch|dinner|snack|kcal|calor|carb|fat|shake|drink|fluid|water|appetite|nausea|vomit|pert|creon|enzyme)\b/,
       /\b\d+\s*g(?:rams?)?\b/, // "25g", "30 grams"
       /[饱饭饮食蛋白质喝吃奶液腰肠药]/, // 饱/饭/饮/食/蛋白质/喝/吃/奶/液/胰肠药
+      // Stool / digestive output signals route to diet because the
+      // dietician owns PERT-titration consequences. They also match
+      // the toxicity rule below — the patient gets fanned to both
+      // agents, which is correct.
+      /\b(stool\w*|bristol|bowel\s*motion|bm\b|poo|poop|loose\s*stool|watery|oily|float\w*|steator\w*)\b/,
+      /[便屎泻稀油浮]/, // 便/屎/泻/稀/油/浮
     ],
   },
   {
@@ -30,6 +36,10 @@ const RULES: Rule[] = [
     patterns: [
       /\b(tingl\w*|numb\w*|neuropath\w*|pins and needles|cold sensit\w*|cold dys|mouth sore|oral ulcer|bruis\w*|bleed\w*|rash|hand.?foot|alopecia|hair loss|diarrh\w*|constipat\w*|dyspn\w*|shortness of breath|sob\b|chill\w*|fever|rigor)\b/,
       /[麻刺痛膚膚发热冒汗饭泻便秘呲噪滑滑]/, // 麻/刺/痛/肤/发热/冒汗/泻/便秘/呕/
+      // Stool quality / blood / colour cues — these need toxicity
+      // grading even when the dietician also picks them up.
+      /\b(loose\s*stool|watery|black\s*stool|melaena|melena|blood\w*\s*stool|red\s*stool|pale\s*stool|clay\s*stool|urgency|incontinen\w*)\b/,
+      /[黑便血便稀便急便]/, // 黑便/血便/稀便/急便
     ],
   },
   {

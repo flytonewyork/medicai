@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { format } from "date-fns";
 import { db, now } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
@@ -20,6 +21,7 @@ import {
   type MealEstimate,
 } from "~/lib/ingest/meal-vision";
 import { todayISO } from "~/lib/utils/date";
+import { HttpError } from "~/lib/utils/http";
 import { Sparkles, Check, Loader2 } from "lucide-react";
 
 export default function MealIngestPage() {
@@ -34,7 +36,21 @@ export default function MealIngestPage() {
     null,
   );
   const [error, setError] = useState<string | null>(null);
+  const [signInRequired, setSignInRequired] = useState(false);
   const [saved, setSaved] = useState<{ proteinAdd: number } | null>(null);
+
+  // Phase 1.1 acceptance: /api/ai/* requires a Supabase session.
+  // Translate the 401 into a sign-in prompt instead of showing the
+  // raw HttpError text.
+  function recordError(e: unknown) {
+    if (e instanceof HttpError && e.status === 401) {
+      setSignInRequired(true);
+      setError(null);
+      return;
+    }
+    setSignInRequired(false);
+    setError(e instanceof Error ? e.message : String(e));
+  }
 
   async function onPhoto(file: File) {
     reset();
@@ -55,11 +71,12 @@ export default function MealIngestPage() {
     if (!prepared) return;
     setBusy("estimate");
     setError(null);
+    setSignInRequired(false);
     try {
       const result = await estimateMeal({ model, image: prepared });
       setEstimate(result);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      recordError(e);
     } finally {
       setBusy(null);
     }
@@ -113,6 +130,7 @@ export default function MealIngestPage() {
     setPreview(null);
     setEstimate(null);
     setError(null);
+    setSignInRequired(false);
     setSaved(null);
   }
 
@@ -205,6 +223,26 @@ export default function MealIngestPage() {
               onDiscard={reset}
               saving={busy === "save"}
             />
+          )}
+
+          {signInRequired && (
+            <Alert variant="warn" dense>
+              <div className="flex flex-col gap-1.5">
+                <span>
+                  {locale === "zh"
+                    ? "AI 餐食识别需要登录后使用。"
+                    : "Sign in to use AI meal analysis."}
+                </span>
+                <Link
+                  href="/login?next=%2Fingest%2Fmeal"
+                  className="self-start"
+                >
+                  <Button size="sm" variant="primary">
+                    {locale === "zh" ? "登录" : "Sign in"}
+                  </Button>
+                </Link>
+              </div>
+            </Alert>
           )}
 
           {error && (

@@ -8,7 +8,7 @@ import {
   mapLabName,
   mapModality,
 } from "~/lib/voice-memo/match";
-import { applyMemoPatches } from "~/lib/voice-memo/apply";
+import { applyMemoPatches, undoAppliedPatch } from "~/lib/voice-memo/apply";
 import { persistVoiceMemo } from "~/lib/voice-memo/persist";
 import type { Appointment } from "~/types/appointment";
 import type { VoiceMemoParsedFields } from "~/types/voice-memo";
@@ -264,6 +264,117 @@ describe("applyMemoPatches — clinic_visit linking", () => {
     const patches = await applyMemoPatches(memoId);
     const apptPatch = patches.find((p) => p.table === "appointments");
     expect(apptPatch?.row_id).toBe(sumiId);
+  });
+});
+
+describe("applyMemoPatches — nutrition", () => {
+  it("auto-creates a meal_entry + meal_items + fluid_log from a chemo memo", async () => {
+    const memoId = await makeMemo({
+      confidence: "high",
+      clinical: {
+        clinic_visit: {
+          kind: "chemo",
+          summary: "First chemo session, felt normal.",
+        },
+      },
+      nutrition: {
+        meals: [
+          {
+            meal_type: "snack",
+            items: [
+              { name: "sandwich", est_grams: 150 },
+              { name: "cheese", qty_label: "2 pieces", est_grams: 40 },
+            ],
+          },
+        ],
+        fluids: [{ kind: "water" }],
+      },
+    });
+
+    const patches = await applyMemoPatches(memoId);
+
+    expect(patches.some((p) => p.table === "meal_entries")).toBe(true);
+    expect(patches.some((p) => p.table === "fluid_logs")).toBe(true);
+
+    const meals = await db.meal_entries.toArray();
+    expect(meals).toHaveLength(1);
+    expect(meals[0]?.meal_type).toBe("snack");
+    expect(meals[0]?.source).toBe("voice");
+
+    const items = await db.meal_items
+      .where("meal_entry_id")
+      .equals(meals[0]!.id!)
+      .toArray();
+    expect(items).toHaveLength(2);
+    expect(items.map((i) => i.food_name).sort()).toEqual(["cheese", "sandwich"]);
+    expect(items.find((i) => i.food_name === "cheese")?.serving_grams).toBe(40);
+
+    const fluids = await db.fluid_logs.toArray();
+    expect(fluids).toHaveLength(1);
+    expect(fluids[0]?.kind).toBe("water");
+    expect(fluids[0]?.volume_ml).toBe(250); // default for water
+  });
+
+  it("respects per-row include toggles to skip a meal or fluid", async () => {
+    const memoId = await makeMemo({
+      confidence: "high",
+      nutrition: {
+        meals: [
+          { meal_type: "lunch", items: [{ name: "rice" }] },
+          { meal_type: "snack", items: [{ name: "cookie" }] },
+        ],
+        fluids: [{ kind: "water" }, { kind: "tea" }],
+      },
+    });
+
+    await applyMemoPatches(memoId, {
+      nutrition_include_meals: [true, false],
+      nutrition_include_fluids: [false, true],
+    });
+
+    const meals = await db.meal_entries.toArray();
+    expect(meals.map((m) => m.meal_type)).toEqual(["lunch"]);
+    const fluids = await db.fluid_logs.toArray();
+    expect(fluids.map((f) => f.kind)).toEqual(["tea"]);
+  });
+
+  it("undo deletes the meal_entry and cascades meal_items", async () => {
+    const memoId = await makeMemo({
+      confidence: "high",
+      nutrition: {
+        meals: [
+          {
+            meal_type: "snack",
+            items: [{ name: "apple" }, { name: "yogurt" }],
+          },
+        ],
+      },
+    });
+    await applyMemoPatches(memoId);
+
+    const memo = await db.voice_memos.get(memoId);
+    const mealPatch = memo?.parsed_fields?.applied_patches?.find(
+      (p) => p.table === "meal_entries",
+    );
+    expect(mealPatch).toBeTruthy();
+    const mealId = mealPatch!.row_id;
+
+    expect(await db.meal_entries.get(mealId)).toBeTruthy();
+    expect(
+      (await db.meal_items.where("meal_entry_id").equals(mealId).toArray()).length,
+    ).toBe(2);
+
+    const idx =
+      memo!.parsed_fields!.applied_patches!.findIndex(
+        (p) => p.table === "meal_entries",
+      );
+    const r = await undoAppliedPatch(memoId, idx);
+    expect(r.ok).toBe(true);
+
+    expect(await db.meal_entries.get(mealId)).toBeUndefined();
+    expect(
+      (await db.meal_items.where("meal_entry_id").equals(mealId).toArray()).length,
+    ).toBe(0);
   });
 });
 
