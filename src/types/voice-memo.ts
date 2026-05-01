@@ -33,6 +33,17 @@ export interface VoiceMemo {
   // Lets the diary show the resulting agent reports inline with the memo.
   log_event_id?: number;
   source_screen?: "log" | "meal_ingest" | "phone_note" | "diary";
+  // Slice 9: optional category the patient picked from the /log
+  // wizard chips before recording. Threaded into the Claude prompt
+  // so extraction focuses on the matching schema sections, and
+  // surfaced in the diary so the patient can see what they meant
+  // to log.
+  category?:
+    | "symptom"
+    | "nutrition"
+    | "visit_treatment"
+    | "test_result"
+    | "appointment";
   entered_by: EnteredBy;
   // Filled by Slice 2 — Claude extracts daily-form fields (energy,
   // sleep, pain, mood, symptoms, foods) from the transcript and merges
@@ -101,16 +112,37 @@ export interface VoiceMemoParsedFields {
   // — those tables have stricter schemas. Stays on the memo only.
   imaging_results?: Array<{
     modality: "pet" | "ct" | "mri" | "ultrasound" | "xray" | "bone_scan" | "other";
-    finding_summary: string;
+    finding_summary?: string | null;
     status: "clear" | "stable" | "improvement" | "progression" | "unclear";
     date?: string;
   }>;
   lab_results?: Array<{
-    name: string;
+    name?: string | null;
     value?: string;
     status: "normal" | "raised" | "low" | "abnormal" | "unstated";
     date?: string;
   }>;
+
+  // ----- Slice 7: nutrition (foods + drinks consumed) -----
+  // Drives the meal_entries / meal_items / fluid_logs tables on
+  // confidence: high. Different from `personal.food_mentions` (which
+  // is narrative reflection) — this block is the structured log.
+  nutrition?: {
+    meals?: Array<{
+      meal_type: "breakfast" | "lunch" | "dinner" | "snack";
+      items: Array<{
+        name?: string | null;
+        name_zh?: string;
+        qty_label?: string;
+        est_grams?: number;
+      }>;
+    }>;
+    fluids?: Array<{
+      kind: "water" | "tea" | "coffee" | "broth" | "electrolyte" | "soup" | "other";
+      est_ml?: number;
+      qty_label?: string;
+    }>;
+  };
 
   // ----- Slice 4: dialogue-vibe follow-up questions -----
   // 0–2 short questions Claude would ask if it were a thoughtful
@@ -143,7 +175,11 @@ export interface VoiceMemoClinicalParse {
     visit_date?: string;        // ISO date — defaults to memo's recorded_at day
     provider?: string;          // "A/Prof Sumitra Ananda" / "Sumi" / "苏米"
     location?: string;
-    summary: string;            // 1–3 sentences of what happened
+    // Slice 8: nullable to absorb glitchy parses without 502'ing the
+    // whole memo. The apply step drops the visit when summary is
+    // null / empty so we never write a clinic_visit life_event with
+    // no actual content.
+    summary?: string | null;
     key_points?: string[];      // bulleted decisions / instructions
   };
   // The patient mentioning a scheduled appointment. One row per
@@ -151,7 +187,7 @@ export interface VoiceMemoClinicalParse {
   // collapse into one. Goes into the `appointments` table when the
   // date+title look concrete; otherwise stays as a memo-only note.
   appointments_mentioned?: Array<{
-    title: string;
+    title?: string | null;
     starts_at?: string;         // ISO datetime when stated
     location?: string;
     doctor?: string;
@@ -163,7 +199,7 @@ export interface VoiceMemoClinicalParse {
   // file medication_events here — adherence has its own surface — but
   // the diary card surfaces what was discussed.
   medications_mentioned?: Array<{
-    name: string;               // "Creon" / "gemcitabine" / "abraxane"
+    name?: string | null;       // "Creon" / "gemcitabine" / "abraxane"
     detail?: string;            // "took with lunch", "skipped dinner dose"
   }>;
 }
@@ -187,7 +223,9 @@ export interface AppliedPatch {
     | "life_events"
     | "appointments"
     | "imaging"
-    | "labs";
+    | "labs"
+    | "meal_entries"
+    | "fluid_logs";
   // The local id of the row written or updated.
   row_id: number;
   // Fields touched on that row, with the value the memo supplied. We

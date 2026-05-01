@@ -78,6 +78,12 @@ export interface UseVoiceTranscriptionOptions {
    * diary can attribute the entry. Defaults to "diary".
    */
   source?: VoiceMemo["source_screen"];
+  /**
+   * Slice 9: optional category from /log's wizard. Threaded into the
+   * memo row so re-parses (and the initial parse, when
+   * parseAfterPersist is true) use the focused prompt path.
+   */
+  category?: VoiceMemo["category"];
   /** Who recorded the memo. Defaults to "patient". */
   enteredBy?: EnteredBy;
   /**
@@ -107,6 +113,7 @@ export function useVoiceTranscription(
     onTranscribed,
     persist = true,
     source = "diary",
+    category,
     enteredBy = "hulin",
     onPersisted,
     parseAfterPersist = true,
@@ -137,6 +144,8 @@ export function useVoiceTranscription(
   persistRef.current = persist;
   const sourceRef = useRef(source);
   sourceRef.current = source;
+  const categoryRef = useRef(category);
+  categoryRef.current = category;
   const enteredByRef = useRef(enteredBy);
   enteredByRef.current = enteredBy;
   const parseAfterPersistRef = useRef(parseAfterPersist);
@@ -268,6 +277,7 @@ export function useVoiceTranscription(
                 locale: localeRef.current,
                 entered_by: enteredByRef.current,
                 source_screen: sourceRef.current,
+                category: categoryRef.current,
               });
               memoId = memo_id;
               void uploadVoiceMemoAudio(memo_id).catch((err) => {

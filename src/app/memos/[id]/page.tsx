@@ -438,10 +438,26 @@ function PreviewForm({
   const [labCreate, setLabCreate] = useState<boolean[]>(
     () => (parsed.lab_results ?? []).map(() => false),
   );
+  // Slice 7: nutrition. Default ON since meal logging is a frequent
+  // low-risk write — match the auto-apply behaviour daily fields
+  // already have on confidence: high.
+  const [mealsInclude, setMealsInclude] = useState<boolean[]>(
+    () => (parsed.nutrition?.meals ?? []).map(() => true),
+  );
+  const [fluidsInclude, setFluidsInclude] = useState<boolean[]>(
+    () => (parsed.nutrition?.fluids ?? []).map(() => true),
+  );
   useEffect(() => {
     setImagingCreate((parsed.imaging_results ?? []).map(() => false));
     setLabCreate((parsed.lab_results ?? []).map(() => false));
-  }, [parsed.imaging_results, parsed.lab_results]);
+    setMealsInclude((parsed.nutrition?.meals ?? []).map(() => true));
+    setFluidsInclude((parsed.nutrition?.fluids ?? []).map(() => true));
+  }, [
+    parsed.imaging_results,
+    parsed.lab_results,
+    parsed.nutrition?.meals,
+    parsed.nutrition?.fluids,
+  ]);
 
   const [busy, setBusy] = useState(false);
   const [reparsing, setReparsing] = useState(false);
@@ -456,12 +472,16 @@ function PreviewForm({
   const imagingResults = parsed.imaging_results ?? [];
   const labResults = parsed.lab_results ?? [];
 
+  const meals = parsed.nutrition?.meals ?? [];
+  const fluids = parsed.nutrition?.fluids ?? [];
   const nothingToApply =
     (!includeDaily || !hasDaily) &&
     (!includeVisit || !visit?.summary) &&
     (!includeAppts || appts.every((a) => a.confidence !== "high")) &&
     imagingResults.length === 0 &&
-    labResults.length === 0;
+    labResults.length === 0 &&
+    meals.length === 0 &&
+    fluids.length === 0;
 
   async function onApply() {
     if (!memo.id) return;
@@ -475,6 +495,8 @@ function PreviewForm({
         daily_overrides: edits,
         imaging_create: imagingCreate,
         lab_create: labCreate,
+        nutrition_include_meals: mealsInclude,
+        nutrition_include_fluids: fluidsInclude,
       });
       setAppliedRecently(true);
     } catch (e) {
@@ -579,6 +601,17 @@ function PreviewForm({
         />
       )}
 
+      {parsed.nutrition && (
+        <NutritionSection
+          locale={locale}
+          nutrition={parsed.nutrition}
+          mealsInclude={mealsInclude}
+          setMealsInclude={setMealsInclude}
+          fluidsInclude={fluidsInclude}
+          setFluidsInclude={setFluidsInclude}
+        />
+      )}
+
       {parsed.notes && (
         <div>
           <div className="eyebrow mb-1">
@@ -588,7 +621,7 @@ function PreviewForm({
         </div>
       )}
 
-      {!hasDaily && !visit?.summary && appts.length === 0 && meds.length === 0 && (parsed.imaging_results?.length ?? 0) === 0 && (parsed.lab_results?.length ?? 0) === 0 && (
+      {!hasDaily && !visit?.summary && appts.length === 0 && meds.length === 0 && (parsed.imaging_results?.length ?? 0) === 0 && (parsed.lab_results?.length ?? 0) === 0 && meals.length === 0 && fluids.length === 0 && (
         parsed.personal ? (
           <Alert variant="info" role="status">
             {locale === "zh"
@@ -1121,6 +1154,145 @@ function FollowUpsCard({
   );
 }
 
+function NutritionSection({
+  locale,
+  nutrition,
+  mealsInclude,
+  setMealsInclude,
+  fluidsInclude,
+  setFluidsInclude,
+}: {
+  locale: "en" | "zh";
+  nutrition: NonNullable<VoiceMemoParsedFields["nutrition"]>;
+  mealsInclude: boolean[];
+  setMealsInclude: (v: boolean[]) => void;
+  fluidsInclude: boolean[];
+  setFluidsInclude: (v: boolean[]) => void;
+}) {
+  const meals = nutrition.meals ?? [];
+  const fluids = nutrition.fluids ?? [];
+  if (meals.length === 0 && fluids.length === 0) return null;
+
+  function toggleMeal(i: number) {
+    const next = mealsInclude.slice();
+    next[i] = !next[i];
+    setMealsInclude(next);
+  }
+  function toggleFluid(i: number) {
+    const next = fluidsInclude.slice();
+    next[i] = !next[i];
+    setFluidsInclude(next);
+  }
+
+  return (
+    <div>
+      <div className="eyebrow mb-1">
+        {locale === "zh" ? "饮食 & 饮水" : "Meals & fluids"}
+      </div>
+      {meals.length > 0 && (
+        <ul className="space-y-2 text-[13px]">
+          {meals.map((m, i) => (
+            <li
+              key={i}
+              className="rounded-md border border-ink-100 px-2.5 py-2"
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="font-medium text-ink-900">
+                  {mealTypeLabel(m.meal_type, locale)}
+                </span>
+                <label className="inline-flex items-center gap-1.5 cursor-pointer text-[11.5px] text-ink-700">
+                  <input
+                    type="checkbox"
+                    checked={mealsInclude[i] ?? true}
+                    onChange={() => toggleMeal(i)}
+                    className="h-3.5 w-3.5"
+                  />
+                  {locale === "zh" ? "登入饮食" : "Save meal"}
+                </label>
+              </div>
+              <ul className="mt-1 space-y-0.5 text-[12px] text-ink-700">
+                {m.items.map((it, j) => (
+                  <li key={j}>
+                    · {it.name_zh ? `${it.name_zh} ` : ""}{it.name}
+                    {it.qty_label ? (
+                      <span className="text-ink-500"> — {it.qty_label}</span>
+                    ) : null}
+                    {typeof it.est_grams === "number" ? (
+                      <span className="text-ink-500"> ({it.est_grams}g)</span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      )}
+      {fluids.length > 0 && (
+        <ul className="mt-2 space-y-2 text-[13px]">
+          {fluids.map((f, i) => (
+            <li
+              key={i}
+              className="flex items-baseline justify-between gap-2 rounded-md border border-ink-100 px-2.5 py-2"
+            >
+              <span className="text-ink-900">
+                <span className="font-medium">{fluidLabel(f.kind, locale)}</span>
+                {f.qty_label ? (
+                  <span className="text-ink-500"> — {f.qty_label}</span>
+                ) : null}
+                {typeof f.est_ml === "number" ? (
+                  <span className="text-ink-500"> ({f.est_ml} ml)</span>
+                ) : null}
+              </span>
+              <label className="inline-flex items-center gap-1.5 cursor-pointer text-[11.5px] text-ink-700">
+                <input
+                  type="checkbox"
+                  checked={fluidsInclude[i] ?? true}
+                  onChange={() => toggleFluid(i)}
+                  className="h-3.5 w-3.5"
+                />
+                {locale === "zh" ? "登入饮水" : "Save fluid"}
+              </label>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-1 text-[11px] text-ink-400">
+        {locale === "zh"
+          ? "保存后会出现在「营养」里，宏量营养素留空可以随后补充。"
+          : "Saved meals appear in /nutrition with macros pending — tap into them to refine."}
+      </p>
+    </div>
+  );
+}
+
+function mealTypeLabel(
+  t: NonNullable<NonNullable<VoiceMemoParsedFields["nutrition"]>["meals"]>[number]["meal_type"],
+  locale: "en" | "zh",
+): string {
+  if (locale === "zh") {
+    return { breakfast: "早餐", lunch: "午餐", dinner: "晚餐", snack: "加餐" }[t];
+  }
+  return t;
+}
+
+function fluidLabel(
+  k: NonNullable<NonNullable<VoiceMemoParsedFields["nutrition"]>["fluids"]>[number]["kind"],
+  locale: "en" | "zh",
+): string {
+  if (locale === "zh") {
+    return {
+      water: "水",
+      tea: "茶",
+      coffee: "咖啡",
+      broth: "肉汤",
+      soup: "汤",
+      electrolyte: "电解质饮料",
+      other: "其他",
+    }[k];
+  }
+  return k;
+}
+
 function PersonalCard({
   personal,
   locale,
@@ -1329,6 +1501,10 @@ function tableLabel(
         return "影像";
       case "labs":
         return "化验";
+      case "meal_entries":
+        return "饮食";
+      case "fluid_logs":
+        return "饮水";
     }
   }
   switch (table) {
@@ -1342,6 +1518,10 @@ function tableLabel(
       return "Imaging";
     case "labs":
       return "Lab result";
+    case "meal_entries":
+      return "Meal";
+    case "fluid_logs":
+      return "Fluid";
   }
 }
 
@@ -1357,6 +1537,10 @@ function hrefForPatch(patch: AppliedPatch): string {
       return "/labs";
     case "labs":
       return "/labs";
+    case "meal_entries":
+      return `/nutrition/${patch.row_id}`;
+    case "fluid_logs":
+      return "/nutrition";
   }
 }
 

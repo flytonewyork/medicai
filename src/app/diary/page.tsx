@@ -112,26 +112,6 @@ export default function DiaryPage() {
     void syncPendingVoiceMemoAudio();
   }, []);
 
-  // The most recently captured memo id — used to drive the inline
-  // preview/undo card under the recorder. Cleared when the patient
-  // dismisses the preview or starts a new recording.
-  const [lastMemoId, setLastMemoId] = useState<number | null>(null);
-  const voice = useVoiceTranscription({
-    locale,
-    source: "diary",
-    enteredBy,
-    onPersisted: ({ memo_id }) => setLastMemoId(memo_id),
-    onTranscribed: () => {
-      // Persistence is handled by the hook; we just need to refresh
-      // the visible window. Counting Dexie tables already triggers
-      // useLiveQuery, so this callback can stay no-op.
-    },
-  });
-  const recording = voice?.status === "recording";
-  useEffect(() => {
-    if (recording) setLastMemoId(null);
-  }, [recording]);
-
   return (
     <div className="mx-auto max-w-2xl space-y-5 p-4 md:p-8">
       <PageHeader
@@ -144,15 +124,17 @@ export default function DiaryPage() {
         }
       />
 
-      <RecorderCard voice={voice} locale={locale} />
-
-      {lastMemoId !== null && (
-        <RecentMemoCard
-          memoId={lastMemoId}
-          locale={locale}
-          onDismiss={() => setLastMemoId(null)}
-        />
-      )}
+      {/* Slice 8: /log is the canonical compose surface — text +
+        voice + tags + AI fan-out all in one. /diary stays focused
+        on the timeline view, with one prominent CTA so the patient
+        knows where to start a new entry. */}
+      <Link
+        href="/log"
+        className="inline-flex items-center justify-center gap-2 rounded-full bg-ink-900 px-5 py-3 text-[14px] font-medium text-paper hover:scale-[1.02] transition-transform"
+      >
+        <Mic className="h-4 w-4" />
+        {locale === "zh" ? "新建一条记录" : "New entry"}
+      </Link>
 
       <div className="flex items-center justify-between gap-2">
         <div className="text-[11px] text-ink-500">
