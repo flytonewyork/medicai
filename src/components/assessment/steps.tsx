@@ -16,6 +16,10 @@ import {
   Gad7,
   Phq9,
 } from "~/components/assessment/questionnaires";
+import {
+  CountdownTapCounter,
+  Stopwatch,
+} from "~/components/assessment/timer";
 import { Field, TextInput, Textarea } from "~/components/ui/field";
 import type {
   ComprehensiveAssessment,
@@ -190,100 +194,164 @@ export function GripStep({ assessment, settings, patch }: StepProps) {
   );
 }
 
+// Round to .05 m/s — matches the manual MeasurementInput precision.
+function gaitMSFromSeconds(seconds: number, distance = 4): number {
+  return Math.round((distance / seconds) * 20) / 20;
+}
+
 export function GaitStep({ assessment, settings, patch }: StepProps) {
   const locale = useLocale();
   return (
-    <MeasurementInput
-      label={locale === "zh" ? "4 米步速" : "4 m gait speed"}
-      unit="m/s"
-      value={assessment.gait_speed_ms}
-      baseline={settings?.baseline_gait_speed_ms}
-      step={0.05}
-      min={0}
-      max={3}
-      goodDirection="higher"
-      onChange={(v) => patch("gait_speed_ms", v)}
-    />
+    <div className="space-y-3">
+      <Stopwatch
+        value={
+          assessment.gait_speed_ms && assessment.gait_speed_ms > 0
+            ? Math.round((4 / assessment.gait_speed_ms) * 10) / 10
+            : undefined
+        }
+        onChange={(s) => {
+          if (typeof s === "number" && s > 0) {
+            patch("gait_speed_ms", gaitMSFromSeconds(s, 4));
+          } else {
+            patch("gait_speed_ms", undefined);
+          }
+        }}
+        precision={1}
+      />
+      <MeasurementInput
+        label={locale === "zh" ? "或直接输入步速" : "Or enter gait speed directly"}
+        unit="m/s"
+        value={assessment.gait_speed_ms}
+        baseline={settings?.baseline_gait_speed_ms}
+        step={0.05}
+        min={0}
+        max={3}
+        goodDirection="higher"
+        onChange={(v) => patch("gait_speed_ms", v)}
+      />
+    </div>
   );
 }
 
 export function Sts30Step({ assessment, settings, patch }: StepProps) {
   const locale = useLocale();
   return (
-    <MeasurementInput
-      label={locale === "zh" ? "30 秒坐立次数" : "30-s sit-to-stand reps"}
-      unit={locale === "zh" ? "次" : "reps"}
-      value={assessment.sit_to_stand_30s}
-      baseline={settings?.baseline_sit_to_stand}
-      step={1}
-      min={0}
-      max={50}
-      goodDirection="higher"
-      onChange={(v) => patch("sit_to_stand_30s", v)}
-    />
+    <div className="space-y-3">
+      <CountdownTapCounter
+        durationSeconds={30}
+        value={assessment.sit_to_stand_30s}
+        onChange={(n) => patch("sit_to_stand_30s", n)}
+        tapLabel={locale === "zh" ? "完成一次坐立 +1" : "Tap on each full sit-to-stand"}
+        unit={locale === "zh" ? "次" : "reps"}
+      />
+      <MeasurementInput
+        label={locale === "zh" ? "或直接输入次数" : "Or enter reps directly"}
+        unit={locale === "zh" ? "次" : "reps"}
+        value={assessment.sit_to_stand_30s}
+        baseline={settings?.baseline_sit_to_stand}
+        step={1}
+        min={0}
+        max={50}
+        goodDirection="higher"
+        onChange={(v) => patch("sit_to_stand_30s", v)}
+      />
+    </div>
   );
 }
 
 export function Sts5xStep({ assessment, patch }: StepProps) {
   const locale = useLocale();
   return (
-    <MeasurementInput
-      label={locale === "zh" ? "5 次坐立时间" : "5× sit-to-stand time"}
-      unit="s"
-      value={assessment.sts_5x_seconds}
-      step={0.5}
-      min={0}
-      max={60}
-      goodDirection="lower"
-      onChange={(v) => patch("sts_5x_seconds", v)}
-    />
+    <div className="space-y-3">
+      <Stopwatch
+        value={assessment.sts_5x_seconds}
+        onChange={(s) => patch("sts_5x_seconds", s)}
+        precision={1}
+      />
+      <MeasurementInput
+        label={locale === "zh" ? "或直接输入秒数" : "Or enter seconds directly"}
+        unit="s"
+        value={assessment.sts_5x_seconds}
+        step={0.5}
+        min={0}
+        max={60}
+        goodDirection="lower"
+        onChange={(v) => patch("sts_5x_seconds", v)}
+      />
+    </div>
   );
 }
 
 export function TugStep({ assessment, patch }: StepProps) {
+  const locale = useLocale();
   return (
-    <MeasurementInput
-      label="TUG"
-      unit="s"
-      value={assessment.tug_seconds}
-      step={0.5}
-      min={0}
-      max={60}
-      goodDirection="lower"
-      onChange={(v) => patch("tug_seconds", v)}
-    />
+    <div className="space-y-3">
+      <Stopwatch
+        value={assessment.tug_seconds}
+        onChange={(s) => patch("tug_seconds", s)}
+        precision={1}
+      />
+      <MeasurementInput
+        label={locale === "zh" ? "或直接输入秒数" : "Or enter seconds directly"}
+        unit="s"
+        value={assessment.tug_seconds}
+        step={0.5}
+        min={0}
+        max={60}
+        goodDirection="lower"
+        onChange={(v) => patch("tug_seconds", v)}
+      />
+    </div>
   );
 }
 
 export function SingleLegStanceStep({ assessment, patch }: StepProps) {
   const locale = useLocale();
   return (
-    <MeasurementInput
-      label={locale === "zh" ? "单腿站立时间" : "Single-leg stance"}
-      unit="s"
-      value={assessment.single_leg_stance_seconds}
-      step={1}
-      min={0}
-      max={60}
-      goodDirection="higher"
-      onChange={(v) => patch("single_leg_stance_seconds", v)}
-    />
+    <div className="space-y-3">
+      <Stopwatch
+        value={assessment.single_leg_stance_seconds}
+        onChange={(s) => patch("single_leg_stance_seconds", s)}
+        maxSeconds={60}
+        precision={1}
+      />
+      <MeasurementInput
+        label={locale === "zh" ? "或直接输入秒数" : "Or enter seconds directly"}
+        unit="s"
+        value={assessment.single_leg_stance_seconds}
+        step={1}
+        min={0}
+        max={60}
+        goodDirection="higher"
+        onChange={(v) => patch("single_leg_stance_seconds", v)}
+      />
+    </div>
   );
 }
 
 export function Walk6MinStep({ assessment, patch }: StepProps) {
   const locale = useLocale();
   return (
-    <MeasurementInput
-      label={locale === "zh" ? "6 分钟步行距离" : "6-min walk distance"}
-      unit="m"
-      value={assessment.walk_6min_meters}
-      step={5}
-      min={0}
-      max={900}
-      goodDirection="higher"
-      onChange={(v) => patch("walk_6min_meters", v)}
-    />
+    <div className="space-y-3">
+      <CountdownTapCounter
+        durationSeconds={360}
+        value={assessment.walk_6min_meters}
+        onChange={(n) => patch("walk_6min_meters", n)}
+        increment={30}
+        tapLabel={locale === "zh" ? "经过标记点 +30 米" : "Tap at each cone (+30 m)"}
+        unit="m"
+      />
+      <MeasurementInput
+        label={locale === "zh" ? "或直接输入米数" : "Or enter metres directly"}
+        unit="m"
+        value={assessment.walk_6min_meters}
+        step={5}
+        min={0}
+        max={900}
+        goodDirection="higher"
+        onChange={(v) => patch("walk_6min_meters", v)}
+      />
+    </div>
   );
 }
 

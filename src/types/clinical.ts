@@ -556,6 +556,8 @@ export interface PillarScores {
   anchor_index: number;
 }
 
+export type AssessmentHelperRole = "self" | "family" | "coach" | "clinician";
+
 export interface ComprehensiveAssessment {
   id?: number;
   assessment_date: string;
@@ -564,6 +566,13 @@ export interface ComprehensiveAssessment {
   status: ComprehensiveAssessmentStatus;
   trigger: ComprehensiveAssessmentTrigger;
   entered_by: EnteredBy;
+
+  // Who walked the patient through this session (for "with a coach or
+  // family member" guided flow). entered_by stays generic; these fields
+  // capture the human running the session.
+  helper_name?: string;
+  helper_role?: AssessmentHelperRole;
+  helper_notes?: string;
 
   // Anthropometrics
   weight_kg?: number;

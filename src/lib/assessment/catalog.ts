@@ -41,6 +41,14 @@ export interface TestDef {
   est_minutes: number;
   equipment?: { en: string; zh: string };
   default_on: boolean;
+  // Numbered, read-aloud-ready setup steps for the helper. Empty for
+  // questionnaire tests where the on-screen form already drives the
+  // patient. Tier-3-validated functional tests get explicit choreography
+  // so the helper doesn't have to remember the protocol.
+  instructions?: { en: string[]; zh: string[] };
+  // True when the wizard offers a built-in timer / counter rather than
+  // expecting the helper to bring a stopwatch.
+  has_builtin_timer?: boolean;
 }
 
 export const TEST_CATALOG: TestDef[] = [
@@ -55,6 +63,20 @@ export const TEST_CATALOG: TestDef[] = [
     est_minutes: 4,
     equipment: { en: "Scale + soft tape measure", zh: "体重秤 + 软尺" },
     default_on: true,
+    instructions: {
+      en: [
+        "Weigh in light clothing, no shoes, same scale as last time if possible.",
+        "MUAC: tape around the bare upper arm, midway between shoulder tip and elbow. Snug, not tight.",
+        "Calf: tape around the widest part of the dominant calf, foot flat on the floor.",
+        "Read each tape measurement to the nearest 0.5 cm.",
+      ],
+      zh: [
+        "穿轻便衣物、脱鞋称重；尽量用上次同一台秤。",
+        "上臂围（MUAC）：把软尺绕在裸露的上臂中段（肩头到肘部的一半），贴紧但不勒。",
+        "小腿围：脚平放地面，把软尺绕在惯用腿小腿最粗处。",
+        "每个围度读到最接近的 0.5 厘米。",
+      ],
+    },
   },
   {
     id: "vitals",
@@ -81,6 +103,18 @@ export const TEST_CATALOG: TestDef[] = [
     },
     est_minutes: 1,
     default_on: true,
+    instructions: {
+      en: [
+        "Read each level out loud. Pick the one that best describes a typical day this past week — not today specifically.",
+        "0 = fully active, no restrictions. 1 = light activity OK, no heavy work. 2 = up >50% of the day, can self-care, no work. 3 = up <50% of the day, limited self-care. 4 = bedbound.",
+        "If the patient is between two levels, pick the higher number (more limited).",
+      ],
+      zh: [
+        "把每一档大声念给患者听。选最能描述「这一周里典型一天」的那一档（不是只看今天）。",
+        "0 = 完全活动、无限制；1 = 可做轻活、不能干重活；2 = 白天超过一半时间在站立 / 走动、能自理、不能工作；3 = 白天一半以上时间在床或椅、自理受限；4 = 长期卧床。",
+        "若介于两档之间，取较高（受限较重）的那一档。",
+      ],
+    },
   },
   {
     id: "sarcf",
@@ -92,6 +126,18 @@ export const TEST_CATALOG: TestDef[] = [
     },
     est_minutes: 2,
     default_on: true,
+    instructions: {
+      en: [
+        "Five quick questions about strength, walking, rising from a chair, climbing stairs, and falls.",
+        "Answer about typical recent function — not the worst day, not the best day.",
+        "Total ≥ 4 flags possible sarcopenia and triggers the conversation.",
+      ],
+      zh: [
+        "五道关于力量、行走、起身、爬楼梯、跌倒的简短问题。",
+        "按「最近的典型情况」回答 —— 不是最糟的一天，也不是最好的一天。",
+        "总分 ≥ 4 提示可能存在肌少症，需要进一步沟通。",
+      ],
+    },
   },
   {
     id: "grip",
@@ -107,6 +153,20 @@ export const TEST_CATALOG: TestDef[] = [
       zh: "Jamar 或 Camry 握力器",
     },
     default_on: true,
+    instructions: {
+      en: [
+        "Sit in a chair with feet flat. Elbow bent at 90°, arm by the side, wrist neutral.",
+        "Set the dynamometer to position 2 (second handle slot).",
+        "On 'squeeze', squeeze as hard as possible for 3–5 seconds, then relax. No breath holding.",
+        "Three squeezes per hand, with at least 30 seconds rest between. Enter the best of three for each hand.",
+      ],
+      zh: [
+        "坐在椅子上，双脚平放；肘关节弯曲 90°，手臂自然下垂，手腕中立。",
+        "把握力器调到第二档（second handle slot）。",
+        "听到「抓」时，全力握紧 3–5 秒，然后放松。不要憋气。",
+        "每只手做三次，每次之间至少休息 30 秒。每只手填入三次中的最大值。",
+      ],
+    },
   },
   {
     id: "gait",
@@ -117,8 +177,23 @@ export const TEST_CATALOG: TestDef[] = [
       zh: "以平常速度走标出的 4 米。< 0.8 米/秒提示虚弱。",
     },
     est_minutes: 2,
-    equipment: { en: "4 m of clear floor + phone stopwatch", zh: "4 米平地 + 秒表" },
+    equipment: { en: "4 m of clear floor (built-in timer)", zh: "4 米平地（内置计时器）" },
     default_on: true,
+    has_builtin_timer: true,
+    instructions: {
+      en: [
+        "Mark a clear 4-metre path. Add a 1-metre run-up before the start line and a 1-metre slow-down after the finish.",
+        "Patient stands at the start line. Cue: 'Walk at your usual pace, all the way past the finish line.'",
+        "Tap Start as the patient's leading foot crosses the start line.",
+        "Tap Stop as the leading foot crosses the finish line. We compute m/s automatically.",
+      ],
+      zh: [
+        "划出 4 米直线步道；起点前留 1 米助跑、终点后留 1 米缓冲。",
+        "患者站在起点线上。提示：「以平常的速度向前走，越过终点线后再停。」",
+        "前脚跨过起点线时按「开始」。",
+        "前脚跨过终点线时按「停止」。系统会自动算出 米/秒。",
+      ],
+    },
   },
   {
     id: "sts30",
@@ -129,8 +204,25 @@ export const TEST_CATALOG: TestDef[] = [
       zh: "30 秒内完成坐立循环次数，双臂交叉胸前。",
     },
     est_minutes: 2,
-    equipment: { en: "Standard chair", zh: "标准椅子" },
+    equipment: { en: "Standard chair (built-in timer)", zh: "标准椅子（内置计时器）" },
     default_on: true,
+    has_builtin_timer: true,
+    instructions: {
+      en: [
+        "Use a sturdy chair without arms, against a wall. Seat ~43–45 cm tall.",
+        "Patient sits with back against the chair, arms crossed over chest, feet flat.",
+        "Cue: 'Stand up fully, then sit down fully — keep going as fast as you safely can.'",
+        "Tap Start to begin a 30-second countdown. Tap the big counter once for every full sit→stand→sit cycle.",
+        "When the timer ends, the count is saved automatically.",
+      ],
+      zh: [
+        "用一张坚固的无扶手椅子，靠墙；座面高度约 43–45 厘米。",
+        "患者背靠椅背坐下，双臂交叉抱胸，双脚平放。",
+        "提示：「在能安全的速度下，尽快地完整站起、再完整坐下。」",
+        "按「开始」启动 30 秒倒计时。每完成一个完整「坐→站→坐」循环，点一次大按钮。",
+        "倒计时结束后，次数会自动保存。",
+      ],
+    },
   },
   {
     id: "sts5x",
@@ -141,8 +233,23 @@ export const TEST_CATALOG: TestDef[] = [
       zh: "完成 5 次完整坐立所需时间。> 15 秒提示下肢力量较低。",
     },
     est_minutes: 2,
-    equipment: { en: "Standard chair + stopwatch", zh: "标准椅子 + 秒表" },
+    equipment: { en: "Standard chair (built-in timer)", zh: "标准椅子（内置计时器）" },
     default_on: true,
+    has_builtin_timer: true,
+    instructions: {
+      en: [
+        "Same chair as the 30-s test. Arms crossed over chest, feet flat.",
+        "Cue: 'When I say go, stand up and sit down 5 times as fast as you safely can.'",
+        "Tap Start. The patient performs 5 full cycles.",
+        "Tap Stop the moment the patient sits down on the 5th rep. We save the elapsed seconds.",
+      ],
+      zh: [
+        "同一张椅子。双臂交叉抱胸，双脚平放。",
+        "提示：「我说『开始』后，请尽快、安全地完整站起再坐下，共 5 次。」",
+        "按「开始」。患者完成 5 个完整循环。",
+        "第 5 次坐下的瞬间按「停止」。系统会保存所用秒数。",
+      ],
+    },
   },
   {
     id: "tug",
@@ -153,8 +260,23 @@ export const TEST_CATALOG: TestDef[] = [
       zh: "站起，走 3 米，折返，坐下。> 14 秒提示跌倒风险升高。",
     },
     est_minutes: 2,
-    equipment: { en: "Chair + 3 m of space + stopwatch", zh: "椅子 + 3 米空间 + 秒表" },
+    equipment: { en: "Chair + 3 m of space (built-in timer)", zh: "椅子 + 3 米空间（内置计时器）" },
     default_on: true,
+    has_builtin_timer: true,
+    instructions: {
+      en: [
+        "Place a chair against a wall. Mark a turnaround point exactly 3 m in front of the chair.",
+        "Patient sits with back against the chair, arms on lap, feet flat.",
+        "Cue: 'On go, stand up, walk to the marker, turn around, walk back, and sit down.'",
+        "Tap Start at 'go'. Tap Stop the moment the patient's bottom touches the chair on return.",
+      ],
+      zh: [
+        "椅子靠墙放好；在椅子正前方 3 米处做一个折返标记。",
+        "患者背靠椅背、双手放在大腿上、双脚平放。",
+        "提示：「我说『开始』后，请站起、走到标记处、转身、走回来再坐下。」",
+        "听到「开始」时按「开始」键；患者回来坐到椅子那一刻按「停止」。",
+      ],
+    },
   },
   {
     id: "single_leg_stance",
@@ -166,6 +288,21 @@ export const TEST_CATALOG: TestDef[] = [
     },
     est_minutes: 2,
     default_on: false,
+    has_builtin_timer: true,
+    instructions: {
+      en: [
+        "Stand near a wall or a steady chair so the patient can grab if needed.",
+        "Cross arms over chest. Lift one leg so the foot is just off the floor (don't rest it on the other leg).",
+        "Tap Start as the foot leaves the floor. Eyes open, looking forward.",
+        "Tap Stop the moment the lifted foot touches the floor, the standing foot moves, or the arms uncross. Cap at 60 s.",
+      ],
+      zh: [
+        "在墙边或稳固椅子旁边进行，患者随时可扶。",
+        "双臂交叉抱胸；抬起一只脚，使其略离地面（不要靠在另一条腿上）。",
+        "脚一离地，按「开始」；睁眼、目视前方。",
+        "抬起的脚落地、支撑脚移动、或双臂松开时按「停止」。最多记到 60 秒。",
+      ],
+    },
   },
   {
     id: "walk6min",
@@ -177,10 +314,25 @@ export const TEST_CATALOG: TestDef[] = [
     },
     est_minutes: 7,
     equipment: {
-      en: "30 m corridor or treadmill",
-      zh: "30 米走廊或跑步机",
+      en: "30 m corridor or treadmill (built-in timer)",
+      zh: "30 米走廊或跑步机（内置计时器）",
     },
     default_on: false,
+    has_builtin_timer: true,
+    instructions: {
+      en: [
+        "Mark a 30-m straight course (or use a treadmill). Patient walks back and forth around two cones.",
+        "Cue: 'Walk as far as you can in 6 minutes — you may slow or rest, but keep going if you can.'",
+        "Tap Start to begin the 6:00 countdown. Tap +30m each time the patient passes the cone.",
+        "When the timer ends, the total distance is saved. You can also enter a metres value directly.",
+      ],
+      zh: [
+        "标出 30 米直线（或用跑步机）；患者绕两个标记往返行走。",
+        "提示：「在 6 分钟内走得越远越好；可以放慢或休息，但请尽量持续。」",
+        "按「开始」启动 6 分钟倒计时；每经过标记处点一次「+30 米」。",
+        "倒计时结束后，距离自动保存。也可以直接输入米数。",
+      ],
+    },
   },
   {
     id: "pain",
@@ -244,6 +396,18 @@ export const TEST_CATALOG: TestDef[] = [
     },
     est_minutes: 2,
     default_on: true,
+    instructions: {
+      en: [
+        "Ask about each side separately: numbness, tingling, burning, pain, cold-triggered tingling.",
+        "0 = none. 1 = mild, no impact. 2 = moderate, some daily-task impact (buttons, keys, balance). 3 = severe, limits self-care. 4 = disabling.",
+        "If the patient describes problems doing buttons, holding keys, or feeling cold things sharply — that's at least grade 2.",
+      ],
+      zh: [
+        "分别询问左右手、左右脚：麻木、刺痛、灼热、疼痛、遇冷加剧的针刺感。",
+        "0 = 没有；1 = 轻微，不影响生活；2 = 中度，影响日常任务（扣扣子、握钥匙、平衡）；3 = 严重，影响自理；4 = 致残。",
+        "若患者反映扣扣子、握钥匙困难，或对冷物有尖锐感觉 —— 至少属于 2 级。",
+      ],
+    },
   },
   {
     id: "mucositis",
