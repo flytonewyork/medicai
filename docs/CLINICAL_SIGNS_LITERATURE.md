@@ -666,5 +666,219 @@ fatigue PRO (cycle-curves) — sleep fragmentation + falling HRV
 + rising fatigue is a strong axis-3 composite. Sleep fragmentation
 alone is a soft signal; in combination it is a leading edge.
 
+---
+
+## Summary — what to add to v2 detectors
+
+**Top 5 highest-leverage signals to wire up first:**
+
+1. **Step count (signal 4)** — already on the patient's iPhone via
+   HealthKit, zero burden, AUROC 0.83–0.88 for short-horizon
+   hospitalisation in chemo cohorts, replicated 15%-drop trigger
+   from Soto-Perez-de-Celis. This is the single highest-leverage
+   wearable signal because it is free, passive, and has the
+   strongest published cancer-on-chemo evidence base.
+2. **Resting heart rate (signal 11)** — passive HealthKit, PDAC-
+   specific mortality data (Anker 2016), and an early sympathetic-
+   activation signal that precedes overt cachexia. Combined with
+   ANC nadir prediction it functions as an infection screen.
+3. **Daily protein intake target (signal 7)** — modifiable lever
+   (not just a sensor), 1.2–1.5 g/kg/day, addressable via the same
+   single-channel input. Hits the "what to do about it" half of
+   axis-3 in a way that the other signals don't.
+4. **Stool / Bristol / PERT adequacy (signal 10)** — PDAC-specific,
+   high-leverage because under-treated PEI is reversible with
+   Creon titration within 1–2 weeks; differentiation from chemo-
+   diarrhea changes the action ladder.
+5. **Grip strength (signal 1)** — replicated PDAC-specific
+   prognostic data (Freckelton 2024 HR 1.88), Bluetooth dynamometer
+   ~$30, twice-daily AM/PM gives both static peak and an
+   exploratory fatigability ratio.
+
+**Already covered by existing cycle-curves (do not duplicate):**
+
+- Weight → cycle-curves; CC and MUAC complement it but the
+  weight curve already exists.
+- Albumin → cycle-curves; pairs with CC for the Calf-Albumin
+  composite from Xu 2024.
+- Fatigue PRO → cycle-curves; FAACT A/CS (signal 8) extends to
+  appetite/anorexia which is distinct.
+- Neuropathy → cycle-curves; grip fatigability (signal 1) and STS
+  (signal 2) can detect motor consequences earlier than the PRO.
+
+**Hardware-blocked at v2 (defer or capture in clinic only):**
+
+- Phase angle from BIA (signal 9) — needs MF-BIA / InBody-class
+  hardware. If patient acquires one, wire up; otherwise capture at
+  infusion visits.
+- HRV (signal 12) — strong evidence including PDAC-specific, but
+  requires Apple Watch / Oura / Whoop on-wrist consistently. Soft-
+  block: enable if hardware present.
+- Sleep fragmentation (signal 13) — same hardware dependency as
+  HRV. If wearable present, both come essentially free.
+
+**Mid-tier (wire up but expect modest yield):**
+
+- Sit-to-stand (signal 2) — useful as a grip-strength composite
+  cross-check, weekly cadence.
+- Gait speed (signal 3) — passive Apple Health "Walking Speed" is
+  free; structured 4-m walk is weekly.
+- Calf circumference (signal 5) — weekly tape measure, small
+  burden, complements weight + albumin.
+- MUAC (signal 6) — bi-weekly, lower priority than CC unless
+  ambulation drops.
+- Anorexia / FAACT A/CS (signal 8) — high-yield PRO but the
+  unified-channel design needs to fold the 12-item subscale into
+  conversational input rather than a form.
+
+**Composite detectors to build first (do not ship single-signal
+detectors when a composite is available in literature):**
+
+- Falling step count + rising RHR + falling HRV → "autonomic /
+  activity drift" → orange feed item, prompts clinic prep.
+- Bristol ≥5 + oily/floating + falling weight + falling albumin →
+  "PEI under-treated" → orange feed item, prompts PERT review.
+- Falling grip + falling STS reps + falling CC → "sarcopenic
+  drift" → yellow feed item, prompts protein-intake nudge and
+  caregiver-assist measurement check.
+- Falling appetite + protein-intake gap + falling weight + early
+  satiety yes → Fearon-style cachexia composite → orange feed
+  item, prompts dietitian referral.
+
+The framework's `n_effective` Bayesian prior weighting should
+reflect the per-signal evidence quality (mostly 2–3 in this list);
+the highest-confidence priors are step count, RHR, grip, and PERT-
+related stool signals.
+
+---
+
+## Citations (flat list)
+
+- Anker MS et al. Resting heart rate is an independent predictor
+  of death in patients with colorectal, pancreatic, and non-small
+  cell lung cancer. Eur J Heart Fail. 2016.
+- Anker MS et al. Increased resting heart rate and prognosis in
+  treatment-naïve unselected cancer patients. Eur J Heart Fail.
+  2020.
+- Ancoli-Israel S et al. Fatigue, sleep, and circadian rhythms in
+  breast cancer chemotherapy. (multiple papers, 2006–2014).
+- Ausania F et al. Supervised home-based exercise prehabilitation
+  in pancreatic cancer patients undergoing neoadjuvant
+  chemotherapy: a pilot feasibility study. Med Sci (Basel) 2024.
+- Barbosa-Silva TG et al. Enhancing SARC-F: improving sarcopenia
+  screening in the clinical practice. J Am Med Dir Assoc. 2016
+  (SARC-CalF cutoffs <34 cm men / <33 cm women).
+- Bauer J et al. Evidence-based recommendations for optimal dietary
+  protein intake in older people: a position paper. JAMDA 2013;
+  Bauer 2019 update for cancer cachexia.
+- Blauwhoff-Buskermolen S et al. The assessment of anorexia in
+  patients with cancer: cut-off values for the FAACT–A/CS and the
+  VAS for appetite. Support Care Cancer. 2016.
+- Boutiére C et al. Protein intake in cancer: does it improve
+  nutritional status and/or modify tumour response to
+  chemotherapy? J Cachexia Sarcopenia Muscle. 2023.
+- Caccialanza R et al. High-protein oral nutritional supplements
+  enable the majority of cancer patients to meet ESPEN protein
+  recommendations. Nutrients 2023.
+- Cantarero-Villanueva I et al. Thirty-second sit-to-stand test as
+  an alternative for estimating peak oxygen uptake and 6-min
+  walking distance in women with breast cancer. Support Care
+  Cancer 2022.
+- De Couck M et al. Heart rate variability and cancer survival
+  (multiple papers including Auton Neurosci 2013 and 2016 PDAC-
+  specific work with Mouton).
+- Fearon K et al. Definition and classification of cancer cachexia:
+  an international consensus. Lancet Oncol. 2011.
+- Ford KL et al. Feasibility of two levels of protein intake in
+  patients with colorectal cancer: PRIMe RCT. ESMO Open 2024.
+- Freckelton J et al. Handgrip Strength Predicts Survival in
+  Patients With Pancreatic Cancer. Pancreas / J Cachexia 2024
+  (HR 1.88, 95% CI 1.15–3.09).
+- Gresham G et al. Wearable activity monitors to assess
+  performance status and predict clinical outcomes in advanced
+  cancer patients. npj Digital Medicine 2018.
+- Gupta D et al. Bioelectrical impedance phase angle as a
+  prognostic indicator in advanced pancreatic cancer. Br J Nutr.
+  2004 (PhA <5° threshold).
+- Hendifar AE et al. Pancreatic adenocarcinoma cachexia (review
+  and prognostic data). 2018.
+- Hozawa-Tarumi et al. The Assessment of Heart Rate Variability in
+  Patients With Pancreatic Cancer. PMC10541060, 2023.
+- Hu CL et al. Low calf circumference is an independent predictor
+  of mortality in cancer patients: a prospective cohort study.
+  Nutrition 2020.
+- Innominato PF et al. Sleep duration is associated with survival
+  in advanced cancer patients. Sleep Med 2018.
+- Jäkel B et al. Hand grip strength and fatigability: correlation
+  with clinical parameters and diagnostic suitability in ME/CFS.
+  J Transl Med 2021 (Fmax/Fmean and Recovery Ratio protocol).
+- Kim YJ et al. Performance of mid-upper arm circumference and
+  other prognostic indices based on inflammation and nutrition in
+  oncology outpatients. Ann Palliat Med 2024.
+- Lena A et al. Clinical and prognostic relevance of cardiac
+  wasting in patients with advanced cancer. JACC 2023.
+- Liu MA et al. Gait speed, grip strength, and clinical outcomes
+  in older patients with hematologic malignancies. Blood 2019.
+- Low CA et al. PROStep: secondary analysis of PROs and step
+  counts predicting hospitalisation/death in advanced cancer on
+  chemo. JMIR / J Clin Oncol 2024.
+- Lukaski HC et al. Phase angle as a marker of nutritional status
+  in cancer (review). 2017.
+- Mercadante S et al. Sleep disturbances in advanced cancer
+  (review). 2022.
+- Mouton C et al. The relationship between heart rate variability
+  and time-course of carcinoembryonic antigen in colorectal cancer.
+  Auton Neurosci 2012; subsequent PDAC-specific work De Couck/
+  Mouton 2016 Auton Neurosci.
+- Mueller TC et al. Cachexia and pancreatic cancer (mechanisms
+  review). 2014.
+- Murray L et al. Fat malabsorption in pancreatic cancer:
+  pathophysiology and management. Nutr Clin Pract 2024.
+- Norman K et al. Diagnostic and prognostic utility of phase
+  angle in patients with cancer. Rev Endocr Metab Disord 2022.
+- Ordan MA et al. FIGHTDIGO study: feasibility of systematic
+  handgrip strength testing in digestive cancer patients. Cancer
+  2018; FIGHTDIGOTOX cohort 2022 (Bourdel-Marchasson) for
+  toxicity prediction at <34 kg / <22 kg cutoffs.
+- Pasternak J et al. Prognostication in advanced cancer by
+  combining actigraphy-derived rest-activity and sleep parameters
+  with routine clinical data. Cancers 2023.
+- Pereira MME et al. Bioelectrical impedance phase angle as
+  indicator and predictor of cachexia in head and neck cancer
+  patients treated with (chemo)radiotherapy. Eur J Clin Nutr 2016.
+- Prado CM et al. Nutrition interventions to treat low muscle mass
+  in cancer. J Cachexia Sarcopenia Muscle 2020.
+- Rikli RE, Jones CJ. Functional fitness normative scores for
+  community-residing older adults, ages 60–94. J Aging Phys Act
+  1999; updated thresholds 2013.
+- Roeyen G et al. Expert opinion on management of pancreatic
+  exocrine insufficiency in pancreatic cancer. PMC8819032, 2022.
+- Sayer C et al. 30-s STS validated as preoperative cancer-surgery
+  prognostic. Asia-Pac J Clin Oncol 2024.
+- Sikkens ECM et al. Pancreatic exocrine insufficiency in chronic
+  pancreatitis and pancreatic cancer. (review). 2014.
+- Soto-Perez-de-Celis E et al. A pilot study of an accelerometer-
+  equipped smartphone to monitor older adults with cancer
+  receiving chemotherapy in Mexico. J Geriatr Oncol 2018.
+- Studenski S et al. Gait speed and survival in older adults.
+  JAMA 2011.
+- van der Schans CP et al. Monitoring physical impact and recovery
+  of pancreatic cancer treatment using consumer wearable health
+  data: a case report. Sage Open Med 2023.
+- Verweij NM et al. 4-meter gait speed and adjuvant chemotherapy
+  delivery in older colon cancer patients. 2021.
+- Wakefield C et al. Machine learning–based prediction of clinical
+  outcomes in cancer using smartphone step count data. JCO Clin
+  Cancer Inform 2025.
+- Werner C et al. Validity and reliability of a smartphone
+  application for home measurement of 4-m gait speed in older
+  adults. Bioengineering 2024; Apple Health gait validity Sci
+  Rep 2023.
+- Won SH et al. Mid-upper arm circumference as an indicator of
+  quality of life of patients with advanced cancer. J Palliat
+  Care 2023.
+- Xu H et al. Calf circumference-albumin index in older patients
+  with cancer cachexia. Clin Nutr ESPEN 2024.
+
 
 
