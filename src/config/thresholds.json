@@ -34,5 +34,14 @@
   "nutrition": {
     "albumin_yellow": 30,
     "albumin_orange": 25
+  },
+  "gi": {
+    "loose_stool_bristol_min": 6,
+    "loose_stool_persistent_yellow_days": 3,
+    "loose_stool_persistent_orange_days": 5,
+    "stool_count_yellow": 4,
+    "stool_count_orange": 7,
+    "constipation_bristol_max": 2,
+    "constipation_yellow_days": 3
   }
 }
