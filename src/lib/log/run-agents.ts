@@ -12,6 +12,8 @@ import { FOLLOW_UP_PRIORITY } from "~/config/agent-cadence";
 import type { Locale } from "~/types/clinical";
 import { agentsForTags } from "~/agents/routing";
 import { HttpError, postJson } from "~/lib/utils/http";
+import { computeCoverageGaps } from "~/lib/coverage/log-coverage";
+import { formatCoverageSnapshot } from "~/lib/coverage/agent-snapshot";
 
 // Client-side orchestration for running one specialist agent.
 // 1. Read state.md + recent feedback for this agent from Dexie
@@ -67,6 +69,15 @@ export async function runAgentClient(
     );
   }
 
+  // Coverage snapshot: pure-formatter view of today's gaps + engagement
+  // state, scoped to this agent's discipline. Best-effort — if any
+  // Dexie lookup fails we omit the snapshot rather than failing the
+  // run; the agent simply runs without absence reasoning.
+  const coverageSnapshot = await buildCoverageSnapshot(
+    args.agentId,
+    args.date,
+  );
+
   let body: { agent_id: AgentId; ran_at: string; output: AgentOutput };
   try {
     body = await postJson(`/api/agent/${args.agentId}/run`, {
@@ -76,6 +87,7 @@ export async function runAgentClient(
       locale: args.locale,
       date: args.date,
       trigger: args.trigger,
+      coverage_snapshot: coverageSnapshot,
     });
   } catch (err) {
     if (err instanceof HttpError) {
@@ -358,4 +370,55 @@ export async function runAllAgentsForToday(args: {
       }
     }),
   );
+}
+
+// Best-effort coverage snapshot for the agent prompt. Reuses the same
+// pure detector the dashboard uses, so the agent and the patient see a
+// consistent view of "what's missing today". Returns undefined on any
+// failure — the agent runs without absence reasoning rather than
+// failing the whole invocation.
+async function buildCoverageSnapshot(
+  agentId: AgentId,
+  date: string,
+): Promise<string | undefined> {
+  try {
+    const start = isoDaysBefore(date, 27);
+    const end = date;
+    const recentDailies = await db.daily_entries
+      .where("date")
+      .between(start, end, true, true)
+      .toArray();
+    const settings = (await db.settings.toArray())[0] ?? null;
+    const activeAlerts = (await db.zone_alerts.toArray()).filter(
+      (a) => !a.resolved,
+    );
+    const snoozes = await db.coverage_snoozes.toArray();
+    const result = computeCoverageGaps({
+      todayISO: date,
+      recentDailies,
+      settings,
+      cycleContext: null,
+      activeAlerts,
+      snoozes,
+    });
+    return formatCoverageSnapshot({
+      agentId,
+      todayISO: date,
+      engagement: result.engagement,
+      gaps: result.gaps,
+    });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn("[log] coverage snapshot failed", err);
+    return undefined;
+  }
+}
+
+function isoDaysBefore(iso: string, n: number): string {
+  const d = new Date(iso + "T12:00:00.000Z");
+  d.setUTCDate(d.getUTCDate() - n);
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }

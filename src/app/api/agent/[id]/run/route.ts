@@ -55,6 +55,11 @@ const RequestSchema = z.object({
   locale: z.enum(["en", "zh"]),
   date: z.string(), // YYYY-MM-DD
   trigger: z.enum(["daily_batch", "on_demand"]).default("on_demand"),
+  // Optional pre-formatted coverage snapshot — see
+  // ~/lib/coverage/agent-snapshot. The client computes this from
+  // Dexie state before posting; older clients omit it and the agent
+  // runs without absence reasoning.
+  coverage_snapshot: z.string().optional(),
 });
 
 const AGENT_ID_SET = new Set<AgentId>(AGENT_IDS);
@@ -111,6 +116,7 @@ export async function POST(
       date: parsed.data.date,
       trigger: parsed.data.trigger,
       profile,
+      coverageSnapshot: parsed.data.coverage_snapshot,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
