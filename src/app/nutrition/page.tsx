@@ -12,6 +12,7 @@ import { HydrationCard } from "~/components/nutrition/hydration-card";
 import { MealTimeline } from "~/components/nutrition/meal-timeline";
 import { MealList } from "~/components/nutrition/meal-list";
 import { WeeklySummary } from "~/components/nutrition/weekly-summary";
+import { GiTrendsSection } from "~/components/nutrition/gi-trends-section";
 
 export default function NutritionPage() {
   const locale = useLocale();
@@ -56,6 +57,8 @@ export default function NutritionPage() {
       </section>
 
       <WeeklySummary />
+
+      <GiTrendsSection />
 
       <section className="grid gap-2 sm:grid-cols-2">
         <Link href="/nutrition/foods" className="a-row dense group justify-between">
