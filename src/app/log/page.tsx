@@ -221,12 +221,12 @@ export default function LogPage() {
     // longer the source of truth — the memo is.
     try {
       const logId = (await db.log_events.add({
-        at: new Date().toISOString(),
+        at: now(),
         input: {
           text: text.trim(),
           tags: Array.from(tags),
           locale,
-          at: new Date().toISOString(),
+          at: now(),
         },
       })) as number;
       await db.voice_memos.update(memoId, {

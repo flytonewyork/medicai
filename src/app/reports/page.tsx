@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
+import { db, now } from "~/lib/db/dexie";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { useSettings } from "~/hooks/use-settings";
 import { PageHeader } from "~/components/ui/page-header";
@@ -62,7 +62,7 @@ export default function ReportsPage() {
           db.zone_alerts.toArray(),
         ]);
       const bundle = {
-        exported_at: new Date().toISOString(),
+        exported_at: now(),
         schema_version: 1,
         settings: settingsRows,
         daily_entries: dailies,
@@ -87,8 +87,8 @@ export default function ReportsPage() {
       const existing = settingsRows[0];
       if (existing?.id) {
         await db.settings.update(existing.id, {
-          last_exported_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          last_exported_at: now(),
+          updated_at: now(),
         });
       }
     } finally {

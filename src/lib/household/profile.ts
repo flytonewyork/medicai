@@ -28,6 +28,28 @@ const FIELDS = [
   "updated_at",
 ].join(", ");
 
+// Best-effort household lookup for routes that work pre-sign-in (per
+// middleware.ts: parse-meal, parse-voice-memo, etc). Never throws —
+// returns null on no session, no Supabase config, or schema error so
+// callers fall through to FALLBACK_HOUSEHOLD_PROFILE. Routes that
+// _require_ a session should use requireSession() instead.
+export async function getOptionalHouseholdId(): Promise<string | null> {
+  try {
+    const sb = getSupabaseServer();
+    if (!sb) return null;
+    const { data } = await sb.auth.getUser();
+    if (!data?.user) return null;
+    const { data: membership } = await sb
+      .from("household_memberships")
+      .select("household_id")
+      .eq("user_id", data.user.id)
+      .maybeSingle();
+    return (membership?.household_id as string | undefined) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function loadHouseholdProfile(
   household_id: string | null,
 ): Promise<HouseholdProfile> {

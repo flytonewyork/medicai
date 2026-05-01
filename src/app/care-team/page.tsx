@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
+import { db, now } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
 import { PageHeader, SectionHeader } from "~/components/ui/page-header";
 import { Card } from "~/components/ui/card";
@@ -231,15 +231,15 @@ function ContactForm({
   const [followUp, setFollowUp] = useState(editing?.follow_up_needed ?? false);
 
   const save = async () => {
-    const nowISO = new Date().toISOString();
+    const at = now();
     const payload: CareTeamContact = {
       date,
       kind,
       with_who: withWho || undefined,
       notes: notes || undefined,
       follow_up_needed: followUp,
-      created_at: editing?.created_at ?? nowISO,
-      updated_at: nowISO,
+      created_at: editing?.created_at ?? at,
+      updated_at: at,
     };
     if (editing?.id) {
       await db.care_team_contacts.update(editing.id, payload);

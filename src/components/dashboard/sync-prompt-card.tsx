@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { CloudOff, X } from "lucide-react";
-import { db } from "~/lib/db/dexie";
+import { db, now } from "~/lib/db/dexie";
 import { getSupabaseBrowser, isSupabaseConfigured } from "~/lib/supabase/client";
 import { useT } from "~/hooks/use-translate";
 
@@ -54,7 +54,7 @@ export function SyncPromptCard() {
   if (!entryCount || entryCount < 1) return null;
 
   function handleDismiss() {
-    localStorage.setItem(DISMISS_KEY, new Date().toISOString());
+    localStorage.setItem(DISMISS_KEY, now());
     setDismissed(true);
   }
 

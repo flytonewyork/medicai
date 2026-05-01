@@ -4,7 +4,7 @@
 // marks as done writes one row here. The attribution layer consumes this
 // log to answer "was this signal's resolution preceded by any of the
 // suggested actions?" — the core loop of the app.
-import { db } from "~/lib/db/dexie";
+import { db, now } from "~/lib/db/dexie";
 import type {
   ChangeSignalRow,
   SignalEventKind,
@@ -34,7 +34,7 @@ export async function logSignalEvent(
     action_ref_id: input.action_ref_id,
     action_kind: input.action_kind,
     note: input.note,
-    created_at: input.at ?? new Date().toISOString(),
+    created_at: input.at ?? now(),
   };
   return (await db.signal_events.add(row)) as number;
 }

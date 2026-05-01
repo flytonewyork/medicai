@@ -1,4 +1,5 @@
 import { getSupabaseBrowser } from "~/lib/supabase/client";
+import { nowISO } from "~/lib/utils/date";
 import { getCachedHouseholdId, refreshHouseholdId } from "./household-context";
 import type { SyncedTable } from "./tables";
 
@@ -71,7 +72,7 @@ async function processQueue(): Promise<void> {
               data: op.data,
               deleted: false,
               household_id: householdId,
-              updated_at: new Date().toISOString(),
+              updated_at: nowISO(),
             },
             { onConflict: "table_name,local_id" },
           );
@@ -81,7 +82,7 @@ async function processQueue(): Promise<void> {
             .from("cloud_rows")
             .update({
               deleted: true,
-              updated_at: new Date().toISOString(),
+              updated_at: nowISO(),
             })
             .eq("table_name", op.table)
             .eq("local_id", op.local_id)

@@ -1,3 +1,5 @@
+import { nowISO } from "~/lib/utils/date";
+
 // Open-Meteo — free, keyless, CORS-enabled weather + geocoding.
 // We send only city name (to geocode) and lat/lon (to forecast). Nothing
 // identifying about the patient leaves the device.
@@ -97,7 +99,7 @@ export async function fetchCurrentWeather({
   const min_temp_c_24h = next24.length ? Math.min(...next24) : t;
   const max_temp_c_24h = next24.length ? Math.max(...next24) : t;
   return {
-    fetched_at: new Date().toISOString(),
+    fetched_at: nowISO(),
     city,
     latitude,
     longitude,

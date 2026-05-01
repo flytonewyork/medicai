@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { db } from "~/lib/db/dexie";
+import { db, now } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
 import { tagInput } from "~/lib/log/tag";
@@ -31,7 +31,7 @@ export function QuickNote() {
     setError(null);
     try {
       const tags = tagInput(body);
-      const at = new Date().toISOString();
+      const at = now();
       const { getCachedUserId } = await import("~/lib/supabase/current-user");
       const uid = getCachedUserId();
       await db.log_events.add({

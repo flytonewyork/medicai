@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
+import { db, now } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
 import { useSettings } from "~/hooks/use-settings";
 import { Card } from "~/components/ui/card";
@@ -85,7 +85,7 @@ export function ChangeSignalsCard() {
     if (!dailies || !fortnightlies || !labs || !cycles || !careTeamContacts) {
       return;
     }
-    const asOf = new Date().toISOString();
+    const asOf = now();
     const inputs = {
       as_of: asOf,
       settings: settings ?? null,

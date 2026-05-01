@@ -6,8 +6,10 @@ import {
   readJsonBody,
   withAnthropicErrorBoundary,
 } from "~/lib/anthropic/route-helpers";
-import { getSupabaseServer } from "~/lib/supabase/server";
-import { loadHouseholdProfile } from "~/lib/household/profile";
+import {
+  getOptionalHouseholdId,
+  loadHouseholdProfile,
+} from "~/lib/household/profile";
 import {
   ParsedMealSchema,
   buildNutritionSystem,
@@ -55,27 +57,8 @@ export async function POST(req: Request) {
 
   // Local-first: this route is called from /nutrition meal-ingest AND
   // from the voice-memo apply step (macro fill on parsed meals). Both
-  // surfaces work pre-sign-in per middleware.ts. Best-effort household
-  // lookup so the prompt can still personalise when a session exists;
-  // falls back to FALLBACK_HOUSEHOLD_PROFILE otherwise.
-  let householdId: string | null = null;
-  try {
-    const sb = getSupabaseServer();
-    if (sb) {
-      const { data } = await sb.auth.getUser();
-      if (data?.user) {
-        const { data: membership } = await sb
-          .from("household_memberships")
-          .select("household_id")
-          .eq("user_id", data.user.id)
-          .maybeSingle();
-        householdId = (membership?.household_id as string | undefined) ?? null;
-      }
-    }
-  } catch {
-    // unauthenticated — use the fallback profile
-  }
-  const profile = await loadHouseholdProfile(householdId);
+  // surfaces work pre-sign-in per middleware.ts.
+  const profile = await loadHouseholdProfile(await getOptionalHouseholdId());
   const localeNote =
     body.locale === "zh"
       ? "Reply in English keys, but populate name_zh for every item."

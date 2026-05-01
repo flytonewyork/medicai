@@ -1,5 +1,6 @@
 import webpush from "web-push";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { nowISO } from "~/lib/utils/date";
 
 // Server-side push helpers. VAPID keys live as Vercel env vars:
 //   VAPID_PUBLIC_KEY  (base64-url, also exposed to the client via
@@ -111,7 +112,7 @@ export async function sendPushToUser(
       sent += 1;
       await serviceRole
         .from("push_subscriptions")
-        .update({ last_pushed_at: new Date().toISOString() })
+        .update({ last_pushed_at: nowISO() })
         .eq("id", sub.id);
     } else if (res.status === 404 || res.status === 410) {
       // Endpoint gone — drop the row so it doesn't linger.

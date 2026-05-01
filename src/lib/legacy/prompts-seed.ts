@@ -1,5 +1,6 @@
 import type { ProfilePrompt, PromptSource } from "~/types/legacy";
 import type { LocalizedText } from "~/types/localized";
+import { nowISO } from "~/lib/utils/date";
 
 // Seeded bilingual prompt library. ~120 prompts across seven evidence-
 // based frameworks plus a deliberate lightness band.
@@ -638,11 +639,11 @@ export async function seedProfilePrompts(
     profile_prompts: import("dexie").Table<ProfilePrompt, number>;
   },
 ): Promise<number> {
-  const now = new Date().toISOString();
+  const at = nowISO();
   const rows = PROMPTS_SEED.map<ProfilePrompt>((p) => ({
     ...p,
-    created_at: now,
-    updated_at: now,
+    created_at: at,
+    updated_at: at,
   }));
   await db.profile_prompts.bulkAdd(rows);
   return rows.length;

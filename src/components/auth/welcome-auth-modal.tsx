@@ -7,6 +7,7 @@ import { getSupabaseBrowser, isSupabaseConfigured } from "~/lib/supabase/client"
 import { Button } from "~/components/ui/button";
 import { Field, TextInput } from "~/components/ui/field";
 import { useT } from "~/hooks/use-translate";
+import { nowISO } from "~/lib/utils/date";
 
 const SEEN_KEY = "anchor.welcomeSeenAt";
 
@@ -47,7 +48,7 @@ export function WelcomeAuthModal() {
   }, [open]);
 
   function close() {
-    localStorage.setItem(SEEN_KEY, new Date().toISOString());
+    localStorage.setItem(SEEN_KEY, nowISO());
     setOpen(false);
   }
 
@@ -65,7 +66,7 @@ export function WelcomeAuthModal() {
           password,
         });
         if (error) throw error;
-        localStorage.setItem(SEEN_KEY, new Date().toISOString());
+        localStorage.setItem(SEEN_KEY, nowISO());
         setOpen(false);
         router.refresh();
         return;
@@ -74,7 +75,7 @@ export function WelcomeAuthModal() {
       if (error) throw error;
       // If Supabase returned a session, confirm-email was off — we're in.
       if (data.session) {
-        localStorage.setItem(SEEN_KEY, new Date().toISOString());
+        localStorage.setItem(SEEN_KEY, nowISO());
         setOpen(false);
         router.refresh();
         return;

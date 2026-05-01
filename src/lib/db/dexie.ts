@@ -416,6 +416,6 @@ export class AnchorDB extends Dexie {
 
 export const db = new AnchorDB();
 
-export function now(): string {
-  return new Date().toISOString();
-}
+// Historical alias for nowISO(). Kept for callers that already import
+// `now` alongside `db` from this module — see ~/lib/utils/date.
+export { nowISO as now } from "~/lib/utils/date";

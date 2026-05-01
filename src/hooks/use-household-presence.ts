@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { getSupabaseBrowser } from "~/lib/supabase/client";
+import { nowISO } from "~/lib/utils/date";
 import { useHousehold } from "./use-household";
 
 // Ephemeral presence: which household members have Anchor open right
@@ -45,7 +46,7 @@ export function useHouseholdPresence(surface: string): {
       user_id: profile.id,
       display_name: profile.display_name || "",
       surface,
-      joined_at: new Date().toISOString(),
+      joined_at: nowISO(),
     };
 
     channel = sb

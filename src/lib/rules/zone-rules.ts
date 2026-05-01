@@ -27,62 +27,63 @@ function gripDeclinePct(s: ClinicalSnapshot): number | null {
 const latestAlbumin = (s: ClinicalSnapshot): number | undefined =>
   s.recentLabs[s.recentLabs.length - 1]?.albumin;
 
-// Count how many of the last `windowDays` daily entries (most recent
-// first) reported loose stools — Bristol ≥ 6 OR raw count above the
-// yellow threshold OR explicit steatorrhoea/oil flag. Used by the
-// "persistent loose stools" rule below; PERT under-titration usually
-// shows up as 3+ days running rather than a single bad day.
-function loosStoolDayStreak(s: ClinicalSnapshot, windowDays: number): number {
-  const recent = [...s.recentDailies]
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, windowDays);
-  let streak = 0;
-  for (const d of recent) {
-    const looseByBristol =
-      typeof d.stool_bristol === "number" &&
-      d.stool_bristol >= GI.loose_stool_bristol_min;
-    const looseByCount =
-      typeof d.stool_count === "number" &&
-      d.stool_count >= GI.stool_count_yellow;
-    const looseByDiarrhoeaCount =
-      typeof d.diarrhoea_count === "number" &&
-      d.diarrhoea_count >= GI.stool_count_yellow;
-    const looseByOil = d.stool_oil === true || d.steatorrhoea === true;
-    if (looseByBristol || looseByCount || looseByDiarrhoeaCount || looseByOil) {
-      streak += 1;
-    } else if (streak > 0) {
-      // Break the streak on the first non-loose day; we want consecutive
-      // recent days, not "any 3 of the last 5".
-      break;
-    }
-  }
-  return streak;
-}
+const FN = thresholds.function;
+const PSY = thresholds.psychological;
+const NUT = thresholds.nutrition;
+const DIS = thresholds.disease;
+const GI = thresholds.gi;
 
-function constipationDayStreak(
+// Count consecutive most-recent daily entries that match `predicate`,
+// up to `windowDays`. Streak ends at the first non-matching day — we
+// want "3 days running", not "3 of the last 5". Used for both loose-
+// stool persistence (PERT under-titration signal) and constipation
+// runs; the predicate carries the clinical definition.
+function consecutiveDayStreak(
   s: ClinicalSnapshot,
   windowDays: number,
+  predicate: (d: ClinicalSnapshot["recentDailies"][number]) => boolean,
 ): number {
   const recent = [...s.recentDailies]
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, windowDays);
   let streak = 0;
   for (const d of recent) {
-    const constipated =
-      (typeof d.stool_bristol === "number" &&
-        d.stool_bristol <= GI.constipation_bristol_max) ||
-      (typeof d.stool_count === "number" && d.stool_count === 0);
-    if (constipated) streak += 1;
+    if (predicate(d)) streak += 1;
     else if (streak > 0) break;
   }
   return streak;
 }
 
-const FN = thresholds.function;
-const PSY = thresholds.psychological;
-const NUT = thresholds.nutrition;
-const DIS = thresholds.disease;
-const GI = thresholds.gi;
+const isLooseStoolDay = (
+  d: ClinicalSnapshot["recentDailies"][number],
+): boolean => {
+  const looseByBristol =
+    typeof d.stool_bristol === "number" &&
+    d.stool_bristol >= GI.loose_stool_bristol_min;
+  const looseByCount =
+    typeof d.stool_count === "number" &&
+    d.stool_count >= GI.stool_count_yellow;
+  const looseByDiarrhoeaCount =
+    typeof d.diarrhoea_count === "number" &&
+    d.diarrhoea_count >= GI.stool_count_yellow;
+  const looseByOil = d.stool_oil === true || d.steatorrhoea === true;
+  return looseByBristol || looseByCount || looseByDiarrhoeaCount || looseByOil;
+};
+
+const isConstipationDay = (
+  d: ClinicalSnapshot["recentDailies"][number],
+): boolean =>
+  (typeof d.stool_bristol === "number" &&
+    d.stool_bristol <= GI.constipation_bristol_max) ||
+  (typeof d.stool_count === "number" && d.stool_count === 0);
+
+const loosStoolDayStreak = (s: ClinicalSnapshot, windowDays: number): number =>
+  consecutiveDayStreak(s, windowDays, isLooseStoolDay);
+
+const constipationDayStreak = (
+  s: ClinicalSnapshot,
+  windowDays: number,
+): number => consecutiveDayStreak(s, windowDays, isConstipationDay);
 
 const MS_PER_DAY = 24 * 3600 * 1000;
 
