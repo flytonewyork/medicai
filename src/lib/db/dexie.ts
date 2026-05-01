@@ -60,6 +60,7 @@ import type {
 import type { HouseholdProfile as HouseholdProfileRow } from "~/types/household-profile";
 import type { VoiceMemo } from "~/types/voice-memo";
 import type { CoverageSnoozeRow } from "~/types/coverage";
+import type { WearableObservation } from "~/types/wearable";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -134,6 +135,13 @@ export class AnchorDB extends Dexie {
   // snoozed_until expires. Calm-engagement complement to the
   // detector itself.
   coverage_snoozes!: Table<CoverageSnoozeRow, number>;
+  // v26: Wearable observations from Health Connect (Oura, Withings,
+  // Garmin, Samsung etc.). One row per (date, metric_id, source). Id
+  // is deterministic (`source:metric:date`) so re-importing the same
+  // observation is idempotent. Indexed on date + metric_id for the
+  // analytical layer's hot query: "what did the wearable say about
+  // metric X on day Y".
+  wearable_observations!: Table<WearableObservation, string>;
 
   constructor() {
     super("anchor_db");
@@ -427,6 +435,18 @@ export class AnchorDB extends Dexie {
     this.version(25).stores({
       coverage_snoozes:
         "++id, field_key, snoozed_until, snoozed_at",
+    });
+    // v26: Wearable observations from Health Connect. One row per
+    // (date, metric_id, source_device); deterministic string id
+    // makes re-imports idempotent. Indexes:
+    //   - date           — quick "today's wearable readings" pull
+    //   - metric_id      — quick "all RHR readings ever" pull
+    //   - [date+metric_id] — analytical layer's hot lookup
+    //   - source_device  — for vendor-attributed clinician views
+    this.version(26).stores({
+      wearable_observations:
+        "&id, date, metric_id, source_device, recorded_at, " +
+        "[date+metric_id]",
     });
   }
 }
