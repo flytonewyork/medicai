@@ -17,6 +17,7 @@ import { computeChemoBodyFluidNudges } from "./chemo-body-fluid-nudges";
 import { agentRunsToFeedItems } from "./agent-runs";
 import { resurfaceFollowUps } from "./follow-up-resurface";
 import { computeCadencePrompts } from "./cadence-prompts";
+import { computeGiTileNudges } from "./gi-tile-nudges";
 import { getActiveTaskInstances } from "~/lib/tasks/engine";
 
 export interface ComposeInputs {
@@ -100,6 +101,14 @@ export function composeTodayFeed(inputs: ComposeInputs): FeedItem[] {
     ...computeChemoBodyFluidNudges({
       cycleContext: inputs.cycleContext,
       todayISO: inputs.todayISO,
+    }),
+  );
+
+  // ── 5e. Reflexive GI tile nudges (PERT, Bristol, oil, BMs, streak) ──
+  feed.push(
+    ...computeGiTileNudges({
+      todayISO: inputs.todayISO,
+      recentDailies: inputs.recentDailies,
     }),
   );
 
