@@ -35,6 +35,7 @@ import { useAppPerspective } from "~/lib/caregiver/scope";
 // so it's excluded here to avoid a confusing duplicate view.
 const PATIENT_ITEMS = [
   { href: "/", key: "nav.dashboard", icon: LayoutDashboard, descKey: "nav.desc.dashboard" },
+  { href: "/pathway", key: "nav.pathway", icon: Route, descKey: "nav.desc.pathway" },
   { href: "/diary", key: "nav.diary", icon: BookOpen, descKey: "nav.desc.diary" },
   { href: "/memos", key: "nav.memos", icon: Mic, descKey: "nav.desc.memos" },
   { href: "/schedule", key: "nav.schedule", icon: CalendarDays, descKey: "nav.desc.schedule" },

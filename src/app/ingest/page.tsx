@@ -3,25 +3,147 @@
 import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "~/lib/db/dexie";
 import { latestIngestedDocuments } from "~/lib/db/queries";
 import { useLocale } from "~/hooks/use-translate";
 import { PageHeader } from "~/components/ui/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { CameraCapture } from "~/components/ingest/camera-capture";
 import { BulkQueue } from "~/components/ingest/bulk-queue";
 import { UniversalDrop } from "~/components/ingest/universal-drop";
 import { PhoneCallNote } from "~/components/ingest/phone-note";
 import { PreviewDiff } from "~/components/ingest/preview-diff";
-import type { IngestApplyResult, IngestDraft } from "~/types/ingest";
+import type {
+  IngestApplyResult,
+  IngestDocumentKind,
+  IngestDraft,
+} from "~/types/ingest";
 import {
   parseBulkItem,
   processBulkItem,
   saveBulkItem,
   type BulkItem,
 } from "~/lib/ingest/bulk";
-import { Upload } from "lucide-react";
+import {
+  Upload,
+  FileText,
+  Phone,
+  FlaskConical,
+  Image as ImageIcon,
+  CalendarDays,
+  Pill,
+  ArrowLeft,
+} from "lucide-react";
+
+// Slice 10: opinionated upload landing. Five named cards take the
+// patient straight to a focused capture flow with the right Claude
+// prompt for that document type. The 6th "Other / mixed" path is the
+// previous catch-all for anything that doesn't fit a named slot.
+//
+// Each named entry routes through /api/ai/ingest-universal with
+// `expected_kind` so the parse prioritises the matching ops and
+// doesn't fabricate ops outside the expected scope.
+
+type CardKind =
+  | "clinic_letter"
+  | "phone_call_note"
+  | "lab_report"
+  | "imaging_report"
+  | "appointment_schedule"
+  | "prescription"
+  | "other";
+
+const CARDS: ReadonlyArray<{
+  kind: CardKind;
+  icon: typeof FileText;
+  en: { title: string; subtitle: string };
+  zh: { title: string; subtitle: string };
+}> = [
+  {
+    kind: "clinic_letter",
+    icon: FileText,
+    en: {
+      title: "Clinic letter or referral",
+      subtitle: "Consult summary, treatment plan, referral. Photo or paste.",
+    },
+    zh: {
+      title: "门诊信 / 转诊",
+      subtitle: "看诊小结、治疗计划、转诊。拍照或粘贴。",
+    },
+  },
+  {
+    kind: "phone_call_note",
+    icon: Phone,
+    en: {
+      title: "Phone call from clinic",
+      subtitle: "Type or dictate what they said — appointments + prep extracted.",
+    },
+    zh: {
+      title: "诊所来电记录",
+      subtitle: "输入或口述电话内容 — 自动识别预约和准备事项。",
+    },
+  },
+  {
+    kind: "lab_report",
+    icon: FlaskConical,
+    en: {
+      title: "Lab or pathology report",
+      subtitle: "Bloods, tumour markers, biopsy. PDF or photo.",
+    },
+    zh: {
+      title: "化验 / 病理报告",
+      subtitle: "血液、肿瘤标志物、活检。PDF 或照片。",
+    },
+  },
+  {
+    kind: "imaging_report",
+    icon: ImageIcon,
+    en: {
+      title: "Imaging or scan report",
+      subtitle: "PET, CT, MRI, ultrasound report. PDF or photo.",
+    },
+    zh: {
+      title: "影像 / 扫描报告",
+      subtitle: "PET / CT / MRI / 超声报告。PDF 或照片。",
+    },
+  },
+  {
+    kind: "appointment_schedule",
+    icon: CalendarDays,
+    en: {
+      title: "Appointment schedule",
+      subtitle: "Calendar export (.ics), clinic week, scheduling block.",
+    },
+    zh: {
+      title: "预约日程",
+      subtitle: "日历订阅 (.ics)、诊所周排表。",
+    },
+  },
+  {
+    kind: "prescription",
+    icon: Pill,
+    en: {
+      title: "Prescription",
+      subtitle: "New medication. PDF, photo, or paste the script.",
+    },
+    zh: {
+      title: "处方",
+      subtitle: "新处方药。PDF、照片或粘贴。",
+    },
+  },
+  {
+    kind: "other",
+    icon: Upload,
+    en: {
+      title: "Other / mixed documents",
+      subtitle: "Anything else. AI classifies and fans out.",
+    },
+    zh: {
+      title: "其他 / 混合文档",
+      subtitle: "任何其他文件。AI 自动分类并归档。",
+    },
+  },
+];
 
 function newId(): string {
   return Math.random().toString(36).slice(2, 10);
@@ -30,6 +152,7 @@ function newId(): string {
 export default function IngestPage() {
   const locale = useLocale();
 
+  const [picked, setPicked] = useState<CardKind | null>(null);
   const [draft, setDraft] = useState<IngestDraft | null>(null);
   const [appliedResults, setAppliedResults] = useState<IngestApplyResult[] | null>(null);
 
@@ -40,9 +163,7 @@ export default function IngestPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const mutate = useCallback((id: string, patch: Partial<BulkItem>) => {
-    setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, ...patch } : i)),
-    );
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
     itemsRef.current = itemsRef.current.map((i) =>
       i.id === id ? { ...i, ...patch } : i,
     );
@@ -59,10 +180,6 @@ export default function IngestPage() {
     }));
     setItems((prev) => [...prev, ...newItems]);
     itemsRef.current = [...itemsRef.current, ...newItems];
-
-    // Process one at a time to avoid memory pressure. Images go directly
-    // through Claude Vision (server-side key); PDFs still go through OCR
-    // and then the heuristic parser auto-runs for a first-pass result.
     for (const item of newItems) {
       await processBulkItem(item, mutate);
       const latest =
@@ -102,17 +219,86 @@ export default function IngestPage() {
     itemsRef.current = [];
   }
 
+  function reset() {
+    setPicked(null);
+    setDraft(null);
+    setAppliedResults(null);
+  }
+
   const recent = useLiveQuery(() => latestIngestedDocuments(8));
 
+  // Mid-flow: a draft is being reviewed.
+  if (draft) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-8">
+        <PageHeader
+          eyebrow={locale === "zh" ? "导入" : "Ingest"}
+          title={
+            locale === "zh"
+              ? "确认要导入的内容"
+              : "Review what we'll save"
+          }
+        />
+        <PreviewDiff
+          draft={draft}
+          onApplied={(rs) => setAppliedResults(rs)}
+          onDiscard={reset}
+        />
+        {appliedResults && (
+          <Button variant="ghost" onClick={reset}>
+            <ArrowLeft className="h-4 w-4" />
+            {locale === "zh" ? "导入更多" : "Import more"}
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  // Mid-flow: a card was picked, render the focused capture for it.
+  if (picked) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-5 p-4 md:p-8">
+        <Button variant="ghost" onClick={reset}>
+          <ArrowLeft className="h-4 w-4" />
+          {locale === "zh" ? "返回" : "Back"}
+        </Button>
+        <FocusedCapture
+          kind={picked}
+          locale={locale}
+          onDraft={setDraft}
+          enqueueFiles={(fs) => void enqueueFiles(fs)}
+          fileInputRef={fileInputRef}
+        />
+        {items.length > 0 && (
+          <BulkQueue
+            items={items}
+            apiKeyConfigured={true}
+            onParseHeuristic={(id) => void reparseItem(id, "heuristic")}
+            onParseClaude={(id) => void reparseItem(id, "claude")}
+            onSave={(id) => void saveItem(id)}
+            onSaveAll={() => void saveAll()}
+            onDiscard={discardItem}
+            onReset={clearAll}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Default landing: named cards.
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-8">
       <PageHeader
         eyebrow={locale === "zh" ? "导入" : "Ingest"}
-        title={locale === "zh" ? "临床文档导入" : "Clinical document ingest"}
+        title={
+          locale === "zh"
+            ? "导入临床文档"
+            : "Import a clinical document"
+        }
         subtitle={
           locale === "zh"
-            ? "本机 OCR，可选 Claude 结构化。一次拖入多个文件。"
-            : "On-device OCR. Optional Claude structuring. Drop several files at once."
+            ? "选一个类别 — AI 会按照对应的字段精准归档。"
+            : "Pick the type — AI reads it with the right focus and files it cleanly."
         }
         action={
           <Link href="/ingest/pending">
@@ -123,80 +309,33 @@ export default function IngestPage() {
         }
       />
 
-      {!draft && !appliedResults && (
-        <>
-          <PhoneCallNote onDraft={setDraft} />
-          <UniversalDrop onDraft={setDraft} />
-        </>
-      )}
-
-      {draft && (
-        <PreviewDiff
-          draft={draft}
-          onApplied={(rs) => {
-            setAppliedResults(rs);
-          }}
-          onDiscard={() => {
-            setDraft(null);
-            setAppliedResults(null);
-          }}
-        />
-      )}
-
-      <Card>
-        <CardContent className="space-y-4 pt-5">
-          <div className="flex flex-wrap items-center gap-2">
-            <CameraCapture
-              onPhoto={(f) => void enqueueFiles([f])}
-              label={
-                locale === "zh" ? "拍一张报告照片" : "Snap a report photo"
-              }
-            />
-            <Button
-              variant="secondary"
-              onClick={() => fileInputRef.current?.click()}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {CARDS.map((c) => {
+          const Icon = c.icon;
+          const copy = locale === "zh" ? c.zh : c.en;
+          return (
+            <button
+              key={c.kind}
+              type="button"
+              onClick={() => setPicked(c.kind)}
+              className="flex items-start gap-3 rounded-md border border-ink-100 bg-paper-2/40 px-3.5 py-3 text-left hover:border-[var(--tide-2)] hover:bg-paper-2"
             >
-              <Upload className="h-4 w-4" />
-              {locale === "zh" ? "选择多份文件" : "Choose files"}
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              multiple
-              accept="image/*,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx"
-              onChange={(e) => {
-                void enqueueFiles(e.target.files);
-                e.target.value = "";
-              }}
-            />
-          </div>
-
-          <DropZone onFiles={(fs) => void enqueueFiles(fs)} locale={locale} />
-
-          {items.length === 0 && (
-            <p className="text-xs text-ink-500">
-              {locale === "zh"
-                ? "一次可导入多份报告 — 每份都会出现在下方队列。"
-                : "Queue as many reports as you like — each one appears in the list below."}
-            </p>
-          )}
-
-          {items.length > 0 && (
-            <BulkQueue
-              items={items}
-              apiKeyConfigured={true}
-              onParseHeuristic={(id) => void reparseItem(id, "heuristic")}
-              onParseClaude={(id) => void reparseItem(id, "claude")}
-              onSave={(id) => void saveItem(id)}
-              onSaveAll={() => void saveAll()}
-              onDiscard={discardItem}
-              onReset={clearAll}
-            />
-          )}
-        </CardContent>
-      </Card>
-
+              <Icon
+                className="mt-0.5 h-5 w-5 shrink-0 text-[var(--tide-2)]"
+                aria-hidden
+              />
+              <div className="min-w-0">
+                <div className="text-[13.5px] font-medium text-ink-900">
+                  {copy.title}
+                </div>
+                <div className="mt-0.5 text-[11.5px] text-ink-500">
+                  {copy.subtitle}
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
 
       {recent && recent.length > 0 && (
         <section className="space-y-2">
@@ -227,36 +366,95 @@ export default function IngestPage() {
   );
 }
 
-function DropZone({
-  onFiles,
+// Focused capture for a picked document type. Phone-call notes get
+// the dedicated PhoneCallNote component (text + voice with the right
+// "Source: phone call." prefix); everything else gets the universal
+// drop-in (camera + paste + bulk file picker) with `expectedKind`
+// threaded through.
+function FocusedCapture({
+  kind,
   locale,
+  onDraft,
+  enqueueFiles,
+  fileInputRef,
 }: {
-  onFiles: (files: File[]) => void;
+  kind: CardKind;
   locale: "en" | "zh";
+  onDraft: (d: IngestDraft) => void;
+  enqueueFiles: (fs: FileList | File[] | null) => void;
+  fileInputRef: React.RefObject<HTMLInputElement>;
 }) {
-  const [over, setOver] = useState(false);
+  const card = CARDS.find((c) => c.kind === kind)!;
+  const copy = locale === "zh" ? card.zh : card.en;
+  const Icon = card.icon;
+
+  // Phone-call surface uses its own component — it's text + voice
+  // with the right server-side prefix already.
+  if (kind === "phone_call_note") {
+    return (
+      <div className="space-y-3">
+        <div className="inline-flex items-center gap-2 text-[13px] font-medium text-ink-900">
+          <Icon className="h-4 w-4 text-[var(--tide-2)]" aria-hidden />
+          {copy.title}
+        </div>
+        <PhoneCallNote onDraft={onDraft} />
+      </div>
+    );
+  }
+
+  // Generic capture: text paste / camera / file picker. expected_kind
+  // is the only thing that varies vs. the catch-all "other" path.
+  const expectedKind: IngestDocumentKind | "appointment_schedule" | undefined =
+    kind === "other" ? undefined : kind;
+
   return (
-    <div
-      onDragOver={(e) => {
-        e.preventDefault();
-        setOver(true);
-      }}
-      onDragLeave={() => setOver(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setOver(false);
-        const files = Array.from(e.dataTransfer.files ?? []);
-        if (files.length > 0) onFiles(files);
-      }}
-      className={
-        over
-          ? "rounded-[var(--r-md)] border-2 border-dashed border-ink-700 bg-ink-100/40 px-4 py-5 text-center text-xs text-ink-700"
-          : "rounded-[var(--r-md)] border-2 border-dashed border-ink-200 bg-paper px-4 py-5 text-center text-xs text-ink-500"
-      }
-    >
-      {locale === "zh"
-        ? "拖放任意数量的文件到这里（PDF / JPG / PNG / DOCX）"
-        : "Drop any number of files here (PDF · JPG · PNG · DOCX)"}
+    <div className="space-y-3">
+      <div className="inline-flex items-center gap-2 text-[13px] font-medium text-ink-900">
+        <Icon className="h-4 w-4 text-[var(--tide-2)]" aria-hidden />
+        {copy.title}
+      </div>
+      <p className="text-[12px] text-ink-500">{copy.subtitle}</p>
+
+      <UniversalDrop onDraft={onDraft} expectedKind={expectedKind} />
+
+      <Card>
+        <CardContent className="space-y-3 pt-5">
+          <div className="text-[11px] font-medium uppercase tracking-wider text-ink-400">
+            {locale === "zh" ? "或者上传文件" : "Or upload files"}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <CameraCapture
+              onPhoto={(f) => enqueueFiles([f])}
+              label={
+                locale === "zh" ? "拍一张照片" : "Snap a photo"
+              }
+            />
+            <Button
+              variant="secondary"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-4 w-4" />
+              {locale === "zh" ? "选择文件" : "Choose files"}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              multiple
+              accept="image/*,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx"
+              onChange={(e) => {
+                enqueueFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
+          </div>
+          <p className="text-[11px] text-ink-500">
+            {locale === "zh"
+              ? "PDF、照片、DOCX 都可以。一次可上传多份。"
+              : "PDFs, photos, DOCX — drop as many as you like."}
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
