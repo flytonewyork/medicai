@@ -515,6 +515,14 @@ export function PillarTiles() {
 
   if (tiles.length === 0) return null;
 
+  // With grid-cols-2, a lone tile (or an odd-numbered last tile) sits
+  // in the left column with an empty hole on the right. When there's
+  // only one tile, render it full-width so the dashboard doesn't show
+  // a half-row of dead space.
+  if (tiles.length === 1) {
+    return <div>{tiles[0]!.node}</div>;
+  }
+
   return (
     <div className="grid grid-cols-2 gap-3">
       {tiles.map((t) => (
