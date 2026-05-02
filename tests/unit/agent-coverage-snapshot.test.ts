@@ -9,6 +9,7 @@ function gap(field_key: string, body = "(prompt)"): CoverageGap {
     priority: 50,
     title: { en: "x", zh: "x" },
     body: { en: body, zh: body },
+    why: { en: "(why)", zh: "(why)" },
     cta_href: `/daily/new?step=${field_key}`,
     icon: "salad",
   };

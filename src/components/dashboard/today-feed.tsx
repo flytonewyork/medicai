@@ -33,6 +33,7 @@ import {
   CheckCircle2,
   Salad,
   X,
+  HelpCircle,
 } from "lucide-react";
 import { snoozeCoverageField } from "~/lib/coverage/snooze";
 import { todayISO as todayIsoFn } from "~/lib/utils/date";
@@ -138,6 +139,7 @@ export function TodayFeed({
         const parsed = JSON.parse(raw) as { tag: string; text: string };
         if (parsed.tag === cacheTag) {
           setNarrative(parsed.text);
+          setNarrativeLoading(false);
           return;
         }
       }
@@ -149,6 +151,14 @@ export function TodayFeed({
     // new fetch is in flight.
     setNarrative(null);
     setNarrativeLoading(true);
+    let cancelled = false;
+    // Hard ceiling — if the API gateway hangs we bail rather than
+    // leaving a skeleton on the dashboard for the rest of the session.
+    const fallbackTimer = setTimeout(() => {
+      if (cancelled) return;
+      cancelled = true;
+      setNarrativeLoading(false);
+    }, 12000);
     void (async () => {
       try {
         const text = await generateNarrative({
@@ -156,6 +166,7 @@ export function TodayFeed({
           locale,
           items: feed,
         });
+        if (cancelled) return;
         setNarrative(text);
         try {
           localStorage.setItem(
@@ -171,11 +182,16 @@ export function TodayFeed({
         // on it.
         // eslint-disable-next-line no-console
         console.warn("[today-feed] narrative fetch failed", err);
-        setNarrative(null);
+        if (!cancelled) setNarrative(null);
       } finally {
-        setNarrativeLoading(false);
+        if (!cancelled) setNarrativeLoading(false);
+        clearTimeout(fallbackTimer);
       }
     })();
+    return () => {
+      cancelled = true;
+      clearTimeout(fallbackTimer);
+    };
     // `feed` is intentionally excluded — feedSignature captures content-level change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [model, locale, feedSignature]);
@@ -262,10 +278,9 @@ function FeedRow({ item }: { item: FeedItem }) {
   const tone = TONE_STYLES[item.tone];
   const Icon = ICONS[item.icon ?? "dot"] ?? Circle;
   const isAgentRun = item.meta?.kind === "agent_run";
-  const isCoverage = item.meta?.kind === "coverage";
-  const coverageMeta = isCoverage
-    ? (item.meta as { kind: "coverage"; field_key: string })
-    : null;
+  const coverageMeta =
+    item.meta?.kind === "coverage" ? item.meta : null;
+  const [whyOpen, setWhyOpen] = useState(false);
   const body = (
     <div
       className={cn(
@@ -305,6 +320,21 @@ function FeedRow({ item }: { item: FeedItem }) {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  setWhyOpen((v) => !v);
+                }}
+                className="rounded-md p-0.5 text-ink-400 hover:bg-paper hover:text-ink-700"
+                aria-label={locale === "zh" ? "为什么提示这个" : "Why this prompt"}
+                aria-expanded={whyOpen}
+              >
+                <HelpCircle className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {coverageMeta && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   void snoozeCoverageField(
                     coverageMeta.field_key,
                     todayIsoFn(),
@@ -323,6 +353,11 @@ function FeedRow({ item }: { item: FeedItem }) {
         <p className="mt-1 text-[12.5px] leading-relaxed text-ink-700">
           {localize(item.body, locale)}
         </p>
+        {coverageMeta && whyOpen && (
+          <p className="mt-2 rounded-md bg-paper/60 p-2 text-[11.5px] leading-relaxed text-ink-500">
+            {localize(coverageMeta.why, locale)}
+          </p>
+        )}
         {isAgentRun && item.meta?.kind === "agent_run" && (
           <AgentFeedbackControls
             agentId={item.meta.agent_id as AgentId}

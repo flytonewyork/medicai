@@ -55,4 +55,5 @@ export type AgentRunMeta = {
 export type CoverageMeta = {
   kind: "coverage";
   field_key: string;
+  why: LocalizedText;
 };

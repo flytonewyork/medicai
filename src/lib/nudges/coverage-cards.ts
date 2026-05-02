@@ -17,6 +17,6 @@ export function coverageGapsToFeedItems(
     cta: { href: g.cta_href, label: { en: "Log", zh: "记录" } },
     icon: g.icon,
     source: `coverage:${g.field_key}`,
-    meta: { kind: "coverage", field_key: g.field_key },
+    meta: { kind: "coverage", field_key: g.field_key, why: g.why },
   }));
 }

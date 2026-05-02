@@ -1,5 +1,6 @@
 import type {
   DailyEntry,
+  FortnightlyAssessment,
   LabResult,
   Settings,
   ZoneAlert,
@@ -19,6 +20,7 @@ import { agentRunsToFeedItems } from "./agent-runs";
 import { resurfaceFollowUps } from "./follow-up-resurface";
 import { computeCadencePrompts } from "./cadence-prompts";
 import { computeGiTileNudges } from "./gi-tile-nudges";
+import { computeFortnightlyPrompt } from "./fortnightly-prompt";
 import { computeCoverageGaps } from "~/lib/coverage/log-coverage";
 import { coverageGapsToFeedItems } from "./coverage-cards";
 import { getActiveTaskInstances } from "~/lib/tasks/engine";
@@ -40,6 +42,9 @@ export interface ComposeInputs {
   // Active coverage-prompt snoozes. Pass all rows from the
   // coverage_snoozes table; the engine filters expired ones.
   coverageSnoozes?: CoverageSnoozeRow[];
+  // Recent fortnightly assessments. The fortnightly cadence prompt
+  // fires when the latest is missing or > 12 days old.
+  fortnightlies?: readonly FortnightlyAssessment[];
 }
 
 export function composeTodayFeed(inputs: ComposeInputs): FeedItem[] {
@@ -115,6 +120,22 @@ export function composeTodayFeed(inputs: ComposeInputs): FeedItem[] {
     ...computeGiTileNudges({
       todayISO: inputs.todayISO,
       recentDailies: inputs.recentDailies,
+    }),
+  );
+
+  // ── 5f. Fortnightly assessment cadence ─────────────────────────────
+  // Surfaces the function-preservation backbone (grip, gait, ECOG,
+  // sarc-F, TUG, STS) when the most recent fortnightly is missing or
+  // > 12 days old. Suppressed by red-zone alerts (safety owns the
+  // channel).
+  const redZoneActive = inputs.activeAlerts.some(
+    (a) => !a.resolved && a.zone === "red",
+  );
+  feed.push(
+    ...computeFortnightlyPrompt({
+      todayISO: inputs.todayISO,
+      fortnightlies: inputs.fortnightlies ?? [],
+      redZoneActive,
     }),
   );
 
