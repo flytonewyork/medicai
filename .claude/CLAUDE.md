@@ -35,6 +35,13 @@ and partially axis 2 (symptoms). This platform fills the axis 3 gap.
 
 ## Interaction model — single channel in, single channel out
 
+**Scope:** this section governs **the patient's surface only** — what
+Hu Lin sees and touches. Carer (Thomas, Catherine), family
+(relatives), and clinician surfaces have a different cognitive-load
+model and may use direct routes, multiple tabs, dashboards, and
+discipline-specific tooling. The single-channel doctrine does not
+apply to them and they should not be folded into the patient feed.
+
 The patient sees ONE input and ONE feed. Everything else is hidden.
 
 **Single channel in.** The patient says what's happening — free text, voice,
@@ -63,9 +70,16 @@ single input. The system updates state and re-ranks the feed.
 
 This collapses the cognitive surface to: tell, see, repeat. The
 multidisciplinary depth lives behind it. Any feature that adds a new
-top-level form, tab, or screen for the patient is going the wrong way
+top-level form, tab, or screen **for Hu Lin** is going the wrong way
 — it should become an input modality on the unified channel and a
 ranked item on the unified feed.
+
+**For non-patient surfaces** (Thomas's `/family`, `/care-team`,
+`/carers`, `/reports`; clinicians' future export views): the
+single-channel rule does NOT apply. Those audiences benefit from
+direct routes to specific data, sortable tables, and discipline-
+scoped views. Adding a new top-level page for *them* is fine; adding
+one for Hu Lin is not.
 
 ## Zone logic
 
