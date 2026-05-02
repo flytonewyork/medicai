@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import "fake-indexeddb/auto";
 
 // Mock the Supabase browser client before importing the queue module.
 // `processQueue` bails early when no client is configured — the tests that
@@ -15,6 +16,7 @@ vi.mock("~/lib/supabase/client", () => ({
   }),
 }));
 
+import { db } from "~/lib/db/dexie";
 import {
   enqueueSync,
   pendingSyncCount,
@@ -28,10 +30,13 @@ import {
 
 const TEST_HOUSEHOLD = "00000000-0000-0000-0000-000000000001";
 
-beforeEach(() => {
+beforeEach(async () => {
   __resetSyncQueueForTests();
   __resetHouseholdContextForTests();
   __setHouseholdIdForTests(TEST_HOUSEHOLD);
+  // The persistent queue writes to Dexie before mirroring to memory; clear
+  // the table between tests so a previous test's enqueues don't leak in.
+  await db.sync_queue.clear();
   upsertMock.mockReset();
   updateMock.mockReset();
   eqMock.mockReset();
@@ -56,11 +61,14 @@ beforeEach(() => {
 });
 
 async function flushMicrotasks() {
-  // `enqueueSync` schedules via `void processQueue()`. Flush the promise chain
-  // plus one extra tick so the queue has a chance to drain.
-  await Promise.resolve();
-  await Promise.resolve();
-  await new Promise((r) => setTimeout(r, 0));
+  // `enqueueSync` schedules via `void (async () => { await db.sync_queue.add(); … })()`.
+  // The Dexie write is two awaits deep, then `processQueue` runs which itself
+  // awaits `restoreQueueFromDexie` and the (mocked) supabase upsert. Flush
+  // generously rather than counting microtasks — fake-indexeddb resolves
+  // through real promises, not microtasks.
+  for (let i = 0; i < 6; i += 1) {
+    await new Promise((r) => setTimeout(r, 0));
+  }
 }
 
 describe("sync queue — enqueueSync", () => {
@@ -155,6 +163,48 @@ describe("sync queue — withSyncSuppressed", () => {
     });
     await flushMicrotasks();
     expect(upsertMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("sync queue — persistence across tab close", () => {
+  it("restores queued ops from Dexie on next session", async () => {
+    // Simulate a session where the household resolves only AFTER the
+    // user has already logged. With no household, the queue can't
+    // drain — but the op must survive into the next session.
+    __setHouseholdIdForTests(null);
+    enqueueSync({
+      kind: "upsert",
+      table: "daily_entries",
+      local_id: 99,
+      data: { id: 99, date: "2026-04-23" },
+    });
+    await flushMicrotasks();
+    expect(upsertMock).not.toHaveBeenCalled();
+
+    // Tab closes / page reloads — wipe in-memory state but leave Dexie
+    // intact (NOT calling db.sync_queue.clear here, deliberately).
+    __resetSyncQueueForTests();
+    expect(pendingSyncCount()).toBe(0);
+
+    // New session: household resolves. The next enqueue triggers a
+    // restore which picks up the persisted op.
+    __setHouseholdIdForTests(TEST_HOUSEHOLD);
+    enqueueSync({
+      kind: "upsert",
+      table: "medications",
+      local_id: 100,
+      data: { id: 100 },
+    });
+    await flushMicrotasks();
+
+    // Both the resurrected op (local_id 99) and the new op (local_id 100)
+    // should have pushed.
+    expect(upsertMock).toHaveBeenCalledTimes(2);
+    const localIds = upsertMock.mock.calls
+      .map((c) => c[0].local_id as number)
+      .sort((a, b) => a - b);
+    expect(localIds).toEqual([99, 100]);
+    expect(pendingSyncCount()).toBe(0);
   });
 });
 

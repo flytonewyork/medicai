@@ -60,6 +60,7 @@ import type {
 import type { HouseholdProfile as HouseholdProfileRow } from "~/types/household-profile";
 import type { VoiceMemo } from "~/types/voice-memo";
 import type { CoverageSnoozeRow } from "~/types/coverage";
+import type { SyncQueueRow } from "~/types/sync-queue";
 import type { WearableObservation } from "~/types/wearable";
 
 export class AnchorDB extends Dexie {
@@ -135,7 +136,14 @@ export class AnchorDB extends Dexie {
   // snoozed_until expires. Calm-engagement complement to the
   // detector itself.
   coverage_snoozes!: Table<CoverageSnoozeRow, number>;
-  // v26: Wearable observations from Health Connect (Oura, Withings,
+  // v26: Persistent sync queue. Replaces the in-memory queue that was
+  // losing Hu Lin's writes whenever bootstrap stalled (no household_id
+  // → queue paused → tab close → pending ops vanished). Each row is
+  // one push to `cloud_rows`; the worker drains in id order and deletes
+  // the row on successful upsert. Survives tab close, browser restart,
+  // and pre-household sign-in windows.
+  sync_queue!: Table<SyncQueueRow, number>;
+  // v27: Wearable observations from Health Connect (Oura, Withings,
   // Garmin, Samsung etc.). One row per (date, metric_id, source). Id
   // is deterministic (`source:metric:date`) so re-importing the same
   // observation is idempotent. Indexed on date + metric_id for the
@@ -436,14 +444,20 @@ export class AnchorDB extends Dexie {
       coverage_snoozes:
         "++id, field_key, snoozed_until, snoozed_at",
     });
-    // v26: Wearable observations from Health Connect. One row per
+    // v26: Persistent sync queue. Each row is one pending push to
+    // `cloud_rows`. Indexed on `enqueued_at` so the worker drains in
+    // FIFO order and the diagnostic UI can show queue age.
+    this.version(26).stores({
+      sync_queue: "++id, table, kind, local_id, enqueued_at",
+    });
+    // v27: Wearable observations from Health Connect. One row per
     // (date, metric_id, source_device); deterministic string id
     // makes re-imports idempotent. Indexes:
     //   - date           — quick "today's wearable readings" pull
     //   - metric_id      — quick "all RHR readings ever" pull
     //   - [date+metric_id] — analytical layer's hot lookup
     //   - source_device  — for vendor-attributed clinician views
-    this.version(26).stores({
+    this.version(27).stores({
       wearable_observations:
         "&id, date, metric_id, source_device, recorded_at, " +
         "[date+metric_id]",

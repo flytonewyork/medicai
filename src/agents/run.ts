@@ -89,6 +89,12 @@ export interface RunAgentArgs {
   // tests can call runAgent() without setting up a profile; the
   // fallback envelope keeps the prompt generic.
   profile?: HouseholdProfile;
+  // Pre-formatted coverage snapshot. Optional — older callers pass
+  // nothing and the agent runs without absence reasoning. When
+  // present, it lands as a fourth cached system block describing the
+  // day's gaps and how the agent should (and shouldn't) act on them.
+  // Computed by ~/lib/coverage/agent-snapshot.
+  coverageSnapshot?: string;
 }
 
 export async function runAgent(args: RunAgentArgs): Promise<AgentOutput> {
@@ -112,29 +118,41 @@ export async function runAgent(args: RunAgentArgs): Promise<AgentOutput> {
   ].join("\n");
 
   const profile = args.profile ?? FALLBACK_HOUSEHOLD_PROFILE;
+  const systemBlocks: Array<{
+    type: "text";
+    text: string;
+    cache_control: { type: "ephemeral" };
+  }> = [
+    {
+      type: "text",
+      text: roleFor(args.id, profile),
+      cache_control: { type: "ephemeral" },
+    },
+    {
+      type: "text",
+      text:
+        args.stateMd.trim().length > 0
+          ? `Your current state summary (state.md):\n\n${args.stateMd}`
+          : "Your current state summary is empty — this is the first batch you're seeing.",
+      cache_control: { type: "ephemeral" },
+    },
+    {
+      type: "text",
+      text: `Recent feedback on your past runs (most recent first):\n\n${formatFeedback(args.recentFeedback)}`,
+      cache_control: { type: "ephemeral" },
+    },
+  ];
+  if (args.coverageSnapshot && args.coverageSnapshot.trim().length > 0) {
+    systemBlocks.push({
+      type: "text",
+      text: args.coverageSnapshot,
+      cache_control: { type: "ephemeral" },
+    });
+  }
   const response = await client.messages.parse({
     model: MODEL,
     max_tokens: 2000,
-    system: [
-      {
-        type: "text",
-        text: roleFor(args.id, profile),
-        cache_control: { type: "ephemeral" },
-      },
-      {
-        type: "text",
-        text:
-          args.stateMd.trim().length > 0
-            ? `Your current state summary (state.md):\n\n${args.stateMd}`
-            : "Your current state summary is empty — this is the first batch you're seeing.",
-        cache_control: { type: "ephemeral" },
-      },
-      {
-        type: "text",
-        text: `Recent feedback on your past runs (most recent first):\n\n${formatFeedback(args.recentFeedback)}`,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
+    system: systemBlocks,
     output_config: { format: jsonOutputFormat(AgentOutputSchema) },
     messages: [{ role: "user", content: [{ type: "text", text: userText }] }],
   });
