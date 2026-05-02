@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { db } from "~/lib/db/dexie";
+import { db, now } from "~/lib/db/dexie";
 import { persistVoiceMemo } from "~/lib/voice-memo/persist";
 import { uploadVoiceMemoAudio } from "~/lib/voice-memo/cloud";
 import { parseVoiceMemo } from "~/lib/voice-memo/parse";
@@ -303,7 +303,7 @@ export function useVoiceTranscription(
                 void db.voice_memos
                   .update(memoId, {
                     transcript: running,
-                    updated_at: new Date().toISOString(),
+                    updated_at: now(),
                   })
                   .catch(() => {
                     // already handled — best effort
@@ -318,7 +318,7 @@ export function useVoiceTranscription(
             try {
               await db.voice_memos.update(memoId, {
                 transcript: text,
-                updated_at: new Date().toISOString(),
+                updated_at: now(),
               });
             } catch (err) {
               // eslint-disable-next-line no-console

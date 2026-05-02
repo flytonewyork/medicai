@@ -2,7 +2,7 @@
 // detector orchestration stays pure and the consumer (UI, background job)
 // handles IO. Writes to signal_events on every lifecycle transition so the
 // attribution layer (slice 4) can walk the timeline.
-import { db } from "~/lib/db/dexie";
+import { db, now } from "~/lib/db/dexie";
 import { latestChangeSignals } from "~/lib/db/queries";
 import type { ChangeSignalRow, SignalEventKind } from "~/types/clinical";
 import { evaluateDetectors, reconcileSignals } from ".";
@@ -114,11 +114,11 @@ export async function setSignalStatus(
   status: SignalStatus,
   note?: string,
 ): Promise<void> {
-  const nowISO = new Date().toISOString();
+  const at = now();
   await db.change_signals.update(id, {
     status,
     resolved_at:
-      status === "resolved" || status === "dismissed" ? nowISO : undefined,
+      status === "resolved" || status === "dismissed" ? at : undefined,
     note,
   });
   const kind = statusToEventKind(status);
@@ -127,7 +127,7 @@ export async function setSignalStatus(
       signal_id: id,
       kind,
       note,
-      at: nowISO,
+      at,
     });
   }
 }

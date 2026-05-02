@@ -20,6 +20,14 @@ export function todayISO(): string {
   return formatLocalDateISO(new Date());
 }
 
+// Current instant as a UTC ISO string. The de-facto wire format for
+// `created_at`/`updated_at`/`at` columns and any timestamp written
+// through Dexie or Supabase. Centralised so a future move to a clock
+// abstraction (or fixed-clock testing) only touches one site.
+export function nowISO(): string {
+  return new Date().toISOString();
+}
+
 // Return the YYYY-MM-DD prefix of any ISO datetime string. Used widely for
 // keying dailies/meals/appointments by calendar date.
 export function isoDatePart(iso: string): string {

@@ -12,6 +12,7 @@ import { runAgent } from "~/agents/run";
 import { readJsonBody } from "~/lib/anthropic/route-helpers";
 import { requireSession } from "~/lib/auth/require-session";
 import { loadHouseholdProfile } from "~/lib/household/profile";
+import { nowISO } from "~/lib/utils/date";
 
 export const runtime = "nodejs";
 // Specialist agents chew through referrals + state and emit up to 2k tokens
@@ -128,7 +129,7 @@ export async function POST(
 
   return NextResponse.json({
     agent_id: id,
-    ran_at: new Date().toISOString(),
+    ran_at: nowISO(),
     referral_count: parsed.data.referrals.length,
     trigger: parsed.data.trigger,
     output,

@@ -1,4 +1,5 @@
 import type { Appointment } from "~/types/appointment";
+import { nowISO } from "~/lib/utils/date";
 
 // Serialise the patient's Anchor schedule as RFC 5545 iCalendar text. The
 // output is a one-shot snapshot — Anchor is local-first and appointments
@@ -110,7 +111,7 @@ export function appointmentsToIcs(
   appointments: readonly Appointment[],
   opts: { calendarName?: string } = {},
 ): string {
-  const dtstamp = formatUtc(new Date().toISOString());
+  const dtstamp = formatUtc(nowISO());
   const lines: string[] = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",

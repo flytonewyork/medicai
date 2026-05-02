@@ -8,6 +8,7 @@ import type {
   ProfilePrompt,
 } from "~/types/legacy";
 import type { TimelineMedia } from "~/types/timeline";
+import { nowISO } from "~/lib/utils/date";
 
 // Encrypted legacy export bundle.
 //
@@ -133,7 +134,7 @@ export function buildManifest(
 
   return {
     version: 1,
-    exported_at: input.now_iso ?? new Date().toISOString(),
+    exported_at: input.now_iso ?? nowISO(),
     bundle_version: BUNDLE_VERSION,
     consent,
     includes,

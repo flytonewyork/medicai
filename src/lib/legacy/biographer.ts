@@ -5,6 +5,7 @@ import type {
 } from "~/types/legacy";
 import type { EnteredBy } from "~/types/clinical";
 import type { FeedItem } from "~/types/feed";
+import { nowISO } from "~/lib/utils/date";
 
 // Biographer — deterministic layer.
 //
@@ -245,7 +246,7 @@ export function recomputeOutlineCoverage(
       linked_entries: matching
         .map((e) => e.id ?? 0)
         .filter((id) => id > 0),
-      updated_at: new Date().toISOString(),
+      updated_at: nowISO(),
     };
   });
 }

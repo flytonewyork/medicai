@@ -1,4 +1,5 @@
 import { getSupabaseBrowser } from "./client";
+import { nowISO } from "~/lib/utils/date";
 import type {
   Household,
   HouseholdInvite,
@@ -353,7 +354,7 @@ export async function revokeInvite(inviteId: string): Promise<void> {
   if (!sb) return;
   const { error } = await sb
     .from("household_invites")
-    .update({ revoked_at: new Date().toISOString() })
+    .update({ revoked_at: nowISO() })
     .eq("id", inviteId);
   if (error) throw error;
 }

@@ -5,8 +5,10 @@ import {
   readJsonBody,
   withAnthropicErrorBoundary,
 } from "~/lib/anthropic/route-helpers";
-import { getSupabaseServer } from "~/lib/supabase/server";
-import { loadHouseholdProfile } from "~/lib/household/profile";
+import {
+  getOptionalHouseholdId,
+  loadHouseholdProfile,
+} from "~/lib/household/profile";
 import { wrapUserInput } from "~/lib/anthropic/wrap-user-input";
 import {
   VoiceMemoParseSchema,
@@ -72,24 +74,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "transcript required" }, { status: 400 });
   }
 
-  let householdId: string | null = null;
-  try {
-    const sb = getSupabaseServer();
-    if (sb) {
-      const { data } = await sb.auth.getUser();
-      if (data?.user) {
-        const { data: membership } = await sb
-          .from("household_memberships")
-          .select("household_id")
-          .eq("user_id", data.user.id)
-          .maybeSingle();
-        householdId = (membership?.household_id as string | undefined) ?? null;
-      }
-    }
-  } catch {
-    // unauthenticated or schema mismatch — use the fallback profile
-  }
-  const profile = await loadHouseholdProfile(householdId);
+  const profile = await loadHouseholdProfile(await getOptionalHouseholdId());
   const localeNote =
     body.locale === "zh"
       ? "The transcript is Mandarin. Translate before extracting."
