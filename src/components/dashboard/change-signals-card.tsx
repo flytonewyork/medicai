@@ -172,12 +172,26 @@ function SignalRow({
   events: SignalEventRow[];
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [showAllActions, setShowAllActions] = useState(false);
   const tone = TONE_BY_SEVERITY[signal.severity];
   const metricDef = METRICS_BY_ID[signal.metric_id];
   const topCause = signal.differential.find(
     (d) => d.confidence !== "unlikely",
   );
-  const actionsToShow = signal.actions.slice(0, 2);
+  // Show "now" / "soon" actions without truncation — they're clinically
+  // urgent. Less-urgent ("next visit") actions collapse behind a toggle
+  // when there are many, so the card stays scannable but never silently
+  // hides a recommendation.
+  const urgentActions = signal.actions.filter(
+    (a) => a.urgency === "now" || a.urgency === "soon",
+  );
+  const laterActions = signal.actions.filter(
+    (a) => a.urgency !== "now" && a.urgency !== "soon",
+  );
+  const actionsToShow = showAllActions
+    ? signal.actions
+    : [...urgentActions, ...laterActions.slice(0, Math.max(0, 2 - urgentActions.length))];
+  const hiddenActionCount = signal.actions.length - actionsToShow.length;
   const actionsTaken = new Set(
     events
       .filter((e) => e.kind === "action_taken" && e.action_ref_id)
@@ -232,6 +246,18 @@ function SignalRow({
                 />
               ))}
             </ul>
+          )}
+
+          {hiddenActionCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowAllActions(true)}
+              className="mt-2 text-[11px] text-ink-500 hover:text-ink-900"
+            >
+              {locale === "zh"
+                ? `查看其他 ${hiddenActionCount} 项建议`
+                : `Show ${hiddenActionCount} more action${hiddenActionCount === 1 ? "" : "s"}`}
+            </button>
           )}
 
           <div className="mt-3 flex flex-wrap items-center gap-2">

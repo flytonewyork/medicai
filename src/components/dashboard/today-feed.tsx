@@ -138,6 +138,7 @@ export function TodayFeed({
         const parsed = JSON.parse(raw) as { tag: string; text: string };
         if (parsed.tag === cacheTag) {
           setNarrative(parsed.text);
+          setNarrativeLoading(false);
           return;
         }
       }
@@ -149,6 +150,14 @@ export function TodayFeed({
     // new fetch is in flight.
     setNarrative(null);
     setNarrativeLoading(true);
+    let cancelled = false;
+    // Hard ceiling — if the API gateway hangs we bail rather than
+    // leaving a skeleton on the dashboard for the rest of the session.
+    const fallbackTimer = setTimeout(() => {
+      if (cancelled) return;
+      cancelled = true;
+      setNarrativeLoading(false);
+    }, 12000);
     void (async () => {
       try {
         const text = await generateNarrative({
@@ -156,6 +165,7 @@ export function TodayFeed({
           locale,
           items: feed,
         });
+        if (cancelled) return;
         setNarrative(text);
         try {
           localStorage.setItem(
@@ -171,11 +181,16 @@ export function TodayFeed({
         // on it.
         // eslint-disable-next-line no-console
         console.warn("[today-feed] narrative fetch failed", err);
-        setNarrative(null);
+        if (!cancelled) setNarrative(null);
       } finally {
-        setNarrativeLoading(false);
+        if (!cancelled) setNarrativeLoading(false);
+        clearTimeout(fallbackTimer);
       }
     })();
+    return () => {
+      cancelled = true;
+      clearTimeout(fallbackTimer);
+    };
     // `feed` is intentionally excluded — feedSignature captures content-level change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [model, locale, feedSignature]);

@@ -69,14 +69,16 @@ export function QuickCheckinCard() {
   const [justSaved, setJustSaved] = useState(false);
 
   // After save, the live query picks up `existing` and would normally
-  // unmount the card. We keep a brief "Saved" acknowledgement visible
-  // for ~2.5s so the patient sees confirmation, then drop back to the
-  // existing-row path which returns null (i.e. the card cleans itself
-  // up automatically). Without this timer the saved banner stayed on
-  // the dashboard for the rest of the session.
+  // unmount the card. We keep a "Saved" acknowledgement visible for
+  // ~6s so the patient has time to read the confirmation and tap the
+  // "Add detail" link if they want to. After that the card cleans
+  // itself up automatically (existing-row path returns null). Without
+  // this timer the saved banner stays on the dashboard for the rest
+  // of the session; with too short a timer (was 2.5s) the patient
+  // misses the chance to add detail.
   useEffect(() => {
     if (!justSaved) return;
-    const id = setTimeout(() => setJustSaved(false), 2500);
+    const id = setTimeout(() => setJustSaved(false), 6000);
     return () => clearTimeout(id);
   }, [justSaved]);
 
@@ -151,15 +153,15 @@ export function QuickCheckinCard() {
             </div>
             <p className="mt-0.5 text-[12.5px] text-ink-500">
               {locale === "zh"
-                ? "想补充细节？"
-                : "Want to add detail?"}{" "}
-              <Link
-                href="/daily/new"
-                className="text-[var(--tide-2)] hover:underline"
-              >
-                {locale === "zh" ? "完整日志" : "Full log"}
-              </Link>
+                ? "想补充或修改？"
+                : "Want to add detail or edit?"}
             </p>
+            <Link
+              href="/daily/new"
+              className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-medium text-[var(--tide-2)] hover:underline"
+            >
+              {locale === "zh" ? "打开完整日志 →" : "Open full log →"}
+            </Link>
           </div>
         </div>
       </Card>
