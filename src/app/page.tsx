@@ -16,6 +16,7 @@ import { ScheduleCard } from "~/components/dashboard/schedule-card";
 import { ChangeSignalsCard } from "~/components/dashboard/change-signals-card";
 import { MedicationPromptsCard } from "~/components/dashboard/medication-prompts-card";
 import { MemoFollowUpsCard } from "~/components/dashboard/memo-followups-card";
+import { ClinicalJourneyCard } from "~/components/dashboard/clinical-journey-card";
 import { PracticesCard } from "~/components/dashboard/practices-card";
 import { NutritionCard } from "~/components/dashboard/nutrition-card";
 import { TodayFeed } from "~/components/dashboard/today-feed";
@@ -156,6 +157,8 @@ export default function DashboardPage() {
       <NextClinicCard />
 
       <ScheduleCard />
+
+      <ClinicalJourneyCard />
 
       <PracticesCard />
 

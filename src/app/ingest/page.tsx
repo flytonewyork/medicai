@@ -5,13 +5,17 @@ import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { latestIngestedDocuments } from "~/lib/db/queries";
 import { useLocale } from "~/hooks/use-translate";
+import { todayISO } from "~/lib/utils/date";
+import { postJson } from "~/lib/utils/http";
 import { PageHeader } from "~/components/ui/page-header";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { CameraCapture } from "~/components/ingest/camera-capture";
 import { BulkQueue } from "~/components/ingest/bulk-queue";
-import { UniversalDrop } from "~/components/ingest/universal-drop";
-import { PhoneCallNote } from "~/components/ingest/phone-note";
+import {
+  UniversalDrop,
+  type CapturedIngestInput,
+} from "~/components/ingest/universal-drop";
 import { PreviewDiff } from "~/components/ingest/preview-diff";
 import type {
   IngestApplyResult,
@@ -33,116 +37,62 @@ import {
   CalendarDays,
   Pill,
   ArrowLeft,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 
-// Slice 10: opinionated upload landing. Five named cards take the
-// patient straight to a focused capture flow with the right Claude
-// prompt for that document type. The 6th "Other / mixed" path is the
-// previous catch-all for anything that doesn't fit a named slot.
+// Single-channel-in: one dropzone for documents (paste, photo, PDF,
+// DOCX). The AI infers the document type after reading; the patient
+// confirms the inferred kind on the preview rather than picking from a
+// menu before capture. This keeps the doctrine that "AI parses,
+// classifies, attributes, and fans the input out — the patient never
+// picks a form, a tab, or a category".
 //
-// Each named entry routes through /api/ai/ingest-universal with
-// `expected_kind` so the parse prioritises the matching ops and
-// doesn't fabricate ops outside the expected scope.
+// Bulk-file uploads still use the lower bulk queue for multi-file
+// imports (calendar exports + PDFs at once); single capture goes
+// through UniversalDrop.
 
-type CardKind =
+type ReclassifyKind =
   | "clinic_letter"
   | "phone_call_note"
   | "lab_report"
   | "imaging_report"
   | "appointment_schedule"
-  | "prescription"
-  | "other";
+  | "prescription";
 
-const CARDS: ReadonlyArray<{
-  kind: CardKind;
+const RECLASSIFY_OPTIONS: ReadonlyArray<{
+  kind: ReclassifyKind;
   icon: typeof FileText;
-  en: { title: string; subtitle: string };
-  zh: { title: string; subtitle: string };
+  en: string;
+  zh: string;
 }> = [
-  {
-    kind: "clinic_letter",
-    icon: FileText,
-    en: {
-      title: "Clinic letter or referral",
-      subtitle: "Consult summary, treatment plan, referral. Photo or paste.",
-    },
-    zh: {
-      title: "门诊信 / 转诊",
-      subtitle: "看诊小结、治疗计划、转诊。拍照或粘贴。",
-    },
-  },
+  { kind: "clinic_letter", icon: FileText, en: "Clinic letter", zh: "门诊信" },
   {
     kind: "phone_call_note",
     icon: Phone,
-    en: {
-      title: "Phone call from clinic",
-      subtitle: "Type or dictate what they said — appointments + prep extracted.",
-    },
-    zh: {
-      title: "诊所来电记录",
-      subtitle: "输入或口述电话内容 — 自动识别预约和准备事项。",
-    },
+    en: "Phone call note",
+    zh: "电话记录",
   },
   {
     kind: "lab_report",
     icon: FlaskConical,
-    en: {
-      title: "Lab or pathology report",
-      subtitle: "Bloods, tumour markers, biopsy. PDF or photo.",
-    },
-    zh: {
-      title: "化验 / 病理报告",
-      subtitle: "血液、肿瘤标志物、活检。PDF 或照片。",
-    },
+    en: "Lab report",
+    zh: "化验报告",
   },
   {
     kind: "imaging_report",
     icon: ImageIcon,
-    en: {
-      title: "Imaging or scan report",
-      subtitle: "PET, CT, MRI, ultrasound report. PDF or photo.",
-    },
-    zh: {
-      title: "影像 / 扫描报告",
-      subtitle: "PET / CT / MRI / 超声报告。PDF 或照片。",
-    },
+    en: "Imaging report",
+    zh: "影像报告",
   },
   {
     kind: "appointment_schedule",
     icon: CalendarDays,
-    en: {
-      title: "Appointment schedule",
-      subtitle: "Calendar export (.ics), clinic week, scheduling block.",
-    },
-    zh: {
-      title: "预约日程",
-      subtitle: "日历订阅 (.ics)、诊所周排表。",
-    },
+    en: "Appointment schedule",
+    zh: "预约日程",
   },
-  {
-    kind: "prescription",
-    icon: Pill,
-    en: {
-      title: "Prescription",
-      subtitle: "New medication. PDF, photo, or paste the script.",
-    },
-    zh: {
-      title: "处方",
-      subtitle: "新处方药。PDF、照片或粘贴。",
-    },
-  },
-  {
-    kind: "other",
-    icon: Upload,
-    en: {
-      title: "Other / mixed documents",
-      subtitle: "Anything else. AI classifies and fans out.",
-    },
-    zh: {
-      title: "其他 / 混合文档",
-      subtitle: "任何其他文件。AI 自动分类并归档。",
-    },
-  },
+  { kind: "prescription", icon: Pill, en: "Prescription", zh: "处方" },
 ];
 
 function newId(): string {
@@ -152,9 +102,20 @@ function newId(): string {
 export default function IngestPage() {
   const locale = useLocale();
 
-  const [picked, setPicked] = useState<CardKind | null>(null);
   const [draft, setDraft] = useState<IngestDraft | null>(null);
-  const [appliedResults, setAppliedResults] = useState<IngestApplyResult[] | null>(null);
+  const [appliedResults, setAppliedResults] = useState<
+    IngestApplyResult[] | null
+  >(null);
+  // The captured input is held here so we can re-run the parse with a
+  // different `expected_kind` if the patient says the AI guessed wrong.
+  const [lastInput, setLastInput] = useState<CapturedIngestInput | null>(null);
+  // `expectedKind` is only set after the patient explicitly reclassifies.
+  // First read always lets the model infer.
+  const [expectedKind, setExpectedKind] = useState<
+    IngestDocumentKind | "appointment_schedule" | undefined
+  >(undefined);
+  const [reclassifying, setReclassifying] = useState(false);
+  const [reclassifyError, setReclassifyError] = useState<string | null>(null);
 
   const [items, setItems] = useState<BulkItem[]>([]);
   const itemsRef = useRef<BulkItem[]>([]);
@@ -182,8 +143,7 @@ export default function IngestPage() {
     itemsRef.current = [...itemsRef.current, ...newItems];
     for (const item of newItems) {
       await processBulkItem(item, mutate);
-      const latest =
-        itemsRef.current.find((i) => i.id === item.id) ?? item;
+      const latest = itemsRef.current.find((i) => i.id === item.id) ?? item;
       if (latest.status === "parsing" && latest.ocrText) {
         await parseBulkItem(latest, "heuristic", true, mutate);
       }
@@ -220,17 +180,44 @@ export default function IngestPage() {
   }
 
   function reset() {
-    setPicked(null);
     setDraft(null);
     setAppliedResults(null);
+    setLastInput(null);
+    setExpectedKind(undefined);
+    setReclassifyError(null);
+  }
+
+  async function reclassifyAs(kind: ReclassifyKind) {
+    if (!lastInput) return;
+    setReclassifying(true);
+    setReclassifyError(null);
+    try {
+      const data = await postJson<{ draft: IngestDraft }>(
+        "/api/ai/ingest-universal",
+        {
+          ...lastInput,
+          expected_kind: kind,
+          today: todayISO(),
+          locale,
+        },
+      );
+      setDraft(data.draft);
+      setExpectedKind(kind);
+    } catch (err) {
+      setReclassifyError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setReclassifying(false);
+    }
   }
 
   const recent = useLiveQuery(() => latestIngestedDocuments(8));
 
-  // Mid-flow: a draft is being reviewed.
+  // After a draft returns: confirmation banner + preview-diff. The
+  // banner names what the AI inferred and lets the patient reclassify
+  // if they disagree.
   if (draft) {
     return (
-      <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-8">
+      <div className="mx-auto max-w-3xl space-y-5 p-4 md:p-8">
         <PageHeader
           eyebrow={locale === "zh" ? "导入" : "Ingest"}
           title={
@@ -238,6 +225,15 @@ export default function IngestPage() {
               ? "确认要导入的内容"
               : "Review what we'll save"
           }
+        />
+        <DetectedKindBanner
+          draft={draft}
+          locale={locale}
+          canReclassify={!!lastInput}
+          reclassifying={reclassifying}
+          reclassifyError={reclassifyError}
+          currentExpected={expectedKind}
+          onReclassify={(k) => void reclassifyAs(k)}
         />
         <PreviewDiff
           draft={draft}
@@ -254,51 +250,18 @@ export default function IngestPage() {
     );
   }
 
-  // Mid-flow: a card was picked, render the focused capture for it.
-  if (picked) {
-    return (
-      <div className="mx-auto max-w-3xl space-y-5 p-4 md:p-8">
-        <Button variant="ghost" onClick={reset}>
-          <ArrowLeft className="h-4 w-4" />
-          {locale === "zh" ? "返回" : "Back"}
-        </Button>
-        <FocusedCapture
-          kind={picked}
-          locale={locale}
-          onDraft={setDraft}
-          enqueueFiles={(fs) => void enqueueFiles(fs)}
-          fileInputRef={fileInputRef}
-        />
-        {items.length > 0 && (
-          <BulkQueue
-            items={items}
-            apiKeyConfigured={true}
-            onParseHeuristic={(id) => void reparseItem(id, "heuristic")}
-            onParseClaude={(id) => void reparseItem(id, "claude")}
-            onSave={(id) => void saveItem(id)}
-            onSaveAll={() => void saveAll()}
-            onDiscard={discardItem}
-            onReset={clearAll}
-          />
-        )}
-      </div>
-    );
-  }
-
-  // Default landing: named cards.
+  // Default landing: single dropzone + bulk-file affordance.
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-8">
       <PageHeader
         eyebrow={locale === "zh" ? "导入" : "Ingest"}
         title={
-          locale === "zh"
-            ? "导入临床文档"
-            : "Import a clinical document"
+          locale === "zh" ? "导入临床文档" : "Import a clinical document"
         }
         subtitle={
           locale === "zh"
-            ? "选一个类别 — AI 会按照对应的字段精准归档。"
-            : "Pick the type — AI reads it with the right focus and files it cleanly."
+            ? "粘贴、拍照或上传文件 — AI 自动识别类型并归档。识别错了可以在确认页改。"
+            : "Paste, photograph, or upload anything clinical — the AI infers the type and files it. You can reclassify on the confirmation step if it guessed wrong."
         }
         action={
           <Link href="/ingest/pending">
@@ -309,125 +272,19 @@ export default function IngestPage() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {CARDS.map((c) => {
-          const Icon = c.icon;
-          const copy = locale === "zh" ? c.zh : c.en;
-          return (
-            <button
-              key={c.kind}
-              type="button"
-              onClick={() => setPicked(c.kind)}
-              className="flex items-start gap-3 rounded-md border border-ink-100 bg-paper-2/40 px-3.5 py-3 text-left hover:border-[var(--tide-2)] hover:bg-paper-2"
-            >
-              <Icon
-                className="mt-0.5 h-5 w-5 shrink-0 text-[var(--tide-2)]"
-                aria-hidden
-              />
-              <div className="min-w-0">
-                <div className="text-[13.5px] font-medium text-ink-900">
-                  {copy.title}
-                </div>
-                <div className="mt-0.5 text-[11.5px] text-ink-500">
-                  {copy.subtitle}
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {recent && recent.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="eyebrow">
-            {locale === "zh" ? "最近导入" : "Recent"}
-          </h2>
-          <ul className="divide-y divide-ink-100/80 rounded-[var(--r-md)] border border-ink-100/80 bg-paper-2">
-            {recent.map((d) => (
-              <li key={d.id} className="flex items-center justify-between p-3">
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-[13px] font-medium text-ink-900">
-                    {d.filename}
-                  </div>
-                  <div className="mono text-[10.5px] uppercase tracking-wider text-ink-400">
-                    {d.kind} · {d.status}
-                    {d.extraction_method ? ` · ${d.extraction_method}` : ""}
-                  </div>
-                </div>
-                <div className="mono text-[10.5px] text-ink-400">
-                  {new Date(d.uploaded_at).toLocaleDateString()}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-    </div>
-  );
-}
-
-// Focused capture for a picked document type. Phone-call notes get
-// the dedicated PhoneCallNote component (text + voice with the right
-// "Source: phone call." prefix); everything else gets the universal
-// drop-in (camera + paste + bulk file picker) with `expectedKind`
-// threaded through.
-function FocusedCapture({
-  kind,
-  locale,
-  onDraft,
-  enqueueFiles,
-  fileInputRef,
-}: {
-  kind: CardKind;
-  locale: "en" | "zh";
-  onDraft: (d: IngestDraft) => void;
-  enqueueFiles: (fs: FileList | File[] | null) => void;
-  fileInputRef: React.RefObject<HTMLInputElement>;
-}) {
-  const card = CARDS.find((c) => c.kind === kind)!;
-  const copy = locale === "zh" ? card.zh : card.en;
-  const Icon = card.icon;
-
-  // Phone-call surface uses its own component — it's text + voice
-  // with the right server-side prefix already.
-  if (kind === "phone_call_note") {
-    return (
-      <div className="space-y-3">
-        <div className="inline-flex items-center gap-2 text-[13px] font-medium text-ink-900">
-          <Icon className="h-4 w-4 text-[var(--tide-2)]" aria-hidden />
-          {copy.title}
-        </div>
-        <PhoneCallNote onDraft={onDraft} />
-      </div>
-    );
-  }
-
-  // Generic capture: text paste / camera / file picker. expected_kind
-  // is the only thing that varies vs. the catch-all "other" path.
-  const expectedKind: IngestDocumentKind | "appointment_schedule" | undefined =
-    kind === "other" ? undefined : kind;
-
-  return (
-    <div className="space-y-3">
-      <div className="inline-flex items-center gap-2 text-[13px] font-medium text-ink-900">
-        <Icon className="h-4 w-4 text-[var(--tide-2)]" aria-hidden />
-        {copy.title}
-      </div>
-      <p className="text-[12px] text-ink-500">{copy.subtitle}</p>
-
-      <UniversalDrop onDraft={onDraft} expectedKind={expectedKind} />
+      <UniversalDrop onDraft={setDraft} onCaptured={setLastInput} />
 
       <Card>
         <CardContent className="space-y-3 pt-5">
           <div className="text-[11px] font-medium uppercase tracking-wider text-ink-400">
-            {locale === "zh" ? "或者上传文件" : "Or upload files"}
+            {locale === "zh"
+              ? "或者上传一份或多份文件"
+              : "Or upload one or more files"}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <CameraCapture
               onPhoto={(f) => enqueueFiles([f])}
-              label={
-                locale === "zh" ? "拍一张照片" : "Snap a photo"
-              }
+              label={locale === "zh" ? "拍一张照片" : "Snap a photo"}
             />
             <Button
               variant="secondary"
@@ -455,6 +312,172 @@ function FocusedCapture({
           </p>
         </CardContent>
       </Card>
+
+      {items.length > 0 && (
+        <BulkQueue
+          items={items}
+          apiKeyConfigured={true}
+          onParseHeuristic={(id) => void reparseItem(id, "heuristic")}
+          onParseClaude={(id) => void reparseItem(id, "claude")}
+          onSave={(id) => void saveItem(id)}
+          onSaveAll={() => void saveAll()}
+          onDiscard={discardItem}
+          onReset={clearAll}
+        />
+      )}
+
+      {recent && recent.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="eyebrow">
+            {locale === "zh" ? "最近导入" : "Recent"}
+          </h2>
+          <ul className="divide-y divide-ink-100/80 rounded-[var(--r-md)] border border-ink-100/80 bg-paper-2">
+            {recent.map((d) => (
+              <li
+                key={d.id}
+                className="flex items-center justify-between p-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[13px] font-medium text-ink-900">
+                    {d.filename}
+                  </div>
+                  <div className="mono text-[10.5px] uppercase tracking-wider text-ink-400">
+                    {d.kind} · {d.status}
+                    {d.extraction_method ? ` · ${d.extraction_method}` : ""}
+                  </div>
+                </div>
+                <div className="mono text-[10.5px] text-ink-400">
+                  {new Date(d.uploaded_at).toLocaleDateString()}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
+}
+
+// Banner that surfaces the AI's inferred document kind and offers a
+// dropdown to re-run the parse with an explicit `expected_kind` if the
+// guess was wrong. When `canReclassify` is false (the captured input
+// wasn't stashed — defensive against future capture surfaces), the
+// banner is informational only.
+function DetectedKindBanner({
+  draft,
+  locale,
+  canReclassify,
+  reclassifying,
+  reclassifyError,
+  currentExpected,
+  onReclassify,
+}: {
+  draft: IngestDraft;
+  locale: "en" | "zh";
+  canReclassify: boolean;
+  reclassifying: boolean;
+  reclassifyError: string | null;
+  currentExpected: IngestDocumentKind | "appointment_schedule" | undefined;
+  onReclassify: (k: ReclassifyKind) => void;
+}) {
+  const detectedLabel = humanLabel(draft.detected_kind, locale);
+  return (
+    <Card>
+      <CardContent className="space-y-2 pt-4">
+        <div className="flex items-start gap-2.5">
+          <CheckCircle2
+            className="mt-0.5 h-4 w-4 shrink-0 text-[var(--ok,#15803d)]"
+            aria-hidden
+          />
+          <div className="flex-1">
+            <div className="text-[13px] text-ink-900">
+              {locale === "zh" ? (
+                <>
+                  AI 把这份识别为 <strong>{detectedLabel}</strong>。
+                </>
+              ) : (
+                <>
+                  AI read this as a <strong>{detectedLabel}</strong>.
+                </>
+              )}
+              {currentExpected && (
+                <span className="ml-1.5 mono text-[10.5px] uppercase tracking-wider text-ink-400">
+                  {locale === "zh" ? "已重读" : "re-read"}
+                </span>
+              )}
+            </div>
+            {draft.summary && (
+              <div className="mt-0.5 text-[12px] text-ink-500">
+                {draft.summary}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {canReclassify && (
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <span className="text-[11px] text-ink-500">
+              {locale === "zh" ? "类型不对？换为：" : "Wrong type? Re-read as:"}
+            </span>
+            {RECLASSIFY_OPTIONS.filter(
+              (o) => (o.kind as string) !== draft.detected_kind,
+            ).map((o) => {
+              const label = locale === "zh" ? o.zh : o.en;
+              return (
+                <Button
+                  key={o.kind}
+                  variant="secondary"
+                  size="sm"
+                  disabled={reclassifying}
+                  onClick={() => onReclassify(o.kind)}
+                >
+                  <o.icon className="h-3 w-3" />
+                  {label}
+                </Button>
+              );
+            })}
+            {reclassifying && (
+              <span className="inline-flex items-center gap-1.5 text-[11.5px] text-ink-500">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                {locale === "zh" ? "重新识别中…" : "Re-reading…"}
+              </span>
+            )}
+          </div>
+        )}
+
+        {reclassifyError && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-md border border-[var(--warn)]/40 bg-[var(--warn)]/10 p-2 text-[12px] text-[var(--warn)]"
+          >
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>{reclassifyError}</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function humanLabel(kind: IngestDocumentKind, locale: "en" | "zh"): string {
+  const map: Record<IngestDocumentKind, { en: string; zh: string }> = {
+    clinic_letter: { en: "clinic letter", zh: "门诊信" },
+    appointment_letter: { en: "appointment letter", zh: "预约通知" },
+    appointment_email: { en: "appointment email", zh: "预约邮件" },
+    pre_appointment_instructions: {
+      en: "pre-appointment instructions",
+      zh: "就诊前注意事项",
+    },
+    phone_call_note: { en: "phone call note", zh: "电话记录" },
+    lab_report: { en: "lab report", zh: "化验报告" },
+    imaging_report: { en: "imaging report", zh: "影像报告" },
+    ctdna_report: { en: "ctDNA report", zh: "ctDNA 报告" },
+    prescription: { en: "prescription", zh: "处方" },
+    discharge_summary: { en: "discharge summary", zh: "出院小结" },
+    treatment_protocol: { en: "treatment protocol", zh: "治疗方案" },
+    decision_record: { en: "decision record", zh: "决策记录" },
+    handwritten_note: { en: "handwritten note", zh: "手写笔记" },
+    other: { en: "document", zh: "文件" },
+  };
+  return locale === "zh" ? map[kind].zh : map[kind].en;
 }

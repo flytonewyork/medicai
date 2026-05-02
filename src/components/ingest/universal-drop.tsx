@@ -20,17 +20,27 @@ import type {
 // The route returns an IngestDraft which the parent renders as a
 // preview-diff. Nothing writes to Dexie from here.
 //
-// Slice 10: optional `expectedKind` hint — when the patient picked
-// a named card on /ingest (e.g. "Lab report", "Phone call from
-// clinic"), we pass that through to the route so Claude focuses on
-// the matching op kinds. Generic /ingest landing leaves it
-// undefined for the catch-all path.
+// `expectedKind` is an optional hint — usually undefined so AI infers
+// the document type. The page on /ingest only sets it when the patient
+// has explicitly reclassified after seeing the AI's first guess. The
+// parent surface (e.g. `/ingest`) can also subscribe to `onCaptured`
+// to stash the raw input — used for the "reclassify and re-read" flow
+// where we re-run the parse against the same text/image with a
+// different expected_kind.
+
+export type CapturedIngestInput = {
+  text?: string;
+  image?: Awaited<ReturnType<typeof prepareImageForVision>>;
+  source: IngestSourceKind;
+};
 
 export function UniversalDrop({
   onDraft,
+  onCaptured,
   expectedKind,
 }: {
   onDraft: (draft: IngestDraft) => void;
+  onCaptured?: (input: CapturedIngestInput) => void;
   expectedKind?: IngestDocumentKind | "appointment_schedule";
 }) {
   const locale = useLocale();
@@ -76,14 +86,11 @@ export function UniversalDrop({
     }
   }
 
-  async function callRoute(args: {
-    text?: string;
-    image?: Awaited<ReturnType<typeof prepareImageForVision>>;
-    source: IngestSourceKind;
-  }) {
+  async function callRoute(args: CapturedIngestInput) {
     setBusy(true);
     setError(null);
     try {
+      onCaptured?.(args);
       const data = await postJson<{ draft: IngestDraft }>(
         "/api/ai/ingest-universal",
         {
