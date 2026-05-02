@@ -100,13 +100,97 @@ describe("ZONE_RULES_V2 — superset of V1", () => {
     for (const id of v1Ids) expect(v2Ids.has(id)).toBe(true);
   });
 
-  it("adds grip chronic-drift detectors not in V1", () => {
+  it("adds grip + steps chronic-drift detectors not in V1", () => {
     const v1Ids = new Set(ZONE_RULES.map((r) => r.id));
     const v2OnlyIds = ZONE_RULES_V2
       .filter((r) => !v1Ids.has(r.id))
       .map((r) => r.id);
     expect(v2OnlyIds).toContain("grip_chronic_drift_yellow");
     expect(v2OnlyIds).toContain("grip_chronic_drift_orange");
+    expect(v2OnlyIds).toContain("steps_chronic_decline_yellow");
+    expect(v2OnlyIds).toContain("steps_chronic_decline_orange");
+  });
+});
+
+describe("steps_chronic_decline", () => {
+  function dailyWith(date: string, steps: number): DailyEntry {
+    return daily({ date, entered_at: `${date}T09:00:00Z`, steps });
+  }
+
+  function snapshotWithDailies(
+    dailies: DailyEntry[],
+    asOf = "2026-04-20T12:00:00Z",
+  ): ClinicalSnapshot {
+    return {
+      settings: baseSettings,
+      latestDaily: dailies[dailies.length - 1] ?? daily(),
+      recentDailies: dailies,
+      recentWeeklies: [],
+      latestFortnightly: null,
+      recentLabs: [],
+      openPendingResults: [],
+      now: new Date(asOf),
+      patient_state: buildPatientState({
+        as_of: asOf,
+        settings: baseSettings,
+        dailies,
+        fortnightlies: [],
+        labs: [],
+        cycles: [],
+      }),
+    };
+  }
+
+  it("does not fire on stable steps", () => {
+    const dailies: DailyEntry[] = [];
+    for (let i = 0; i < 28; i += 1) {
+      const d = new Date(Date.UTC(2026, 2, 24 + i));
+      dailies.push(dailyWith(d.toISOString().slice(0, 10), 7000));
+    }
+    const ids = evaluateRules(
+      snapshotWithDailies(dailies),
+      ZONE_RULES_V2,
+    ).map((r) => r.id);
+    expect(ids).not.toContain("steps_chronic_decline_yellow");
+    expect(ids).not.toContain("steps_chronic_decline_orange");
+  });
+
+  it("fires when steps drift downward by ~1500 steps over 28 days", () => {
+    // Linear decline 7000 → ~5500 over 28 days = -53 steps/day.
+    // Yellow threshold: -36 steps/day; orange: -71. So this should
+    // fire yellow but not orange.
+    const dailies: DailyEntry[] = [];
+    for (let i = 0; i < 28; i += 1) {
+      const d = new Date(Date.UTC(2026, 2, 24 + i));
+      dailies.push(
+        dailyWith(d.toISOString().slice(0, 10), 7000 - 53 * i),
+      );
+    }
+    const ids = evaluateRules(
+      snapshotWithDailies(dailies),
+      ZONE_RULES_V2,
+    ).map((r) => r.id);
+    const fired = ids.filter((id) => id.startsWith("steps_chronic_decline_"));
+    expect(fired.length).toBeGreaterThanOrEqual(1);
+    expect(ids).toContain("steps_chronic_decline_yellow");
+    expect(ids).not.toContain("steps_chronic_decline_orange");
+  });
+
+  it("fires orange when steps drift downward by ~2500 steps over 28 days", () => {
+    // Linear decline 8000 → ~5500 over 28 days = -89 steps/day.
+    // Past orange threshold of -71 steps/day.
+    const dailies: DailyEntry[] = [];
+    for (let i = 0; i < 28; i += 1) {
+      const d = new Date(Date.UTC(2026, 2, 24 + i));
+      dailies.push(
+        dailyWith(d.toISOString().slice(0, 10), 8000 - 89 * i),
+      );
+    }
+    const ids = evaluateRules(
+      snapshotWithDailies(dailies),
+      ZONE_RULES_V2,
+    ).map((r) => r.id);
+    expect(ids).toContain("steps_chronic_decline_orange");
   });
 });
 

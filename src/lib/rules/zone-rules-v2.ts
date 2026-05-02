@@ -18,15 +18,32 @@ import type { ClinicalSnapshot, ZoneRule } from "./types";
 import { ZONE_RULES } from "./zone-rules";
 
 // Thresholds expressed in metric-native units per day so they map
-// cleanly onto `MetricTrajectory.slope_28d`. -0.0714 kg/day ≈
-// -2 kg/28d ≈ "noticeably more loss than expected month-over-month";
-// -0.143 kg/day ≈ -4 kg/28d ≈ "clinically alarming chronic decline."
-// Provisional values; tuned against Hu Lin's cycle-fit in Phase 4.
+// cleanly onto `MetricTrajectory.slope_28d`. Provisional values;
+// tuned against Hu Lin's cycle-fit in Phase 4.
+//
+// Grip: -0.0714 kg/day ≈ -2 kg/28d ≈ "noticeably more loss than
+// expected month-over-month"; -0.143 kg/day ≈ -4 kg/28d ≈ "clinically
+// alarming chronic decline."
 const GRIP_SLOPE_YELLOW_KG_PER_DAY = -2 / 28;
 const GRIP_SLOPE_ORANGE_KG_PER_DAY = -4 / 28;
 
+// Steps: -1000/28 ≈ -36 steps/day ≈ "1000-step monthly decline" —
+// roughly 14% of a 7000-step baseline. -2000/28 ≈ -71 steps/day ≈
+// 28% baseline. The detector at `state/detectors/steps-decline.ts`
+// uses 10% / 20% pct-below-baseline; this slope-based rule is a
+// complementary chronic signal that fires on shallow drift the
+// pct-below check misses.
+const STEPS_SLOPE_YELLOW_PER_DAY = -1000 / 28;
+const STEPS_SLOPE_ORANGE_PER_DAY = -2000 / 28;
+
 function gripSlope28d(s: ClinicalSnapshot): number | null {
   const m = s.patient_state.metrics["grip_dominant_kg"];
+  if (!m || !m.fresh) return null;
+  return m.slope_28d ?? null;
+}
+
+function stepsSlope28d(s: ClinicalSnapshot): number | null {
+  const m = s.patient_state.metrics["steps"];
   if (!m || !m.fresh) return null;
   return m.slope_28d ?? null;
 }
@@ -74,10 +91,59 @@ const gripChronicDriftOrange: ZoneRule = {
   ],
 };
 
+const stepsChronicDeclineYellow: ZoneRule = {
+  id: "steps_chronic_decline_yellow",
+  name: "Steps chronic decline (V2)",
+  zone: "yellow",
+  category: "function",
+  triggersReview: true,
+  evaluator: (s) => {
+    const slope = stepsSlope28d(s);
+    if (slope === null) return false;
+    return (
+      slope <= STEPS_SLOPE_YELLOW_PER_DAY &&
+      slope > STEPS_SLOPE_ORANGE_PER_DAY
+    );
+  },
+  recommendation:
+    "Daily step count is drifting downward. Review activity scheduling, fatigue management, and address sleep/pain interference. Re-check after the next cycle.",
+  recommendationZh:
+    "每日步数呈持续下降趋势。重新安排活动节奏，管理疲劳与睡眠/疼痛干扰，下个周期后复评。",
+  suggestedLevers: [
+    "physical.exercise_phys",
+    "fatigue.scheduling",
+    "sleep.review",
+  ],
+};
+
+const stepsChronicDeclineOrange: ZoneRule = {
+  id: "steps_chronic_decline_orange",
+  name: "Steps chronic decline (V2, severe)",
+  zone: "orange",
+  category: "function",
+  triggersReview: true,
+  evaluator: (s) => {
+    const slope = stepsSlope28d(s);
+    if (slope === null) return false;
+    return slope <= STEPS_SLOPE_ORANGE_PER_DAY;
+  },
+  recommendation:
+    "Steps are declining at a rate that suggests significant functional erosion. Mandatory review: dose intensity, exercise physiology, fatigue + cachexia work-up.",
+  recommendationZh:
+    "步数下降速度提示功能明显流失。需立即评估化疗剂量、运动生理与疲劳/恶病质工作。",
+  suggestedLevers: [
+    "physical.exercise_phys",
+    "intensity.dose_reduce",
+    "nutrition.protein",
+  ],
+};
+
 // V2 = V1 unchanged + the new chronic-drift detectors. Each addition
 // has its own rule_id so the diff helper reports them as `v2_only`.
 export const ZONE_RULES_V2: readonly ZoneRule[] = [
   ...ZONE_RULES,
   gripChronicDriftYellow,
   gripChronicDriftOrange,
+  stepsChronicDeclineYellow,
+  stepsChronicDeclineOrange,
 ];
