@@ -181,6 +181,7 @@ function toGap(field: TrackedField, inNadir: boolean): CoverageGap {
     priority,
     title: voice.display_name,
     body: field.prompt,
+    why: field.why,
     cta_href: `/daily/new?step=${encodeURIComponent(field.cta_step)}`,
     icon: voice.icon,
   };

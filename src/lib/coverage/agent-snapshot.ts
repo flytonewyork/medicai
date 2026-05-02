@@ -36,6 +36,7 @@ const AGENT_VOICE_FOR_FIELD: Record<string, AgentId> = {
   appetite: "nutrition",
   energy: "rehabilitation",
   walking: "rehabilitation",
+  resistance_training: "rehabilitation",
   temperature_nadir: "toxicity",
 };
 
