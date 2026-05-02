@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 //   /api/ai/transcribe          (voice-memo recording)
 //   /api/ai/parse-voice-memo    (voice-memo structured extraction)
 //   /api/ai/parse-meal          (meal-ingest + voice-memo macro fill)
+//   /api/ai/ingest-universal    (clinical document ingest)
 
 // We mock the supabase server client so requireSession() can resolve
 // without a live Supabase. When the client returns `data.user = null`,
@@ -45,7 +46,6 @@ const ROUTES: RouteCase[] = [
   { path: "/api/ai/ingest-meal", module: "~/app/api/ai/ingest-meal/route", body: {} },
   { path: "/api/ai/ingest-notes", module: "~/app/api/ai/ingest-notes/route", body: {} },
   { path: "/api/ai/ingest-report", module: "~/app/api/ai/ingest-report/route", body: {} },
-  { path: "/api/ai/ingest-universal", module: "~/app/api/ai/ingest-universal/route", body: {} },
   { path: "/api/ai/assessment-summary", module: "~/app/api/ai/assessment-summary/route", body: {} },
   { path: "/api/ai/feed-narrative", module: "~/app/api/ai/feed-narrative/route", body: {} },
   { path: "/api/parse-appointment", module: "~/app/api/parse-appointment/route", body: { today: "2026-04-26" } },

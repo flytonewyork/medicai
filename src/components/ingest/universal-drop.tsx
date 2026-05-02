@@ -9,17 +9,39 @@ import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Field, Textarea } from "~/components/ui/field";
 import { ImagePlus, Loader2, Sparkles, AlertCircle } from "lucide-react";
-import type { IngestDraft, IngestSourceKind } from "~/types/ingest";
+import type {
+  IngestDocumentKind,
+  IngestDraft,
+  IngestSourceKind,
+} from "~/types/ingest";
 
 // Universal entry point. Patient pastes an email body, types a quick
 // note, or snaps a photo (or picks a PDF — converted to image first).
 // The route returns an IngestDraft which the parent renders as a
 // preview-diff. Nothing writes to Dexie from here.
+//
+// `expectedKind` is an optional hint — usually undefined so AI infers
+// the document type. The page on /ingest only sets it when the patient
+// has explicitly reclassified after seeing the AI's first guess. The
+// parent surface (e.g. `/ingest`) can also subscribe to `onCaptured`
+// to stash the raw input — used for the "reclassify and re-read" flow
+// where we re-run the parse against the same text/image with a
+// different expected_kind.
+
+export type CapturedIngestInput = {
+  text?: string;
+  image?: Awaited<ReturnType<typeof prepareImageForVision>>;
+  source: IngestSourceKind;
+};
 
 export function UniversalDrop({
   onDraft,
+  onCaptured,
+  expectedKind,
 }: {
   onDraft: (draft: IngestDraft) => void;
+  onCaptured?: (input: CapturedIngestInput) => void;
+  expectedKind?: IngestDocumentKind | "appointment_schedule";
 }) {
   const locale = useLocale();
   const [text, setText] = useState("");
@@ -64,20 +86,18 @@ export function UniversalDrop({
     }
   }
 
-  async function callRoute(args: {
-    text?: string;
-    image?: Awaited<ReturnType<typeof prepareImageForVision>>;
-    source: IngestSourceKind;
-  }) {
+  async function callRoute(args: CapturedIngestInput) {
     setBusy(true);
     setError(null);
     try {
+      onCaptured?.(args);
       const data = await postJson<{ draft: IngestDraft }>(
         "/api/ai/ingest-universal",
         {
           text: args.text,
           image: args.image,
           source: args.source,
+          expected_kind: expectedKind,
           today: todayISO(),
           locale,
         },
