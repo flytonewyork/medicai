@@ -4,6 +4,13 @@ name: Project board trigger Claude on In Progress
 # This workflow posts an @claude mention on the issue, which the
 # Claude Code GitHub App picks up and starts a fresh session for.
 #
+# REPO SETTING REQUIRED: Settings -> Actions -> General -> Workflow
+# permissions must be "Read and write permissions". The
+# `permissions:` block below requests `issues: write`, but the repo
+# default caps what the GITHUB_TOKEN can be granted. If the cap is
+# "Read only", this workflow fails with:
+#   HttpError: Resource not accessible by integration
+#
 # Why a label trigger and not a project-board trigger:
 # `projects_v2_item` events ARE webhooks, but GitHub Actions does NOT
 # accept them as `on:` keys for repository-level workflows — only for
@@ -54,6 +61,10 @@ jobs:
           MANUAL_ISSUE_NUMBER: ${{ inputs.issue_number }}
           LABELED_ISSUE_NUMBER: ${{ github.event.issue.number }}
         with:
+          # Explicit token wiring. Defaults to the same value but
+          # makes the auth path obvious when debugging "Resource not
+          # accessible by integration" errors.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const eventName = process.env.EVENT_NAME;
             let n;
@@ -73,6 +84,7 @@ jobs:
         env:
           ISSUE_NUMBER: ${{ steps.resolve.outputs.issue_number }}
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const issueNumber = parseInt(process.env.ISSUE_NUMBER, 10);
             const body = [
