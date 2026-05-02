@@ -122,6 +122,19 @@ Build vertical slices. Each module should be fully functional (daily tracking
 entry + view + trend) before moving to the next. Test the rule engine
 obsessively — it's the most important piece of code in the project.
 
+## Project board
+
+All sprint planning, prioritisation, and status tracking lives in the
+GitHub Project **"save dads life"** (under `flytonewyork`). Issues
+land there automatically via the project's auto-add workflow — the
+Issues tab is the data store, the project board is the lens.
+
+When opening a new kanban item, just create a regular issue on
+`flytonewyork/medicai` with title prefix `[P0|P1|P2|P3] Sprint N ·
+type · description` and the auto-add workflow does the rest. Don't
+try to manipulate the project directly — the GitHub MCP server only
+exposes classic Issues, not the Projects v2 GraphQL surface.
+
 ## Commands
 
 - `pnpm dev` — local development
