@@ -1,15 +1,27 @@
+import { db } from "~/lib/db/dexie";
 import { getSupabaseBrowser } from "~/lib/supabase/client";
 import { getCachedHouseholdId, refreshHouseholdId } from "./household-context";
 import type { SyncedTable } from "./tables";
+import type { SyncQueueRow } from "~/types/sync-queue";
 
 export type SyncOp =
   | { kind: "upsert"; table: SyncedTable; local_id: number; data: unknown }
   | { kind: "delete"; table: SyncedTable; local_id: number };
 
-// In-memory FIFO queue. Cleared by processQueue on success; survives in-memory
-// across hook calls within a tab. If Supabase writes fail (offline), the ops
-// stay in the queue and retry happens on the next push.
-const pending: SyncOp[] = [];
+// Each pending op carries its Dexie queue row id so the worker can
+// delete the durable row after a successful push without scanning.
+interface PendingOp {
+  queue_id: number;
+  op: SyncOp;
+}
+
+// Dexie is the source of truth. The in-memory mirror is only an index
+// so the worker doesn't re-read the table on every drain attempt;
+// `restoreQueueFromDexie()` rebuilds it on first use, and every
+// enqueue both writes Dexie and pushes onto this array.
+const pending: PendingOp[] = [];
+let restored = false;
+let restorePromise: Promise<void> | null = null;
 let processing = false;
 
 // When pulling from the cloud we suppress the push hooks so we don't echo
@@ -29,10 +41,65 @@ export async function withSyncSuppressed<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
+// Reads any queued rows persisted from a previous session and seeds the
+// in-memory queue. Idempotent — first call does the read, subsequent
+// calls await the same promise.
+export function restoreQueueFromDexie(): Promise<void> {
+  if (restored) return Promise.resolve();
+  if (restorePromise) return restorePromise;
+  restorePromise = (async () => {
+    const rows = await db.sync_queue.orderBy("id").toArray();
+    for (const row of rows) {
+      if (row.id == null) continue;
+      pending.push({ queue_id: row.id, op: rowToOp(row) });
+    }
+    restored = true;
+  })();
+  return restorePromise;
+}
+
+function rowToOp(row: SyncQueueRow): SyncOp {
+  if (row.kind === "delete") {
+    return { kind: "delete", table: row.table, local_id: row.local_id };
+  }
+  return {
+    kind: "upsert",
+    table: row.table,
+    local_id: row.local_id,
+    data: row.data ?? {},
+  };
+}
+
+// Synchronous-callable enqueue. Persists the op to Dexie asynchronously,
+// then mirrors into the in-memory queue and kicks the worker. The Dexie
+// hooks that fire enqueueSync don't await — that's deliberate, the
+// durable write happens off the Dexie hook's transaction.
+//
+// The in-memory `pending` only gets a push when restoration has
+// already completed. Before restoration runs (first session, fresh
+// page load) the upcoming `restoreQueueFromDexie()` will pick the
+// just-written row up — pushing here too would duplicate it.
 export function enqueueSync(op: SyncOp): void {
   if (suppressed > 0) return;
-  pending.push(op);
-  void processQueue();
+  void (async () => {
+    try {
+      const queue_id = await db.sync_queue.add({
+        kind: op.kind,
+        table: op.table,
+        local_id: op.local_id,
+        data: op.kind === "upsert" ? (op.data as Record<string, unknown>) : null,
+        enqueued_at: new Date().toISOString(),
+      });
+      if (queue_id == null) return;
+      if (restored) {
+        pending.push({ queue_id, op });
+      }
+      void processQueue();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn("[sync] failed to persist queue op:", err);
+    }
+  })();
 }
 
 export function pendingSyncCount(): number {
@@ -41,6 +108,9 @@ export function pendingSyncCount(): number {
 
 async function processQueue(): Promise<void> {
   if (processing) return;
+  await restoreQueueFromDexie();
+  if (pending.length === 0) return;
+
   const supabase = getSupabaseBrowser();
   if (!supabase) return;
 
@@ -54,21 +124,23 @@ async function processQueue(): Promise<void> {
     householdId = await refreshHouseholdId();
   }
   if (!householdId) {
-    // No household yet — can't satisfy RLS. Hold the ops.
+    // No household yet — can't satisfy RLS. Hold the ops; the bootstrap
+    // path will create the household, and the retry timer will pick
+    // up where we left off.
     return;
   }
 
   processing = true;
   try {
     while (pending.length > 0) {
-      const op = pending[0];
+      const head = pending[0];
       try {
-        if (op.kind === "upsert") {
+        if (head.op.kind === "upsert") {
           const { error } = await supabase.from("cloud_rows").upsert(
             {
-              table_name: op.table,
-              local_id: op.local_id,
-              data: op.data,
+              table_name: head.op.table,
+              local_id: head.op.local_id,
+              data: head.op.data,
               deleted: false,
               household_id: householdId,
               updated_at: new Date().toISOString(),
@@ -83,15 +155,17 @@ async function processQueue(): Promise<void> {
               deleted: true,
               updated_at: new Date().toISOString(),
             })
-            .eq("table_name", op.table)
-            .eq("local_id", op.local_id)
+            .eq("table_name", head.op.table)
+            .eq("local_id", head.op.local_id)
             .eq("household_id", householdId);
           if (error) throw error;
         }
+        // Success — remove the durable row + the in-memory mirror.
+        await db.sync_queue.delete(head.queue_id);
         pending.shift();
       } catch (err) {
         // Write failed (offline, RLS denied, network). Stop draining and
-        // leave the op at the head of the queue so the next tick retries it.
+        // leave the op at the head so the next tick retries it.
         // eslint-disable-next-line no-console
         console.warn("[sync] push failed, will retry:", err);
         break;
@@ -107,6 +181,12 @@ let retryTimer: ReturnType<typeof setInterval> | null = null;
 
 export function startSyncRetryTimer(intervalMs = 15000): void {
   if (retryTimer) return;
+  // Seed the in-memory mirror from Dexie at startup so previously
+  // persisted ops resume on the next tick even if no fresh enqueue
+  // arrives.
+  void restoreQueueFromDexie().then(() => {
+    if (pending.length > 0) void processQueue();
+  });
   retryTimer = setInterval(() => {
     if (pending.length > 0) void processQueue();
   }, intervalMs);
@@ -125,4 +205,13 @@ export function __resetSyncQueueForTests(): void {
   pending.length = 0;
   processing = false;
   suppressed = 0;
+  restored = false;
+  restorePromise = null;
+}
+
+// Forces a drain attempt — used by bootstrap-heal once the household
+// id resolves so the patient's first cycle of pending writes flush
+// without waiting for the 15-second retry timer.
+export function kickQueue(): void {
+  void processQueue();
 }

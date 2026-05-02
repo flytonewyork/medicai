@@ -60,6 +60,7 @@ import type {
 import type { HouseholdProfile as HouseholdProfileRow } from "~/types/household-profile";
 import type { VoiceMemo } from "~/types/voice-memo";
 import type { CoverageSnoozeRow } from "~/types/coverage";
+import type { SyncQueueRow } from "~/types/sync-queue";
 
 export class AnchorDB extends Dexie {
   daily_entries!: Table<DailyEntry, number>;
@@ -134,6 +135,13 @@ export class AnchorDB extends Dexie {
   // snoozed_until expires. Calm-engagement complement to the
   // detector itself.
   coverage_snoozes!: Table<CoverageSnoozeRow, number>;
+  // v26: Persistent sync queue. Replaces the in-memory queue that was
+  // losing Hu Lin's writes whenever bootstrap stalled (no household_id
+  // → queue paused → tab close → pending ops vanished). Each row is
+  // one push to `cloud_rows`; the worker drains in id order and deletes
+  // the row on successful upsert. Survives tab close, browser restart,
+  // and pre-household sign-in windows.
+  sync_queue!: Table<SyncQueueRow, number>;
 
   constructor() {
     super("anchor_db");
@@ -427,6 +435,12 @@ export class AnchorDB extends Dexie {
     this.version(25).stores({
       coverage_snoozes:
         "++id, field_key, snoozed_until, snoozed_at",
+    });
+    // v26: Persistent sync queue. Each row is one pending push to
+    // `cloud_rows`. Indexed on `enqueued_at` so the worker drains in
+    // FIFO order and the diagnostic UI can show queue age.
+    this.version(26).stores({
+      sync_queue: "++id, table, kind, local_id, enqueued_at",
     });
   }
 }

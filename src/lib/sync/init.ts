@@ -4,6 +4,7 @@ import { pullFromCloud, resetPullCursor } from "./pull";
 import { startSyncRetryTimer, stopSyncRetryTimer } from "./queue";
 import { subscribeToCloudChanges, unsubscribeFromCloudChanges } from "./realtime";
 import { refreshHouseholdId } from "./household-context";
+import { bootstrapHouseholdAndProfile, flushLocalRowsOnce } from "./bootstrap";
 import { wireUserIdCache } from "~/lib/supabase/current-user";
 
 let initialized = false;
@@ -30,20 +31,26 @@ export async function initSync(): Promise<void> {
 
   const { data } = await supabase.auth.getUser();
   if (data.user) {
-    // Slice B: resolve the household id before the first pull so the
-    // pull can scope by it. Without a household the pull returns 0
-    // rows and we'll try again once onboarding / invite-accept fills
-    // in the membership.
-    await refreshHouseholdId();
+    // Bootstrap heal — auto-create profile + household for users who
+    // onboarded offline before Supabase auth existed (Hu Lin). No-op
+    // for users who already have a household. Always runs before the
+    // pull so the pull has a household_id to scope by.
+    await bootstrapHouseholdAndProfile();
     await pullFromCloud();
     subscribeToCloudChanges();
+    // Force-flush local Dexie → cloud once per device. Idempotent on
+    // cloud side (upsert on table_name+local_id). Targets the
+    // April-23-RLS recovery: any device that had accumulated local
+    // writes during the broken-sync window flushes them on next load.
+    void flushLocalRowsOnce();
   }
 
   supabase.auth.onAuthStateChange(async (event) => {
     if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-      await refreshHouseholdId();
+      await bootstrapHouseholdAndProfile();
       await pullFromCloud();
       subscribeToCloudChanges();
+      void flushLocalRowsOnce();
     } else if (event === "SIGNED_OUT") {
       unsubscribeFromCloudChanges();
       // Next sign-in triggers a fresh full pull so we see all cloud data.
