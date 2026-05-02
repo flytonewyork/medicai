@@ -39,6 +39,11 @@ export interface CoverageGap {
   priority: number;
   title: LocalizedText;
   body: LocalizedText;
+  // One-line patient-facing rationale, surfaced behind the small
+  // "Why?" affordance on coverage cards. Copied from the
+  // TrackedField config so the detector stays the only place that
+  // computes a card's full payload.
+  why: LocalizedText;
   cta_href: string;
   icon: string;
 }
