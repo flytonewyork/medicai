@@ -42,7 +42,13 @@ on:
         type: string
 
 permissions:
+  # `pull-requests: write` is required because the issues/comments API
+  # is shared between Issues and PRs (they share the same number
+  # space). When the target number resolves to a PR, the API rejects
+  # with 403 unless this permission is also granted. Header proof:
+  #   x-accepted-github-permissions: issues=write; pull_requests=write
   issues: write
+  pull-requests: write
   contents: read
 
 jobs:
