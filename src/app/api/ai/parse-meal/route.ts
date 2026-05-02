@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { jsonOutputFormat } from "~/lib/anthropic/json-output";
 import {
   DEFAULT_AI_MODEL,
-  getAnthropicClient,
-  readJsonBody,
+  gateAiRequest,
+  requireParsedOutput,
   withAnthropicErrorBoundary,
 } from "~/lib/anthropic/route-helpers";
 import {
@@ -35,12 +35,12 @@ interface TextBody {
 type RequestBody = PhotoBody | TextBody;
 
 export async function POST(req: Request) {
-  const gate = getAnthropicClient();
-  if (gate.error) return gate.error;
-
-  const parsed = await readJsonBody<RequestBody>(req);
-  if (parsed.error) return parsed.error;
-  const body = parsed.body;
+  // Local-first: this route is called from /nutrition meal-ingest AND
+  // from the voice-memo apply step (macro fill on parsed meals). Both
+  // surfaces work pre-sign-in per middleware.ts.
+  const ctx = await gateAiRequest<RequestBody>(req, { requireAuth: false });
+  if (ctx.error) return ctx.error;
+  const body = ctx.body;
 
   if (!body || (body.kind !== "photo" && body.kind !== "text")) {
     return NextResponse.json(
@@ -55,9 +55,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "text required" }, { status: 400 });
   }
 
-  // Local-first: this route is called from /nutrition meal-ingest AND
-  // from the voice-memo apply step (macro fill on parsed meals). Both
-  // surfaces work pre-sign-in per middleware.ts.
   const profile = await loadHouseholdProfile(await getOptionalHouseholdId());
   const localeNote =
     body.locale === "zh"
@@ -65,7 +62,7 @@ export async function POST(req: Request) {
       : "name_zh is optional; only populate when obvious (e.g. Chinese dish).";
 
   const result = await withAnthropicErrorBoundary(() =>
-    gate.client.messages.parse({
+    ctx.client.messages.parse({
       model: body.model ?? DEFAULT_AI_MODEL,
       max_tokens: 1500,
       system: [
@@ -115,11 +112,7 @@ export async function POST(req: Request) {
   );
   if (result.error) return result.error;
 
-  if (!result.value.parsed_output) {
-    return NextResponse.json(
-      { error: "No meal estimate returned" },
-      { status: 502 },
-    );
-  }
-  return NextResponse.json({ result: result.value.parsed_output });
+  const parsed = requireParsedOutput(result.value, "No meal estimate returned");
+  if (parsed.error) return parsed.error;
+  return NextResponse.json({ result: parsed.value });
 }

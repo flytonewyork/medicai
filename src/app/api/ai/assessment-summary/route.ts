@@ -3,12 +3,11 @@ import { z } from "zod/v4";
 import { jsonOutputFormat } from "~/lib/anthropic/json-output";
 import {
   DEFAULT_AI_MODEL,
-  getAnthropicClient,
-  readJsonBody,
+  gateAiRequest,
+  requireParsedOutput,
   withAnthropicErrorBoundary,
 } from "~/lib/anthropic/route-helpers";
 import { buildSummarySystem } from "~/lib/ai/coach";
-import { requireSession } from "~/lib/auth/require-session";
 import { loadHouseholdProfile } from "~/lib/household/profile";
 import { wrapUserInputBlock } from "~/lib/anthropic/wrap-user-input";
 
@@ -27,28 +26,21 @@ interface RequestBody {
 }
 
 export async function POST(req: Request) {
-  const auth = await requireSession();
-  if (!auth.ok) return auth.error;
+  const ctx = await gateAiRequest<RequestBody>(req);
+  if (ctx.error) return ctx.error;
 
-  const gate = getAnthropicClient();
-  if (gate.error) return gate.error;
-
-  const parsed = await readJsonBody<RequestBody>(req);
-  if (parsed.error) return parsed.error;
-  const body = parsed.body;
-
-  if (!body?.assessment) {
+  if (!ctx.body?.assessment) {
     return NextResponse.json(
       { error: "assessment required" },
       { status: 400 },
     );
   }
 
-  const profile = await loadHouseholdProfile(auth.session.household_id);
+  const profile = await loadHouseholdProfile(ctx.session.household_id);
 
   const result = await withAnthropicErrorBoundary(() =>
-    gate.client.messages.parse({
-      model: body.model ?? DEFAULT_AI_MODEL,
+    ctx.client.messages.parse({
+      model: ctx.body.model ?? DEFAULT_AI_MODEL,
       max_tokens: 800,
       system: [
         {
@@ -66,8 +58,8 @@ export async function POST(req: Request) {
               type: "text",
               text: wrapUserInputBlock(
                 JSON.stringify({
-                  assessment: body.assessment,
-                  prior_assessment: body.prior_assessment ?? null,
+                  assessment: ctx.body.assessment,
+                  prior_assessment: ctx.body.prior_assessment ?? null,
                 }),
               ),
             },
@@ -78,11 +70,7 @@ export async function POST(req: Request) {
   );
   if (result.error) return result.error;
 
-  if (!result.value.parsed_output) {
-    return NextResponse.json(
-      { error: "No summary returned" },
-      { status: 502 },
-    );
-  }
-  return NextResponse.json({ result: result.value.parsed_output });
+  const parsed = requireParsedOutput(result.value, "No summary returned");
+  if (parsed.error) return parsed.error;
+  return NextResponse.json({ result: parsed.value });
 }

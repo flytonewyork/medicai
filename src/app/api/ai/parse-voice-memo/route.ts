@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   DEFAULT_AI_MODEL,
-  getAnthropicClient,
-  readJsonBody,
+  gateAiRequest,
   withAnthropicErrorBoundary,
 } from "~/lib/anthropic/route-helpers";
 import {
@@ -63,12 +62,9 @@ interface ParseBody {
 }
 
 export async function POST(req: Request) {
-  const gate = getAnthropicClient();
-  if (gate.error) return gate.error;
-
-  const parsedBody = await readJsonBody<ParseBody>(req);
-  if (parsedBody.error) return parsedBody.error;
-  const body = parsedBody.body;
+  const ctx = await gateAiRequest<ParseBody>(req, { requireAuth: false });
+  if (ctx.error) return ctx.error;
+  const body = ctx.body;
 
   if (!body?.transcript?.trim()) {
     return NextResponse.json({ error: "transcript required" }, { status: 400 });
@@ -87,7 +83,7 @@ export async function POST(req: Request) {
     : "";
 
   const result = await withAnthropicErrorBoundary(() =>
-    gate.client.messages.create({
+    ctx.client.messages.create({
       model: body.model ?? DEFAULT_AI_MODEL,
       // Generous budget — the expanded schema (daily fields + clinic
       // visit + appointments + medications + personal block) can

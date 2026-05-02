@@ -2,11 +2,10 @@ import { NextResponse } from "next/server";
 import { buildNarrativeSystem } from "~/lib/nudges/ai-narrative";
 import {
   DEFAULT_AI_MODEL,
-  getAnthropicClient,
-  readJsonBody,
+  firstTextBlock,
+  gateAiRequest,
   withAnthropicErrorBoundary,
 } from "~/lib/anthropic/route-helpers";
-import { requireSession } from "~/lib/auth/require-session";
 import { loadHouseholdProfile } from "~/lib/household/profile";
 import { wrapUserInputBlock } from "~/lib/anthropic/wrap-user-input";
 import type { FeedItem } from "~/types/feed";
@@ -22,22 +21,15 @@ interface RequestBody {
 }
 
 export async function POST(req: Request) {
-  const auth = await requireSession();
-  if (!auth.ok) return auth.error;
+  const ctx = await gateAiRequest<RequestBody>(req);
+  if (ctx.error) return ctx.error;
 
-  const gate = getAnthropicClient();
-  if (gate.error) return gate.error;
-
-  const parsed = await readJsonBody<RequestBody>(req);
-  if (parsed.error) return parsed.error;
-  const body = parsed.body;
-
-  if (!Array.isArray(body?.items)) {
+  if (!Array.isArray(ctx.body?.items)) {
     return NextResponse.json({ error: "items[] required" }, { status: 400 });
   }
 
-  const { locale = "en", items, model = DEFAULT_AI_MODEL } = body;
-  const profile = await loadHouseholdProfile(auth.session.household_id);
+  const { locale = "en", items, model = DEFAULT_AI_MODEL } = ctx.body;
+  const profile = await loadHouseholdProfile(ctx.session.household_id);
   const signals = items
     .slice(0, 8)
     .map((item, i) => {
@@ -48,7 +40,7 @@ export async function POST(req: Request) {
     .join("\n");
 
   const result = await withAnthropicErrorBoundary(() =>
-    gate.client.messages.create({
+    ctx.client.messages.create({
       model,
       max_tokens: 300,
       system: [
@@ -73,12 +65,7 @@ export async function POST(req: Request) {
   );
   if (result.error) return result.error;
 
-  const block = result.value.content.find((b) => b.type === "text");
-  if (!block || block.type !== "text") {
-    return NextResponse.json(
-      { error: "No narrative returned" },
-      { status: 502 },
-    );
-  }
-  return NextResponse.json({ narrative: block.text.trim() });
+  const text = firstTextBlock(result.value, "No narrative returned");
+  if (text.error) return text.error;
+  return NextResponse.json({ narrative: text.text.trim() });
 }
