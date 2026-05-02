@@ -32,6 +32,16 @@ export function useTodayFeed({
   const cycles = useLiveQuery(() => latestTreatmentCycles(1));
   const agentRuns = useLiveQuery(() => latestAgentRuns(40));
   const coverageSnoozes = useLiveQuery(() => db.coverage_snoozes.toArray());
+  // Used by the fortnightly cadence prompt — fires when no fortnightly
+  // has been completed in the last 12 days. Pull a small page (latest
+  // 4) since the prompt only cares about the most recent.
+  const fortnightlies = useLiveQuery(() =>
+    db.fortnightly_assessments
+      .orderBy("assessment_date")
+      .reverse()
+      .limit(4)
+      .toArray(),
+  );
 
   return useMemo(() => {
     const s = settings ?? null;
@@ -78,6 +88,7 @@ export function useTodayFeed({
       weather,
       agentRuns: agentRuns ?? [],
       coverageSnoozes: coverageSnoozes ?? [],
+      fortnightlies: fortnightlies ?? [],
     });
   }, [
     settings,
@@ -89,5 +100,6 @@ export function useTodayFeed({
     weather,
     agentRuns,
     coverageSnoozes,
+    fortnightlies,
   ]);
 }

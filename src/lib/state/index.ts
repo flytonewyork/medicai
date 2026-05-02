@@ -25,7 +25,7 @@ export {
   preferredBaseline,
   rollingBaseline,
 } from "./baselines";
-export { accelOver, olsSlopePerDay, slopeOver } from "./slope";
+export { accelOver, olsSlopePerDay, observationsInWindow, slopeOver } from "./slope";
 export {
   buildPatientState,
   extractObservationsByMetric,
