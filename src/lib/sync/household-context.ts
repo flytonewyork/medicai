@@ -54,14 +54,17 @@ export async function refreshHouseholdId(): Promise<string | null> {
       notify();
       return null;
     }
-    const { data, error } = await sb
-      .from("household_memberships")
-      .select("household_id")
-      .eq("user_id", uid)
-      .limit(1)
-      .maybeSingle();
+    // Use the SECURITY DEFINER `current_household_id()` RPC instead of
+    // a direct read on `household_memberships`. The direct read used to
+    // 500 in a recursion loop on the SELECT policy (fixed in migration
+    // 2026_05_02_fix_rls_recursion); routing through the RPC sidesteps
+    // RLS entirely and gives us a single, audited bootstrap path that's
+    // immune to future policy regressions.
+    const { data, error } = await sb.rpc("current_household_id");
     if (error) throw error;
-    const next = (data?.household_id as string | undefined) ?? null;
+    const next = (typeof data === "string" && data.length > 0)
+      ? data
+      : null;
     if (next !== cached) {
       cached = next;
       notify();
