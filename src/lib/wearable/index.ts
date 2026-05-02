@@ -21,3 +21,8 @@ export type {
   HealthConnectClient,
   PermissionStatus,
 } from "./types";
+
+export {
+  getHealthConnectClient,
+  _resetHealthConnectClientCache,
+} from "./client";

@@ -13,6 +13,7 @@ import { HouseholdSection } from "~/components/settings/household-section";
 import { NotificationsSection } from "~/components/settings/notifications-section";
 import { CareTeamSection } from "~/components/settings/care-team-section";
 import { TrackedSymptomsSection } from "~/components/settings/tracked-symptoms-section";
+import { WearableSection } from "~/components/settings/wearable-section";
 import { PageHeader, SectionHeader } from "~/components/ui/page-header";
 import { Button } from "~/components/ui/button";
 import { Field, Select, TextInput, Textarea } from "~/components/ui/field";
@@ -111,6 +112,8 @@ export default function SettingsPage() {
       <CareTeamSection />
 
       <TrackedSymptomsSection />
+
+      <WearableSection />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <section className="space-y-3">
