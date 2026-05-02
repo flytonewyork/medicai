@@ -4,6 +4,8 @@ import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { useSettings } from "~/hooks/use-settings";
+import { useAuthSession } from "~/hooks/use-auth-session";
+import { isSupabaseConfigured } from "~/lib/supabase/client";
 import { PillarTiles } from "~/components/dashboard/pillar-tiles";
 import { EmergencyCard } from "~/components/dashboard/emergency-card";
 import { QuickCheckinCard } from "~/components/dashboard/quick-checkin-card";
@@ -34,6 +36,7 @@ export default function DashboardPage() {
   const settings = useSettings();
   const profileName = settings?.profile_name;
   const { membership } = useHousehold();
+  const session = useAuthSession();
 
   // Single redirect effect with a clear precedence ladder so two
   // racing useEffects can't both call router.replace on the same
@@ -74,35 +77,28 @@ export default function DashboardPage() {
     // Otherwise stay on the dashboard (patient / primary carer).
   }, [membership, router, settings]);
 
-  const { greeting, eyebrow } = useMemo(() => {
-    const now = new Date();
-    const hour = now.getHours();
-    const greetingEn =
-      hour < 12
-        ? "Good morning"
-        : hour < 18
-          ? "Good afternoon"
-          : "Good evening";
-    const greetingZh =
-      hour < 12 ? "早安" : hour < 18 ? "午安" : "晚安";
-    const dateEyebrow =
-      locale === "zh"
-        ? format(now, "yyyy 年 M 月 d 日 · EEEE")
-        : format(now, "EEEE · d MMM yyyy").toUpperCase();
-    return {
-      greeting: locale === "zh" ? greetingZh : greetingEn,
-      eyebrow: dateEyebrow,
-    };
+  // Date-only eyebrow + neutral title. CLAUDE.md prescribes a measured,
+  // respectful tone — a time-of-day "Good morning" can read as tone-deaf
+  // to a patient on a hard chemo day. We keep the date for orientation
+  // and surface the patient's name without a cheerful adverb.
+  const eyebrow = useMemo(() => {
+    const today = new Date();
+    return locale === "zh"
+      ? format(today, "yyyy 年 M 月 d 日 · EEEE")
+      : format(today, "EEEE · d MMM yyyy").toUpperCase();
   }, [locale]);
 
   const firstName = profileName?.split(" ").slice(-1)[0] ?? "";
 
   // While the redirect effect is deciding (settings still loading, or
-  // an explicit perspective bounce in flight), render nothing rather
-  // than flash the patient dashboard at a caregiver who's about to be
-  // routed to /family. The app-level loading.tsx covers the visual.
-  if (settings === undefined) return null;
-  if (membership === undefined) return null;
+  // an explicit perspective bounce in flight), show a quiet skeleton
+  // rather than a blank screen. The app-level loading.tsx covers the
+  // first paint, but Dexie + Supabase resolves can land mid-render and
+  // a flash of nothing reads as "the app broke". Caregiver bounce keeps
+  // returning null so we don't flash patient content at a carer.
+  if (settings === undefined || membership === undefined) {
+    return <DashboardSkeleton />;
+  }
   if (
     membership !== null &&
     membership.role !== "primary_carer" &&
@@ -115,23 +111,20 @@ export default function DashboardPage() {
     return null;
   }
 
+  // Local-only footer is misleading when the user is signed in (data
+  // is syncing to Supabase). Show it only when there's no cloud option
+  // — Supabase isn't configured at all, or the user is genuinely
+  // signed out.
+  const showLocalOnly =
+    !isSupabaseConfigured() || (session !== undefined && !session.signedIn);
+
+  const titleFallback = locale === "zh" ? "今日" : "Today";
+
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-8">
       <PageHeader
         eyebrow={eyebrow}
-        title={
-          <>
-            {greeting}
-            {firstName && (
-              <>
-                ,{" "}
-                <em className="font-normal italic text-ink-500">
-                  {firstName}
-                </em>
-              </>
-            )}
-          </>
-        }
+        title={firstName || titleFallback}
       />
 
       {/* Order = priority. Clinical (zone alert, change signals,
@@ -175,9 +168,32 @@ export default function DashboardPage() {
 
       <SyncPromptCard />
 
-      <footer className="pt-6 text-center text-xs text-ink-400">
-        {t("common.localOnly")}
-      </footer>
+      {showLocalOnly && (
+        <footer className="pt-6 text-center text-xs text-ink-400">
+          {t("common.localOnly")}
+        </footer>
+      )}
+    </div>
+  );
+}
+
+// Quiet skeleton shown while settings + household resolves are in flight.
+// Two muted cards mirror the dashboard's actual layout so nothing jumps
+// when the real content lands. Animation is subtle (no spinner) — the
+// app-level pattern avoids cheerful loading states.
+function DashboardSkeleton() {
+  return (
+    <div
+      className="mx-auto max-w-4xl space-y-6 p-4 md:p-8"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <div className="space-y-2">
+        <div className="h-3 w-32 animate-pulse rounded bg-ink-100" />
+        <div className="h-7 w-44 animate-pulse rounded bg-ink-100" />
+      </div>
+      <div className="h-24 animate-pulse rounded-md bg-ink-100/70" />
+      <div className="h-32 animate-pulse rounded-md bg-ink-100/70" />
     </div>
   );
 }
