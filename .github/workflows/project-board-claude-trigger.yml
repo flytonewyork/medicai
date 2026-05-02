@@ -1,4 +1,4 @@
-name: Project board → trigger Claude on In Progress
+name: Project board trigger Claude on In Progress
 
 # When a project-board card on the "save dads life" project moves to
 # the "In Progress" status, post an @claude mention on the linked
@@ -6,20 +6,26 @@ name: Project board → trigger Claude on In Progress
 # new session scoped to that issue.
 #
 # Why this workflow exists: the GitHub MCP server doesn't expose
-# Projects v2 webhooks to Claude sessions directly — only PR activity.
-# So we bridge: project status change → issue comment → @claude
-# trigger. This lets Thomas plan cards on the board and start work
-# just by dragging.
+# Projects v2 webhooks to Claude sessions directly. So we bridge:
+# project status change -> issue comment -> @claude trigger.
 #
-# Event reliability note: `projects_v2_item` events fire at the
-# user / org level. They reach this repo's workflow because the
-# project (`save dads life`, owned by `flytonewyork`) contains issues
-# from this repo. If the project is later moved to an org that
-# doesn't include this repo, this workflow will silently stop firing.
+# Caveat: `projects_v2_item` events fire at the user / org level. If
+# the project is later moved to an org that doesn't include this
+# repo, this workflow stops firing silently. The workflow_dispatch
+# trigger below lets us test the comment path manually with an
+# explicit issue number.
 
 on:
   projects_v2_item:
     types: [edited]
+  # Manual fallback for testing — pass an issue number, the comment
+  # gets posted as if the card had just moved to In Progress.
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to post the @claude comment on"
+        required: true
+        type: string
 
 permissions:
   issues: write
@@ -27,37 +33,53 @@ permissions:
 
 jobs:
   trigger-claude:
-    # Filter: only fire when the Status field changes TO "In Progress"
-    # AND the project item is a real Issue (not a draft or PR).
-    if: |
-      github.event.changes.field_value.field_name == 'Status' &&
-      github.event.changes.field_value.to.name == 'In Progress' &&
-      github.event.projects_v2_item.content_type == 'Issue'
     runs-on: ubuntu-latest
+    # Run on:
+    #  (a) manual workflow_dispatch — always
+    #  (b) projects_v2_item.edited where Status changed TO "In Progress"
+    #      and the linked content is an Issue
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'projects_v2_item' && github.event.changes.field_value.field_name == 'Status' && github.event.changes.field_value.to.name == 'In Progress' && github.event.projects_v2_item.content_type == 'Issue') }}
     steps:
-      - name: Resolve issue number from project-item content
+      - name: Resolve issue context
         id: resolve
         uses: actions/github-script@v7
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          MANUAL_ISSUE_NUMBER: ${{ inputs.issue_number }}
         with:
           script: |
-            // The webhook payload gives us a graphql node id for the
-            // linked content (Issue / PR). We need the human-readable
-            // issue number plus the repo to comment on.
-            const nodeId = context.payload.projects_v2_item.content_node_id;
-            const query = `
-              query($id: ID!) {
+            const eventName = process.env.EVENT_NAME;
+            if (eventName === 'workflow_dispatch') {
+              const n = parseInt(process.env.MANUAL_ISSUE_NUMBER, 10);
+              if (!Number.isFinite(n)) {
+                core.setFailed('issue_number input is required');
+                return;
+              }
+              core.setOutput('issue_number', String(n));
+              core.setOutput('repo_owner', context.repo.owner);
+              core.setOutput('repo_name', context.repo.repo);
+              return;
+            }
+            // projects_v2_item path: resolve via graphql node id.
+            const nodeId = context.payload.projects_v2_item?.content_node_id;
+            if (!nodeId) {
+              core.setFailed('No content_node_id in payload');
+              return;
+            }
+            const res = await github.graphql(
+              `query($id: ID!) {
                 node(id: $id) {
                   ... on Issue {
                     number
                     repository { name owner { login } }
                   }
                 }
-              }
-            `;
-            const res = await github.graphql(query, { id: nodeId });
+              }`,
+              { id: nodeId },
+            );
             const issue = res.node;
-            if (!issue?.number) {
-              core.setFailed(`Could not resolve issue from node ${nodeId}`);
+            if (!issue || !issue.number) {
+              core.setFailed('Could not resolve issue from node ' + nodeId);
               return;
             }
             core.setOutput('issue_number', String(issue.number));
@@ -66,18 +88,26 @@ jobs:
 
       - name: Post @claude trigger comment
         uses: actions/github-script@v7
+        env:
+          ISSUE_NUMBER: ${{ steps.resolve.outputs.issue_number }}
+          REPO_OWNER: ${{ steps.resolve.outputs.repo_owner }}
+          REPO_NAME: ${{ steps.resolve.outputs.repo_name }}
         with:
           script: |
+            const issueNumber = parseInt(process.env.ISSUE_NUMBER, 10);
+            const owner = process.env.REPO_OWNER;
+            const repo = process.env.REPO_NAME;
+            const body = [
+              '@claude this card moved to **In Progress** on the project board.',
+              '',
+              'Please pick it up: read the issue body for full context, plan the work, and ship.',
+              'If anything is ambiguous or needs Thomas / Hu Lin input, comment instead of guessing.',
+              '',
+              '_Posted automatically by `.github/workflows/project-board-claude-trigger.yml`._',
+            ].join('\n');
             await github.rest.issues.createComment({
-              owner: '${{ steps.resolve.outputs.repo_owner }}',
-              repo: '${{ steps.resolve.outputs.repo_name }}',
-              issue_number: parseInt('${{ steps.resolve.outputs.issue_number }}', 10),
-              body: [
-                '@claude — this card moved to **In Progress** on the project board.',
-                '',
-                'Please pick it up: read the issue body for full context, plan the work, and ship.',
-                'If anything is ambiguous or needs Thomas / Hu Lin input, comment instead of guessing.',
-                '',
-                '_Posted automatically by `.github/workflows/project-board-claude-trigger.yml`._',
-              ].join('\n'),
+              owner,
+              repo,
+              issue_number: issueNumber,
+              body,
             });
