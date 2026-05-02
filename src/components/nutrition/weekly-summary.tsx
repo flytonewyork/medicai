@@ -8,7 +8,7 @@ import { defaultTargets } from "~/lib/nutrition/calculator";
 import { Card, CardContent } from "~/components/ui/card";
 import { useLocale } from "~/hooks/use-translate";
 import { TargetBar } from "./macro-bar";
-import { todayISO } from "~/lib/utils/date";
+import { shiftDateISO, todayISO } from "~/lib/utils/date";
 
 // 7-day rolling protein and net carbs trend. The numbers that matter
 // most for mPDAC+chemo function preservation.
@@ -110,12 +110,7 @@ export function WeeklySummary() {
 }
 
 function isoDaysAgo(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+  return shiftDateISO(todayISO(), -n);
 }
 
 function dayLabel(iso: string, locale: string): string {

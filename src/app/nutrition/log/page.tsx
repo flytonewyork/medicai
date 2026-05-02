@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Sparkles, Clock, Loader2 } from "lucide-react";
-import { todayISO } from "~/lib/utils/date";
+import { currentHHMM, todayISO } from "~/lib/utils/date";
 import { useLocale } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
 import { Card } from "~/components/ui/card";
@@ -398,13 +398,6 @@ function mealLabel(m: MealType, locale: string): string {
 
 function round1(n: number): number {
   return Math.round(n * 10) / 10;
-}
-
-// Current local time as "HH:MM" — the value the <input type="time">
-// expects. Padded to two digits in each segment.
-function currentHHMM(): string {
-  const d = new Date();
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 // Combine a YYYY-MM-DD day and a HH:MM time into a local-zone ISO

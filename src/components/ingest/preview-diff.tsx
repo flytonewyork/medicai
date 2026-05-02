@@ -33,6 +33,7 @@ import {
   PencilLine,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import { toDatetimeLocalInput as toDatetimeLocal } from "~/lib/utils/date";
 
 const OP_ICON: Record<IngestOpKind, React.ComponentType<{ className?: string }>> = {
   add_appointment: CalendarPlus,
@@ -579,16 +580,6 @@ function FieldRow({
       {children}
     </label>
   );
-}
-
-function toDatetimeLocal(iso?: string): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
-    d.getHours(),
-  )}:${pad(d.getMinutes())}`;
 }
 
 function fromDatetimeLocal(v: string): string | undefined {

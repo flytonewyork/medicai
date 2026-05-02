@@ -16,7 +16,7 @@ import { expectedDosesToday } from "~/lib/medication/log";
 import type { Medication } from "~/types/medication";
 import { Check, ChevronRight, Pause, Play, Sparkles, X } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
-import { todayISO } from "~/lib/utils/date";
+import { todayISO, formatClockSeconds } from "~/lib/utils/date";
 
 // Best-effort duration parse: "20 min", "10 breaths", "5m", "1h". Falls back
 // to 5 minutes when the dose string doesn't mention a time unit.
@@ -30,13 +30,6 @@ function durationSeconds(dose: string | undefined): number {
   const sec = s.match(/(\d+)\s*s/);
   if (sec) return Number(sec[1]);
   return 5 * 60;
-}
-
-function formatClock(sec: number): string {
-  const abs = Math.max(0, Math.round(sec));
-  const mm = Math.floor(abs / 60).toString().padStart(2, "0");
-  const ss = (abs % 60).toString().padStart(2, "0");
-  return `${mm}:${ss}`;
 }
 
 /**
@@ -273,7 +266,7 @@ function PracticeRow({
       {running && (
         <div className="mt-2 flex items-center gap-2 border-t border-ink-100 pt-2">
           <span className="mono text-[18px] font-medium tabular-nums text-ink-900">
-            {formatClock(remaining ?? 0)}
+            {formatClockSeconds(remaining ?? 0)}
           </span>
           <div className="flex-1" />
           <button

@@ -2,7 +2,7 @@ import { db } from "~/lib/db/dexie";
 import type { DailyEntry, LabResult } from "~/types/clinical";
 import type { LogEventRow, AgentRunRow } from "~/types/agent";
 import type { VoiceMemo } from "~/types/voice-memo";
-import { isoDatePart, todayISO } from "~/lib/utils/date";
+import { isoDatePart, shiftDateISO, todayISO } from "~/lib/utils/date";
 
 // One day in the diary timeline. Aggregates everything the patient
 // generated or had recorded for that calendar date — voice memos,
@@ -37,7 +37,7 @@ export async function buildDiaryDays(
   opts: BuildDiaryDaysOptions = {},
 ): Promise<DiaryDay[]> {
   const to = opts.to ?? todayISO();
-  const from = opts.from ?? defaultFrom(to, 30);
+  const from = opts.from ?? shiftDateISO(to, -30);
   const includeEmpty = opts.includeEmpty ?? false;
 
   const [memos, dailies, logs, labs, runs] = await Promise.all([
@@ -117,7 +117,7 @@ export async function buildDiaryDays(
   // weeks and we want them to see "nothing recorded" rather than a
   // jump in time).
   if (includeEmpty) {
-    for (let day = to; day >= from; day = prevDay(day)) {
+    for (let day = to; day >= from; day = shiftDateISO(day, -1)) {
       ensure(day);
     }
   }
@@ -125,20 +125,3 @@ export async function buildDiaryDays(
   return Array.from(byDay.values()).sort((a, b) => b.day.localeCompare(a.day));
 }
 
-function defaultFrom(to: string, days: number): string {
-  const d = new Date(to);
-  d.setDate(d.getDate() - days);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-function prevDay(day: string): string {
-  const d = new Date(day);
-  d.setDate(d.getDate() - 1);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}

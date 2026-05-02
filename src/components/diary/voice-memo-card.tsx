@@ -15,6 +15,7 @@ import type { VoiceMemo, VoiceMemoParsedFields } from "~/types/voice-memo";
 import { resolveVoiceMemoAudioUrl } from "~/lib/voice-memo/cloud";
 import { Card } from "~/components/ui/card";
 import { cn } from "~/lib/utils/cn";
+import { formatDurationMs, formatHHMM } from "~/lib/utils/date";
 
 // Diary card for one voice memo. Shows the recorded time, duration,
 // transcript, and an inline play button. Audio is fetched lazily —
@@ -74,8 +75,8 @@ export function VoiceMemoCard({ memo, locale }: VoiceMemoCardProps) {
     }
   }
 
-  const time = formatTime(memo.recorded_at, locale);
-  const duration = formatDuration(memo.duration_ms);
+  const time = formatHHMM(new Date(memo.recorded_at));
+  const duration = formatDurationMs(memo.duration_ms);
   const cloudState: "synced" | "local" =
     memo.audio_path ? "synced" : "local";
 
@@ -162,20 +163,6 @@ export function VoiceMemoCard({ memo, locale }: VoiceMemoCardProps) {
       />
     </Card>
   );
-}
-
-function formatTime(iso: string, locale: "en" | "zh"): string {
-  const d = new Date(iso);
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return locale === "zh" ? `${hh}:${mm}` : `${hh}:${mm}`;
-}
-
-function formatDuration(ms: number): string {
-  const total = Math.max(0, Math.round(ms / 1000));
-  const mins = Math.floor(total / 60);
-  const secs = total % 60;
-  return `${mins}:${String(secs).padStart(2, "0")}`;
 }
 
 function ReviewLink({

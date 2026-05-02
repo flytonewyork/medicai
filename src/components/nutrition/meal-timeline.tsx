@@ -7,6 +7,7 @@ import { listMealsForDate } from "~/lib/nutrition/queries";
 import { Card, CardContent } from "~/components/ui/card";
 import { useLocale } from "~/hooks/use-translate";
 import { cn } from "~/lib/utils/cn";
+import { formatHHMM as formatTime } from "~/lib/utils/date";
 import type { MealEntry, MealType } from "~/types/nutrition";
 
 // Visual day-clock for meal timing. Designed for "small frequent meals"
@@ -218,12 +219,6 @@ function buildStats(meals: ReadonlyArray<MealEntry>): Stats {
 
 function parseLocalDate(iso: string): Date {
   return new Date(iso);
-}
-
-function formatTime(d: Date): string {
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
 }
 
 function formatGap(min: number, locale: string): string {

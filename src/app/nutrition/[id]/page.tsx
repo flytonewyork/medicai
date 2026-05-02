@@ -19,6 +19,7 @@ import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Field, Textarea, TextInput } from "~/components/ui/field";
 import { cn } from "~/lib/utils/cn";
+import { formatHHMM as toHHMM } from "~/lib/utils/date";
 import type { MealItem, MealType } from "~/types/nutrition";
 
 // Edit screen for a single meal_entry. Patient can change:
@@ -354,10 +355,6 @@ function ItemRow({ item, locale }: { item: MealItem; locale: "en" | "zh" }) {
 function mealLabel(m: MealType, locale: string): string {
   if (locale !== "zh") return m;
   return { breakfast: "早餐", lunch: "午餐", dinner: "晚餐", snack: "加餐" }[m];
-}
-
-function toHHMM(d: Date): string {
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 function assembleLoggedAt(date: string, hhmm: string): string {
