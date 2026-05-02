@@ -135,6 +135,30 @@ type · description` and the auto-add workflow does the rest. Don't
 try to manipulate the project directly — the GitHub MCP server only
 exposes classic Issues, not the Projects v2 GraphQL surface.
 
+### Trigger model: dragging a card to "In Progress" wakes Claude
+
+The repo has a workflow at `.github/workflows/project-board-claude-trigger.yml`
+that listens for `projects_v2_item.edited`, filters for Status →
+"In Progress", and posts an `@claude` mention on the linked issue.
+That mention starts a fresh Claude Code session scoped to that one
+issue.
+
+**Critical implication for issue-writing:** the new session has zero
+memory of any prior chat. Issue bodies MUST be self-contained:
+
+- Goal in the first sentence
+- Why it matters (clinical / strategic)
+- Concrete done-when criteria
+- Files / modules to touch (if known)
+- Links to relevant docs / prior issues / PRs
+- Explicit notes on what needs Thomas / Hu Lin input vs what's
+  autonomous
+
+Avoid phrases like "as discussed", "see chat", "Thomas mentioned" —
+the cold-start session can't see any of that. The Phase 0 / 1 / 3a
+issues already on the board (#170, #171, #173, etc.) are good
+templates.
+
 ## Commands
 
 - `pnpm dev` — local development
