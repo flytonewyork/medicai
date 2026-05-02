@@ -142,6 +142,13 @@ export class AnchorDB extends Dexie {
   // the row on successful upsert. Survives tab close, browser restart,
   // and pre-household sign-in windows.
   sync_queue!: Table<SyncQueueRow, number>;
+  // v27: Shadow rule-engine alerts. Same shape as `zone_alerts` but
+  // populated by the V2 rule set during the analytical-layer rollout
+  // (Sprint 2 Phase 2–5). The patient feed never reads from this
+  // table — it's a Thomas-only diff surface so V2 can be tuned
+  // against Hu Lin's actual history before the cutover. Intentionally
+  // local-only; never mirrored to `cloud_rows`.
+  zone_alerts_shadow!: Table<ZoneAlert, number>;
 
   constructor() {
     super("anchor_db");
@@ -441,6 +448,12 @@ export class AnchorDB extends Dexie {
     // FIFO order and the diagnostic UI can show queue age.
     this.version(26).stores({
       sync_queue: "++id, table, kind, local_id, enqueued_at",
+    });
+    // v27: Shadow zone-alerts. Mirrors `zone_alerts` indexes so the
+    // diff helpers can join the two tables on (rule_id, triggered_at)
+    // cheaply. Local-only — explicitly NOT in SYNCED_TABLES.
+    this.version(27).stores({
+      zone_alerts_shadow: "++id, triggered_at, rule_id, zone",
     });
   }
 }
