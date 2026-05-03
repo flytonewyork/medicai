@@ -240,6 +240,7 @@ function CallClinicAction({
   variant: "primary" | "tide";
   onAck: () => void | Promise<void>;
 }) {
+  const locale = useLocale();
   const settings = useSettings();
   const phone = settings?.oncall_phone ?? settings?.managing_oncologist_phone;
   if (phone) {
@@ -251,10 +252,15 @@ function CallClinicAction({
       </a>
     );
   }
+  // No number configured. Routing to /settings under a "Call clinic"
+  // label is a dead-end click — re-label so the patient knows the
+  // tap will open setup, not start a call.
+  const setupLabel =
+    locale === "zh" ? "添加诊室电话" : "Add clinic number";
   return (
     <Link href="/settings" onClick={() => void onAck()}>
       <Button variant={variant} size="sm" className="gap-1">
-        {label}
+        {setupLabel}
         <ChevronRight className="h-3.5 w-3.5" />
       </Button>
     </Link>
