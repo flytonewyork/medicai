@@ -1,6 +1,6 @@
 name: Trigger Claude on issue label
 
-# Apply the `status:in-progress` label to an issue and this workflow
+# Apply the `in progress` label to an issue and this workflow
 # posts an @claude mention. The Claude Code GitHub App picks up the
 # mention and starts a fresh session scoped to that issue.
 #
@@ -14,7 +14,7 @@ name: Trigger Claude on issue label
 # **Drag-on-board does NOT trigger this workflow** — GitHub Projects
 # v2 doesn't natively sync the Status field to a label. To wake
 # Claude on a card, either:
-#   (a) apply the `status:in-progress` label directly on the issue
+#   (a) apply the `in progress` label directly on the issue
 #       (one click in the Issues tab), or
 #   (b) run this workflow manually from the Actions tab with an
 #       issue number, or
@@ -30,7 +30,7 @@ name: Trigger Claude on issue label
 # fails with `HttpError: Resource not accessible by integration`.
 #
 # Two paths to fire this:
-#   1. Apply the `status:in-progress` label on the issue manually
+#   1. Apply the `in progress` label on the issue manually
 #      (one click in the Issues tab — it auto-creates the label on
 #      first use).
 #   2. Run this workflow manually from the Actions tab with an issue
@@ -68,8 +68,8 @@ jobs:
     runs-on: ubuntu-latest
     # Run on:
     #   (a) workflow_dispatch — always, with the user-supplied issue number
-    #   (b) issues.labeled — only when the new label is `status:in-progress`
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'issues' && github.event.label.name == 'status:in-progress') }}
+    #   (b) issues.labeled — only when the new label is `in progress`
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'issues' && github.event.label.name == 'in progress') }}
     steps:
       - name: Resolve issue number
         id: resolve
