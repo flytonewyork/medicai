@@ -3,7 +3,15 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Camera, Loader2, Sparkles, Type, Mic, MicOff } from "lucide-react";
+import {
+  Camera,
+  ImagePlus,
+  Loader2,
+  Sparkles,
+  Type,
+  Mic,
+  MicOff,
+} from "lucide-react";
 import { prepareImageForVision } from "~/lib/ingest/image";
 import { useVoiceTranscription } from "~/hooks/use-voice-transcription";
 import {
@@ -57,7 +65,8 @@ export function MealIngest({
     onTranscribed: (chunk) =>
       setText((cur) => (cur ? `${cur} ${chunk}` : chunk)),
   });
-  const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const libraryRef = useRef<HTMLInputElement>(null);
 
   async function handleFile(file: File) {
     setBusy(true);
@@ -123,19 +132,41 @@ export function MealIngest({
                   variant="primary"
                   size="md"
                   disabled={busy}
-                  onClick={() => fileRef.current?.click()}
+                  onClick={() => cameraRef.current?.click()}
                 >
                   {busy ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Camera className="h-4 w-4" />
                   )}
-                  {locale === "zh" ? "拍照 / 选图" : "Take or pick photo"}
+                  {locale === "zh" ? "拍照" : "Take photo"}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  disabled={busy}
+                  onClick={() => libraryRef.current?.click()}
+                >
+                  <ImagePlus className="h-4 w-4" />
+                  {locale === "zh" ? "从相册选择" : "Pick photo"}
                 </Button>
               </div>
             </div>
+            {/* Two inputs: capture=environment routes directly to the rear camera; the second has no capture so the OS shows the library picker. */}
             <input
-              ref={fileRef}
+              ref={cameraRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void handleFile(f);
+                e.target.value = "";
+              }}
+            />
+            <input
+              ref={libraryRef}
               type="file"
               accept="image/*"
               hidden
