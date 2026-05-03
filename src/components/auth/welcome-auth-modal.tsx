@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { getSupabaseBrowser, isSupabaseConfigured } from "~/lib/supabase/client";
+import { submitPasswordAuth } from "~/lib/supabase/auth";
 import { Button } from "~/components/ui/button";
 import { Field, TextInput } from "~/components/ui/field";
 import { useT } from "~/hooks/use-translate";
@@ -54,33 +55,18 @@ export function WelcomeAuthModal() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const supabase = getSupabaseBrowser();
-    if (!supabase) return;
+    if (!getSupabaseBrowser()) return;
     setLoading(true);
     setError(null);
     setInfo(null);
     try {
-      if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
+      const result = await submitPasswordAuth(mode, email, password);
+      if (result.status === "signed-in") {
         localStorage.setItem(SEEN_KEY, nowISO());
         setOpen(false);
         router.refresh();
         return;
       }
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) throw error;
-      // If Supabase returned a session, confirm-email was off — we're in.
-      if (data.session) {
-        localStorage.setItem(SEEN_KEY, nowISO());
-        setOpen(false);
-        router.refresh();
-        return;
-      }
-      // Otherwise email confirmation is on; tell dad to check his inbox.
       setInfo(t("welcomeAuth.createdConfirm"));
       setMode("signin");
     } catch (err: unknown) {
