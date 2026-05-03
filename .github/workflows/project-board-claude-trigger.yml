@@ -1,21 +1,33 @@
-name: Project board trigger Claude on In Progress
+name: Trigger Claude on issue label
 
-# When you want Claude to pick up an issue, label it `status:in-progress`.
-# This workflow posts an @claude mention on the issue, which the
-# Claude Code GitHub App picks up and starts a fresh session for.
+# Apply the `status:in-progress` label to an issue and this workflow
+# posts an @claude mention. The Claude Code GitHub App picks up the
+# mention and starts a fresh session scoped to that issue.
+#
+# Why a label and not a project-board drag:
+# `projects_v2_item` events are real GitHub webhooks but GitHub
+# Actions does NOT accept them as `on:` keys for repository-level
+# workflows — only for organisation-level workflows in the org's
+# `.github` repo. The "save dads life" project is user-owned, so we
+# bridge via a label.
+#
+# **Drag-on-board does NOT trigger this workflow** — GitHub Projects
+# v2 doesn't natively sync the Status field to a label. To wake
+# Claude on a card, either:
+#   (a) apply the `status:in-progress` label directly on the issue
+#       (one click in the Issues tab), or
+#   (b) run this workflow manually from the Actions tab with an
+#       issue number, or
+#   (c) set up a separate cron-based sync workflow that polls the
+#       project's GraphQL API and applies the label when status
+#       changes — requires a fine-grained PAT with `read:project`.
+#       Not configured today; ask Claude to ship it if labelling
+#       friction becomes annoying.
 #
 # REPO SETTING REQUIRED: Settings -> Actions -> General -> Workflow
-# permissions must be "Read and write permissions". The
-# `permissions:` block below requests `issues: write`, but the repo
-# default caps what the GITHUB_TOKEN can be granted. If the cap is
-# "Read only", this workflow fails with:
-#   HttpError: Resource not accessible by integration
-#
-# Why a label trigger and not a project-board trigger:
-# `projects_v2_item` events ARE webhooks, but GitHub Actions does NOT
-# accept them as `on:` keys for repository-level workflows — only for
-# organization-level workflows in the org's `.github` repo. Since the
-# "save dads life" project is user-owned, we bridge via a label.
+# permissions must be "Read and write permissions". Without it the
+# `permissions:` block below is silently capped and the workflow
+# fails with `HttpError: Resource not accessible by integration`.
 #
 # Two paths to fire this:
 #   1. Apply the `status:in-progress` label on the issue manually
