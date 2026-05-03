@@ -129,35 +129,117 @@ GitHub Project **"save dads life"** (under `flytonewyork`). Issues
 land there automatically via the project's auto-add workflow — the
 Issues tab is the data store, the project board is the lens.
 
-When opening a new kanban item, just create a regular issue on
-`flytonewyork/medicai` with title prefix `[P0|P1|P2|P3] Sprint N ·
-type · description` and the auto-add workflow does the rest. Don't
-try to manipulate the project directly — the GitHub MCP server only
-exposes classic Issues, not the Projects v2 GraphQL surface.
+When opening a new kanban item, create a regular issue on
+`flytonewyork/medicai` using the **Sprint task** template
+(`.github/ISSUE_TEMPLATE/sprint-task.yml`). Title format:
+`[P0|P1|P2|P3] Sprint N · type · description`. The auto-add
+workflow pulls it into the project automatically.
 
-### Trigger model: dragging a card to "In Progress" wakes Claude
+Don't try to manipulate the project directly — the GitHub MCP server
+only exposes classic Issues, not the Projects v2 GraphQL surface.
 
-The repo has a workflow at `.github/workflows/project-board-claude-trigger.yml`
-that listens for `projects_v2_item.edited`, filters for Status →
-"In Progress", and posts an `@claude` mention on the linked issue.
-That mention starts a fresh Claude Code session scoped to that one
-issue.
+### Trigger model: the LABEL wakes Claude, not the drag
 
-**Critical implication for issue-writing:** the new session has zero
-memory of any prior chat. Issue bodies MUST be self-contained:
+Applying the **`status:in-progress`** label to an issue posts an
+`@claude` mention via the workflow at
+`.github/workflows/project-board-claude-trigger.yml`. The Claude
+Code GitHub App picks up the mention and starts a fresh session
+scoped to that issue.
 
-- Goal in the first sentence
-- Why it matters (clinical / strategic)
-- Concrete done-when criteria
-- Files / modules to touch (if known)
-- Links to relevant docs / prior issues / PRs
-- Explicit notes on what needs Thomas / Hu Lin input vs what's
-  autonomous
+**Important:** dragging a card to the "In Progress" column on the
+project board does **NOT** apply the label automatically. GitHub
+Projects v2 doesn't natively sync the Status field to a label. To
+wake Claude on a card, either:
 
-Avoid phrases like "as discussed", "see chat", "Thomas mentioned" —
-the cold-start session can't see any of that. The Phase 0 / 1 / 3a
-issues already on the board (#170, #171, #173, etc.) are good
-templates.
+- **Recommended:** apply the `status:in-progress` label directly on
+  the issue (one click in the Issues tab). The board's Status field
+  is for visualisation; the label is for automation.
+- **Alternative:** run the "Trigger Claude on issue label" workflow
+  manually from the Actions tab with an issue number.
+- **For drag-on-board UX:** a separate cron workflow could poll the
+  project's GraphQL API every 5 min and apply the label when status
+  changes. Requires a fine-grained PAT with `read:project`. Not
+  configured today; ship it if labelling friction becomes annoying.
+
+### Issue authoring rubric
+
+Cold-start sessions have **zero memory** of any prior chat. Issue
+bodies MUST be self-contained. The Sprint task template enforces:
+
+- **Goal** in the first sentence
+- **Why this matters** (clinical / strategic — tie to bridge
+  strategy, axis-3 detection, or RASolute deadline if relevant)
+- **Done when** — concrete checkable criteria
+- **Files / modules to touch** if known
+- **Links** to docs, related issues, prior PRs, CLAUDE.md sections
+- **Decisions needing Thomas / Hu Lin input** — anything the agent
+  must NOT decide unilaterally; comment on the issue, don't guess
+
+Avoid "as discussed" / "see chat" / "Thomas mentioned" — the
+cold-start session can't see any of that. Phase 0 / 1 / 3a issues
+already on the board (#170, #171, #173) are good templates.
+
+## Workflow norms
+
+### Branch + PR conventions
+
+- Develop on a topic branch named `claude/<short-slug>` (the
+  trigger workflow + Claude code-review action expect this prefix).
+- Open PRs as **draft** by default; promote to ready when CI is
+  green and you've self-reviewed.
+- PR body: short summary, test plan checklist, `Closes #<n>` or
+  `Refs #<n>` linking issues. Auto-close fires on merge when the
+  keyword is present.
+- Commit messages: rich subject lines + multi-paragraph body
+  explaining "why" (existing repo style).
+
+### Chat vs. kanban
+
+- **Chat is for planning, audits, and strategy** — the deliverable
+  is *issues created* or *doctrine updated in CLAUDE.md*, never
+  code shipped.
+- **Kanban is for execution** — the deliverable is a merged PR.
+- If a chat session ships code, treat it as a smell. Code via chat
+  bypasses the audit trail and parallelism the kanban gives.
+
+### Sub-agents within a session
+
+- Use the **Task** tool to spawn focused sub-agents for parallel
+  research (Explore, Plan, code-reviewer, security-review) inside a
+  bounded session. Keeps the main agent's context clean.
+- Sub-agents are stateless from the caller's perspective; brief
+  them like a colleague who just walked into the room.
+
+### Known traps (don't re-introduce)
+
+- **Self-recursive RLS policies** cause "infinite recursion detected
+  in policy" 500s. Patterns like `USING (X IN (SELECT X FROM
+  same_table WHERE auth.uid() = ...))` are forbidden. Use a
+  `SECURITY DEFINER` helper instead — see `is_household_member` /
+  `is_household_admin` (defined in
+  `2026_05_02_fix_rls_recursion`).
+- **Storage buckets are created via SQL migration**, not config. A
+  missing bucket silently 400s every upload — the `voice-memos`
+  bucket was undefined for months until
+  `2026_05_02_voice_memos_bucket`.
+- **`projects_v2_item` is NOT a valid `on:` trigger** for repo
+  workflows. Only org-level workflows in the org's `.github` repo
+  accept it. Bridge user-owned projects via labels or a cron sync.
+- **Workflow `permissions` must include `pull-requests: write`**
+  when posting comments — the issues comments endpoint is shared
+  with PRs and rejects PR-numbered targets without it. Header
+  proof: `x-accepted-github-permissions: issues=write;
+  pull_requests=write`.
+- **The repo Workflow Permissions setting** (Settings → Actions →
+  General) must be "Read and write permissions" — the
+  `permissions:` block can't grant above the repo cap.
+- **Sync queue must persist to Dexie** (`sync_queue` table, v26),
+  not just in memory — the original in-memory queue dropped writes
+  on every tab close (PR #164).
+- **Bootstrap auto-create profile + household** for offline-
+  onboarded users. If `settings.onboarded_at` is set but no
+  household exists, the patient logs into a void
+  (`bootstrapHouseholdAndProfile()` in `src/lib/sync/bootstrap.ts`).
 
 ## Commands
 

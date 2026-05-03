@@ -1,0 +1,73 @@
+name: Sprint task
+description: A self-contained kanban card for Claude (or a human) to pick up cold.
+title: "[P0|P1|P2|P3] Sprint N · type · short description"
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Issue bodies become the contract for cold-start agent sessions. They have
+        zero memory of any prior chat. Be explicit. Avoid "as discussed" / "see
+        chat" — anything that requires context outside this issue body is invisible
+        to the agent that picks it up.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: One sentence. What's done when this is done.
+      placeholder: "Add a fortnightly cadence prompt that fires when no fortnightly assessment in 12+ days."
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why this matters
+      description: Clinical and / or strategic context. Tie back to bridge strategy, axis-3 detection, or RASolute deadline if relevant.
+      placeholder: "0 fortnightly assessments in cloud → grip / gait / ECOG / sarc-F / TUG / STS unobservable → V2 axis-3 rules can't fire."
+    validations:
+      required: true
+  - type: textarea
+    id: done_when
+    attributes:
+      label: Done when
+      description: Concrete, checkable criteria. The agent stops when these are met.
+      placeholder: |
+        - One fortnightly_assessment row appears in cloud_rows for Hu Lin within 7 days
+        - Cadence prompt fires daily on his feed until completed
+        - Tests cover never-done / threshold / overdue cases
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Files / modules to touch
+      description: If known. Agent will explore otherwise — but a hint saves cycles.
+      placeholder: |
+        - `src/lib/nudges/cadence-prompts.ts`
+        - `src/lib/nudges/compose.ts`
+        - `src/lib/tasks/engine.ts`
+  - type: textarea
+    id: links
+    attributes:
+      label: Linked context
+      description: Docs, related issues, prior PRs, CLAUDE.md sections.
+      placeholder: |
+        - docs/analytical_density_audit.md
+        - Phase 0 audit (#170)
+        - Parent: Analytical Layer V1 (#169)
+  - type: textarea
+    id: human_decisions
+    attributes:
+      label: Decisions needing Thomas / Hu Lin input
+      description: Anything the agent must NOT decide unilaterally. Agent should comment on the issue, not guess.
+      placeholder: |
+        - Threshold: should we fire daily or every 3 days? (Thomas)
+        - Should the cycle-day timing override the 12-day threshold? (clinical call)
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        **To trigger Claude on this issue:** apply the `status:in-progress` label,
+        OR run the "Trigger Claude on issue label" workflow manually from the
+        Actions tab with this issue's number. Both fire `@claude` and start a fresh
+        session scoped to this issue.
