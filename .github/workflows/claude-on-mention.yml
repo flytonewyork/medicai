@@ -1,0 +1,35 @@
+name: Claude Code on @claude mention
+
+# Catches `@claude` mentions in issue + PR-review-comment bodies and
+# starts a Claude Code session scoped to that thread. Pairs with the
+# project-board trigger workflow (which posts the @claude comment on
+# behalf of a card moving to "In Progress") and with humans typing
+# `@claude do X` directly on issues.
+#
+# One-time setup:
+#   1. Install the official Claude GitHub App on this repo:
+#        https://github.com/apps/claude
+#   2. Add `ANTHROPIC_API_KEY` as a repo secret (Settings → Secrets →
+#      Actions). Key is from console.anthropic.com.
+#
+# Without those two pieces the workflow is a no-op (App can't post,
+# action can't authenticate). With them, every @claude mention starts
+# a fresh session that reads .claude/CLAUDE.md and the issue/PR body
+# for context.
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  claude:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
