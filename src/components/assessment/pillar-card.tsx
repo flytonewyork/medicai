@@ -19,9 +19,7 @@ export function PillarRing({
       ? "text-[var(--ok)]"
       : score >= 50
         ? "text-[var(--sand-2)]"
-        : score >= 30
-          ? "text-[var(--warn)]"
-          : "text-[var(--warn)]";
+        : "text-[var(--warn)]";
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
