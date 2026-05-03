@@ -140,7 +140,7 @@ only exposes classic Issues, not the Projects v2 GraphQL surface.
 
 ### Trigger model: the LABEL wakes Claude, not the drag
 
-Applying the **`status:in-progress`** label to an issue posts an
+Applying the **`in progress`** label to an issue posts an
 `@claude` mention via the workflow at
 `.github/workflows/project-board-claude-trigger.yml`. The Claude
 Code GitHub App picks up the mention and starts a fresh session
@@ -151,7 +151,7 @@ project board does **NOT** apply the label automatically. GitHub
 Projects v2 doesn't natively sync the Status field to a label. To
 wake Claude on a card, either:
 
-- **Recommended:** apply the `status:in-progress` label directly on
+- **Recommended:** apply the `in progress` label directly on
   the issue (one click in the Issues tab). The board's Status field
   is for visualisation; the label is for automation.
 - **Alternative:** run the "Trigger Claude on issue label" workflow

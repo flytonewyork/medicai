@@ -67,7 +67,7 @@ body:
     attributes:
       value: |
         ---
-        **To trigger Claude on this issue:** apply the `status:in-progress` label,
+        **To trigger Claude on this issue:** apply the `in progress` label,
         OR run the "Trigger Claude on issue label" workflow manually from the
         Actions tab with this issue's number. Both fire `@claude` and start a fresh
         session scoped to this issue.
