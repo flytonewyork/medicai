@@ -9,13 +9,18 @@ name: Claude Code on @claude mention
 # One-time setup:
 #   1. Install the official Claude GitHub App on this repo:
 #        https://github.com/apps/claude
-#   2. Add `ANTHROPIC_API_KEY` as a repo secret (Settings → Secrets →
-#      Actions). Key is from console.anthropic.com.
+#   2. Generate a long-lived OAuth token tied to your Claude
+#      subscription (Pro / Max / Team / Enterprise):
+#        $ claude setup-token
+#      Copy the token IMMEDIATELY — it's printed once and not saved.
+#   3. Add `CLAUDE_CODE_OAUTH_TOKEN` as a repo secret (Settings →
+#      Secrets → Actions). Token is valid for ~1 year; rotate by
+#      re-running `claude setup-token` and overwriting the secret.
 #
-# Without those two pieces the workflow is a no-op (App can't post,
-# action can't authenticate). With them, every @claude mention starts
-# a fresh session that reads .claude/CLAUDE.md and the issue/PR body
-# for context.
+# Why subscription token over `ANTHROPIC_API_KEY`: usage counts
+# against the existing Pro/Max quota instead of pay-per-token billing.
+# If the subscription is downgraded or the token expires, the workflow
+# fails loudly — switch back to `anthropic_api_key:` if needed.
 
 on:
   issue_comment:
@@ -32,4 +37,4 @@ jobs:
     steps:
       - uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
