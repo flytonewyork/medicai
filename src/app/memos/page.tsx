@@ -16,6 +16,7 @@ import {
 import { useLocale } from "~/hooks/use-translate";
 import { db } from "~/lib/db/dexie";
 import { Card } from "~/components/ui/card";
+import { Button } from "~/components/ui/button";
 import { PageHeader } from "~/components/ui/page-header";
 import { EmptyState } from "~/components/ui/empty-state";
 import type { VoiceMemo } from "~/types/voice-memo";
@@ -70,8 +71,16 @@ export default function MemosPage() {
           }
           description={
             locale === "zh"
-              ? "去「日记」轻点麦克风录第一段。"
-              : "Open the diary and tap the mic to record your first."
+              ? "去「日志」开口说一段，AI 会保存录音并整理文字。"
+              : "Open Log to record your first — we keep the audio and the transcript."
+          }
+          actions={
+            <Link href="/log">
+              <Button>
+                <Mic className="h-4 w-4" />
+                {locale === "zh" ? "去日志录音" : "Record in Log"}
+              </Button>
+            </Link>
           }
         />
       ) : (

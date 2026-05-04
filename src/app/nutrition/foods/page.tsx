@@ -41,6 +41,37 @@ const HINT_TONE_CLS: Record<string, string> = {
   avoid: "bg-ink-200 text-ink-700",
 };
 
+// localStorage key for the foods-page filter triplet. Persisting
+// keeps the patient's chosen lens (e.g. "low-carb only") across
+// reloads — without this, the page resets to All every visit, which
+// is friction on a tired day when the patient is browsing the same
+// short list of foods that fit them.
+const FILTERS_KEY = "anchor.foods.filters.v1";
+
+type StoredFilters = {
+  category: FoodCategory | "all";
+  ketoOnly: boolean;
+  easyOnly: boolean;
+};
+
+function readStoredFilters(): StoredFilters {
+  if (typeof window === "undefined") {
+    return { category: "all", ketoOnly: false, easyOnly: false };
+  }
+  try {
+    const raw = window.localStorage.getItem(FILTERS_KEY);
+    if (!raw) return { category: "all", ketoOnly: false, easyOnly: false };
+    const parsed = JSON.parse(raw) as Partial<StoredFilters>;
+    return {
+      category: parsed.category ?? "all",
+      ketoOnly: Boolean(parsed.ketoOnly),
+      easyOnly: Boolean(parsed.easyOnly),
+    };
+  } catch {
+    return { category: "all", ketoOnly: false, easyOnly: false };
+  }
+}
+
 export default function FoodsPage() {
   const router = useRouter();
   const locale = useLocale();
@@ -49,6 +80,29 @@ export default function FoodsPage() {
   const [ketoOnly, setKetoOnly] = useState(false);
   const [easyOnly, setEasyOnly] = useState(false);
   const [editing, setEditing] = useState<Partial<FoodItem> | null>(null);
+
+  // Hydrate filters from localStorage on mount. Done in an effect (not
+  // a lazy initialiser) so SSR + first-paint match — otherwise React
+  // would warn about a hydration mismatch when the stored value
+  // differs from the "all/false/false" default.
+  useEffect(() => {
+    const stored = readStoredFilters();
+    setCategory(stored.category);
+    setKetoOnly(stored.ketoOnly);
+    setEasyOnly(stored.easyOnly);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        FILTERS_KEY,
+        JSON.stringify({ category, ketoOnly, easyOnly }),
+      );
+    } catch {
+      // Quota or privacy mode — non-fatal; filters just won't persist.
+    }
+  }, [category, ketoOnly, easyOnly]);
 
   const foods = useLiveQuery(() => db.foods.orderBy("name").toArray(), []);
 
