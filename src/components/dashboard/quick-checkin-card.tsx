@@ -369,6 +369,9 @@ function FeverRow({
           value={temp}
           onChange={(e) => onTempChange(e.target.value)}
           placeholder="°C"
+          aria-label={
+            locale === "zh" ? "体温（摄氏度）" : "Temperature in Celsius"
+          }
           className="h-11 w-24 rounded-md border border-ink-200 bg-paper-2 px-3 text-base tabular-nums"
         />
       )}
