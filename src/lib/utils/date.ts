@@ -118,6 +118,18 @@ export function shiftIsoDays(iso: string, days: number): string {
   return d.toISOString();
 }
 
+// Shift a YYYY-MM-DD calendar date by N days using UTC arithmetic.
+// Anchored at noon UTC so DST and ±12h timezone offsets can't flip the day.
+// Use this for any day-keyed math that must stay stable regardless of the
+// caller's local clock — coverage windows, agent log lookbacks, GI series
+// scaffolding. For local-zone diary/dashboard math (where the user's wall
+// clock is the truth) use `shiftDateISO` instead.
+export function shiftIsoDate(date: string, days: number): string {
+  const d = new Date(`${date.slice(0, 10)}T12:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
+}
+
 // BCP-47 language tag for the patient's locale. Centralised so the zh-CN /
 // en-AU mapping isn't repeated across every component that calls
 // toLocaleDateString / toLocaleTimeString.

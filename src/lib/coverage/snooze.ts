@@ -1,5 +1,6 @@
 import { db, now } from "~/lib/db/dexie";
 import { TRACKED_FIELDS } from "~/config/tracked-fields";
+import { shiftIsoDate } from "~/lib/utils/date";
 
 // Snooze durations per tracked-field freshness band. The brief was
 // "3d daily / 7d weekly / 14d fortnightly" — we map each tracked
@@ -21,19 +22,10 @@ export async function snoozeCoverageField(
   todayISO: string,
 ): Promise<void> {
   const days = snoozeDaysFor(fieldKey);
-  const until = isoDaysAfter(todayISO, days);
+  const until = shiftIsoDate(todayISO, days);
   await db.coverage_snoozes.add({
     field_key: fieldKey,
     snoozed_at: now(),
     snoozed_until: until,
   });
-}
-
-function isoDaysAfter(iso: string, n: number): string {
-  const d = new Date(iso + "T12:00:00.000Z");
-  d.setUTCDate(d.getUTCDate() + n);
-  const yyyy = d.getUTCFullYear();
-  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
 }
