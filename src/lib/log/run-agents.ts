@@ -14,6 +14,7 @@ import { agentsForTags } from "~/agents/routing";
 import { HttpError, postJson } from "~/lib/utils/http";
 import { computeCoverageGaps } from "~/lib/coverage/log-coverage";
 import { formatCoverageSnapshot } from "~/lib/coverage/agent-snapshot";
+import { shiftIsoDate } from "~/lib/utils/date";
 
 // Client-side orchestration for running one specialist agent.
 // 1. Read state.md + recent feedback for this agent from Dexie
@@ -382,7 +383,7 @@ async function buildCoverageSnapshot(
   date: string,
 ): Promise<string | undefined> {
   try {
-    const start = isoDaysBefore(date, 27);
+    const start = shiftIsoDate(date, -27);
     const end = date;
     const recentDailies = await db.daily_entries
       .where("date")
@@ -414,11 +415,3 @@ async function buildCoverageSnapshot(
   }
 }
 
-function isoDaysBefore(iso: string, n: number): string {
-  const d = new Date(iso + "T12:00:00.000Z");
-  d.setUTCDate(d.getUTCDate() - n);
-  const yyyy = d.getUTCFullYear();
-  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
