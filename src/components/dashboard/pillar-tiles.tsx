@@ -414,7 +414,7 @@ export function PillarTiles() {
       key: "practice",
       node: (
         <Link
-          href={`/daily/new?date=${todayISO}`}
+          href="/practices"
           className="a-card flex min-h-[140px] flex-col gap-2 p-4 text-left transition-colors hover:border-ink-300"
         >
           <div className="flex items-center justify-between">
@@ -454,7 +454,7 @@ export function PillarTiles() {
       key: "protein",
       node: (
         <Link
-          href={`/daily/new?date=${todayISO}`}
+          href="/nutrition/log"
           className="a-card flex min-h-[140px] flex-col gap-2 p-4 text-left transition-colors hover:border-ink-300"
         >
           <div className="flex items-center justify-between">

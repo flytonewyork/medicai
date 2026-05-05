@@ -11,7 +11,8 @@ import { runEngineAndPersist } from "~/lib/rules/engine";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils/cn";
-import { Check, Thermometer } from "lucide-react";
+import { Check, Thermometer, Pencil } from "lucide-react";
+import type { DailyEntry } from "~/types/clinical";
 
 const SCALES = [
   {
@@ -68,21 +69,21 @@ export function QuickCheckinCard() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [justSaved, setJustSaved] = useState(false);
 
-  // After save, the live query picks up `existing` and would normally
-  // unmount the card. We keep a "Saved" acknowledgement visible for
-  // ~6s so the patient has time to read the confirmation and tap the
-  // "Add detail" link if they want to. After that the card cleans
-  // itself up automatically (existing-row path returns null). Without
-  // this timer the saved banner stays on the dashboard for the rest
-  // of the session; with too short a timer (was 2.5s) the patient
-  // misses the chance to add detail.
+  // After save, the live query picks up `existing` and switches the
+  // card to its compact "Saved today" summary. We don't auto-hide
+  // anymore — silence on the dashboard after a check-in left users
+  // wondering whether the save took. The compact summary stays until
+  // tomorrow's date rolls over (or the entry is edited from the
+  // full log), and the Full-log link gives a one-tap path to amend.
   useEffect(() => {
     if (!justSaved) return;
     const id = setTimeout(() => setJustSaved(false), 6000);
     return () => clearTimeout(id);
   }, [justSaved]);
 
-  if (existing && !justSaved) return null;
+  if (existing && !justSaved) {
+    return <SavedTodaySummary entry={existing} />;
+  }
 
   async function save() {
     setSaving(true);
@@ -373,5 +374,92 @@ function FeverRow({
         />
       )}
     </div>
+  );
+}
+
+// Compact "checked in today" acknowledgement. Replaces the previous
+// behaviour of vanishing once the entry was saved — that left the
+// dashboard silent on the question patients/carers ask first
+// ("did I already do this?"). Shows the values that were saved with a
+// one-tap path back into the full daily wizard for amendments.
+function SavedTodaySummary({ entry }: { entry: DailyEntry }) {
+  const locale = useLocale();
+  const items: Array<{ label: string; value: string; tone?: "warn" }> = [];
+  if (typeof entry.energy === "number") {
+    items.push({
+      label: locale === "zh" ? "精力" : "Energy",
+      value: `${entry.energy}/10`,
+    });
+  }
+  if (typeof entry.pain_current === "number") {
+    items.push({
+      label: locale === "zh" ? "疼痛" : "Pain",
+      value: `${entry.pain_current}/10`,
+    });
+  }
+  if (typeof entry.nausea === "number") {
+    items.push({
+      label: locale === "zh" ? "恶心" : "Nausea",
+      value: `${entry.nausea}/10`,
+    });
+  }
+  if (entry.fever) {
+    items.push({
+      label: locale === "zh" ? "发热" : "Fever",
+      value:
+        typeof entry.fever_temp === "number"
+          ? `${entry.fever_temp.toFixed(1)} °C`
+          : locale === "zh" ? "是" : "yes",
+      tone: "warn",
+    });
+  }
+  return (
+    <Card className="p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
+            style={{ background: "var(--ok-soft)", color: "var(--ok)" }}
+          >
+            <Check className="h-4 w-4" strokeWidth={3} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[13px] font-semibold text-ink-900">
+              {locale === "zh" ? "今日已记录" : "Checked in today"}
+            </div>
+            {items.length > 0 ? (
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[12px] text-ink-700">
+                {items.map((it) => (
+                  <span
+                    key={it.label}
+                    className={cn(
+                      "tabular-nums",
+                      it.tone === "warn" && "text-[var(--warn)] font-medium",
+                    )}
+                  >
+                    <span className="text-ink-500">{it.label}</span>{" "}
+                    {it.value}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-0.5 text-[12px] text-ink-500">
+                {locale === "zh"
+                  ? "可以打开完整日志补充。"
+                  : "Open the full log to add detail."}
+              </p>
+            )}
+          </div>
+        </div>
+        <Link
+          href="/daily/new"
+          aria-label={locale === "zh" ? "编辑或补充今日记录" : "Edit today's check-in"}
+          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-ink-200 px-2 py-1 text-[11px] text-ink-700 hover:border-[var(--tide-2)] hover:text-[var(--tide-2)]"
+        >
+          <Pencil className="h-3 w-3" />
+          {locale === "zh" ? "补充" : "Edit"}
+        </Link>
+      </div>
+    </Card>
   );
 }
