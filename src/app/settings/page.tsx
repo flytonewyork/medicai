@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { db, now } from "~/lib/db/dexie";
@@ -30,6 +30,18 @@ export default function SettingsPage() {
       locale: "en",
     },
   });
+
+  // Local "just saved" flag rather than `formState.isSubmitSuccessful`,
+  // which stays true until the next submission and reads as a permanent
+  // confirmation. Auto-clears after a few seconds so the message is a
+  // genuine acknowledgement, not stale chrome.
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  useEffect(() => {
+    if (savedAt === null) return;
+    const id = setTimeout(() => setSavedAt(null), 4000);
+    return () => clearTimeout(id);
+  }, [savedAt]);
 
   useEffect(() => {
     if (current) {
@@ -65,35 +77,47 @@ export default function SettingsPage() {
   }, [current, reset]);
 
   async function onSubmit(values: SettingsInput) {
-    // If home_city changed or lat/lon missing, re-geocode.
-    const needsGeocode =
-      values.home_city &&
-      (values.home_city !== current?.home_city ||
-        typeof values.home_lat !== "number" ||
-        typeof values.home_lon !== "number");
-    if (needsGeocode && values.home_city) {
-      try {
-        const { geocodeCity } = await import("~/lib/weather/open-meteo");
-        const geo = await geocodeCity(values.home_city);
-        if (geo) {
-          values.home_lat = geo.latitude;
-          values.home_lon = geo.longitude;
-          values.home_timezone = geo.timezone;
+    setSaveError(null);
+    try {
+      // If home_city changed or lat/lon missing, re-geocode.
+      const needsGeocode =
+        values.home_city &&
+        (values.home_city !== current?.home_city ||
+          typeof values.home_lat !== "number" ||
+          typeof values.home_lon !== "number");
+      if (needsGeocode && values.home_city) {
+        try {
+          const { geocodeCity } = await import("~/lib/weather/open-meteo");
+          const geo = await geocodeCity(values.home_city);
+          if (geo) {
+            values.home_lat = geo.latitude;
+            values.home_lon = geo.longitude;
+            values.home_timezone = geo.timezone;
+          }
+        } catch {
+          // non-fatal
         }
-      } catch {
-        // non-fatal
       }
+      if (current?.id) {
+        await db.settings.update(current.id, { ...values, updated_at: now() });
+      } else {
+        await db.settings.add({
+          ...values,
+          created_at: now(),
+          updated_at: now(),
+        });
+      }
+      setLocale(values.locale);
+      setSavedAt(Date.now());
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[settings] save failed", err);
+      setSaveError(
+        locale === "zh"
+          ? "保存失败，请再试一次。"
+          : "Couldn't save — please try again.",
+      );
     }
-    if (current?.id) {
-      await db.settings.update(current.id, { ...values, updated_at: now() });
-    } else {
-      await db.settings.add({
-        ...values,
-        created_at: now(),
-        updated_at: now(),
-      });
-    }
-    setLocale(values.locale);
   }
 
   return (
@@ -204,12 +228,19 @@ export default function SettingsPage() {
           </Field>
         </section>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={formState.isSubmitting}>
             {formState.isSubmitting ? t("common.saving") : t("common.save")}
           </Button>
-          {formState.isSubmitSuccessful && (
-            <span className="text-xs text-ink-500">{t("common.saved")}</span>
+          {savedAt !== null && (
+            <span className="text-xs text-[var(--ok)]">
+              {t("common.saved")}
+            </span>
+          )}
+          {saveError && (
+            <span role="alert" className="text-xs text-[var(--warn)]">
+              {saveError}
+            </span>
           )}
         </div>
       </form>
