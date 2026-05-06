@@ -13,6 +13,7 @@ import { readJsonBody } from "~/lib/anthropic/route-helpers";
 import { requireSession } from "~/lib/auth/require-session";
 import { loadHouseholdProfile } from "~/lib/household/profile";
 import { nowISO } from "~/lib/utils/date";
+import { getErrorMessage } from "~/lib/utils/error";
 
 export const runtime = "nodejs";
 // Specialist agents chew through referrals + state and emit up to 2k tokens
@@ -120,7 +121,7 @@ export async function POST(
       coverageSnapshot: parsed.data.coverage_snapshot,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = getErrorMessage(err);
     return NextResponse.json(
       { error: "Agent run failed", message },
       { status: 502 },

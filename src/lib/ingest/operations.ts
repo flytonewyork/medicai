@@ -18,6 +18,7 @@ import type {
 import type { Medication } from "~/types/medication";
 import type { PatientTask } from "~/types/task";
 import type { TreatmentCycle } from "~/types/treatment";
+import { getErrorMessage } from "~/lib/utils/error";
 
 // Row-level provenance the caller can attach to every row written by an
 // IngestDraft. Copied onto each add_* op's data before insert unless the
@@ -253,7 +254,7 @@ export async function applyIngestOp(
     return {
       op,
       ok: false,
-      error: err instanceof Error ? err.message : String(err),
+      error: getErrorMessage(err),
     };
   }
 }

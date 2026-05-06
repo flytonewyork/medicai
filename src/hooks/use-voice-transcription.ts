@@ -11,6 +11,7 @@ import {
 } from "~/lib/voice-memo/sse";
 import type { VoiceMemo } from "~/types/voice-memo";
 import type { EnteredBy } from "~/types/clinical";
+import { getErrorMessage } from "~/lib/utils/error";
 
 // Click-to-record voice transcription via Whisper. The patient taps
 // once to start, taps again to stop. We record the whole utterance
@@ -311,7 +312,7 @@ export function useVoiceTranscription(
               }
             });
           } catch (err) {
-            transcribeError = err instanceof Error ? err.message : String(err);
+            transcribeError = getErrorMessage(err);
           }
 
           if (memoId !== null && text) {
@@ -363,7 +364,7 @@ export function useVoiceTranscription(
         }
       }, maxDurationMs);
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = getErrorMessage(err);
       setError(message);
       setStatus("error");
       cleanup();

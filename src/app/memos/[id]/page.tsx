@@ -43,6 +43,7 @@ import type {
 } from "~/types/voice-memo";
 import { cn } from "~/lib/utils/cn";
 import { formatDurationMs } from "~/lib/utils/date";
+import { getErrorMessage } from "~/lib/utils/error";
 
 // Memo detail. Shows the full transcript, audio playback, and Claude's
 // structured parse as a PREVIEW FORM the patient confirms before any
@@ -294,7 +295,7 @@ function PlaybackCard({
       try {
         await audioRef.current.play();
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
+        setError(getErrorMessage(err));
       }
     }
   }
@@ -501,7 +502,7 @@ function PreviewForm({
       });
       setAppliedRecently(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(getErrorMessage(e));
     } finally {
       setBusy(false);
     }

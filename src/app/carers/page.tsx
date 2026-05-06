@@ -29,6 +29,7 @@ import { InviteCarerFlow } from "~/components/invite/invite-carer-flow";
 import { MembersList } from "~/components/invite/members-list";
 import { PendingInvitesList } from "~/components/invite/pending-invites-list";
 import { LocalContactsSection } from "~/components/invite/local-contacts-section";
+import { getErrorMessage } from "~/lib/utils/error";
 import {
   UserPlus,
   Loader2,
@@ -527,7 +528,7 @@ function SessionDiag() {
         }
       } catch (err) {
         lines.push(
-          `diag exception: ${err instanceof Error ? err.message : String(err)}`,
+          `diag exception: ${getErrorMessage(err)}`,
         );
       } finally {
         if (!cancelled) setInfo(lines);

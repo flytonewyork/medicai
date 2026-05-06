@@ -16,6 +16,7 @@ import { Field, TextInput, Textarea } from "~/components/ui/field";
 import { PrepEditor } from "~/components/schedule/prep-editor";
 import { toDatetimeLocalInput as toLocalInput } from "~/lib/utils/date";
 import { AttendeeChips } from "~/components/schedule/attendee-chips";
+import { getErrorMessage } from "~/lib/utils/error";
 
 const KINDS: AppointmentKind[] = [
   "clinic",
@@ -143,7 +144,7 @@ export function AppointmentForm({
 
       router.push(`/schedule/${id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(getErrorMessage(err));
     } finally {
       setSaving(false);
     }

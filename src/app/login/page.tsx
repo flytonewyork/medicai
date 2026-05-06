@@ -8,6 +8,7 @@ import { Field, TextInput } from "~/components/ui/field";
 import { Alert } from "~/components/ui/alert";
 import { PageHeader } from "~/components/ui/page-header";
 import { useT } from "~/hooks/use-translate";
+import { getErrorMessage } from "~/lib/utils/error";
 
 function LoginForm() {
   const t = useT();
@@ -61,7 +62,7 @@ function LoginForm() {
       setInfo(t("welcomeAuth.createdConfirm"));
       setMode("signin");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

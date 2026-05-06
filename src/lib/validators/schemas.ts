@@ -2,6 +2,12 @@ import { z } from "zod";
 
 const scale0to10 = z.number().min(0).max(10);
 
+// Soft cap for free-text fields (reflections, weekly notes, questions for the
+// oncologist). Stops a runaway paste from blowing up downstream payloads while
+// still leaving room for a discursive entry. Centralised so adjusting the cap
+// is one edit, not a search-and-replace.
+const TEXT_FIELD_MAX = 4000;
+
 // `entered_by` is the household member who logged the entry. The full
 // EnteredBy type in ~/types/clinical also includes "clinician" and
 // "jonalyn", but those identities don't enter data through the wizard,
@@ -47,7 +53,7 @@ export const dailyEntrySchema = z.object({
   abdominal_pain: scale0to10.optional(),
   taste_changes: z.number().min(0).max(5).optional(),
   steatorrhoea: z.boolean().optional(),
-  reflection: z.string().max(4000).optional(),
+  reflection: z.string().max(TEXT_FIELD_MAX).optional(),
   reflection_lang: z.enum(["en", "zh"]).optional(),
   protein_grams: z.number().min(0).max(500).optional(),
   meals_count: z.number().int().min(0).max(10).optional(),
@@ -156,9 +162,9 @@ export const weeklyAssessmentSchema = z.object({
   cognitive_stillness: z.number().min(1).max(5),
   social_practice_integrity: z.number().min(1).max(5),
   energy_trend: z.enum(["improving", "stable", "declining"]).optional(),
-  concerns: z.string().max(4000).optional(),
-  questions_for_oncologist: z.string().max(4000).optional(),
-  week_summary: z.string().max(4000).optional(),
+  concerns: z.string().max(TEXT_FIELD_MAX).optional(),
+  questions_for_oncologist: z.string().max(TEXT_FIELD_MAX).optional(),
+  week_summary: z.string().max(TEXT_FIELD_MAX).optional(),
 });
 
 export type WeeklyAssessmentInput = z.infer<typeof weeklyAssessmentSchema>;

@@ -12,6 +12,7 @@ import { Field, Textarea } from "~/components/ui/field";
 import { Check, MessageSquarePlus, Sparkles } from "lucide-react";
 import { todayISO } from "~/lib/utils/date";
 import { FollowUpsCard } from "~/components/log/follow-ups-card";
+import { getErrorMessage } from "~/lib/utils/error";
 
 // Caregiver-flavoured log form on /family. Uses the direct-file path
 // from PR #72 so a short entry like "blood sugar 7.9 this morning"
@@ -42,7 +43,7 @@ export function LogForPatient() {
       setFiled(parsed);
       setText("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(getErrorMessage(err));
     } finally {
       setSaving(false);
     }

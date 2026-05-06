@@ -20,6 +20,7 @@ import {
 } from "~/lib/ingest/notes-vision";
 import { todayISO } from "~/lib/utils/date";
 import { Sparkles, Check, Loader2 } from "lucide-react";
+import { getErrorMessage } from "~/lib/utils/error";
 
 type DailyPatch = NonNullable<NotesStructure["daily_patch"]>;
 
@@ -46,7 +47,7 @@ export default function NotesIngestPage() {
       const blob = new Blob([Uint8Array.from(atob(p.base64), (c) => c.charCodeAt(0))]);
       setPreview(URL.createObjectURL(blob));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(getErrorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -60,7 +61,7 @@ export default function NotesIngestPage() {
       const result = await structureNotes({ model, image: prepared });
       setStructured(result);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(getErrorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -103,7 +104,7 @@ export default function NotesIngestPage() {
       setStructured(null);
       setSaved({ fields: fieldCount });
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(getErrorMessage(e));
     } finally {
       setBusy(null);
     }

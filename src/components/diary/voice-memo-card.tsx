@@ -16,6 +16,7 @@ import { resolveVoiceMemoAudioUrl } from "~/lib/voice-memo/cloud";
 import { Card } from "~/components/ui/card";
 import { cn } from "~/lib/utils/cn";
 import { formatDurationMs, formatHHMM } from "~/lib/utils/date";
+import { getErrorMessage } from "~/lib/utils/error";
 
 // Diary card for one voice memo. Shows the recorded time, duration,
 // transcript, and an inline play button. Audio is fetched lazily —
@@ -71,7 +72,7 @@ export function VoiceMemoCard({ memo, locale }: VoiceMemoCardProps) {
       audio.src = url;
       await audio.play();
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(getErrorMessage(err));
     }
   }
 
