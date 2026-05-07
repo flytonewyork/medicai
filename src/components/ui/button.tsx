@@ -9,17 +9,23 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: Size;
 }
 
+// Every variant carries `disabled:opacity-50` + `disabled:hover:*` overrides
+// so disabled states read as inert across the whole button vocabulary —
+// previously only `primary` showed any visual change when disabled, leaving
+// secondary / ghost / danger / tide buttons looking fully active even after
+// `disabled` was applied (cursor change alone doesn't reach screen-reader
+// users or carry from a touch device).
 const variantCls: Record<Variant, string> = {
   primary:
-    "bg-ink-900 text-paper hover:bg-ink-700 disabled:opacity-50",
+    "bg-ink-900 text-paper hover:bg-ink-700 disabled:opacity-50 disabled:hover:bg-ink-900",
   secondary:
-    "border border-ink-200 bg-paper-2 text-ink-900 hover:border-ink-300",
+    "border border-ink-200 bg-paper-2 text-ink-900 hover:border-ink-300 disabled:opacity-50 disabled:hover:border-ink-200",
   ghost:
-    "text-ink-500 hover:bg-ink-100/60",
+    "text-ink-500 hover:bg-ink-100/60 disabled:opacity-50 disabled:hover:bg-transparent",
   danger:
-    "bg-[var(--warn)] text-white hover:opacity-90",
+    "bg-[var(--warn)] text-white hover:opacity-90 disabled:opacity-50 disabled:hover:opacity-50",
   tide:
-    "bg-[var(--tide-2)] text-paper hover:brightness-110",
+    "bg-[var(--tide-2)] text-paper hover:brightness-110 disabled:opacity-50 disabled:hover:brightness-100",
 };
 
 // Heights are deliberate WCAG AA tap-target tiers:

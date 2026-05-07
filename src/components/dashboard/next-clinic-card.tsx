@@ -27,22 +27,23 @@ export function NextClinicCard() {
     [],
   );
 
+  // ScheduleCard already shows today + tomorrow appointments. Skip those
+  // so the dashboard doesn't surface the same appointment twice — but
+  // still surface the *next* clinic after that window so a planned
+  // 2-week consult isn't invisible whenever a chemo / blood-test clinic
+  // happens to fall in the same 48 hours.
   const next = useMemo(() => {
     if (!appointments) return null;
+    const startToday = new Date();
+    startToday.setHours(0, 0, 0, 0);
+    const endTomorrow = startToday.getTime() + 2 * 24 * 60 * 60 * 1000;
     return nextAppointment(appointments, {
+      from: endTomorrow,
       excludeStatuses: ["cancelled", "missed"],
     });
   }, [appointments]);
 
   if (!next) return null;
-  // ScheduleCard already shows today + tomorrow appointments. Suppress this
-  // dedicated card when the next clinic is already in that window so the
-  // dashboard doesn't surface the same appointment twice.
-  const startToday = new Date();
-  startToday.setHours(0, 0, 0, 0);
-  const endTomorrow = startToday.getTime() + 2 * 24 * 60 * 60 * 1000;
-  const nextStart = new Date(next.starts_at).getTime();
-  if (Number.isFinite(nextStart) && nextStart < endTomorrow) return null;
 
   const when = new Date(next.starts_at);
   const dateLabel = isToday(when)

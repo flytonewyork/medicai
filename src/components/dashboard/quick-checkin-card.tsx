@@ -367,9 +367,12 @@ function FeverRow({
           type="number"
           inputMode="decimal"
           step="0.1"
+          min={35}
+          max={43}
           value={temp}
           onChange={(e) => onTempChange(e.target.value)}
           placeholder="°C"
+          aria-label={locale === "zh" ? "体温 ℃" : "Temperature °C"}
           className="h-11 w-24 rounded-md border border-ink-200 bg-paper-2 px-3 text-base tabular-nums"
         />
       )}
