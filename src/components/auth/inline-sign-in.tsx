@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { getSupabaseBrowser, isSupabaseConfigured } from "~/lib/supabase/client";
+import { submitPasswordAuth } from "~/lib/supabase/auth";
 import { useL } from "~/hooks/use-translate";
 import { Button } from "~/components/ui/button";
 import { Field, TextInput } from "~/components/ui/field";
@@ -71,30 +72,16 @@ export function InlineSignIn({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const supabase = getSupabaseBrowser();
-    if (!supabase) return;
+    if (!getSupabaseBrowser()) return;
     setLoading(true);
     setError(null);
     setInfo(null);
     try {
-      if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
+      const result = await submitPasswordAuth(mode, email, password);
+      if (result.status === "signed-in") {
         await onAuthed?.();
         return;
       }
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) throw error;
-      if (data.session) {
-        await onAuthed?.();
-        return;
-      }
-      // Email confirmation is on; user has to click the link before
-      // we can proceed. Bounce them to sign-in mode and tell them
-      // what's happening.
       setInfo(
         L(
           "Account created — check your email to confirm, then sign in.",
