@@ -11,7 +11,8 @@ import { runEngineAndPersist } from "~/lib/rules/engine";
 import { Card } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils/cn";
-import { Check, Thermometer } from "lucide-react";
+import { useSettings } from "~/hooks/use-settings";
+import { Check, Phone, Thermometer } from "lucide-react";
 
 const SCALES = [
   {
@@ -313,64 +314,102 @@ function FeverRow({
   onFeverChange: (v: boolean) => void;
   onTempChange: (v: string) => void;
 }) {
+  const settings = useSettings();
+  const tempNum = Number.parseFloat(temp);
+  // ≥ 38 °C is the threshold that triggers the on-call call. Surface
+  // a tap-to-call as soon as the patient enters it so they don't have
+  // to save first and wait for the engine to flip the zone before
+  // they can act.
+  const urgent = fever && Number.isFinite(tempNum) && tempNum >= 38;
+  const phone =
+    settings?.oncall_phone ?? settings?.managing_oncologist_phone;
+
   return (
     <div
-      className="flex flex-wrap items-center gap-3 rounded-[var(--r-md)] p-3"
+      className="rounded-[var(--r-md)] p-3"
       style={{
         background: fever ? "var(--warn-soft)" : "var(--ink-100)",
       }}
     >
-      <div
-        className="flex h-8 w-8 items-center justify-center rounded-md"
-        style={{
-          background: fever ? "var(--warn)" : "var(--paper-2)",
-          color: fever ? "var(--paper)" : "var(--ink-500)",
-        }}
-      >
-        <Thermometer className="h-4 w-4" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-[13px] font-semibold text-ink-900">
-          {locale === "zh" ? "发热" : "Fever"}
+      <div className="flex flex-wrap items-center gap-3">
+        <div
+          className="flex h-8 w-8 items-center justify-center rounded-md"
+          style={{
+            background: fever ? "var(--warn)" : "var(--paper-2)",
+            color: fever ? "var(--paper)" : "var(--ink-500)",
+          }}
+        >
+          <Thermometer className="h-4 w-4" />
         </div>
-        <div className="text-[11px] text-ink-500">
-          {locale === "zh"
-            ? "体温 ≥ 38 °C 立即联系值班"
-            : "≥ 38 °C is urgent — call the on-call team"}
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-semibold text-ink-900">
+            {locale === "zh" ? "发热" : "Fever"}
+          </div>
+          <div className="text-[11px] text-ink-500">
+            {locale === "zh"
+              ? "体温 ≥ 38 °C 立即联系值班"
+              : "≥ 38 °C is urgent — call the on-call team"}
+          </div>
         </div>
+        <div className="flex items-center gap-1.5">
+          {(
+            [
+              ["no", false],
+              ["yes", true],
+            ] as const
+          ).map(([k, v]) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => onFeverChange(v)}
+              className={cn(
+                "h-11 min-w-[44px] rounded-md border px-4 text-sm font-semibold",
+                fever === v
+                  ? "border-ink-900 bg-ink-900 text-paper"
+                  : "border-ink-200 bg-paper-2 text-ink-500",
+              )}
+            >
+              {locale === "zh" ? (v ? "是" : "否") : v ? "Yes" : "No"}
+            </button>
+          ))}
+        </div>
+        {fever && (
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            value={temp}
+            onChange={(e) => onTempChange(e.target.value)}
+            placeholder="°C"
+            className="h-11 w-24 rounded-md border border-ink-200 bg-paper-2 px-3 text-base tabular-nums"
+          />
+        )}
       </div>
-      <div className="flex items-center gap-1.5">
-        {(
-          [
-            ["no", false],
-            ["yes", true],
-          ] as const
-        ).map(([k, v]) => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => onFeverChange(v)}
-            className={cn(
-              "h-11 min-w-[44px] rounded-md border px-4 text-sm font-semibold",
-              fever === v
-                ? "border-ink-900 bg-ink-900 text-paper"
-                : "border-ink-200 bg-paper-2 text-ink-500",
-            )}
-          >
-            {locale === "zh" ? (v ? "是" : "否") : v ? "Yes" : "No"}
-          </button>
-        ))}
-      </div>
-      {fever && (
-        <input
-          type="number"
-          inputMode="decimal"
-          step="0.1"
-          value={temp}
-          onChange={(e) => onTempChange(e.target.value)}
-          placeholder="°C"
-          className="h-11 w-24 rounded-md border border-ink-200 bg-paper-2 px-3 text-base tabular-nums"
-        />
+      {urgent && (
+        <div className="mt-3 flex items-center justify-between gap-3 rounded-md border border-[var(--warn)]/40 bg-paper px-3 py-2">
+          <div className="text-[12px] font-medium text-[var(--warn)]">
+            {locale === "zh"
+              ? `体温 ${tempNum.toFixed(1)} °C — 现在就联系值班`
+              : `${tempNum.toFixed(1)} °C — call the on-call team now`}
+          </div>
+          {phone ? (
+            <a
+              href={`tel:${phone.replace(/\s/g, "")}`}
+              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[var(--warn)] px-3 text-[12px] font-semibold text-white hover:opacity-90"
+            >
+              <Phone className="h-3.5 w-3.5" />
+              {locale === "zh" ? "拨打" : "Call"}
+            </a>
+          ) : (
+            <Link
+              href="/settings"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-[var(--warn)] bg-paper px-3 text-[12px] font-semibold text-[var(--warn)] hover:bg-[var(--warn-soft)]"
+            >
+              <Phone className="h-3.5 w-3.5" />
+              {locale === "zh" ? "添加电话" : "Add number"}
+            </Link>
+          )}
+        </div>
       )}
     </div>
   );
