@@ -6,22 +6,14 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { format, parseISO } from "date-fns";
 import {
   Mic,
-  MicOff,
   Loader2,
   FlaskConical,
   ClipboardList,
   Sparkles,
   CalendarDays,
-  CheckCircle2,
-  X,
-  Undo2,
-  ChevronRight,
 } from "lucide-react";
 import { useLocale } from "~/hooks/use-translate";
-import { useUIStore } from "~/stores/ui-store";
-import { useVoiceTranscription } from "~/hooks/use-voice-transcription";
 import { syncPendingVoiceMemoAudio } from "~/lib/voice-memo/cloud";
-import { undoAppliedPatch } from "~/lib/voice-memo/apply";
 import { db } from "~/lib/db/dexie";
 import { buildDiaryDays, type DiaryDay } from "~/lib/diary/build";
 import { todayISO } from "~/lib/utils/date";
@@ -31,9 +23,7 @@ import { PageHeader } from "~/components/ui/page-header";
 import { Alert } from "~/components/ui/alert";
 import { EmptyState } from "~/components/ui/empty-state";
 import { VoiceMemoCard } from "~/components/diary/voice-memo-card";
-import { cn } from "~/lib/utils/cn";
 import type { AgentRunRow } from "~/types/agent";
-import type { AppliedPatch, VoiceMemo } from "~/types/voice-memo";
 
 // /diary — the patient's daily timeline. One section per day, newest
 // first, combining:
@@ -51,7 +41,6 @@ const WINDOW_DAYS_DEFAULT = 14;
 
 export default function DiaryPage() {
   const locale = useLocale();
-  const enteredBy = useUIStore((s) => s.enteredBy);
 
   // useLiveQuery on each table keeps the diary fresh as new rows land
   // — recording a memo, opening /daily, syncing labs all reflect here
@@ -189,113 +178,6 @@ export default function DiaryPage() {
         </ol>
       )}
     </div>
-  );
-}
-
-function RecorderCard({
-  voice,
-  locale,
-}: {
-  voice: ReturnType<typeof useVoiceTranscription>;
-  locale: "en" | "zh";
-}) {
-  if (!voice) {
-    return (
-      <Alert variant="info" role="status">
-        {locale === "zh"
-          ? "此浏览器不支持录音。请使用 iOS Safari 或最新 Chrome。"
-          : "This browser can't record audio. Use Safari on iOS or current Chrome."}
-      </Alert>
-    );
-  }
-
-  const recording = voice.status === "recording";
-  const transcribing = voice.status === "transcribing";
-
-  return (
-    <Card className="p-5">
-      <div className="flex items-center gap-4">
-        <button
-          type="button"
-          onClick={() => {
-            if (recording) voice.stop();
-            else void voice.start();
-          }}
-          disabled={transcribing}
-          aria-label={
-            recording
-              ? locale === "zh" ? "停止录音" : "Stop recording"
-              : locale === "zh" ? "开始录音" : "Start recording"
-          }
-          aria-pressed={recording}
-          className={cn(
-            "relative flex h-16 w-16 items-center justify-center rounded-full shadow-md transition-all",
-            recording
-              ? "bg-[var(--warn,#d97706)] text-white"
-              : "bg-ink-900 text-paper hover:scale-105",
-            transcribing && "opacity-60",
-          )}
-        >
-          {recording && (
-            <span className="absolute inset-0 animate-ping rounded-full bg-[var(--warn,#d97706)]/40" />
-          )}
-          {transcribing ? (
-            <Loader2 className="relative h-6 w-6 animate-spin" />
-          ) : recording ? (
-            <MicOff className="relative h-6 w-6" />
-          ) : (
-            <Mic className="relative h-6 w-6" />
-          )}
-        </button>
-        <div className="min-w-0 flex-1">
-          <div className="text-[14px] font-medium text-ink-900">
-            {recording
-              ? locale === "zh" ? "正在录音" : "Recording"
-              : transcribing
-                ? locale === "zh" ? "正在识别…" : "Transcribing…"
-                : locale === "zh" ? "今天怎么样？" : "How's today?"}
-          </div>
-          <div className="text-[12px] text-ink-500">
-            {recording
-              ? locale === "zh"
-                ? "把要记的事说一遍，再轻点停止。"
-                : "Say what you want to remember, then tap stop."
-              : transcribing
-                ? locale === "zh"
-                  ? "录音已结束，正在生成文字。"
-                  : "Recording done, transcribing."
-                : locale === "zh"
-                  ? "轻点录音，AI 会保存录音并整理文字。"
-                  : "Tap to record. We keep the audio and the transcript."}
-          </div>
-        </div>
-      </div>
-      {!recording && !transcribing && (
-        <div className="mt-3 rounded-md border border-ink-100 bg-paper-2/40 px-3 py-2 text-[11.5px] leading-relaxed text-ink-500">
-          <span className="text-ink-700 font-medium">
-            {locale === "zh" ? "可以聊：" : "Try mentioning: "}
-          </span>
-          {locale === "zh"
-            ? "睡眠、精力、症状、饮食、活动、家人、化验或扫描结果。"
-            : "sleep, energy, symptoms, food, activity, family, scan or lab results."}
-        </div>
-      )}
-      {transcribing && voice.liveText && (
-        <div className="mt-3 rounded-md bg-paper-2/60 px-3 py-2 text-[13px] leading-relaxed text-ink-900">
-          <span className="text-ink-500 text-[10.5px] uppercase tracking-wider">
-            {locale === "zh" ? "正在识别" : "Live"}
-          </span>
-          <p className="mt-1 whitespace-pre-wrap">{voice.liveText}</p>
-        </div>
-      )}
-      {voice.error && (
-        <Alert variant="warn" role="alert" className="mt-3">
-          {locale === "zh"
-            ? `录音出错：${voice.error}`
-            : `Voice error: ${voice.error}`}
-        </Alert>
-      )}
-    </Card>
   );
 }
 
@@ -449,214 +331,3 @@ function buildDailySummary(
   return parts.join(" · ");
 }
 
-// Inline preview that follows the recorder. Drives the post-record UX:
-// transcribing → showing applied patches with Undo → showing a Review
-// CTA when the parse came back medium/low confidence and nothing
-// auto-applied. Dismissible — the patient closes it when they're done.
-function RecentMemoCard({
-  memoId,
-  locale,
-  onDismiss,
-}: {
-  memoId: number;
-  locale: "en" | "zh";
-  onDismiss: () => void;
-}) {
-  const memo = useLiveQuery<VoiceMemo | undefined>(
-    () => db.voice_memos.get(memoId) as Promise<VoiceMemo | undefined>,
-    [memoId],
-  );
-  if (!memo) return null;
-
-  const parsed = memo.parsed_fields;
-  const liveApplied = (parsed?.applied_patches ?? []).filter(
-    (p) => !p.undone_at,
-  );
-  const transcribing = !memo.transcript.trim();
-  const parsing = Boolean(memo.transcript.trim()) && !parsed;
-
-  let body: React.ReactNode;
-  if (transcribing) {
-    body = (
-      <span className="inline-flex items-center gap-1.5 text-[12px] text-ink-500">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        {locale === "zh" ? "正在识别…" : "Transcribing…"}
-      </span>
-    );
-  } else if (parsing) {
-    body = (
-      <span className="inline-flex items-center gap-1.5 text-[12px] text-ink-500">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        {locale === "zh" ? "AI 正在解读…" : "Claude reading the memo…"}
-      </span>
-    );
-  } else if (liveApplied.length > 0) {
-    body = (
-      <AppliedSummary
-        memoId={memoId}
-        patches={liveApplied}
-        locale={locale}
-      />
-    );
-  } else if (parsed && parsed.confidence !== "high") {
-    body = (
-      <Link
-        href={`/memos/${memoId}`}
-        className="inline-flex items-center gap-1 text-[12.5px] font-medium text-[var(--tide-2)] hover:underline"
-      >
-        {locale === "zh"
-          ? `识别可信度：${parsed.confidence === "medium" ? "中" : "低"} — 审核并保存`
-          : `Confidence: ${parsed.confidence} — review and save`}
-        <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-      </Link>
-    );
-  } else {
-    body = (
-      <span className="text-[12px] text-ink-500">
-        {locale === "zh"
-          ? "AI 没有从这段录音里抽出可登入的内容。"
-          : "Claude didn't pull anything loggable from this memo."}
-      </span>
-    );
-  }
-
-  const followUps = (parsed?.follow_up_questions ?? []).slice(0, 2);
-
-  return (
-    <Card className="p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="text-[10.5px] font-medium uppercase tracking-wider text-ink-400">
-            {locale === "zh" ? "刚才的录音" : "Just recorded"}
-          </div>
-          <div className="mt-1.5">{body}</div>
-        </div>
-        <button
-          type="button"
-          onClick={onDismiss}
-          aria-label={locale === "zh" ? "关闭" : "Dismiss"}
-          className="-mr-1 -mt-1 flex h-7 w-7 items-center justify-center rounded-full text-ink-400 hover:text-ink-700"
-        >
-          <X className="h-3.5 w-3.5" aria-hidden />
-        </button>
-      </div>
-      {followUps.length > 0 && (
-        <div className="mt-3 border-t border-ink-100 pt-3">
-          <div className="text-[10.5px] font-medium uppercase tracking-wider text-[var(--tide-2)]">
-            {locale === "zh" ? "AI 想问" : "From your AI nurse"}
-          </div>
-          <ul className="mt-1.5 space-y-1">
-            {followUps.map((q, i) => (
-              <li
-                key={i}
-                className="text-[12.5px] italic text-ink-700"
-              >
-                {q}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-1 text-[10.5px] text-ink-400">
-            {locale === "zh"
-              ? "想回答的话，再录一段就行。"
-              : "Want to answer? Just record again — Claude will read it."}
-          </p>
-        </div>
-      )}
-    </Card>
-  );
-}
-
-function AppliedSummary({
-  memoId,
-  patches,
-  locale,
-}: {
-  memoId: number;
-  patches: AppliedPatch[];
-  locale: "en" | "zh";
-}) {
-  const [busy, setBusy] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  async function onUndo(index: number) {
-    setBusy(index);
-    setError(null);
-    const r = await undoAppliedPatch(memoId, index);
-    setBusy(null);
-    if (!r.ok) setError(r.error ?? "Undo failed");
-  }
-
-  return (
-    <div className="space-y-2">
-      <div className="inline-flex items-center gap-1.5 text-[12px] font-medium text-emerald-700">
-        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
-        {locale === "zh"
-          ? `已保存 ${patches.length} 项`
-          : `Saved ${patches.length} item${patches.length === 1 ? "" : "s"}`}
-      </div>
-      <ul className="space-y-1.5">
-        {patches.map((p, i) => (
-          <li
-            key={`${p.applied_at}-${i}`}
-            className="flex items-start justify-between gap-3 rounded-md border border-ink-100 px-3 py-2"
-          >
-            <div className="min-w-0 flex-1">
-              <div className="text-[12px] font-medium text-ink-900">
-                {tableLabel(p.table, locale)}
-              </div>
-              <div className="text-[11.5px] text-ink-700">
-                {summariseFields(p.fields)}
-              </div>
-            </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => onUndo(i)}
-              disabled={busy === i}
-            >
-              {busy === i ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Undo2 className="h-3.5 w-3.5" />
-              )}
-              {locale === "zh" ? "撤销" : "Undo"}
-            </Button>
-          </li>
-        ))}
-      </ul>
-      <Link
-        href={`/memos/${memoId}`}
-        className="inline-flex items-center gap-1 text-[11.5px] text-ink-500 hover:text-ink-900 hover:underline"
-      >
-        {locale === "zh" ? "查看详情" : "Open memo"}
-        <ChevronRight className="h-3 w-3" aria-hidden />
-      </Link>
-      {error && (
-        <p className="text-[11.5px] text-[var(--warn)]">{error}</p>
-      )}
-    </div>
-  );
-}
-
-function tableLabel(
-  table: AppliedPatch["table"],
-  locale: "en" | "zh",
-): string {
-  if (locale === "zh") {
-    if (table === "daily_entries") return "日常表";
-    if (table === "life_events") return "门诊记录";
-    return "预约";
-  }
-  if (table === "daily_entries") return "Daily form";
-  if (table === "life_events") return "Clinic visit";
-  return "Appointment";
-}
-
-function summariseFields(
-  fields: AppliedPatch["fields"],
-): string {
-  return Object.entries(fields)
-    .slice(0, 4)
-    .map(([k, v]) => `${k}: ${v}`)
-    .join(" · ");
-}

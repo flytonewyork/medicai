@@ -7,6 +7,7 @@ import { CloudOff, X } from "lucide-react";
 import { db, now } from "~/lib/db/dexie";
 import { getSupabaseBrowser, isSupabaseConfigured } from "~/lib/supabase/client";
 import { useT } from "~/hooks/use-translate";
+import { Card, CardContent } from "~/components/ui/card";
 
 const DISMISS_KEY = "anchor.syncPromptDismissedAt";
 
@@ -59,28 +60,34 @@ export function SyncPromptCard() {
   }
 
   return (
-    <div className="flex items-start gap-3 rounded-md border border-ink-200 bg-paper-2/70 px-4 py-3">
-      <CloudOff className="mt-0.5 h-4 w-4 shrink-0 text-ink-500" aria-hidden />
-      <div className="flex-1 space-y-1 text-sm">
-        <p className="font-medium text-ink-800">{t("syncPrompt.title")}</p>
-        <p className="text-ink-600">{t("syncPrompt.body")}</p>
-        <div className="pt-1">
-          <Link
-            href="/login"
-            className="inline-flex items-center rounded-md border border-ink-300 bg-paper px-3 py-1.5 text-xs font-medium text-ink-800 hover:border-ink-400 hover:bg-paper-2"
-          >
-            {t("syncPrompt.cta")}
-          </Link>
+    <Card>
+      <CardContent className="flex items-start gap-3 pt-4">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-ink-100 text-ink-500">
+          <CloudOff className="h-4 w-4" aria-hidden />
         </div>
-      </div>
-      <button
-        type="button"
-        onClick={handleDismiss}
-        aria-label={t("syncPrompt.dismiss")}
-        className="shrink-0 rounded p-1 text-ink-400 hover:text-ink-700"
-      >
-        <X className="h-4 w-4" aria-hidden />
-      </button>
-    </div>
+        <div className="flex-1 space-y-1">
+          <p className="text-[13px] font-semibold text-ink-900">
+            {t("syncPrompt.title")}
+          </p>
+          <p className="text-[11.5px] text-ink-500">{t("syncPrompt.body")}</p>
+          <div className="pt-1">
+            <Link
+              href="/login"
+              className="inline-flex items-center rounded-md border border-ink-300 bg-paper px-3 py-1.5 text-xs font-medium text-ink-800 hover:border-ink-400 hover:bg-paper-2"
+            >
+              {t("syncPrompt.cta")}
+            </Link>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handleDismiss}
+          aria-label={t("syncPrompt.dismiss")}
+          className="-mr-1 -mt-1 shrink-0 rounded p-1 text-ink-400 hover:text-ink-700"
+        >
+          <X className="h-4 w-4" aria-hidden />
+        </button>
+      </CardContent>
+    </Card>
   );
 }
