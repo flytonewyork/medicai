@@ -6,11 +6,10 @@ import {
 } from "~/lib/ai/coach";
 import {
   DEFAULT_AI_MODEL,
-  getAnthropicClient,
-  readJsonBody,
+  firstTextBlock,
+  gateAiRequest,
   withAnthropicErrorBoundary,
 } from "~/lib/anthropic/route-helpers";
-import { requireSession } from "~/lib/auth/require-session";
 import { loadHouseholdProfile } from "~/lib/household/profile";
 import { wrapUserInputBlock } from "~/lib/anthropic/wrap-user-input";
 import type { Locale } from "~/types/clinical";
@@ -26,29 +25,22 @@ interface RequestBody {
 }
 
 export async function POST(req: Request) {
-  const auth = await requireSession();
-  if (!auth.ok) return auth.error;
+  const ctx = await gateAiRequest<RequestBody>(req);
+  if (ctx.error) return ctx.error;
 
-  const gate = getAnthropicClient();
-  if (gate.error) return gate.error;
-
-  const parsed = await readJsonBody<RequestBody>(req);
-  if (parsed.error) return parsed.error;
-  const body = parsed.body;
-
-  if (!body?.context || !Array.isArray(body?.history)) {
+  if (!ctx.body?.context || !Array.isArray(ctx.body?.history)) {
     return NextResponse.json(
       { error: "context and history[] required" },
       { status: 400 },
     );
   }
 
-  const { model = DEFAULT_AI_MODEL, context, history, locale = "en" } = body;
-  const profile = await loadHouseholdProfile(auth.session.household_id);
+  const { model = DEFAULT_AI_MODEL, context, history, locale = "en" } = ctx.body;
+  const profile = await loadHouseholdProfile(ctx.session.household_id);
   const contextBlock = `Current step: ${context.stepTitle}\nKey: ${context.stepKey}\nInstructions shown to the user:\n${context.stepInstructions}\n\nRespond in ${locale === "zh" ? "Simplified Chinese (简体中文)" : "English"}.`;
 
   const result = await withAnthropicErrorBoundary(() =>
-    gate.client.messages.create({
+    ctx.client.messages.create({
       model,
       max_tokens: 600,
       system: [
@@ -69,12 +61,7 @@ export async function POST(req: Request) {
   );
   if (result.error) return result.error;
 
-  const block = result.value.content.find((b) => b.type === "text");
-  if (!block || block.type !== "text") {
-    return NextResponse.json(
-      { error: "Empty response from coach" },
-      { status: 502 },
-    );
-  }
-  return NextResponse.json({ reply: block.text });
+  const text = firstTextBlock(result.value, "Empty response from coach");
+  if (text.error) return text.error;
+  return NextResponse.json({ reply: text.text });
 }
