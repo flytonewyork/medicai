@@ -17,6 +17,7 @@ import { WearableSection } from "~/components/settings/wearable-section";
 import { PageHeader, SectionHeader } from "~/components/ui/page-header";
 import { Button } from "~/components/ui/button";
 import { Field, Select, TextInput, Textarea } from "~/components/ui/field";
+import { DEFAULT_AI_MODEL } from "~/lib/anthropic/model";
 
 export default function SettingsPage() {
   const t = useT();
@@ -196,12 +197,12 @@ export default function SettingsPage() {
           <Field
             label={
               locale === "zh"
-                ? "模型(默认 claude-opus-4-7)"
-                : "Model (default claude-opus-4-7)"
+                ? `模型(默认 ${DEFAULT_AI_MODEL})`
+                : `Model (default ${DEFAULT_AI_MODEL})`
             }
           >
             <TextInput
-              placeholder="claude-opus-4-7"
+              placeholder={DEFAULT_AI_MODEL}
               {...register("default_ai_model")}
             />
           </Field>
