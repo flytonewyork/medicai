@@ -11,6 +11,9 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.90.0
         version: 0.90.0(zod@3.25.76)
+      '@capacitor/android':
+        specifier: ^8.3.1
+        version: 8.3.1(@capacitor/core@8.3.1)
       '@fullcalendar/core':
         specifier: ^6.1.20
         version: 6.1.20
@@ -41,6 +44,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.104.0
         version: 2.104.0
+      capacitor-health-connect:
+        specifier: ^0.7.0
+        version: 0.7.0(@capacitor/core@8.3.1)
       class-variance-authority:
         specifier: ^0.7.0
         version: 0.7.1
@@ -273,6 +279,11 @@ packages:
   '@babel/types@7.29.0':
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
+
+  '@capacitor/android@8.3.1':
+    resolution: {integrity: sha512-hjskIG8YcBEh3X4yaTXvE9gcqpdcxunTgFruSKnuPxtMxAUzEK4Oq25x0Z1g3cz+MQPc+lRG09R7Ovc+ydKsNw==}
+    peerDependencies:
+      '@capacitor/core': ^8.3.0
 
   '@capacitor/cli@8.3.1':
     resolution: {integrity: sha512-1sPGW4THTDfR6YjXwZ0jM7oAfAtciPOHN00qs/3sNAQx1kKrrEYSfDPwCm1/xlAgi0OeL69SiRfw314Ans+1sw==}
@@ -1532,6 +1543,11 @@ packages:
 
   caniuse-lite@1.0.30001788:
     resolution: {integrity: sha512-6q8HFp+lOQtcf7wBK+uEenxymVWkGKkjFpCvw5W25cmMwEDU45p1xQFBQv8JDlMMry7eNxyBaR+qxgmTUZkIRQ==}
+
+  capacitor-health-connect@0.7.0:
+    resolution: {integrity: sha512-QQJpnCoFU9x4A9//PgbVT1kqpiFFiGWoiEl/+oprR03YXDTHi9BjCqotIwgVl0HT9fxVqEfkyrFXhcBsSNIZrA==}
+    peerDependencies:
+      '@capacitor/core': ^5.0.0
 
   chai@4.5.0:
     resolution: {integrity: sha512-RITGBfijLkBddZvnn8jdqoTypxvqbOLYQkGGxXzeFjVHvudaPw0HNFD9x928/eUwYWd2dPCugVqspGALTZZQKw==}
@@ -3924,6 +3940,10 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
+  '@capacitor/android@8.3.1(@capacitor/core@8.3.1)':
+    dependencies:
+      '@capacitor/core': 8.3.1
+
   '@capacitor/cli@8.3.1':
     dependencies:
       '@ionic/cli-framework-output': 2.2.8
@@ -5179,6 +5199,10 @@ snapshots:
   camelcase-css@2.0.1: {}
 
   caniuse-lite@1.0.30001788: {}
+
+  capacitor-health-connect@0.7.0(@capacitor/core@8.3.1):
+    dependencies:
+      '@capacitor/core': 8.3.1
 
   chai@4.5.0:
     dependencies:
