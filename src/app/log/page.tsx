@@ -33,6 +33,7 @@ import {
   Keyboard,
 } from "lucide-react";
 import { useVoiceTranscription } from "~/hooks/use-voice-transcription";
+import { getErrorMessage } from "~/lib/utils/error";
 
 const TAG_LABELS: Record<LogTag, { en: string; zh: string }> = {
   diet: { en: "diet", zh: "饮食" },
@@ -177,7 +178,7 @@ export default function LogPage() {
       } catch (err) {
         setRun({
           kind: "error",
-          message: err instanceof Error ? err.message : String(err),
+          message: getErrorMessage(err),
         });
       }
       return;
@@ -211,7 +212,7 @@ export default function LogPage() {
     } catch (err) {
       setRun({
         kind: "error",
-        message: err instanceof Error ? err.message : String(err),
+        message: getErrorMessage(err),
       });
       return;
     }

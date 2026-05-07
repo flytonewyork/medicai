@@ -8,6 +8,7 @@ import {
 } from "~/lib/anthropic/route-helpers";
 import { requireSession } from "~/lib/auth/require-session";
 import { wrapUserInputBlock } from "~/lib/anthropic/wrap-user-input";
+import { getErrorMessage } from "~/lib/utils/error";
 
 // Server-side vision/text parser for appointment letters, cards, and
 // pasted emails. Accepts either an image (data URL or https URL) or a
@@ -144,7 +145,7 @@ export async function POST(req: Request) {
     }
     return NextResponse.json({ appointment: response.parsed_output });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = getErrorMessage(err);
     return NextResponse.json(
       { error: "Parse failed", message },
       { status: 502 },

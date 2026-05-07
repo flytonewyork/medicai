@@ -27,6 +27,7 @@ import type {
 } from "~/types/medication";
 import type { Appointment } from "~/types/appointment";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { getErrorMessage } from "~/lib/utils/error";
 
 // Three-step wizard for setting up a chemo cycle. Replaces the previous
 // one-shot CycleForm so the patient (or carer) can preview every linked
@@ -214,7 +215,7 @@ export default function NewTreatmentCyclePage() {
 
       router.push(`/treatment/${cycleId}?cycle_added=1`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(getErrorMessage(err));
     } finally {
       setSaving(false);
     }

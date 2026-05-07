@@ -12,6 +12,7 @@ import type {
   VoiceMemoParsedFields,
 } from "~/types/voice-memo";
 import { localDayISO } from "~/lib/utils/date";
+import { getErrorMessage } from "~/lib/utils/error";
 import {
   extractNumericValue,
   findAppointmentForClinicVisit,
@@ -960,7 +961,7 @@ export async function undoAppliedPatch(
   } catch (err) {
     return {
       ok: false,
-      error: err instanceof Error ? err.message : String(err),
+      error: getErrorMessage(err),
     };
   }
 

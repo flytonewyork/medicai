@@ -34,6 +34,7 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import { getErrorMessage } from "~/lib/utils/error";
 
 const HELPER_ROLE_ICON = {
   self: User,
@@ -528,7 +529,7 @@ function ReviewView({
         updated_at: now(),
       });
     } catch (e) {
-      setAiError(e instanceof Error ? e.message : String(e));
+      setAiError(getErrorMessage(e));
     } finally {
       setAiBusy(false);
     }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getErrorMessage } from "~/lib/utils/error";
 
 // Voice-memo transcription. Browser records via MediaRecorder, posts
 // the resulting audio blob here as multipart/form-data; we hand it
@@ -98,7 +99,7 @@ export async function POST(req: Request) {
       },
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = getErrorMessage(err);
     return NextResponse.json({ error: message }, { status: 502 });
   }
 

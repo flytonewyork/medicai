@@ -14,6 +14,7 @@ import { agentsForTags } from "~/agents/routing";
 import { HttpError, postJson } from "~/lib/utils/http";
 import { computeCoverageGaps } from "~/lib/coverage/log-coverage";
 import { formatCoverageSnapshot } from "~/lib/coverage/agent-snapshot";
+import { getErrorMessage } from "~/lib/utils/error";
 
 // Client-side orchestration for running one specialist agent.
 // 1. Read state.md + recent feedback for this agent from Dexie
@@ -365,7 +366,7 @@ export async function runAllAgentsForToday(args: {
         return {
           id,
           runId: null,
-          error: err instanceof Error ? err.message : String(err),
+          error: getErrorMessage(err),
         };
       }
     }),

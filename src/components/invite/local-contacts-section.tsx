@@ -31,6 +31,7 @@ import {
   CircleAlert,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import { getErrorMessage } from "~/lib/utils/error";
 
 // Local contacts directory — phone numbers, specialties, and notes for
 // people in the patient's external care orbit (oncologist, surgeon, GP,
@@ -243,7 +244,7 @@ export function LocalContactsSection() {
       }
       cancel();
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(getErrorMessage(err));
     } finally {
       setSaving(false);
     }

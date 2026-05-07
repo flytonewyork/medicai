@@ -10,6 +10,7 @@ import {
   loadHouseholdProfile,
 } from "~/lib/household/profile";
 import { wrapUserInput } from "~/lib/anthropic/wrap-user-input";
+import { getErrorMessage } from "~/lib/utils/error";
 import {
   VoiceMemoParseSchema,
   buildVoiceMemoParseSystem,
@@ -152,7 +153,7 @@ export async function POST(req: Request) {
       {
         error:
           "Model response was not valid JSON: " +
-          (err instanceof Error ? err.message : String(err)),
+          (getErrorMessage(err)),
       },
       { status: 502 },
     );

@@ -10,6 +10,7 @@ import { Field, Textarea } from "~/components/ui/field";
 import { Mic, MicOff, AlertCircle, Loader2, Phone } from "lucide-react";
 import type { IngestDraft } from "~/types/ingest";
 import { useVoiceTranscription } from "~/hooks/use-voice-transcription";
+import { getErrorMessage } from "~/lib/utils/error";
 
 // Quick-capture surface for phone-call instructions. The patient (or
 // the carer on the line) types or dictates what they just heard; the
@@ -59,7 +60,7 @@ export function PhoneCallNote({
       onDraft(data.draft);
       setText("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(getErrorMessage(e));
     } finally {
       setBusy(false);
     }

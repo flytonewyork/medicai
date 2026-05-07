@@ -23,6 +23,7 @@ import {
 import { todayISO } from "~/lib/utils/date";
 import { HttpError } from "~/lib/utils/http";
 import { Sparkles, Check, Loader2 } from "lucide-react";
+import { getErrorMessage } from "~/lib/utils/error";
 
 export default function MealIngestPage() {
   const locale = useLocale();
@@ -49,7 +50,7 @@ export default function MealIngestPage() {
       return;
     }
     setSignInRequired(false);
-    setError(e instanceof Error ? e.message : String(e));
+    setError(getErrorMessage(e));
   }
 
   async function onPhoto(file: File) {
@@ -61,7 +62,7 @@ export default function MealIngestPage() {
       const blob = new Blob([Uint8Array.from(atob(p.base64), (c) => c.charCodeAt(0))]);
       setPreview(URL.createObjectURL(blob));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(getErrorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -119,7 +120,7 @@ export default function MealIngestPage() {
       setEstimate(null);
       setSaved({ proteinAdd });
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(getErrorMessage(e));
     } finally {
       setBusy(null);
     }

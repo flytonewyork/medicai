@@ -26,6 +26,7 @@ import { Alert } from "~/components/ui/alert";
 import { useLocale } from "~/hooks/use-translate";
 import { HttpError } from "~/lib/utils/http";
 import { cn } from "~/lib/utils/cn";
+import { getErrorMessage } from "~/lib/utils/error";
 
 // Two-tab ingest. Photo and text both produce the same ParsedMealResult
 // shape, which the parent screen renders into a confirmable preview.
@@ -53,7 +54,7 @@ export function MealIngest({
       return;
     }
     setSignInRequired(false);
-    setError(e instanceof Error ? e.message : String(e));
+    setError(getErrorMessage(e));
   }
   // Click-to-record voice memo. Tap once to record, tap again to stop;
   // the audio uploads to /api/ai/transcribe (Whisper) and the finalised

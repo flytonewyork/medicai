@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { getErrorMessage } from "~/lib/utils/error";
 
 export { DEFAULT_AI_MODEL } from "./model";
 
@@ -55,7 +56,7 @@ export async function withAnthropicErrorBoundary<T>(
   try {
     return { value: await work() };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = getErrorMessage(err);
     return {
       error: NextResponse.json({ error: message }, { status: 502 }),
     };
