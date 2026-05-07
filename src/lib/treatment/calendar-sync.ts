@@ -15,7 +15,7 @@
 
 import { db, now } from "~/lib/db/dexie";
 import { PROTOCOL_BY_ID } from "~/config/protocols";
-import { formatLocalDateISO, formatHHMM } from "~/lib/utils/date";
+import { formatLocalDateISO, formatHHMM, shiftIsoDate } from "~/lib/utils/date";
 import type { Appointment } from "~/types/appointment";
 import type { Protocol, TreatmentCycle } from "~/types/treatment";
 import type { LocalizedText } from "~/types/treatment";
@@ -46,13 +46,7 @@ function addDaysISO(isoDate: string, days: number, startTime = "09:00"): string 
   // `isoDate` is an ISO date like "2026-05-13" (or "2026-05-13T…"); we
   // want start_date + (days) at `startTime` local — we just write an
   // offset-free ISO so downstream consumers render in the user's tz.
-  const dayStr = isoDate.slice(0, 10);
-  const [y, m, d] = dayStr.split("-").map(Number);
-  if (!y || !m || !d) return isoDate;
-  const base = new Date(Date.UTC(y, m - 1, d));
-  base.setUTCDate(base.getUTCDate() + days);
-  const iso = base.toISOString().slice(0, 10);
-  return `${iso}T${startTime}:00`;
+  return `${shiftIsoDate(isoDate, days)}T${startTime}:00`;
 }
 
 function localizedEn(text: LocalizedText | string | undefined): string {

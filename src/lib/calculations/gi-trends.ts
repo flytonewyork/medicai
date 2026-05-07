@@ -1,4 +1,5 @@
 import type { DailyEntry } from "~/types/clinical";
+import { shiftIsoDate } from "~/lib/utils/date";
 
 // Pure trend calculators for the GI / digestive surface. Take a slice
 // of daily_entries (chronological order doesn't matter — the helpers
@@ -92,11 +93,8 @@ export function buildGiSeries(
   for (const e of entries) byDate.set(e.date, projectGiDay(e));
 
   const out: GiDay[] = [];
-  const today = parseIsoDate(todayISO);
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setUTCDate(d.getUTCDate() - i);
-    const iso = isoFromDate(d);
+    const iso = shiftIsoDate(todayISO, -i);
     out.push(
       byDate.get(iso) ?? {
         date: iso,
@@ -186,16 +184,4 @@ function mode(values: number[]): number | null {
 
 function round1(n: number): number {
   return Math.round(n * 10) / 10;
-}
-
-function parseIsoDate(iso: string): Date {
-  // Use UTC noon to avoid DST edge cases shifting the date.
-  return new Date(iso + "T12:00:00.000Z");
-}
-
-function isoFromDate(d: Date): string {
-  const yyyy = d.getUTCFullYear();
-  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
 }

@@ -13,6 +13,7 @@ import {
   AGENT_VOICES,
   type AgentVoice,
 } from "~/config/agent-cadence";
+import { shiftIsoDate } from "~/lib/utils/date";
 import {
   classifyEngagement,
   coverageCapForState,
@@ -131,7 +132,7 @@ function hasHistoryWithin(
   todayISO: string,
   windowDays: number,
 ): boolean {
-  const cutoff = isoDaysBefore(todayISO, windowDays);
+  const cutoff = shiftIsoDate(todayISO, -windowDays);
   for (const d of dailies) {
     if (d.date < cutoff || d.date > todayISO) continue;
     if (anyFieldFilled(d, field.daily_keys)) return true;
@@ -148,7 +149,7 @@ function isFreshlyLogged(
   if (field.freshness_days === 1) {
     return todayEntry !== null && anyFieldFilled(todayEntry, field.daily_keys);
   }
-  const cutoff = isoDaysBefore(todayISO, field.freshness_days - 1);
+  const cutoff = shiftIsoDate(todayISO, -(field.freshness_days - 1));
   for (const d of dailies) {
     if (d.date < cutoff || d.date > todayISO) continue;
     if (anyFieldFilled(d, field.daily_keys)) return true;
@@ -187,11 +188,3 @@ function toGap(field: TrackedField, inNadir: boolean): CoverageGap {
   };
 }
 
-function isoDaysBefore(iso: string, n: number): string {
-  const d = new Date(iso + "T12:00:00.000Z");
-  d.setUTCDate(d.getUTCDate() - n);
-  const yyyy = d.getUTCFullYear();
-  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}

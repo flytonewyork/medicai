@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "~/lib/db/dexie";
-import { todayISO } from "~/lib/utils/date";
+import { shiftIsoDate, todayISO } from "~/lib/utils/date";
 import { useLocale } from "~/hooks/use-translate";
 import { Card, CardContent } from "~/components/ui/card";
 import { Sparkline } from "~/components/ui/sparkline";
@@ -25,7 +25,7 @@ export function GiTrendsSection() {
   const today = todayISO();
 
   const recent = useLiveQuery(async () => {
-    const start = isoDaysAgo(LONG_WINDOW - 1);
+    const start = shiftIsoDate(today, -(LONG_WINDOW - 1));
     return db.daily_entries.where("date").between(start, today, true, true).toArray();
   }, [today]);
 
@@ -233,11 +233,3 @@ function bristolLabel(n: number, locale: string): string {
   return `${n} · ${arr[n] ?? ""}`;
 }
 
-function isoDaysAgo(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
