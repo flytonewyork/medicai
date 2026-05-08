@@ -1,0 +1,33 @@
+{
+  "nct_id": "NCT05968326",
+  "key_inclusions": [
+    "PDAC, currently adjuvant population [VERIFY]",
+    "HLA-A*02:01 positive [VERIFY]",
+    "ECOG 0-1 [VERIFY]"
+  ],
+  "key_exclusions": [
+    "metastatic disease at enrolment [VERIFY] — likely excludes HL"
+  ],
+  "ecog_max": 1,
+  "lab_thresholds": {
+    "anc_min_x10e9_per_L": 1.5,
+    "platelets_min_x10e9_per_L": 100,
+    "hb_min_g_per_L": 90,
+    "bilirubin_max_xULN": 1.5,
+    "alt_max_xULN": 2.5,
+    "ast_max_xULN": 2.5,
+    "creatinine_clearance_min_mL_per_min": 50,
+    "albumin_min_g_per_L": null
+  },
+  "biomarker_requirements": {
+    "kras_mutation": "not_required",
+    "mtap_deletion": "not_required",
+    "hla_restriction": ["A*02:01"],
+    "brca_or_hrd": "not_required"
+  },
+  "au_sites": [],
+  "status": "Recruiting",
+  "last_verified_at": "2026-05-08",
+  "verified": false,
+  "source_quote": "[VERIFY] placeholder fixture. IMCODE003 (autogene cevumeran) is an mRNA neoantigen vaccine. Current cohorts are PDAC adjuvant — metastatic exclusion likely makes HL ineligible. HLA restriction is a placeholder; the protocol's actual HLA gating to be parsed."
+}

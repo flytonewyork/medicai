@@ -41,3 +41,9 @@ yarn-error.log*
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+# anchor — local patient data + eval artefacts (never committed)
+anchor.local.json
+.claude/local/
+*.patient.json
+eval-runs/

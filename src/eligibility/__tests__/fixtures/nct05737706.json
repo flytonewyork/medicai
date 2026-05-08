@@ -1,0 +1,34 @@
+{
+  "nct_id": "NCT05737706",
+  "key_inclusions": [
+    "advanced solid tumour including PDAC [VERIFY]",
+    "KRAS G12D mutation confirmed by central NGS [VERIFY]",
+    "ECOG 0-1 [VERIFY]"
+  ],
+  "key_exclusions": [
+    "active CNS metastases [VERIFY]",
+    "prior KRAS-targeted therapy [VERIFY]"
+  ],
+  "ecog_max": 1,
+  "lab_thresholds": {
+    "anc_min_x10e9_per_L": 1.5,
+    "platelets_min_x10e9_per_L": 100,
+    "hb_min_g_per_L": 90,
+    "bilirubin_max_xULN": 1.5,
+    "alt_max_xULN": 2.5,
+    "ast_max_xULN": 2.5,
+    "creatinine_clearance_min_mL_per_min": 50,
+    "albumin_min_g_per_L": null
+  },
+  "biomarker_requirements": {
+    "kras_mutation": "g12d",
+    "mtap_deletion": "not_required",
+    "hla_restriction": null,
+    "brca_or_hrd": "not_required"
+  },
+  "au_sites": [],
+  "status": "Recruiting",
+  "last_verified_at": "2026-05-08",
+  "verified": false,
+  "source_quote": "[VERIFY] placeholder fixture. MRTX1133 is a KRAS G12D-selective inhibitor; only G12D patients are eligible. Real EligibilityModule to be parsed via the skill."
+}

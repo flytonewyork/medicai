@@ -1,0 +1,14 @@
+id: 05-trial-closure-detected
+description: >
+  A trial that was Recruiting in the prior snapshot is now
+  "Active, not recruiting". diffShortlistSnapshots must surface it
+  under status_changes.
+kind: shortlist_diff
+inputs:
+  prev_fixture: monitor-snapshot-before
+  next_fixture: monitor-snapshot-after
+expect:
+  status_changes:
+    - nct_id: NCT06625320
+      from: Recruiting
+      to: Active, not recruiting
