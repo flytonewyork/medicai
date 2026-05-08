@@ -6,6 +6,14 @@
       "headers": {
         "Authorization": "Bearer ${SUPABASE_PAT}"
       }
+    },
+    "clinicaltrials": {
+      "type": "http",
+      "url": "https://clinicaltrials.caseyjhand.com/mcp"
+    },
+    "biomcp": {
+      "type": "http",
+      "url": "https://biomcp.org/mcp"
     }
   }
 }

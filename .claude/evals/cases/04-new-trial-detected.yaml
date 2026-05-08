@@ -1,0 +1,17 @@
+id: 04-new-trial-detected
+description: >
+  A new NCT (NCT09999999) appears in this monitor run that wasn't in
+  the prior snapshot. diffShortlistSnapshots must surface it under
+  new_trials.
+kind: shortlist_diff
+inputs:
+  prev_fixture: monitor-snapshot-before
+  next_fixture: monitor-snapshot-after
+expect:
+  new_trial_nct_ids:
+    - NCT09999999
+  closed_trial_count: 0
+  # NB: the shared monitor-snapshot fixtures also encode a status
+  # change on NCT06625320 (covered by case 05). This case asserts only
+  # on the new-trial axis to stay focused; status_change_count is
+  # intentionally not asserted here.

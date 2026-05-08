@@ -1,0 +1,40 @@
+id: 02-rmc6236-eap-not-open
+description: >
+  RMC-6236 EAP not yet open in AU; ECOG 1; KRAS G12V; MTAP intact; on
+  first-line. Bridge plan still viable? Tests the eligibility verdict
+  for RASolute 302 EAP using a verified-on-the-fly fixture inline so
+  the engine actually exercises evaluateVerdict (not just the
+  unverified-refusal path).
+kind: bridge_status_with_inline_criteria
+inputs:
+  bridge_inputs:
+    ecog: 1
+    kras_variant: G12V
+    mtap_status: intact
+    treatment_setting: first_line_active
+    latest_labs:
+      anc_x10e9_per_L: 2.0
+      platelets_x10e9_per_L: 150
+      hb_g_per_L: 110
+      bilirubin_xULN: 1.0
+      alt_xULN: 1.2
+      ast_xULN: 1.1
+      creatinine_clearance_mL_per_min: 80
+    eap_au_open: false
+    as_of: "2026-05-08"
+  inline_shortlist:
+    - nct_id: NCT06625320
+      label: RASolute 302 EAP
+      one_line_eligibility: 2L mPDAC; ECOG 0–1; KRAS-mutant
+      verified: true
+  inline_criteria_fixture: nct06625320
+expect:
+  trial_count: 1
+  trial_0_verdict_kind: eligible_now
+  trial_0_verified: true
+  any_eligible_now: true
+  notes: >
+    Even though eap_au_open=false, eligibility-as-criteria is still
+    "eligible_now" because the EAP-open flag is the operative variable
+    (governs threshold tightness in Phase 2), not a binary gate on
+    verdict in Phase 1. This case documents that distinction.

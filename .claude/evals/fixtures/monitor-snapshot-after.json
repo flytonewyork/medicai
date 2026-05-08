@@ -1,0 +1,29 @@
+{
+  "as_of": "2026-05-08",
+  "trials": [
+    {
+      "nct_id": "NCT06625320",
+      "overall_status": "Active, not recruiting",
+      "last_update_post_date": "2026-05-04",
+      "au_site_count": 0
+    },
+    {
+      "nct_id": "NCT06360354",
+      "overall_status": "Recruiting",
+      "last_update_post_date": "2026-04-20",
+      "au_site_count": 1
+    },
+    {
+      "nct_id": "NCT05737706",
+      "overall_status": "Recruiting",
+      "last_update_post_date": "2026-04-22",
+      "au_site_count": 0
+    },
+    {
+      "nct_id": "NCT09999999",
+      "overall_status": "Recruiting",
+      "last_update_post_date": "2026-05-06",
+      "au_site_count": 1
+    }
+  ]
+}

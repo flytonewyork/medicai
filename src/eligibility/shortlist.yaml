@@ -1,0 +1,45 @@
+# Anchor — Phase 1 trial shortlist.
+#
+# Every entry ships with verified: false. getCurrentBridgeStatus
+# refuses to return an eligibility verdict for any trial whose
+# verified flag is false — it returns kind: unknown with reason
+# "not yet hand-verified". The operator flips the flag to true
+# only after a one-trial-at-a-time hand-check against the primary
+# protocol and the ClinicalTrials.gov record. See CLAUDE.md §5.
+#
+# All clinical claims in `one_line_eligibility` are tagged [VERIFY].
+
+- nct_id: NCT06625320
+  label: RASolute 302 EAP — RMC-6236 (daraxonrasib)
+  one_line_eligibility: 2L mPDAC after first-line gem-based chemo; ECOG 0–1; KRAS-mutant (G12-anything most likely); EAP availability in AU is the operative variable. [VERIFY]
+  verified: false
+
+- nct_id: NCT06360354
+  label: MTAPESTRY 103 Sub C — AMG193 + RMC-6236
+  one_line_eligibility: Solid tumours including PDAC; MTAP-deletion required; KRAS-mutant; ECOG 0–1; 2L+. [VERIFY]
+  verified: false
+
+- nct_id: NCT05737706
+  label: MRTX1133 — KRAS G12D selective inhibitor
+  one_line_eligibility: Advanced solid tumours including PDAC; KRAS G12D required; ECOG 0–1. [VERIFY]
+  verified: false
+
+- nct_id: NCT05968326
+  label: IMCODE003 — autogene cevumeran
+  one_line_eligibility: PDAC adjuvant currently; HLA-restricted; ECOG 0–1. May not match HL's metastatic setting. [VERIFY]
+  verified: false
+
+- nct_id: TBD
+  label: Epworth Jreissati — narmafotinib + mFOLFIRINOX
+  one_line_eligibility: Untreated mPDAC; ECOG 0–1; AU site (Epworth Richmond). [VERIFY]
+  verified: false
+
+- nct_id: TBD
+  label: Epworth Jreissati — CEND-1 / LSTA1
+  one_line_eligibility: mPDAC with chemo backbone; ECOG 0–1; AU site. [VERIFY]
+  verified: false
+
+- nct_id: TBD
+  label: Epworth Jreissati — pembrolizumab + olaparib
+  one_line_eligibility: mPDAC with platinum backbone, BRCA / HRD signal; ECOG 0–1. [VERIFY]
+  verified: false

@@ -1,0 +1,26 @@
+{
+  "_comment": [
+    "Anchor — local patient-state config (Phase 1).",
+    "Real values for HL live in anchor.local.json (gitignored).",
+    "This file is the documented placeholder shape — committed for",
+    "shape reference only. Every value here is illustrative, not real."
+  ],
+  "patient_code": "HL",
+  "as_of": "2026-05-08",
+  "ecog": 1,
+  "kras_variant": "unknown",
+  "mtap_status": "unknown",
+  "hla_types": [],
+  "treatment_setting": "first_line_active",
+  "eap_au_open_date": "unknown",
+  "latest_labs": {
+    "anc_x10e9_per_L": null,
+    "platelets_x10e9_per_L": null,
+    "hb_g_per_L": null,
+    "bilirubin_xULN": null,
+    "alt_xULN": null,
+    "ast_xULN": null,
+    "creatinine_clearance_mL_per_min": null,
+    "albumin_g_per_L": null
+  }
+}

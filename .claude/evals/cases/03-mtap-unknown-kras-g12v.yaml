@@ -1,0 +1,52 @@
+id: 03-mtap-unknown-kras-g12v
+description: >
+  MTAP status unknown; KRAS G12V confirmed. Across the four trials
+  with known NCTs, expect a mix: RASolute 302 (G12-any) eligible now;
+  MTAPESTRY 103 (MTAP-required, unknown) eligible_if_stable; MRTX1133
+  (G12D-only, patient is G12V) excluded; IMCODE003 (HLA-restricted, no
+  HLA recorded) eligible_if_stable.
+kind: bridge_status_with_inline_criteria
+inputs:
+  bridge_inputs:
+    ecog: 1
+    kras_variant: G12V
+    mtap_status: unknown
+    treatment_setting: first_line_active
+    latest_labs:
+      anc_x10e9_per_L: 2.0
+      platelets_x10e9_per_L: 150
+      hb_g_per_L: 110
+      bilirubin_xULN: 1.0
+      alt_xULN: 1.2
+      ast_xULN: 1.1
+      creatinine_clearance_mL_per_min: 80
+    eap_au_open: false
+    as_of: "2026-05-08"
+  inline_shortlist:
+    - nct_id: NCT06625320
+      label: RASolute 302 EAP
+      one_line_eligibility: G12-any
+      verified: true
+    - nct_id: NCT06360354
+      label: MTAPESTRY 103
+      one_line_eligibility: MTAP-deletion required
+      verified: true
+    - nct_id: NCT05737706
+      label: MRTX1133
+      one_line_eligibility: G12D only
+      verified: true
+    - nct_id: NCT05968326
+      label: IMCODE003
+      one_line_eligibility: HLA-restricted
+      verified: true
+  inline_criteria_fixtures:
+    - nct06625320
+    - nct06360354
+    - nct05737706
+    - nct05968326
+expect:
+  trial_verdicts:
+    NCT06625320: eligible_now
+    NCT06360354: eligible_if_stable
+    NCT05737706: excluded
+    NCT05968326: eligible_if_stable

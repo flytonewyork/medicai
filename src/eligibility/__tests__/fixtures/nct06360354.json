@@ -1,0 +1,37 @@
+{
+  "nct_id": "NCT06360354",
+  "key_inclusions": [
+    "advanced solid tumour including PDAC [VERIFY]",
+    "MTAP deletion confirmed by central NGS [VERIFY]",
+    "KRAS-mutant tumour [VERIFY]",
+    "ECOG 0-1 [VERIFY]",
+    "2L+ [VERIFY]"
+  ],
+  "key_exclusions": [
+    "prior MAT2A or PRMT5 inhibitor exposure [VERIFY]",
+    "active CNS metastases [VERIFY]",
+    "Grade >= 2 peripheral neuropathy [VERIFY]"
+  ],
+  "ecog_max": 1,
+  "lab_thresholds": {
+    "anc_min_x10e9_per_L": 1.5,
+    "platelets_min_x10e9_per_L": 100,
+    "hb_min_g_per_L": 90,
+    "bilirubin_max_xULN": 1.5,
+    "alt_max_xULN": 2.5,
+    "ast_max_xULN": 2.5,
+    "creatinine_clearance_min_mL_per_min": 50,
+    "albumin_min_g_per_L": null
+  },
+  "biomarker_requirements": {
+    "kras_mutation": "any",
+    "mtap_deletion": "required",
+    "hla_restriction": null,
+    "brca_or_hrd": "not_required"
+  },
+  "au_sites": [],
+  "status": "Recruiting",
+  "last_verified_at": "2026-05-08",
+  "verified": false,
+  "source_quote": "[VERIFY] placeholder fixture. MTAPESTRY 103 Sub C tests AMG193 + RMC-6236 in MTAP-deletion solid tumours; PDAC is one indication. Thresholds assumed conventional; real values to be parsed from the EligibilityModule by the pdac-trial-eligibility-parse skill."
+}
