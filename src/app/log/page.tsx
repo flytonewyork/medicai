@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
 import { todayISO } from "~/lib/utils/date";
 import { useLocale, useT } from "~/hooks/use-translate";
@@ -92,9 +93,28 @@ type RunState =
 
 export default function LogPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const locale = useLocale();
   const t = useT();
   const today = todayISO();
+
+  // `?reply_to=<memo_id>` is set by MemoFollowUpsCard's text-fallback CTA.
+  // We surface the AI nurse's question above the input so the patient
+  // doesn't have to remember what they were answering after the
+  // navigation. Pure display — the textarea stays clean so the parse
+  // sees only the patient's words.
+  const replyToId = (() => {
+    const raw = searchParams?.get("reply_to");
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  })();
+  const replyToMemo = useLiveQuery(
+    async () => (replyToId ? db.voice_memos.get(replyToId) : undefined),
+    [replyToId],
+  );
+  const replyQuestion =
+    replyToMemo?.parsed_fields?.follow_up_questions?.[0] ?? null;
 
   const [text, setText] = useState("");
   const [overrideTags, setOverrideTags] = useState<Set<LogTag> | null>(null);
@@ -312,6 +332,18 @@ export default function LogPage() {
       />
 
       <Card className="p-5">
+        {replyQuestion && run.kind === "idle" && (
+          <div className="mb-4 rounded-md border-l-[3px] border-l-[var(--tide-2)] bg-[var(--tide-soft)]/40 px-3 py-2.5">
+            <div className="inline-flex items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-wider text-[var(--tide-2)]">
+              <Sparkles className="h-3 w-3" aria-hidden />
+              {locale === "zh" ? "回答 AI 的提问" : "Answering"}
+            </div>
+            <p className="mt-1 text-[13px] italic leading-snug text-ink-900">
+              {replyQuestion}
+            </p>
+          </div>
+        )}
+
         {run.kind === "idle" && (
           <CategoryWizard
             category={category}

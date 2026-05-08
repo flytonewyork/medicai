@@ -9,13 +9,13 @@ import {
   Loader2,
   ChevronRight,
   Sparkles,
+  Pencil,
 } from "lucide-react";
 import { db } from "~/lib/db/dexie";
 import { useLocale } from "~/hooks/use-translate";
 import { useUIStore } from "~/stores/ui-store";
 import { useVoiceTranscription } from "~/hooks/use-voice-transcription";
 import { Card } from "~/components/ui/card";
-import { Alert } from "~/components/ui/alert";
 import { cn } from "~/lib/utils/cn";
 
 // Dashboard surface for the AI nurse's follow-up questions. Reads
@@ -102,23 +102,40 @@ export function MemoFollowUpsCard() {
 
       <div className="mt-3 border-t border-ink-100 pt-3">
         {!voice ? (
-          <Alert variant="info" role="status" className="text-[12px]">
-            {locale === "zh"
-              ? "此浏览器不支持录音，去 /diary 用其他设备答复。"
-              : "This browser can't record audio. Open /diary on another device to answer."}
-          </Alert>
-        ) : !showRecorder && !recording && !transcribing ? (
-          <button
-            type="button"
-            onClick={() => {
-              setShowRecorder(true);
-              void voice.start();
-            }}
+          // Browser can't record audio (desktop without mic permission, an
+          // unsupported WebView, etc.). Telling the user to "open another
+          // device" is a dead-end CTA that strands the answer. Route them
+          // through the canonical text channel at /log instead — `reply_to`
+          // gives the log page a hook to surface the follow-up question for
+          // context.
+          <Link
+            href={`/log?reply_to=${latestMemo.id}`}
             className="inline-flex items-center gap-2 rounded-full bg-ink-900 px-4 py-2 text-[13px] font-medium text-paper hover:scale-[1.02] transition-transform"
           >
-            <Mic className="h-3.5 w-3.5" />
-            {locale === "zh" ? "录音回答" : "Record answer"}
-          </button>
+            <Pencil className="h-3.5 w-3.5" />
+            {locale === "zh" ? "打字回答" : "Type an answer"}
+          </Link>
+        ) : !showRecorder && !recording && !transcribing ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowRecorder(true);
+                void voice.start();
+              }}
+              className="inline-flex items-center gap-2 rounded-full bg-ink-900 px-4 py-2 text-[13px] font-medium text-paper hover:scale-[1.02] transition-transform"
+            >
+              <Mic className="h-3.5 w-3.5" />
+              {locale === "zh" ? "录音回答" : "Record answer"}
+            </button>
+            <Link
+              href={`/log?reply_to=${latestMemo.id}`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-ink-200 px-3 py-2 text-[12.5px] text-ink-700 hover:border-ink-400 hover:text-ink-900"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              {locale === "zh" ? "或打字" : "Or type"}
+            </Link>
+          </div>
         ) : (
           <div className="flex items-center gap-3">
             <button
