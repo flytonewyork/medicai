@@ -70,8 +70,8 @@ export default function MemosPage() {
           }
           description={
             locale === "zh"
-              ? "去「日记」轻点麦克风录第一段。"
-              : "Open the diary and tap the mic to record your first."
+              ? "用面板右下角的「+」 → 「说说现在的情况」录第一段。"
+              : "Tap the + button (bottom right) → Say what's happening to record your first."
           }
         />
       ) : (

@@ -164,8 +164,8 @@ export default function DiaryPage() {
           }
           description={
             locale === "zh"
-              ? "轻点麦克风录第一段日记，或去「日志」「日常」补充。"
-              : "Tap the mic above to record your first memo, or open /log or /daily."
+              ? "用上方的「新建一条记录」开始 —— 文字、语音都可以。"
+              : "Use the New entry button above to start — type or record a voice memo."
           }
         />
       ) : (
