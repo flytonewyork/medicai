@@ -4,6 +4,7 @@ import {
   gateAiRequest,
   withAnthropicErrorBoundary,
 } from "~/lib/anthropic/route-helpers";
+import { errorMessage } from "~/lib/utils/errors";
 import {
   getOptionalHouseholdId,
   loadHouseholdProfile,
@@ -148,7 +149,7 @@ export async function POST(req: Request) {
       {
         error:
           "Model response was not valid JSON: " +
-          (err instanceof Error ? err.message : String(err)),
+          (errorMessage(err)),
       },
       { status: 502 },
     );

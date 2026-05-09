@@ -9,6 +9,7 @@ import {
   parseSseStream,
   readTranscriptionFrame,
 } from "~/lib/voice-memo/sse";
+import { errorMessage } from "~/lib/utils/errors";
 import type { VoiceMemo } from "~/types/voice-memo";
 import type { EnteredBy } from "~/types/clinical";
 
@@ -311,7 +312,7 @@ export function useVoiceTranscription(
               }
             });
           } catch (err) {
-            transcribeError = err instanceof Error ? err.message : String(err);
+            transcribeError = errorMessage(err);
           }
 
           if (memoId !== null && text) {
@@ -363,7 +364,7 @@ export function useVoiceTranscription(
         }
       }, maxDurationMs);
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = errorMessage(err);
       setError(message);
       setStatus("error");
       cleanup();

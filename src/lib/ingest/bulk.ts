@@ -10,6 +10,7 @@ import {
   saveExtraction,
   type UnifiedExtraction,
 } from "./save";
+import { errorMessage } from "~/lib/utils/errors";
 import { db, now } from "~/lib/db/dexie";
 import type { IngestedDocument } from "~/types/clinical";
 
@@ -94,7 +95,7 @@ export async function processBulkItemOcr(
       status: "parsing",
     });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = errorMessage(err);
     await db.ingested_documents.update(docId, {
       status: "error",
       error_message: msg,
@@ -147,7 +148,7 @@ export async function parseBulkItem(
   } catch (err) {
     mutate(item.id, {
       status: "parse_failed",
-      error: err instanceof Error ? err.message : String(err),
+      error: errorMessage(err),
     });
   }
 }
@@ -183,7 +184,7 @@ export async function processBulkItemVision(
   try {
     prepared = await prepareImageForVision(item.file);
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = errorMessage(err);
     await db.ingested_documents.update(docId, {
       status: "error",
       error_message: msg,
@@ -212,7 +213,7 @@ export async function processBulkItemVision(
       progress: undefined,
     });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = errorMessage(err);
     await db.ingested_documents.update(docId, {
       status: "error",
       error_message: msg,
@@ -280,7 +281,7 @@ export async function processBulkItemDocx(
       progress: undefined,
     });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = errorMessage(err);
     await db.ingested_documents.update(docId, {
       status: "error",
       error_message: msg,
@@ -304,7 +305,7 @@ export async function saveBulkItem(
   } catch (err) {
     mutate(item.id, {
       status: "parse_failed",
-      error: err instanceof Error ? err.message : String(err),
+      error: errorMessage(err),
     });
   }
 }

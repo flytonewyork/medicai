@@ -12,6 +12,7 @@ import {
   Mic,
   MicOff,
 } from "lucide-react";
+import { errorMessage } from "~/lib/utils/errors";
 import { prepareImageForVision } from "~/lib/ingest/image";
 import { useVoiceTranscription } from "~/hooks/use-voice-transcription";
 import {
@@ -53,7 +54,7 @@ export function MealIngest({
       return;
     }
     setSignInRequired(false);
-    setError(e instanceof Error ? e.message : String(e));
+    setError(errorMessage(e));
   }
   // Click-to-record voice memo. Tap once to record, tap again to stop;
   // the audio uploads to /api/ai/transcribe (Whisper) and the finalised

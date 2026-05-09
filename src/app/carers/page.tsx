@@ -13,6 +13,7 @@ import {
   listHouseholdMembers,
   listInvites,
 } from "~/lib/supabase/households";
+import { errorMessage } from "~/lib/utils/errors";
 import type {
   Household,
   HouseholdInvite,
@@ -527,7 +528,7 @@ function SessionDiag() {
         }
       } catch (err) {
         lines.push(
-          `diag exception: ${err instanceof Error ? err.message : String(err)}`,
+          `diag exception: ${errorMessage(err)}`,
         );
       } finally {
         if (!cancelled) setInfo(lines);

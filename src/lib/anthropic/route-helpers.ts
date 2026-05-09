@@ -4,6 +4,7 @@ import {
   requireSession,
   type RequireSessionResult,
 } from "~/lib/auth/require-session";
+import { errorMessage } from "~/lib/utils/errors";
 
 export { DEFAULT_AI_MODEL } from "./model";
 
@@ -59,7 +60,7 @@ export async function withAnthropicErrorBoundary<T>(
   try {
     return { value: await work() };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = errorMessage(err);
     return {
       error: NextResponse.json({ error: message }, { status: 502 }),
     };
@@ -125,7 +126,7 @@ export async function gateAiRequest<T>(
 // possible — e.g. when only tool_use blocks are emitted).
 export function firstTextBlock(
   message: { content: Array<{ type: string; text?: string }> },
-  errorMessage = "Empty response from Claude",
+  fallbackMessage = "Empty response from Claude",
 ):
   | { text: string; error?: undefined }
   | { error: NextResponse; text?: undefined } {
@@ -135,7 +136,7 @@ export function firstTextBlock(
   );
   if (!block) {
     return {
-      error: NextResponse.json({ error: errorMessage }, { status: 502 }),
+      error: NextResponse.json({ error: fallbackMessage }, { status: 502 }),
     };
   }
   return { text: block.text };
@@ -146,13 +147,13 @@ export function firstTextBlock(
 // abort, empty response).
 export function requireParsedOutput<T>(
   message: { parsed_output: T | null | undefined },
-  errorMessage = "No parsed output returned",
+  fallbackMessage = "No parsed output returned",
 ):
   | { value: T; error?: undefined }
   | { error: NextResponse; value?: undefined } {
   if (!message.parsed_output) {
     return {
-      error: NextResponse.json({ error: errorMessage }, { status: 502 }),
+      error: NextResponse.json({ error: fallbackMessage }, { status: 502 }),
     };
   }
   return { value: message.parsed_output };

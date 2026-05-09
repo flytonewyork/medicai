@@ -10,6 +10,7 @@ import { Field, TextInput, Textarea } from "~/components/ui/field";
 import { Calendar, AlertCircle, Loader2 } from "lucide-react";
 import type { IngestDraft } from "~/types/ingest";
 import { postJson } from "~/lib/utils/http";
+import { errorMessage } from "~/lib/utils/errors";
 
 // Feeds the ICS path through the same preview-diff flow. Accepts
 // either a webcal:// / https:// subscription URL (Apple Calendar,
@@ -60,7 +61,7 @@ export function CalendarSubscribe({
       setUrl("");
       setText("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err));
     } finally {
       setBusy(false);
     }

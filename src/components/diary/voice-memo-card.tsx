@@ -11,6 +11,7 @@ import {
   ChevronRight,
   CheckCircle2,
 } from "lucide-react";
+import { errorMessage } from "~/lib/utils/errors";
 import type { VoiceMemo, VoiceMemoParsedFields } from "~/types/voice-memo";
 import { resolveVoiceMemoAudioUrl } from "~/lib/voice-memo/cloud";
 import { Card } from "~/components/ui/card";
@@ -71,7 +72,7 @@ export function VoiceMemoCard({ memo, locale }: VoiceMemoCardProps) {
       audio.src = url;
       await audio.play();
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err));
     }
   }
 

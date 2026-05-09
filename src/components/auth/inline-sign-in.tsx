@@ -8,6 +8,7 @@ import { Button } from "~/components/ui/button";
 import { Field, TextInput } from "~/components/ui/field";
 import { Alert } from "~/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { errorMessage } from "~/lib/utils/errors";
 
 // Embeddable sign-in / sign-up panel. Same behaviour as
 // /login and the welcome modal, but rendered inline so an onboarding
@@ -90,7 +91,7 @@ export function InlineSignIn({
       );
       setMode("signin");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err));
     } finally {
       setLoading(false);
     }

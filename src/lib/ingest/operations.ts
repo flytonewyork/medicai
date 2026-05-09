@@ -6,6 +6,7 @@ import type {
   LabMatch,
   MedicationMatch,
 } from "~/types/ingest";
+import { errorMessage } from "~/lib/utils/errors";
 import type { Appointment } from "~/types/appointment";
 import type {
   CtdnaResult,
@@ -253,7 +254,7 @@ export async function applyIngestOp(
     return {
       op,
       ok: false,
-      error: err instanceof Error ? err.message : String(err),
+      error: errorMessage(err),
     };
   }
 }

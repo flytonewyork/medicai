@@ -9,6 +9,7 @@ import type {
   AppointmentKind,
   AppointmentStatus,
 } from "~/types/appointment";
+import { errorMessage } from "~/lib/utils/errors";
 import { useLocale, useT } from "~/hooks/use-translate";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
@@ -143,7 +144,7 @@ export function AppointmentForm({
 
       router.push(`/schedule/${id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err));
     } finally {
       setSaving(false);
     }

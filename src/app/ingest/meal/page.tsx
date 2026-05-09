@@ -16,6 +16,7 @@ import {
   prepareImageForVision,
   type PreparedImage,
 } from "~/lib/ingest/image";
+import { errorMessage } from "~/lib/utils/errors";
 import {
   estimateMeal,
   type MealEstimate,
@@ -49,7 +50,7 @@ export default function MealIngestPage() {
       return;
     }
     setSignInRequired(false);
-    setError(e instanceof Error ? e.message : String(e));
+    setError(errorMessage(e));
   }
 
   async function onPhoto(file: File) {
@@ -61,7 +62,7 @@ export default function MealIngestPage() {
       const blob = new Blob([Uint8Array.from(atob(p.base64), (c) => c.charCodeAt(0))]);
       setPreview(URL.createObjectURL(blob));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -119,7 +120,7 @@ export default function MealIngestPage() {
       setEstimate(null);
       setSaved({ proteinAdd });
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorMessage(e));
     } finally {
       setBusy(null);
     }

@@ -14,6 +14,7 @@ import type { Appointment } from "~/types/appointment";
 import { Loader2, ImagePlus, Sparkles } from "lucide-react";
 import { todayISO } from "~/lib/utils/date";
 import { postJson } from "~/lib/utils/http";
+import { errorMessage } from "~/lib/utils/errors";
 
 // One unified "smart entry" surface. The patient can:
 //   1. Paste an email body or free-text ("Chemo Friday 10am with Dr Lee at Epworth")
@@ -150,7 +151,7 @@ function SmartEntry({
       );
       await onParsed(data.appointment);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err));
     } finally {
       setBusy(false);
     }

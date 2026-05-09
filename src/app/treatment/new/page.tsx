@@ -20,6 +20,7 @@ import type {
   ProtocolId,
   TreatmentCycle,
 } from "~/types/treatment";
+import { errorMessage } from "~/lib/utils/errors";
 import type {
   DoseSchedule,
   Medication,
@@ -214,7 +215,7 @@ export default function NewTreatmentCyclePage() {
 
       router.push(`/treatment/${cycleId}?cycle_added=1`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err));
     } finally {
       setSaving(false);
     }

@@ -1,6 +1,7 @@
 import webpush from "web-push";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { nowISO } from "~/lib/utils/date";
+import { errorMessage } from "~/lib/utils/errors";
 
 // Server-side push helpers. VAPID keys live as Vercel env vars:
 //   VAPID_PUBLIC_KEY  (base64-url, also exposed to the client via
@@ -84,7 +85,7 @@ export async function sendPush(
       (err as { statusCode?: number })?.statusCode ??
       (err as { status?: number })?.status ??
       500;
-    const message = err instanceof Error ? err.message : String(err);
+    const message = errorMessage(err);
     return { ok: false, status: statusCode, error: message };
   }
 }

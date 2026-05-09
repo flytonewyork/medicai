@@ -3,6 +3,7 @@ import { icsEventsToOps, parseIcs } from "~/lib/ingest/ics";
 import { readJsonBody } from "~/lib/anthropic/route-helpers";
 import { requireSession } from "~/lib/auth/require-session";
 import type { IngestDraft } from "~/types/ingest";
+import { errorMessage } from "~/lib/utils/errors";
 
 export const runtime = "nodejs";
 // ICS import fetches a remote webcal URL server-side (sometimes slow iCloud
@@ -63,7 +64,7 @@ export async function POST(req: Request) {
       raw = await res.text();
       sourceHint = url;
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = errorMessage(err);
       return NextResponse.json(
         { error: `Couldn't fetch calendar: ${message}` },
         { status: 502 },

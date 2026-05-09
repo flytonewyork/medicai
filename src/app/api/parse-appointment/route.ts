@@ -6,6 +6,7 @@ import {
   getAnthropicClient,
   readJsonBody,
 } from "~/lib/anthropic/route-helpers";
+import { errorMessage } from "~/lib/utils/errors";
 import { requireSession } from "~/lib/auth/require-session";
 import { wrapUserInputBlock } from "~/lib/anthropic/wrap-user-input";
 
@@ -144,7 +145,7 @@ export async function POST(req: Request) {
     }
     return NextResponse.json({ appointment: response.parsed_output });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = errorMessage(err);
     return NextResponse.json(
       { error: "Parse failed", message },
       { status: 502 },
