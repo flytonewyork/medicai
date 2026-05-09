@@ -21,6 +21,7 @@ import {
   Undo2,
   Sparkles,
 } from "lucide-react";
+import { errorMessage } from "~/lib/utils/errors";
 import { useLocale } from "~/hooks/use-translate";
 import { db } from "~/lib/db/dexie";
 import { parseVoiceMemo, reparseVoiceMemo } from "~/lib/voice-memo/parse";
@@ -294,7 +295,7 @@ function PlaybackCard({
       try {
         await audioRef.current.play();
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
+        setError(errorMessage(err));
       }
     }
   }
@@ -501,7 +502,7 @@ function PreviewForm({
       });
       setAppliedRecently(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorMessage(e));
     } finally {
       setBusy(false);
     }

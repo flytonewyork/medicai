@@ -6,6 +6,7 @@ import type {
   MealEntry,
   MealItem,
 } from "~/types/nutrition";
+import { errorMessage } from "~/lib/utils/errors";
 import type {
   AppliedPatch,
   VoiceMemo,
@@ -960,7 +961,7 @@ export async function undoAppliedPatch(
   } catch (err) {
     return {
       ok: false,
-      error: err instanceof Error ? err.message : String(err),
+      error: errorMessage(err),
     };
   }
 

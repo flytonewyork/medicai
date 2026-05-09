@@ -2,6 +2,7 @@ import { db, now } from "~/lib/db/dexie";
 import { postJson } from "~/lib/utils/http";
 import type { VoiceMemoParsedFields } from "~/types/voice-memo";
 import { applyMemoPatches } from "./apply";
+import { errorMessage } from "~/lib/utils/errors";
 
 // Slice 3 → ship: Claude reads every memo end-to-end and returns a
 // structured picture of it (daily-tracking fields, clinic visits,
@@ -77,7 +78,7 @@ export interface ParseAttempt {
 }
 
 function humaniseParseError(err: unknown): string {
-  const raw = err instanceof Error ? err.message : String(err);
+  const raw = errorMessage(err);
   // postJson wraps server bodies as `HTTP 502: {"error":"..."}` —
   // unwrap so the patient-facing message is the actual cause.
   const match = raw.match(/HTTP \d+:\s*(.+)/);

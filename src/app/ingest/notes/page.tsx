@@ -14,6 +14,7 @@ import {
   prepareImageForVision,
   type PreparedImage,
 } from "~/lib/ingest/image";
+import { errorMessage } from "~/lib/utils/errors";
 import {
   structureNotes,
   type NotesStructure,
@@ -46,7 +47,7 @@ export default function NotesIngestPage() {
       const blob = new Blob([Uint8Array.from(atob(p.base64), (c) => c.charCodeAt(0))]);
       setPreview(URL.createObjectURL(blob));
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -60,7 +61,7 @@ export default function NotesIngestPage() {
       const result = await structureNotes({ model, image: prepared });
       setStructured(result);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -103,7 +104,7 @@ export default function NotesIngestPage() {
       setStructured(null);
       setSaved({ fields: fieldCount });
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorMessage(e));
     } finally {
       setBusy(null);
     }

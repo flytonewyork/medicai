@@ -7,6 +7,7 @@ import type {
   LogEventRow,
   LogTag,
 } from "~/types/agent";
+import { errorMessage } from "~/lib/utils/errors";
 import { AGENT_IDS, LOG_TAGS } from "~/types/agent";
 import { runAgent } from "~/agents/run";
 import { readJsonBody } from "~/lib/anthropic/route-helpers";
@@ -120,7 +121,7 @@ export async function POST(
       coverageSnapshot: parsed.data.coverage_snapshot,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = errorMessage(err);
     return NextResponse.json(
       { error: "Agent run failed", message },
       { status: 502 },

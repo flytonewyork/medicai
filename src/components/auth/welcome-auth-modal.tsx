@@ -9,6 +9,7 @@ import { Button } from "~/components/ui/button";
 import { Field, TextInput } from "~/components/ui/field";
 import { useT } from "~/hooks/use-translate";
 import { nowISO } from "~/lib/utils/date";
+import { errorMessage } from "~/lib/utils/errors";
 
 const SEEN_KEY = "anchor.welcomeSeenAt";
 
@@ -70,7 +71,7 @@ export function WelcomeAuthModal() {
       setInfo(t("welcomeAuth.createdConfirm"));
       setMode("signin");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err));
     } finally {
       setLoading(false);
     }

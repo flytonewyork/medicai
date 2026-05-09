@@ -9,6 +9,7 @@ import { Button } from "~/components/ui/button";
 import { Field, Textarea } from "~/components/ui/field";
 import { Card, CardContent } from "~/components/ui/card";
 import { Send, Check, Loader2 } from "lucide-react";
+import { errorMessage } from "~/lib/utils/errors";
 
 // One-textarea contribution surface for family members. Writes a
 // `log_events` row tagged (via the existing tagger, or defaulting to
@@ -49,7 +50,7 @@ export function QuickNote() {
       setState("done");
       window.setTimeout(() => setState("idle"), 2500);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorMessage(e));
       setState("error");
     }
   }

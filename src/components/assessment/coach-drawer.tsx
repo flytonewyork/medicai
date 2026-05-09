@@ -7,6 +7,7 @@ import { useLocale } from "~/hooks/use-translate";
 import { useDefaultAiModel } from "~/hooks/use-settings";
 import { askCoach, type CoachContext, type CoachMessage } from "~/lib/ai/coach";
 import { Sparkles, X, Send, Loader2 } from "lucide-react";
+import { errorMessage } from "~/lib/utils/errors";
 
 export function CoachDrawer({ context }: { context: CoachContext }) {
   const locale = useLocale();
@@ -34,7 +35,7 @@ export function CoachDrawer({ context }: { context: CoachContext }) {
       });
       setHistory((h) => [...h, { role: "assistant", content: reply }]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorMessage(e));
     } finally {
       setBusy(false);
     }

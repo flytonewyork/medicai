@@ -10,6 +10,7 @@ import {
   removeCareTeamMember,
   updateCareTeamMember,
 } from "~/lib/care-team/registry";
+import { errorMessage } from "~/lib/utils/errors";
 import { listHouseholdMembers } from "~/lib/supabase/households";
 import { useHousehold } from "~/hooks/use-household";
 import type {
@@ -243,7 +244,7 @@ export function LocalContactsSection() {
       }
       cancel();
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err));
     } finally {
       setSaving(false);
     }

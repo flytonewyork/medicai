@@ -14,6 +14,7 @@ import {
   testById,
   type TestId,
 } from "~/lib/assessment/catalog";
+import { errorMessage } from "~/lib/utils/errors";
 import { todayISO } from "~/lib/utils/date";
 import type { ComprehensiveAssessment } from "~/types/clinical";
 import { Alert } from "~/components/ui/alert";
@@ -528,7 +529,7 @@ function ReviewView({
         updated_at: now(),
       });
     } catch (e) {
-      setAiError(e instanceof Error ? e.message : String(e));
+      setAiError(errorMessage(e));
     } finally {
       setAiBusy(false);
     }

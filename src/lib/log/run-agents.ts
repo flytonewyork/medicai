@@ -8,6 +8,7 @@ import type {
   DexiePatch,
   LogEventRow,
 } from "~/types/agent";
+import { errorMessage } from "~/lib/utils/errors";
 import { FOLLOW_UP_PRIORITY } from "~/config/agent-cadence";
 import type { Locale } from "~/types/clinical";
 import { agentsForTags } from "~/agents/routing";
@@ -366,7 +367,7 @@ export async function runAllAgentsForToday(args: {
         return {
           id,
           runId: null,
-          error: err instanceof Error ? err.message : String(err),
+          error: errorMessage(err),
         };
       }
     }),

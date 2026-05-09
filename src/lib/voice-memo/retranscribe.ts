@@ -1,6 +1,7 @@
 import { db, now } from "~/lib/db/dexie";
 import { parseVoiceMemo } from "./parse";
 import { parseSseStream, readTranscriptionFrame } from "./sse";
+import { errorMessage } from "~/lib/utils/errors";
 
 // Retry transcription for a memo whose first attempt failed
 // (env-var glitch, network blip, OpenAI 5xx). Uses the audio Blob
@@ -46,7 +47,7 @@ export async function retranscribeVoiceMemo(memoId: number): Promise<{
   } catch (err) {
     return {
       ok: false,
-      error: err instanceof Error ? err.message : String(err),
+      error: errorMessage(err),
     };
   }
   if (!res.ok) {

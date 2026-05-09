@@ -10,6 +10,7 @@ import { Button } from "~/components/ui/button";
 import { Field, Textarea } from "~/components/ui/field";
 import { ImagePlus, Loader2, Sparkles, AlertCircle } from "lucide-react";
 import type { IngestDraft, IngestSourceKind } from "~/types/ingest";
+import { errorMessage } from "~/lib/utils/errors";
 
 // Universal entry point. Patient pastes an email body, types a quick
 // note, or snaps a photo (or picks a PDF — converted to image first).
@@ -59,7 +60,7 @@ export function UniversalDrop({
         source: file.type === "application/pdf" ? "pdf" : "photo",
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err));
       setBusy(false);
     }
   }
@@ -85,7 +86,7 @@ export function UniversalDrop({
       onDraft(data.draft);
       setText("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err));
     } finally {
       setBusy(false);
     }

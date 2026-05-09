@@ -5,6 +5,7 @@ import { readAppointmentsHandler } from "./handlers/read-appointments";
 import { readCareTeamHandler } from "./handlers/read-care-team";
 import { readDailyHandler } from "./handlers/read-daily";
 import { readLabsHandler } from "./handlers/read-labs";
+import { errorMessage } from "~/lib/utils/errors";
 
 // Dispatcher: maps a tool_use call ("name" + input object) to the matching
 // handler and returns the tool_result payload. Lives alongside the
@@ -50,7 +51,7 @@ export async function dispatchSkill(
     const output = await handler(input);
     return { ok: true, output };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    return { ok: false, error: errorMessage(err) };
   }
 }
 

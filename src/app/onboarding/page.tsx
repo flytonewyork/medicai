@@ -18,6 +18,7 @@ import {
   HOSPITAL_BY_ID,
   ONCOLOGIST_BY_ID,
 } from "~/config/oncologists";
+import { errorMessage } from "~/lib/utils/errors";
 import type { ProtocolId } from "~/types/treatment";
 import type { Locale, Settings } from "~/types/clinical";
 import {
@@ -702,18 +703,6 @@ function UserTypeStep({
       )}
     </Card>
   );
-}
-
-// Supabase's PostgrestError is a plain object, not an Error instance, so the
-// usual `String(err)` fallback produces "[object Object]". Prefer `.message`
-// whenever it's there.
-function errorMessage(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  if (err && typeof err === "object" && "message" in err) {
-    const m = (err as { message: unknown }).message;
-    if (typeof m === "string" && m.length > 0) return m;
-  }
-  return typeof err === "string" && err.length > 0 ? err : "Something went wrong.";
 }
 
 function PickPatientStep({

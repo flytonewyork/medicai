@@ -1,6 +1,14 @@
 import { z } from "zod";
 
+// Clinical scale primitives. Naming the ranges (rather than inlining
+// `z.number().min(0).max(N)` everywhere) keeps each schema field's
+// intent legible — a reader sees "ctcaeGrade", not a magic 0–4 range —
+// and stops the inevitable drift between e.g. PRO-CTCAE fields if the
+// CTCAE upper bound ever shifts.
 const scale0to10 = z.number().min(0).max(10);
+const scale0to5 = z.number().min(0).max(5);
+const ctcaeGrade = z.number().int().min(0).max(4);
+const weekDayCount = z.number().int().min(0).max(7);
 
 // `entered_by` is the household member who logged the entry. The full
 // EnteredBy type in ~/types/clinical also includes "clinician" and
@@ -27,14 +35,14 @@ export const dailyEntrySchema = z.object({
   weight_kg: z.number().min(20).max(200).optional(),
   steps: z.number().int().min(0).max(200000).optional(),
   practice_morning_completed: z.boolean().optional(),
-  practice_morning_quality: z.number().min(0).max(5).optional(),
+  practice_morning_quality: scale0to5.optional(),
   practice_evening_completed: z.boolean().optional(),
-  practice_evening_quality: z.number().min(0).max(5).optional(),
+  practice_evening_quality: scale0to5.optional(),
   cold_dysaesthesia: z.boolean().optional(),
   // CTCAE 0–4. Legacy records may have booleans; the wizard coerces
   // on read, so accept both for backwards compatibility.
-  neuropathy_hands: z.union([z.number().int().min(0).max(4), z.boolean()]).optional(),
-  neuropathy_feet: z.union([z.number().int().min(0).max(4), z.boolean()]).optional(),
+  neuropathy_hands: z.union([ctcaeGrade, z.boolean()]).optional(),
+  neuropathy_feet: z.union([ctcaeGrade, z.boolean()]).optional(),
   mouth_sores: z.boolean().optional(),
   diarrhoea_count: z.number().int().min(0).max(30).optional(),
   new_bruising: z.boolean().optional(),
@@ -45,7 +53,7 @@ export const dailyEntrySchema = z.object({
   fatigue: scale0to10.optional(),
   anorexia: scale0to10.optional(),
   abdominal_pain: scale0to10.optional(),
-  taste_changes: z.number().min(0).max(5).optional(),
+  taste_changes: scale0to5.optional(),
   steatorrhoea: z.boolean().optional(),
   reflection: z.string().max(4000).optional(),
   reflection_lang: z.enum(["en", "zh"]).optional(),
@@ -124,14 +132,14 @@ export const fortnightlyAssessmentSchema = z.object({
       z.literal(4),
     ])
     .optional(),
-  pro_ctcae_fatigue_severity: z.number().int().min(0).max(4).optional(),
-  pro_ctcae_fatigue_interference: z.number().int().min(0).max(4).optional(),
-  pro_ctcae_neuropathy_severity: z.number().int().min(0).max(4).optional(),
-  pro_ctcae_neuropathy_interference: z.number().int().min(0).max(4).optional(),
-  pro_ctcae_pain_severity: z.number().int().min(0).max(4).optional(),
-  pro_ctcae_pain_interference: z.number().int().min(0).max(4).optional(),
-  pro_ctcae_diarrhoea_frequency: z.number().int().min(0).max(4).optional(),
-  distress_thermometer: z.number().min(0).max(10).optional(),
+  pro_ctcae_fatigue_severity: ctcaeGrade.optional(),
+  pro_ctcae_fatigue_interference: ctcaeGrade.optional(),
+  pro_ctcae_neuropathy_severity: ctcaeGrade.optional(),
+  pro_ctcae_neuropathy_interference: ctcaeGrade.optional(),
+  pro_ctcae_pain_severity: ctcaeGrade.optional(),
+  pro_ctcae_pain_interference: ctcaeGrade.optional(),
+  pro_ctcae_diarrhoea_frequency: ctcaeGrade.optional(),
+  distress_thermometer: scale0to10.optional(),
   phq9_total: z.number().min(0).max(27).optional(),
   gad7_total: z.number().min(0).max(21).optional(),
   sarc_f_responses: z.array(z.number().int().min(0).max(2)).length(5).optional(),
@@ -149,9 +157,9 @@ export type FortnightlyAssessmentInput = z.infer<
 export const weeklyAssessmentSchema = z.object({
   week_start: z.string(),
   entered_by: householdEnteredBy,
-  practice_full_days: z.number().int().min(0).max(7),
-  practice_reduced_days: z.number().int().min(0).max(7),
-  practice_skipped_days: z.number().int().min(0).max(7),
+  practice_full_days: weekDayCount,
+  practice_reduced_days: weekDayCount,
+  practice_skipped_days: weekDayCount,
   functional_integrity: z.number().min(1).max(5),
   cognitive_stillness: z.number().min(1).max(5),
   social_practice_integrity: z.number().min(1).max(5),
