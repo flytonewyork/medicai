@@ -12,6 +12,7 @@ import { AccountButton } from "~/components/shared/account-button";
 import { HouseholdSection } from "~/components/settings/household-section";
 import { NotificationsSection } from "~/components/settings/notifications-section";
 import { CareTeamSection } from "~/components/settings/care-team-section";
+import { MorePagesSection } from "~/components/settings/more-pages-section";
 import { TrackedSymptomsSection } from "~/components/settings/tracked-symptoms-section";
 import { WearableSection } from "~/components/settings/wearable-section";
 import { PageHeader, SectionHeader } from "~/components/ui/page-header";
@@ -135,6 +136,8 @@ export default function SettingsPage() {
       <NotificationsSection />
 
       <CareTeamSection />
+
+      <MorePagesSection />
 
       <TrackedSymptomsSection />
 

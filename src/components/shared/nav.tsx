@@ -5,12 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
-  Route,
   FileText,
   Settings as SettingsIcon,
-  ScanLine,
-  FlaskConical,
-  Compass,
   Syringe,
   Sparkles,
   Salad,
@@ -21,32 +17,26 @@ import {
   X,
   History as HistoryIcon,
   BookOpen,
-  Mic,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 import { isNavItemActive } from "~/lib/nav/active";
 import { useT, useLocale } from "~/hooks/use-translate";
 import { useAppPerspective } from "~/lib/caregiver/scope";
 
-// Patient nav: everything. Patient owns self-reporting, treatment,
-// assessment, the diary, bridge strategy, reports. The "/family" surface
-// is the caregiver-perspective landing page — patients land on "/"
-// instead and reach household / invites through Settings → Care team,
-// so it's excluded here to avoid a confusing duplicate view.
+// Patient nav: the daily-use shortlist. CLAUDE.md doctrine — single
+// channel in, single channel out — pushes against a long tab bar, so
+// secondary surfaces (assessment, labs, practices, carers, ingest,
+// memos index, bridge brief, history) are reachable from where they're
+// already deep-linked (BaselineNudge → /assessment, PillarTiles → /labs,
+// daily wizard → /practices, settings → /carers, /diary memo cards →
+// /memos/[id], FAB photo capture → /ingest). Settings exposes a "More
+// pages" index so nothing is orphaned for a curious user.
 const PATIENT_ITEMS = [
   { href: "/", key: "nav.dashboard", icon: LayoutDashboard, descKey: "nav.desc.dashboard" },
   { href: "/diary", key: "nav.diary", icon: BookOpen, descKey: "nav.desc.diary" },
-  { href: "/memos", key: "nav.memos", icon: Mic, descKey: "nav.desc.memos" },
   { href: "/schedule", key: "nav.schedule", icon: CalendarDays, descKey: "nav.desc.schedule" },
-  { href: "/assessment", key: "nav.assessment", icon: Compass, descKey: "nav.desc.assessment" },
   { href: "/treatment", key: "nav.treatment", icon: Syringe, descKey: "nav.desc.treatment" },
-  { href: "/labs", key: "nav.labs", icon: FlaskConical, descKey: "nav.desc.labs" },
   { href: "/nutrition", key: "nav.nutrition", icon: Salad, descKey: "nav.desc.nutrition" },
-  { href: "/practices", key: "nav.practices", icon: Sparkles, descKey: "nav.desc.practices" },
-  { href: "/carers", key: "nav.carers", icon: UserPlus, descKey: "nav.desc.carers" },
-  { href: "/bridge", key: "nav.bridge", icon: Route, descKey: "nav.desc.bridge" },
-  { href: "/history", key: "nav.history", icon: HistoryIcon, descKey: "nav.desc.history" },
-  { href: "/ingest", key: "nav.ingest", icon: ScanLine, descKey: "nav.desc.ingest" },
   { href: "/reports", key: "nav.reports", icon: FileText, descKey: "nav.desc.reports" },
   { href: "/settings", key: "nav.settings", icon: SettingsIcon, descKey: "nav.desc.settings" },
 ] as const;
@@ -137,11 +127,10 @@ export function MobileBottomNav() {
   const items = useNavItems();
   if (isAuthRoute(pathname)) return null;
   // Mobile bottom nav keeps the most-used slots. Patients get the
-  // dashboard + key axes (assessment / treatment / nutrition) +
-  // schedule; caregivers get family + schedule + care team +
-  // nutrition + log. Nutrition is first-class because cachexia /
-  // weight loss is a primary axis-3 signal in mPDAC, and is logged
-  // daily.
+  // dashboard + diary + treatment + nutrition + schedule; caregivers
+  // get family + schedule + care team + nutrition + log. Nutrition is
+  // first-class because cachexia / weight loss is a primary axis-3
+  // signal in mPDAC, and is logged daily.
   const patientHrefs = ["/", "/diary", "/treatment", "/nutrition", "/schedule"];
   const caregiverHrefs = ["/family", "/schedule", "/nutrition", "/carers", "/log"];
   const selected = items === PATIENT_ITEMS ? patientHrefs : caregiverHrefs;
