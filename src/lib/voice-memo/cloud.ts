@@ -1,9 +1,6 @@
 import { db, now } from "~/lib/db/dexie";
 import { getSupabaseBrowser } from "~/lib/supabase/client";
-import {
-  getCachedHouseholdId,
-  refreshHouseholdId,
-} from "~/lib/sync/household-context";
+import { ensureHouseholdId } from "~/lib/sync/household-context";
 
 // Cloud mirror for voice-memo audio. The metadata row in `voice_memos`
 // already syncs through the cloud_rows queue; this module handles the
@@ -27,8 +24,7 @@ export async function uploadVoiceMemoAudio(memoId: number): Promise<void> {
   const supabase = getSupabaseBrowser();
   if (!supabase) return;
 
-  let householdId = getCachedHouseholdId();
-  if (!householdId) householdId = await refreshHouseholdId();
+  const householdId = await ensureHouseholdId();
   if (!householdId) return;
 
   const media = await db.timeline_media.get(memo.audio_media_id);

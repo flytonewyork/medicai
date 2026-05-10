@@ -2,9 +2,8 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { getSupabaseBrowser } from "~/lib/supabase/client";
 import { pullFromCloud } from "./pull";
 import {
-  getCachedHouseholdId,
+  ensureHouseholdId,
   onHouseholdChange,
-  refreshHouseholdId,
 } from "./household-context";
 
 let channel: RealtimeChannel | null = null;
@@ -29,10 +28,7 @@ async function ensureSubscription(): Promise<void> {
   const supabase = getSupabaseBrowser();
   if (!supabase) return;
 
-  let householdId = getCachedHouseholdId();
-  if (!householdId) {
-    householdId = await refreshHouseholdId();
-  }
+  const householdId = await ensureHouseholdId();
 
   // Subscribe only if the household changed (or we have none yet).
   if (householdId === subscribedHouseholdId && channel) return;
