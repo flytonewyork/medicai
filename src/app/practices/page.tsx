@@ -63,7 +63,7 @@ export default function PracticesPage() {
         </div>
       </Card>
 
-      {active.length === 0 ? (
+      {rows === undefined ? null : active.length === 0 ? (
         <Card className="p-5 text-sm text-ink-500">
           {locale === "zh"
             ? "暂无修习。点击右上角新建第一项。"

@@ -55,6 +55,9 @@ export default function DiaryPage() {
   const [days, setDays] = useState<DiaryDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Manual reload counter so a Retry click forces the build effect to
+  // re-run even when none of its other deps have changed.
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,7 +96,7 @@ export default function DiaryPage() {
     // Re-run whenever any underlying table changes row count or the
     // window expands. Cheap because the aggregator reads each table
     // once and bins in memory.
-  }, [memoCount, dailyCount, logCount, labCount, runCount, windowDays]);
+  }, [memoCount, dailyCount, logCount, labCount, runCount, windowDays, reloadKey]);
 
   // Best-effort: try to flush any voice-memo audio that's still waiting
   // to upload. Runs on mount and never throws into render.
@@ -143,9 +146,20 @@ export default function DiaryPage() {
 
       {loadError ? (
         <Alert variant="warn" role="alert">
-          {locale === "zh"
-            ? "日记加载失败，请刷新页面重试。"
-            : "Diary failed to load. Try refreshing the page."}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>
+              {locale === "zh"
+                ? "日记加载失败。"
+                : "Diary failed to load."}
+            </span>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setReloadKey((k) => k + 1)}
+            >
+              {locale === "zh" ? "重试" : "Retry"}
+            </Button>
+          </div>
         </Alert>
       ) : loading && days.length === 0 ? (
         <Card className="p-5">

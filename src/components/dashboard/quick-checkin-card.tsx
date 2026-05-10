@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, now } from "~/lib/db/dexie";
@@ -67,21 +67,12 @@ export function QuickCheckinCard() {
   const [feverTemp, setFeverTemp] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [justSaved, setJustSaved] = useState(false);
 
-  // After save, the live query picks up `existing` and switches the
-  // card to its compact "Saved today" summary. We don't auto-hide
-  // anymore — silence on the dashboard after a check-in left users
-  // wondering whether the save took. The compact summary stays until
-  // tomorrow's date rolls over (or the entry is edited from the
-  // full log), and the Full-log link gives a one-tap path to amend.
-  useEffect(() => {
-    if (!justSaved) return;
-    const id = setTimeout(() => setJustSaved(false), 6000);
-    return () => clearTimeout(id);
-  }, [justSaved]);
-
-  if (existing && !justSaved) {
+  // After save, the live query picks up `existing` and the card
+  // transitions to the compact SavedTodaySummary. The transition
+  // itself IS the confirmation — no separate "Saved for today" toast
+  // card. Two near-identical cards swapping at a 6s timer was jarring.
+  if (existing) {
     return <SavedTodaySummary entry={existing} />;
   }
 
@@ -124,7 +115,6 @@ export function QuickCheckinCard() {
             : "Saved, but the alert check didn't run.",
         );
       }
-      setJustSaved(true);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("[quick-checkin] save failed", err);
@@ -136,37 +126,6 @@ export function QuickCheckinCard() {
     } finally {
       setSaving(false);
     }
-  }
-
-  if (justSaved) {
-    return (
-      <Card className="p-5">
-        <div className="flex items-start gap-3">
-          <div
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
-            style={{ background: "var(--ok-soft)", color: "var(--ok)" }}
-          >
-            <Check className="h-4 w-4" strokeWidth={3} />
-          </div>
-          <div className="flex-1">
-            <div className="text-[13px] font-semibold text-ink-900">
-              {locale === "zh" ? "今日已记录" : "Saved for today"}
-            </div>
-            <p className="mt-0.5 text-[12.5px] text-ink-500">
-              {locale === "zh"
-                ? "想补充或修改？"
-                : "Want to add detail or edit?"}
-            </p>
-            <Link
-              href="/daily/new"
-              className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-medium text-[var(--tide-2)] hover:underline"
-            >
-              {locale === "zh" ? "打开完整日志 →" : "Open full log →"}
-            </Link>
-          </div>
-        </div>
-      </Card>
-    );
   }
 
   return (
