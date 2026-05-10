@@ -79,6 +79,18 @@ export async function refreshHouseholdId(): Promise<string | null> {
   }
 }
 
+// Read-through accessor for the sync layer: returns the cached household
+// id if known, otherwise triggers a single refresh and returns the result.
+// Callers (queue/pull/realtime/voice-memo upload) all need to satisfy RLS
+// with a household_id before talking to Supabase, and all want the same
+// "use cache or refresh once" behaviour — collapsing it here avoids drift
+// when the refresh strategy changes (e.g. adding a backoff or retry).
+export async function ensureHouseholdId(): Promise<string | null> {
+  const cachedId = getCachedHouseholdId();
+  if (cachedId) return cachedId;
+  return refreshHouseholdId();
+}
+
 // Test-only reset so each test starts from a clean cache.
 export function __resetHouseholdContextForTests(): void {
   cached = null;

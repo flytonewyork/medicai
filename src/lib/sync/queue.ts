@@ -1,7 +1,7 @@
 import { db } from "~/lib/db/dexie";
 import { getSupabaseBrowser } from "~/lib/supabase/client";
 import { nowISO } from "~/lib/utils/date";
-import { getCachedHouseholdId, refreshHouseholdId } from "./household-context";
+import { ensureHouseholdId } from "./household-context";
 import type { SyncedTable } from "./tables";
 import type { SyncQueueRow } from "~/types/sync-queue";
 
@@ -120,10 +120,7 @@ async function processQueue(): Promise<void> {
   // yet (fresh sign-in, brand-new signup pre-create_household), try
   // to resolve it now; if still unknown, leave the queue intact and
   // retry on the next tick.
-  let householdId = getCachedHouseholdId();
-  if (!householdId) {
-    householdId = await refreshHouseholdId();
-  }
+  const householdId = await ensureHouseholdId();
   if (!householdId) {
     // No household yet — can't satisfy RLS. Hold the ops; the bootstrap
     // path will create the household, and the retry timer will pick

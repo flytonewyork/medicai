@@ -2,10 +2,7 @@ import { db } from "~/lib/db/dexie";
 import { getSupabaseBrowser } from "~/lib/supabase/client";
 import { SYNCED_TABLES, type SyncedTable } from "./tables";
 import { withSyncSuppressed } from "./queue";
-import {
-  getCachedHouseholdId,
-  refreshHouseholdId,
-} from "./household-context";
+import { ensureHouseholdId } from "./household-context";
 
 const LAST_PULLED_KEY = "anchor.lastPulledAt";
 
@@ -28,10 +25,7 @@ export async function pullFromCloud(): Promise<{ pulled: number } | null> {
   // Slice B: scope the pull to the current user's household. Without
   // a household we skip — the user is either signed out or mid-
   // onboarding before create_household runs.
-  let householdId = getCachedHouseholdId();
-  if (!householdId) {
-    householdId = await refreshHouseholdId();
-  }
+  const householdId = await ensureHouseholdId();
   if (!householdId) return { pulled: 0 };
 
   // Fetch rows newer than our last pull. Limit to 5000 for safety.
