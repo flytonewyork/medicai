@@ -35,6 +35,11 @@ export function BaselineNudgeCard() {
   if (!s) return null;
   if (!s.onboarded_at) return null;
   if (s.baseline_weight_kg) return null;
+  // Wait for the comprehensive-assessment live query to resolve before
+  // rendering. Otherwise the card flashes "Capture your baselines" on
+  // every dashboard load — even for patients who already finished an
+  // assessment but never set baseline_weight_kg directly in settings.
+  if (hasComplete === undefined) return null;
   if (hasComplete) return null;
 
   const L = pickL(locale);
