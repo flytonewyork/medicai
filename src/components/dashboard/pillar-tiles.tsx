@@ -8,7 +8,6 @@ import {
   format,
   parseISO,
 } from "date-fns";
-import { useSettings } from "~/hooks/use-settings";
 import {
   latestDailyEntries,
   latestLabs,
@@ -19,16 +18,13 @@ import { useWeather } from "~/hooks/use-weather";
 import { Sparkline } from "~/components/ui/sparkline";
 import { PROTOCOL_BY_ID } from "~/config/protocols";
 import { cn } from "~/lib/utils/cn";
-import { todayISO as getTodayISO } from "~/lib/utils/date";
 import {
   ArrowDown,
   ChevronRight,
-  Pill,
   FlaskConical,
   Sun,
   CloudRain,
   Snowflake,
-  Utensils,
   Flame,
 } from "lucide-react";
 
@@ -38,13 +34,20 @@ function symptomScore(d: {
   sleep_quality?: number;
   energy?: number;
   mood_clarity?: number;
-}): number {
-  const pain = d.pain_current ?? 0;
-  const nausea = d.nausea ?? 0;
-  const fatigue = typeof d.energy === "number" ? 10 - d.energy : 0;
-  const sleep = typeof d.sleep_quality === "number" ? 10 - d.sleep_quality : 0;
-  const mood = typeof d.mood_clarity === "number" ? 10 - d.mood_clarity : 0;
-  return Math.min(10, (pain + nausea + fatigue + sleep + mood) / 5);
+}): number | null {
+  // Average only the components actually entered. The previous version
+  // divided by a fixed 5 and treated undefined fields as 0, which made a
+  // quick-checkin (just energy/pain/nausea) read as a low-symptom day —
+  // missing fields silently dragged the score down and polluted the
+  // 7-day trend. Returning null lets callers skip the entry entirely.
+  const components: number[] = [];
+  if (typeof d.pain_current === "number") components.push(d.pain_current);
+  if (typeof d.nausea === "number") components.push(d.nausea);
+  if (typeof d.energy === "number") components.push(10 - d.energy);
+  if (typeof d.sleep_quality === "number") components.push(10 - d.sleep_quality);
+  if (typeof d.mood_clarity === "number") components.push(10 - d.mood_clarity);
+  if (components.length === 0) return null;
+  return Math.min(10, components.reduce((a, b) => a + b, 0) / components.length);
 }
 
 // Simple liver-derangement thresholds (2–3× typical ULN).
@@ -60,18 +63,20 @@ export function PillarTiles() {
   const dailies = useLiveQuery(() => latestDailyEntries(7));
   const labs = useLiveQuery(() => latestLabs(7));
   const cycles = useLiveQuery(() => latestTreatmentCycles(1));
-  const settings = useSettings();
 
   const ordered = (dailies ?? []).slice().reverse();
-  const todayISO = getTodayISO();
-  const todayEntry = ordered.find((d) => d.date === todayISO);
   const recentCycle = (cycles ?? [])[0];
   const latestLab = (labs ?? [])[0];
-  const baselineWeight = settings?.baseline_weight_kg;
 
   // -- Symptoms 7d -------------------------------------------------------
+  // `symptomScore` returns null when a day has no relevant numeric
+  // entry — skip those days entirely so the trend reflects real
+  // recorded symptoms, not implicit zeros.
   const symptomSeries = useMemo(
-    () => ordered.map((d) => symptomScore(d)),
+    () =>
+      ordered
+        .map((d) => symptomScore(d))
+        .filter((v): v is number => v !== null),
     [ordered],
   );
   const symptomAvg =
@@ -178,22 +183,6 @@ export function PillarTiles() {
     );
     return { date: latestLab.date, ageDays, flags };
   }, [latestLab, locale]);
-
-  // -- Practice today --------------------------------------------------
-  const practiceVisible = !!todayEntry;
-  const practiceDone = todayEntry
-    ? (todayEntry.practice_morning_completed ? 1 : 0) +
-      (todayEntry.practice_evening_completed ? 1 : 0)
-    : 0;
-
-  // -- Protein gap today -----------------------------------------------
-  const proteinTarget =
-    typeof baselineWeight === "number" ? Math.round(baselineWeight * 1.2) : null;
-  const proteinToday = todayEntry?.protein_grams;
-  const proteinGap =
-    proteinTarget !== null &&
-    typeof proteinToday === "number" &&
-    proteinToday < proteinTarget * 0.75;
 
   // -- Weather tile ----------------------------------------------------
   const weatherTile = useMemo(() => {
@@ -403,87 +392,6 @@ export function PillarTiles() {
                 highlight={ca199Series.length - 1}
               />
             )}
-          </div>
-        </Link>
-      ),
-    });
-  }
-
-  if (practiceVisible) {
-    tiles.push({
-      key: "practice",
-      node: (
-        <Link
-          href="/practices"
-          className="a-card flex min-h-[140px] flex-col gap-2 p-4 text-left transition-colors hover:border-ink-300"
-        >
-          <div className="flex items-center justify-between">
-            <span className="eyebrow">
-              {locale === "zh" ? "今日修习" : "Practice · today"}
-            </span>
-            <Pill className="h-3.5 w-3.5 text-ink-300" />
-          </div>
-          <div className="flex items-baseline gap-1">
-            <div className="serif num text-3xl leading-none text-ink-900">
-              {practiceDone}
-            </div>
-            <div className="mono text-[13px] text-ink-400">/ 2</div>
-          </div>
-          <div className="text-[11.5px] text-ink-500">
-            {locale === "zh" ? "晨 + 晚修习" : "Morning + evening practice"}
-          </div>
-          <div className="mt-auto flex gap-1">
-            {[0, 1].map((i) => (
-              <div
-                key={i}
-                className="h-1.5 flex-1 rounded-full"
-                style={{
-                  background:
-                    i < practiceDone ? "var(--tide-2)" : "var(--ink-100)",
-                }}
-              />
-            ))}
-          </div>
-        </Link>
-      ),
-    });
-  }
-
-  if (proteinGap && proteinTarget !== null) {
-    tiles.push({
-      key: "protein",
-      node: (
-        <Link
-          href="/nutrition/log"
-          className="a-card flex min-h-[140px] flex-col gap-2 p-4 text-left transition-colors hover:border-ink-300"
-        >
-          <div className="flex items-center justify-between">
-            <span className="eyebrow">
-              {locale === "zh" ? "蛋白质" : "Protein"}
-            </span>
-            <Utensils className="h-3.5 w-3.5 text-ink-300" />
-          </div>
-          <div className="flex items-baseline gap-1">
-            <div className="serif num text-3xl leading-none text-ink-900">
-              {proteinToday}
-            </div>
-            <span className="mono text-[11px] text-ink-400">
-              / {proteinTarget} g
-            </span>
-          </div>
-          <div className="text-[11.5px] text-ink-500">
-            {locale === "zh"
-              ? "今日进食低于目标 75%"
-              : "Below 75% of today's target"}
-          </div>
-          <div className="mt-auto h-1.5 overflow-hidden rounded-full bg-ink-100">
-            <div
-              className="h-full"
-              style={{
-                width: `${Math.min(100, ((proteinToday ?? 0) / proteinTarget) * 100)}%`,
-                background: "var(--warn)",
-              }}
-            />
           </div>
         </Link>
       ),
