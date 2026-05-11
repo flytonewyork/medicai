@@ -68,12 +68,26 @@ export default function DailyPage() {
                   />
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-500">
-                  <span>
-                    {locale === "zh" ? "精力" : "energy"} {e.energy}
-                  </span>
-                  <span>
-                    {locale === "zh" ? "睡眠" : "sleep"} {e.sleep_quality}
-                  </span>
+                  {typeof e.energy === "number" && (
+                    <span>
+                      {locale === "zh" ? "精力" : "energy"} {e.energy}
+                    </span>
+                  )}
+                  {typeof e.sleep_quality === "number" && (
+                    <span>
+                      {locale === "zh" ? "睡眠" : "sleep"} {e.sleep_quality}
+                    </span>
+                  )}
+                  {typeof e.pain_current === "number" && (
+                    <span>
+                      {locale === "zh" ? "疼痛" : "pain"} {e.pain_current}
+                    </span>
+                  )}
+                  {typeof e.nausea === "number" && e.nausea > 0 && (
+                    <span>
+                      {locale === "zh" ? "恶心" : "nausea"} {e.nausea}
+                    </span>
+                  )}
                   {typeof e.weight_kg === "number" && <span>{e.weight_kg} kg</span>}
                   {typeof e.protein_grams === "number" && (
                     <span>{e.protein_grams} g protein</span>

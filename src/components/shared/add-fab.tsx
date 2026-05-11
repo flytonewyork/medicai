@@ -8,7 +8,6 @@ import { cn } from "~/lib/utils/cn";
 import {
   Plus,
   X,
-  CalendarDays,
   CalendarClock,
   ListTodo,
   Pill,
@@ -85,12 +84,13 @@ const CAREGIVER_ITEMS: FabItem[] = [
   },
 ];
 
-// Patient FAB — one capture channel, one check-in, one appointment verb,
-// one medication quick-log. The free-text/voice "Say what's happening"
-// stays primary so anything that can be spoken or typed funnels through
-// it; structured shortcuts (daily check-in, meal log, medication log)
-// stay first-class because the patient reaches for them on a tired day
-// without wanting to compose a sentence.
+// Patient FAB — "Say what's happening" is the canonical single-channel
+// input (CLAUDE.md doctrine). Structured shortcuts (meal, medication,
+// appointment, task) are retained as escape hatches for tired days when
+// composing a sentence feels like too much. The daily symptom check-in
+// is *not* listed here — `QuickCheckinCard` sits on the dashboard
+// itself, so a FAB shortcut would duplicate a tap already in front of
+// the patient.
 const ITEMS: FabItem[] = [
   {
     href: "/log",
@@ -110,13 +110,6 @@ const ITEMS: FabItem[] = [
       zh: "化验单、就诊函、影像报告",
     },
     icon: Sparkles,
-    tone: "tide",
-  },
-  {
-    href: "/daily/new",
-    label: { en: "Today's check-in", zh: "今日记录" },
-    hint: { en: "Symptoms, weight, practice", zh: "症状、体重、修习" },
-    icon: CalendarDays,
     tone: "tide",
   },
   {
