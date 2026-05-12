@@ -115,7 +115,9 @@ export function QuickCheckinCard() {
         await runEngineAndPersist();
       } catch (engineErr) {
         // Entry is saved; zone engine failed. Log and warn but don't lose
-        // the data by re-throwing.
+        // the data by re-throwing. The warning is rendered inside the
+        // just-saved card so the patient sees the partial outcome instead
+        // of a silent green tick.
         // eslint-disable-next-line no-console
         console.warn("[zone-engine] evaluation failed after quick-checkin", engineErr);
         setSaveError(
@@ -165,6 +167,14 @@ export function QuickCheckinCard() {
             </Link>
           </div>
         </div>
+        {saveError && (
+          <div
+            role="alert"
+            className="mt-3 rounded-md border border-[var(--warn)]/40 bg-[var(--warn)]/10 p-2.5 text-xs text-[var(--warn)]"
+          >
+            {saveError}
+          </div>
+        )}
       </Card>
     );
   }

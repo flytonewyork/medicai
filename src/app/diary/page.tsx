@@ -11,6 +11,7 @@ import {
   ClipboardList,
   Sparkles,
   CalendarDays,
+  RotateCcw,
 } from "lucide-react";
 import { useLocale } from "~/hooks/use-translate";
 import { syncPendingVoiceMemoAudio } from "~/lib/voice-memo/cloud";
@@ -55,6 +56,10 @@ export default function DiaryPage() {
   const [days, setDays] = useState<DiaryDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Bumped by the retry button so the load effect re-runs without
+  // depending on a full page reload. Keeps Dexie live-query identity
+  // stable.
+  const [retryNonce, setRetryNonce] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,8 +97,9 @@ export default function DiaryPage() {
     };
     // Re-run whenever any underlying table changes row count or the
     // window expands. Cheap because the aggregator reads each table
-    // once and bins in memory.
-  }, [memoCount, dailyCount, logCount, labCount, runCount, windowDays]);
+    // once and bins in memory. retryNonce lets the user re-trigger
+    // after an error without reloading.
+  }, [memoCount, dailyCount, logCount, labCount, runCount, windowDays, retryNonce]);
 
   // Best-effort: try to flush any voice-memo audio that's still waiting
   // to upload. Runs on mount and never throws into render.
@@ -143,9 +149,21 @@ export default function DiaryPage() {
 
       {loadError ? (
         <Alert variant="warn" role="alert">
-          {locale === "zh"
-            ? "日记加载失败，请刷新页面重试。"
-            : "Diary failed to load. Try refreshing the page."}
+          <div className="text-[13px]">
+            {loadError === "timeout"
+              ? locale === "zh"
+                ? "整理日记花的时间过长。"
+                : "Loading the diary is taking too long."
+              : locale === "zh"
+                ? "日记加载失败。"
+                : "Diary failed to load."}
+          </div>
+          <div className="mt-2">
+            <Button size="sm" onClick={() => setRetryNonce((n) => n + 1)}>
+              <RotateCcw className="h-3.5 w-3.5" />
+              {locale === "zh" ? "重试" : "Try again"}
+            </Button>
+          </div>
         </Alert>
       ) : loading && days.length === 0 ? (
         <Card className="p-5">
