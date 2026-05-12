@@ -281,104 +281,154 @@ function FeedRow({ item }: { item: FeedItem }) {
   const coverageMeta =
     item.meta?.kind === "coverage" ? item.meta : null;
   const [whyOpen, setWhyOpen] = useState(false);
-  const body = (
-    <div
+
+  // Coverage cards carry their own action buttons (why / dismiss).
+  // When they also have a CTA, we render the main content as the link
+  // and the buttons as siblings — placing buttons inside the link is
+  // invalid HTML and screen readers conflate the two click surfaces.
+  // For non-coverage cards with a CTA the whole row remains tappable.
+  const linkable = item.cta && !isAgentRun;
+  const wrapInLink = linkable && !coverageMeta;
+
+  const iconEl = (
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-paper-2 text-ink-700">
+      <Icon className="h-4 w-4" />
+    </div>
+  );
+
+  const titleEl = (
+    <div className="text-[13.5px] font-semibold text-ink-900">
+      {localize(item.title, locale)}
+    </div>
+  );
+
+  const bodyEl = (
+    <p className="mt-1 text-[12.5px] leading-relaxed text-ink-700">
+      {localize(item.body, locale)}
+    </p>
+  );
+
+  const categoryEl = (
+    <span
       className={cn(
-        "flex items-start gap-3 rounded-[var(--r-md)] p-3.5 transition-colors",
-        tone.bg,
-        tone.border,
+        "mono shrink-0 text-[9.5px] uppercase tracking-[0.12em]",
+        item.tone === "warning"
+          ? "text-[var(--warn)]"
+          : item.tone === "positive"
+            ? "text-[var(--ok)]"
+            : "text-ink-400",
       )}
     >
-      <div
-        className={cn(
-          "flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-paper-2 text-ink-700",
-        )}
+      {categoryLabel(item.category, locale)}
+    </span>
+  );
+
+  // 32px hit target — comfortable for thumb taps without dominating the
+  // row visually. Previous 14px icon-only buttons were sub-WCAG tap
+  // size and adjacent to each other.
+  const buttonClass =
+    "flex h-8 w-8 items-center justify-center rounded-md text-ink-400 hover:bg-paper hover:text-ink-700";
+
+  const actionsEl = coverageMeta ? (
+    <div className="flex items-center gap-0.5">
+      <button
+        type="button"
+        onClick={() => setWhyOpen((v) => !v)}
+        className={buttonClass}
+        aria-label={locale === "zh" ? "为什么提示这个" : "Why this prompt"}
+        aria-expanded={whyOpen}
       >
-        <Icon className="h-4 w-4" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <div className="text-[13.5px] font-semibold text-ink-900">
-            {localize(item.title, locale)}
+        <HelpCircle className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          void snoozeCoverageField(coverageMeta.field_key, todayIsoFn());
+        }}
+        className={buttonClass}
+        aria-label={locale === "zh" ? "暂时收起" : "Dismiss"}
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  ) : null;
+
+  const whyEl =
+    coverageMeta && whyOpen ? (
+      <p className="mt-2 rounded-md bg-paper/60 p-2 text-[11.5px] leading-relaxed text-ink-500">
+        {localize(coverageMeta.why, locale)}
+      </p>
+    ) : null;
+
+  const feedbackEl =
+    isAgentRun && item.meta?.kind === "agent_run" ? (
+      <AgentFeedbackControls
+        agentId={item.meta.agent_id as AgentId}
+        runId={item.meta.run_id}
+      />
+    ) : null;
+
+  const containerClass = cn(
+    "flex items-start gap-3 rounded-[var(--r-md)] p-3.5 transition-colors",
+    tone.bg,
+    tone.border,
+  );
+
+  // Coverage card: main content is a Link (if there's a CTA) so the
+  // patient can still tap to log; the action buttons sit beside it as
+  // their own click targets. Non-coverage CTA cards still wrap the
+  // whole row in a Link for a single, generous hit area.
+  if (coverageMeta) {
+    const mainBody = (
+      <>
+        {iconEl}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            {titleEl}
+            {categoryEl}
           </div>
-          <div className="flex items-center gap-1.5">
-            <span
-              className={cn(
-                "mono shrink-0 text-[9.5px] uppercase tracking-[0.12em]",
-                item.tone === "warning"
-                  ? "text-[var(--warn)]"
-                  : item.tone === "positive"
-                    ? "text-[var(--ok)]"
-                    : "text-ink-400",
-              )}
-            >
-              {categoryLabel(item.category, locale)}
-            </span>
-            {coverageMeta && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setWhyOpen((v) => !v);
-                }}
-                className="rounded-md p-0.5 text-ink-400 hover:bg-paper hover:text-ink-700"
-                aria-label={locale === "zh" ? "为什么提示这个" : "Why this prompt"}
-                aria-expanded={whyOpen}
-              >
-                <HelpCircle className="h-3.5 w-3.5" />
-              </button>
-            )}
-            {coverageMeta && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  void snoozeCoverageField(
-                    coverageMeta.field_key,
-                    todayIsoFn(),
-                  );
-                }}
-                className="rounded-md p-0.5 text-ink-400 hover:bg-paper hover:text-ink-700"
-                aria-label={
-                  locale === "zh" ? "暂时收起" : "Dismiss"
-                }
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
+          {bodyEl}
+          {whyEl}
         </div>
-        <p className="mt-1 text-[12.5px] leading-relaxed text-ink-700">
-          {localize(item.body, locale)}
-        </p>
-        {coverageMeta && whyOpen && (
-          <p className="mt-2 rounded-md bg-paper/60 p-2 text-[11.5px] leading-relaxed text-ink-500">
-            {localize(coverageMeta.why, locale)}
-          </p>
+      </>
+    );
+    const mainClass = "flex flex-1 min-w-0 items-start gap-3";
+    return (
+      <div className={containerClass}>
+        {linkable ? (
+          <Link href={item.cta!.href} className={mainClass}>
+            {mainBody}
+          </Link>
+        ) : (
+          <div className={mainClass}>{mainBody}</div>
         )}
-        {isAgentRun && item.meta?.kind === "agent_run" && (
-          <AgentFeedbackControls
-            agentId={item.meta.agent_id as AgentId}
-            runId={item.meta.run_id}
-          />
-        )}
+        {actionsEl}
+      </div>
+    );
+  }
+
+  const inner = (
+    <div className={containerClass}>
+      {iconEl}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          {titleEl}
+          {categoryEl}
+        </div>
+        {bodyEl}
+        {feedbackEl}
       </div>
     </div>
   );
-  // Agent-run cards never wrap in a Link — the embedded feedback controls
-  // need their own click surface. Coverage cards do wrap in a Link but
-  // the dismiss button stops propagation to keep the X click out of the
-  // navigation event.
-  if (item.cta && !isAgentRun) {
+
+  if (wrapInLink) {
     return (
-      <Link href={item.cta.href} className="block">
-        {body}
+      <Link href={item.cta!.href} className="block">
+        {inner}
       </Link>
     );
   }
-  return body;
+  return inner;
 }
 
 function categoryLabel(
