@@ -12,6 +12,8 @@ import { useLocale, useL } from "~/hooks/use-translate";
 import type { Appointment } from "~/types/appointment";
 import { Check, Clock, X, CircleDashed } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import type { LocalizedText } from "~/types/localized";
+import type { IconComponent } from "~/types/ui";
 
 // Per-member attendance chip row on the appointment detail page.
 // Each household member gets one button that cycles through the
@@ -19,7 +21,7 @@ import { cn } from "~/lib/utils/cn";
 // appointment.attendees) render as passive pending chips — they
 // can't claim themselves from this device.
 
-const STATUS_LABEL: Record<PendingOrStatus, { en: string; zh: string }> = {
+const STATUS_LABEL: Record<PendingOrStatus, LocalizedText> = {
   pending: { en: "Tap to confirm", zh: "点击确认" },
   confirmed: { en: "Going", zh: "参加" },
   tentative: { en: "Maybe", zh: "可能" },
@@ -33,7 +35,7 @@ const STATUS_TONE: Record<PendingOrStatus, string> = {
   declined: "bg-ink-100 text-ink-500 border-ink-300 line-through",
 };
 
-const STATUS_ICON: Record<PendingOrStatus, React.ComponentType<{ className?: string }>> = {
+const STATUS_ICON: Record<PendingOrStatus, IconComponent> = {
   pending: CircleDashed,
   confirmed: Check,
   tentative: Clock,

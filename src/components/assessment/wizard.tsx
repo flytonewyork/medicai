@@ -16,6 +16,7 @@ import {
 } from "~/lib/assessment/catalog";
 import { todayISO } from "~/lib/utils/date";
 import type { ComprehensiveAssessment } from "~/types/clinical";
+import type { LocalizedText } from "~/types/localized";
 import { Alert } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -44,7 +45,7 @@ const HELPER_ROLE_ICON = {
 
 const HELPER_ROLE_LABEL: Record<
   "self" | "family" | "coach" | "clinician",
-  { en: string; zh: string }
+  LocalizedText
 > = {
   self: { en: "Patient alone", zh: "患者独自" },
   family: { en: "Family member", zh: "家人" },

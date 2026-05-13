@@ -1,4 +1,5 @@
 import type { Citation } from "./sources";
+import type { LocalizedText } from "~/types/localized";
 
 // JPCC nutrition guide p. 16: four taste-issue quadrants and a
 // remedy list for each. Common during chemotherapy (especially
@@ -27,13 +28,13 @@ export const TASTE_ISSUES: TasteIssue[] = [
 
 export interface TasteTweak {
   issue: TasteIssue;
-  suggestions: { en: string; zh: string }[];
+  suggestions: LocalizedText[];
   citations: Citation[];
 }
 
 const JPCC_TASTE_CITE: Citation = { source_id: "jpcc_2021", page: 16 };
 
-const TWEAKS: Record<TasteIssue, { en: string; zh: string }[]> = {
+const TWEAKS: Record<TasteIssue, LocalizedText[]> = {
   too_sweet: [
     {
       en: "Eat the food cool — lower temperatures reduce sweetness.",

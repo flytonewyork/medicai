@@ -22,16 +22,14 @@ import {
 import { cn } from "~/lib/utils/cn";
 import { localeTag } from "~/lib/utils/date";
 import { upcomingAppointments } from "~/lib/appointments/upcoming";
+import type { IconComponent } from "~/types/ui";
 
 // Calm, two-or-three-item strip of what's coming up in the next seven
 // days. Location is tappable if we have a URL; attendee chips show who
 // is (or is planning to be) there. This is the surface that closes the
 // "when is dad's PET CT?" coordination gap.
 
-const KIND_ICON: Record<
-  AppointmentKind,
-  React.ComponentType<{ className?: string }>
-> = {
+const KIND_ICON: Record<AppointmentKind, IconComponent> = {
   clinic: Stethoscope,
   chemo: Syringe,
   scan: ScanLine,

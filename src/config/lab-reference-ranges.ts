@@ -7,6 +7,7 @@
 // remain with Dr Lee.
 
 import type { LabResult } from "~/types/clinical";
+import type { LocalizedText } from "~/types/localized";
 
 export type AnalyteKey = Exclude<
   keyof LabResult,
@@ -25,7 +26,7 @@ export type AnalyteGroup =
 
 export interface AnalyteDef {
   key: AnalyteKey;
-  label: { en: string; zh: string };
+  label: LocalizedText;
   short: string; // short label for pills / calendar dots
   unit: string;
   /** Reference range [low, high]. `null` means no standard range (e.g. CA19-9 uses upper-bound only). */
@@ -39,7 +40,7 @@ export interface AnalyteDef {
   /** How many decimal places to display in tables. */
   decimals?: number;
   /** Short 1-line clinical note shown in TestView. */
-  note?: { en: string; zh: string };
+  note?: LocalizedText;
 }
 
 export const ANALYTES: AnalyteDef[] = [
@@ -423,7 +424,7 @@ export const ANALYTE_BY_KEY: Record<AnalyteKey, AnalyteDef> = Object.fromEntries
   ANALYTES.map((a) => [a.key, a]),
 ) as Record<AnalyteKey, AnalyteDef>;
 
-export const GROUP_LABEL: Record<AnalyteGroup, { en: string; zh: string }> = {
+export const GROUP_LABEL: Record<AnalyteGroup, LocalizedText> = {
   tumour_marker: { en: "Tumour markers", zh: "肿瘤标志物" },
   nutrition: { en: "Nutrition & inflammation", zh: "营养与炎症" },
   haematology: { en: "Blood count", zh: "血常规" },

@@ -21,6 +21,8 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import type { LocalizedText } from "~/types/localized";
+import type { IconComponent } from "~/types/ui";
 
 // Shows every cross-module record an appointment is linked to. A
 // chemo appointment → its treatment cycle; a blood-test appointment
@@ -31,10 +33,7 @@ import { cn } from "~/lib/utils/cn";
 // Read-only in this slice — ingest ops propose the links, Dexie
 // writes them. Manual editing comes in a follow-up PR.
 
-const KIND_ICON: Record<
-  AppointmentLinkedRecordKind,
-  React.ComponentType<{ className?: string }>
-> = {
+const KIND_ICON: Record<AppointmentLinkedRecordKind, IconComponent> = {
   treatment_cycle: Syringe,
   lab_result: TestTube2,
   pending_result: Clock,
@@ -45,10 +44,7 @@ const KIND_ICON: Record<
   task: ListTodo,
 };
 
-const KIND_LABEL: Record<
-  AppointmentLinkedRecordKind,
-  { en: string; zh: string }
-> = {
+const KIND_LABEL: Record<AppointmentLinkedRecordKind, LocalizedText> = {
   treatment_cycle: { en: "Cycle", zh: "疗程" },
   lab_result: { en: "Lab", zh: "化验" },
   pending_result: { en: "Pending", zh: "待出" },

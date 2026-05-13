@@ -37,12 +37,14 @@ import {
 } from "lucide-react";
 import { snoozeCoverageField } from "~/lib/coverage/snooze";
 import { todayISO as todayIsoFn } from "~/lib/utils/date";
+import type { IconComponent } from "~/types/ui";
+import type { LocalizedText } from "~/types/localized";
 
 // Bumped when the narrative prompt or shape changes so that stale
 // payloads in localStorage are ignored without forcing a manual clear.
 const NARRATIVE_CACHE_VERSION = "v2";
 
-const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+const ICONS: Record<string, IconComponent> = {
   thermo: Thermometer,
   shield: ShieldAlert,
   pill: Pill,
@@ -385,7 +387,7 @@ function categoryLabel(
   c: FeedItem["category"],
   locale: "en" | "zh",
 ): string {
-  const labels: Record<FeedItem["category"], { en: string; zh: string }> = {
+  const labels: Record<FeedItem["category"], LocalizedText> = {
     safety: { en: "Safety", zh: "安全" },
     checkin: { en: "Check-in", zh: "记录" },
     treatment: { en: "Treatment", zh: "治疗" },

@@ -10,6 +10,7 @@ import { PreviewDiff } from "~/components/ingest/preview-diff";
 import type { IngestApplyResult, IngestDraft } from "~/types/ingest";
 import { X, Phone, FileUp, Calendar } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import type { IconComponent } from "~/types/ui";
 
 // A globally-mountable ingest modal. Anything in the app can flip
 // `useIngestModal.getState().open()` to surface the same drop /
@@ -183,7 +184,7 @@ function TabButton({
 }: {
   active: boolean;
   onClick: () => void;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: IconComponent;
   label: string;
 }) {
   return (

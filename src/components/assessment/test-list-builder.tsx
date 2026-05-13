@@ -14,6 +14,8 @@ import {
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { cn } from "~/lib/utils/cn";
+import type { LocalizedText } from "~/types/localized";
+import type { IconComponent } from "~/types/ui";
 import {
   Activity,
   AlertCircle,
@@ -27,7 +29,7 @@ import {
 
 const CATEGORY_META: Record<
   TestCategory,
-  { icon: React.ComponentType<{ className?: string }>; label: { en: string; zh: string } }
+  { icon: IconComponent; label: LocalizedText }
 > = {
   physical: { icon: HeartPulse, label: { en: "Physical", zh: "身体" } },
   symptoms: { icon: AlertCircle, label: { en: "Symptoms", zh: "症状" } },

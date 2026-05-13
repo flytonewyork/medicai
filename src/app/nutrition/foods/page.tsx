@@ -16,8 +16,9 @@ import { Button } from "~/components/ui/button";
 import { TextInput, Field, Textarea } from "~/components/ui/field";
 import { cn } from "~/lib/utils/cn";
 import type { FoodCategory, FoodItem } from "~/types/nutrition";
+import type { LocalizedText } from "~/types/localized";
 
-const CATEGORY_LABEL: Record<FoodCategory, { en: string; zh: string }> = {
+const CATEGORY_LABEL: Record<FoodCategory, LocalizedText> = {
   protein: { en: "Protein", zh: "蛋白" },
   dairy: { en: "Dairy", zh: "奶制品" },
   fat_oil: { en: "Fats & oils", zh: "脂肪/油" },

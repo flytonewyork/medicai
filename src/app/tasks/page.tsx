@@ -15,6 +15,7 @@ import {
   useTaskInstances,
 } from "~/hooks/use-task-instances";
 import { Plus, Sparkles, ListTodo } from "lucide-react";
+import type { LocalizedText } from "~/types/localized";
 
 export default function TasksPage() {
   const t = useT();
@@ -39,7 +40,7 @@ export default function TasksPage() {
 
   const sectionOrder: [
     string,
-    { en: string; zh: string },
+    LocalizedText,
   ][] = [
     ["overdue", { en: "Overdue", zh: "已超期" }],
     ["due_today", { en: "Due today", zh: "今日到期" }],

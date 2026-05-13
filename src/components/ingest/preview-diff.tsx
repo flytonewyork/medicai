@@ -34,8 +34,10 @@ import {
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 import { toDatetimeLocalInput as toDatetimeLocal } from "~/lib/utils/date";
+import type { LocalizedText } from "~/types/localized";
+import type { IconComponent } from "~/types/ui";
 
-const OP_ICON: Record<IngestOpKind, React.ComponentType<{ className?: string }>> = {
+const OP_ICON: Record<IngestOpKind, IconComponent> = {
   add_appointment: CalendarPlus,
   update_appointment: CalendarClock,
   add_lab_result: TestTube2,
@@ -52,7 +54,7 @@ const OP_ICON: Record<IngestOpKind, React.ComponentType<{ className?: string }>>
   update_settings: SettingsIcon,
 };
 
-const OP_LABEL: Record<IngestOpKind, { en: string; zh: string }> = {
+const OP_LABEL: Record<IngestOpKind, LocalizedText> = {
   add_appointment: { en: "New appointment", zh: "新增预约" },
   update_appointment: { en: "Update appointment", zh: "更新预约" },
   add_lab_result: { en: "New lab result", zh: "新增化验结果" },

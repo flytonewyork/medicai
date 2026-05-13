@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import type { Appointment } from "~/types/appointment";
 import type { Protocol, TreatmentCycle } from "~/types/treatment";
+import type { IconComponent } from "~/types/ui";
 
 // Bottom-anchored detail panel for a selected cycle day. Shows dose /
 // phase / what-to-expect, any appointments the calendar already knows
@@ -35,13 +36,12 @@ import type { Protocol, TreatmentCycle } from "~/types/treatment";
 // dose-modification record. Writes back into `cycle.day_records` via
 // upsertDayRecord so the cycle page's main calendar shows the same state.
 
-const APPT_ICON: Partial<Record<Appointment["kind"], React.ComponentType<{ className?: string }>>> =
-  {
-    chemo: Syringe,
-    clinic: Stethoscope,
-    scan: ScanLine,
-    blood_test: FlaskConical,
-  };
+const APPT_ICON: Partial<Record<Appointment["kind"], IconComponent>> = {
+  chemo: Syringe,
+  clinic: Stethoscope,
+  scan: ScanLine,
+  blood_test: FlaskConical,
+};
 
 export function CycleDayDetail({
   cycle,

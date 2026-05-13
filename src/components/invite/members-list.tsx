@@ -25,8 +25,9 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import type { IconComponent } from "~/types/ui";
 
-const ROLE_ICON: Record<HouseholdRole, React.ComponentType<{ className?: string }>> = {
+const ROLE_ICON: Record<HouseholdRole, IconComponent> = {
   primary_carer: Crown,
   patient: UserIcon,
   family: UsersIcon,

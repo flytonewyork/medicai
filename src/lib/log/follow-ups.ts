@@ -13,14 +13,15 @@ import type { DirectFileResult } from "./direct-file";
 import type { AppointmentDiscussionItem } from "~/types/appointment";
 import type { Appointment } from "~/types/appointment";
 import type { CareTeamMember } from "~/types/care-team";
+import type { LocalizedText } from "~/types/localized";
 
 export type FollowUpSeverity = "routine" | "watch" | "urgent";
 
 export interface FollowUpItem {
   id: string;
   severity: FollowUpSeverity;
-  title: { en: string; zh: string };
-  body: { en: string; zh: string };
+  title: LocalizedText;
+  body: LocalizedText;
   actions: FollowUpAction[];
 }
 
@@ -29,7 +30,7 @@ export type FollowUpAction =
       kind: "add_to_clinic";
       appointment_id: number;
       text: string;
-      label: { en: string; zh: string };
+      label: LocalizedText;
     }
   | {
       kind: "message_care_team";
@@ -37,13 +38,13 @@ export type FollowUpAction =
       channel: "phone" | "sms" | "email";
       target: string;          // tel:+…, sms:+…, mailto:…
       draft?: string;
-      label: { en: string; zh: string };
+      label: LocalizedText;
     }
   | {
       kind: "engage_agent";
       agent_id: "nutrition" | "toxicity" | "clinical" | "psychology" | "rehabilitation" | "treatment";
       prompt: string;
-      label: { en: string; zh: string };
+      label: LocalizedText;
     };
 
 function slug(s: string): string {

@@ -5,6 +5,7 @@ import { useZoneStatus } from "~/hooks/use-zone-status";
 import { useT } from "~/hooks/use-translate";
 import { useSettings } from "~/hooks/use-settings";
 import { Phone, AlertOctagon, MapPin, ChevronDown, ChevronUp } from "lucide-react";
+import type { IconComponent } from "~/types/ui";
 
 // Only rendered when zone is red/orange — on green/yellow days this stays
 // silent so the dashboard doesn't carry a standing alarm. Contacts live on
@@ -124,7 +125,7 @@ function ContactLink({
   href,
   tone,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: IconComponent;
   label: string;
   value: string;
   href: string;

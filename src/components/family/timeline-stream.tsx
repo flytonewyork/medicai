@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 import { localeTag } from "~/lib/utils/date";
+import type { IconComponent } from "~/types/ui";
 
 // Chronological, date-grouped, reverse-chrono timeline.
 //
@@ -158,10 +159,7 @@ function FilterChip({
   );
 }
 
-const CATEGORY_ICON: Record<
-  LifeEvent["category"],
-  React.ComponentType<{ className?: string }>
-> = {
+const CATEGORY_ICON: Record<LifeEvent["category"], IconComponent> = {
   family: Heart,
   cultural: Flag,
   travel: MapPin,
@@ -222,10 +220,7 @@ function LifeEventCard({
   );
 }
 
-const APPT_ICON: Record<
-  Appointment["kind"],
-  React.ComponentType<{ className?: string }>
-> = {
+const APPT_ICON: Record<Appointment["kind"], IconComponent> = {
   clinic: Stethoscope,
   chemo: Syringe,
   scan: ScanLine,

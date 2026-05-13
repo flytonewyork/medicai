@@ -16,6 +16,7 @@ import { parseVoiceMemo } from "~/lib/voice-memo/parse";
 import { useUIStore } from "~/stores/ui-store";
 import { LOG_TAGS, type AgentId, type LogTag } from "~/types/agent";
 import type { AppliedPatch, VoiceMemoParsedFields } from "~/types/voice-memo";
+import type { LocalizedText } from "~/types/localized";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Textarea } from "~/components/ui/field";
@@ -34,7 +35,7 @@ import {
 } from "lucide-react";
 import { useVoiceTranscription } from "~/hooks/use-voice-transcription";
 
-const TAG_LABELS: Record<LogTag, { en: string; zh: string }> = {
+const TAG_LABELS: Record<LogTag, LocalizedText> = {
   diet: { en: "diet", zh: "饮食" },
   toxicity: { en: "toxicity", zh: "毒性反应" },
   physical: { en: "physical", zh: "活动" },
@@ -54,7 +55,7 @@ const TAG_LABELS: Record<LogTag, { en: string; zh: string }> = {
   legacy_session: { en: "legacy session", zh: "传承" },
 };
 
-const AGENT_LABELS: Record<AgentId, { en: string; zh: string }> = {
+const AGENT_LABELS: Record<AgentId, LocalizedText> = {
   nutrition: { en: "nutrition", zh: "营养" },
   toxicity: { en: "toxicity", zh: "毒性反应" },
   clinical: { en: "clinical", zh: "临床" },
@@ -83,7 +84,7 @@ type RunState =
     }
   | {
       kind: "filed";
-      summary: { en: string; zh: string };
+      summary: LocalizedText;
       target: "lab" | "daily";
       rowId: number;
       filed: DirectFileResult;
