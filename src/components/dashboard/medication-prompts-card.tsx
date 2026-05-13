@@ -24,10 +24,11 @@ import {
   Info,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import type { IconComponent } from "~/types/ui";
 
 const TONE_BY_SEVERITY: Record<
   PromptSeverity,
-  { wrap: string; chip: string; Icon: React.ComponentType<{ className?: string }> }
+  { wrap: string; chip: string; Icon: IconComponent }
 > = {
   info: {
     wrap: "bg-paper-2",

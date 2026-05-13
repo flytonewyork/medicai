@@ -24,8 +24,9 @@ import {
 import { cn } from "~/lib/utils/cn";
 import { localeTag } from "~/lib/utils/date";
 import { upcomingAppointments } from "~/lib/appointments/upcoming";
+import type { IconComponent } from "~/types/ui";
 
-const KIND_ICON: Record<AppointmentKind, React.ComponentType<{ className?: string }>> = {
+const KIND_ICON: Record<AppointmentKind, IconComponent> = {
   clinic: Stethoscope,
   chemo: Syringe,
   scan: ScanLine,

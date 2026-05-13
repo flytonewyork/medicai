@@ -1,4 +1,5 @@
 import type { DailyEntry, Settings } from "~/types/clinical";
+import type { LocalizedText } from "~/types/localized";
 import type { Citation } from "./sources";
 
 // Carb-policy state machine. The /nutrition/guide page in Anchor
@@ -24,14 +25,14 @@ export type PolicyTriggerKind =
 
 export interface PolicyTrigger {
   kind: PolicyTriggerKind;
-  detail: { en: string; zh: string };
+  detail: LocalizedText;
   citations: Citation[];
 }
 
 export interface NutritionPolicyState {
   mode: NutritionMode;
   triggers: PolicyTrigger[];
-  rationale: { en: string; zh: string };
+  rationale: LocalizedText;
 }
 
 export interface PolicyInputs {

@@ -30,6 +30,7 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import type { IconComponent } from "~/types/ui";
 
 type Filter = "all" | HistoryCategory;
 
@@ -47,10 +48,7 @@ const FILTERS: { key: Filter; en: string; zh: string }[] = [
   { key: "life_event", en: "Life events", zh: "生活事件" },
 ];
 
-const CATEGORY_ICON: Record<
-  HistoryCategory,
-  React.ComponentType<{ className?: string }>
-> = {
+const CATEGORY_ICON: Record<HistoryCategory, IconComponent> = {
   signal: AlertTriangle,
   action: Sparkles,
   medication: Pill,

@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { DRUGS_BY_ID } from "~/config/drug-registry";
 import { scheduleSummary } from "~/lib/medication/practices";
 import type { Medication } from "~/types/medication";
+import type { IconComponent } from "~/types/ui";
 import { ChevronRight, Pencil, Pill, Plus, Zap } from "lucide-react";
 
 // Summary of the active prescriptions attached to this cycle. Split into
@@ -104,7 +105,7 @@ function MedSection({
   cycleId,
 }: {
   title: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: IconComponent;
   meds: Medication[];
   locale: "en" | "zh";
   emptyLabel: string;

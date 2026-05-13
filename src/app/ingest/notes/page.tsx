@@ -20,6 +20,7 @@ import {
 } from "~/lib/ingest/notes-vision";
 import { todayISO } from "~/lib/utils/date";
 import { Sparkles, Check, Loader2 } from "lucide-react";
+import type { IconComponent } from "~/types/ui";
 
 type DailyPatch = NonNullable<NotesStructure["daily_patch"]>;
 
@@ -229,7 +230,7 @@ function Status({
   icon: Icon,
   text,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: IconComponent;
   text: string;
 }) {
   return (

@@ -16,6 +16,7 @@ import { Toggle } from "./toggle";
 import { SymptomStep } from "./symptom-step";
 import { isInChemoWindow } from "~/lib/daily/symptom-catalog";
 import type { DailyEntry } from "~/types/clinical";
+import type { LocalizedText } from "~/types/localized";
 import {
   Activity,
   Bed,
@@ -36,7 +37,7 @@ import {
 import { cn } from "~/lib/utils/cn";
 
 type Draft = Partial<DailyEntry>;
-type Bilingual = { en: string; zh: string };
+type Bilingual = LocalizedText;
 
 const CATS = [
   {
@@ -956,7 +957,7 @@ function DigestionFields({
   // stool on the daily wizard).
   const BRISTOL: Array<{
     n: 1 | 2 | 3 | 4 | 5 | 6 | 7;
-    label: { en: string; zh: string };
+    label: LocalizedText;
   }> = [
     { n: 1, label: { en: "Hard lumps", zh: "硬块" } },
     { n: 2, label: { en: "Lumpy", zh: "成块" } },
@@ -968,7 +969,7 @@ function DigestionFields({
   ];
   const COLORS: Array<{
     v: NonNullable<DailyEntry["stool_color"]>;
-    label: { en: string; zh: string };
+    label: LocalizedText;
   }> = [
     { v: "normal", label: { en: "Brown", zh: "棕色" } },
     { v: "pale", label: { en: "Pale / clay", zh: "灰白" } },
@@ -980,7 +981,7 @@ function DigestionFields({
   ];
   const PERT: Array<{
     v: NonNullable<DailyEntry["pert_with_meals_today"]>;
-    label: { en: string; zh: string };
+    label: LocalizedText;
   }> = [
     { v: "all", label: { en: "Every fatty meal", zh: "每次高脂餐" } },
     { v: "some", label: { en: "Missed some", zh: "漏了几次" } },

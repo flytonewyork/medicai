@@ -1,6 +1,7 @@
 "use client";
 
 import type { Zone } from "~/types/clinical";
+import type { IconComponent } from "~/types/ui";
 import { cn } from "~/lib/utils/cn";
 import { useT } from "~/hooks/use-translate";
 import {
@@ -17,7 +18,7 @@ const ZONE_CHIP: Record<Zone, string> = {
   red: "a-chip warn",
 };
 
-const ZONE_ICON: Record<Zone, React.ComponentType<{ className?: string }>> = {
+const ZONE_ICON: Record<Zone, IconComponent> = {
   green: Circle,
   yellow: AlertCircle,
   orange: AlertTriangle,

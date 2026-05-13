@@ -20,6 +20,7 @@ import type {
   ProtocolId,
   TreatmentCycle,
 } from "~/types/treatment";
+import type { LocalizedText } from "~/types/localized";
 import type {
   DoseSchedule,
   Medication,
@@ -302,7 +303,7 @@ export default function NewTreatmentCyclePage() {
 }
 
 function Stepper({ step, locale }: { step: Step; locale: "en" | "zh" }) {
-  const labels: Array<{ en: string; zh: string }> = [
+  const labels: Array<LocalizedText> = [
     { en: "Protocol", zh: "方案" },
     { en: "Schedule", zh: "细节" },
     { en: "Review", zh: "检查" },

@@ -20,6 +20,7 @@ import {
 } from "~/config/oncologists";
 import type { ProtocolId } from "~/types/treatment";
 import type { Locale, Settings } from "~/types/clinical";
+import type { LocalizedText } from "~/types/localized";
 import {
   Anchor,
   ChevronLeft,
@@ -611,8 +612,8 @@ function UserTypeStep({
 }) {
   const options: Array<{
     id: "patient" | "caregiver" | "clinician";
-    title: { en: string; zh: string };
-    body: { en: string; zh: string };
+    title: LocalizedText;
+    body: LocalizedText;
   }> = [
     {
       id: "patient",

@@ -11,9 +11,10 @@ import { PROTOCOL_BY_ID } from "~/config/protocols";
 import { formatDate } from "~/lib/utils/date";
 import { cn } from "~/lib/utils/cn";
 import type { CycleStatus } from "~/types/treatment";
+import type { LocalizedText } from "~/types/localized";
 import { BookOpen, ChevronRight, ClipboardList, Pencil, Syringe } from "lucide-react";
 
-const STATUS_STYLES: Record<CycleStatus, { label: { en: string; zh: string }; cls: string }> = {
+const STATUS_STYLES: Record<CycleStatus, { label: LocalizedText; cls: string }> = {
   planned: {
     label: { en: "Planned", zh: "已计划" },
     cls: "bg-ink-100 text-ink-600",

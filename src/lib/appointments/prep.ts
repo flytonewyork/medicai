@@ -3,6 +3,7 @@ import type {
   AppointmentPrep,
   AppointmentPrepKind,
 } from "~/types/appointment";
+import type { LocalizedText } from "~/types/localized";
 import type { PatientTask } from "~/types/task";
 
 // Slice I helpers. Pure functions around AppointmentPrep so the UI
@@ -149,7 +150,7 @@ export function deriveAwaitingPrepTasks(args: {
 // Small label helpers for the UI.
 export const PREP_KIND_LABEL: Record<
   AppointmentPrepKind,
-  { en: string; zh: string }
+  LocalizedText
 > = {
   fast: { en: "Fast", zh: "禁食" },
   medication_hold: { en: "Hold medication", zh: "停药" },

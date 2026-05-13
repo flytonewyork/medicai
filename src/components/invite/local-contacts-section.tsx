@@ -17,6 +17,7 @@ import type {
   CareTeamRole,
 } from "~/types/care-team";
 import type { HouseholdMemberWithProfile } from "~/types/household";
+import type { LocalizedText } from "~/types/localized";
 import { useLocale } from "~/hooks/use-translate";
 import { Field, TextInput } from "~/components/ui/field";
 import { Button } from "~/components/ui/button";
@@ -59,7 +60,7 @@ const ROLES: CareTeamRole[] = [
   "other",
 ];
 
-const ROLE_LABELS: Record<CareTeamRole, { en: string; zh: string }> = {
+const ROLE_LABELS: Record<CareTeamRole, LocalizedText> = {
   family: { en: "Family", zh: "家人" },
   oncologist: { en: "Oncologist", zh: "肿瘤科" },
   surgeon: { en: "Surgeon", zh: "外科" },

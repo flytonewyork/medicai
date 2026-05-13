@@ -5,6 +5,8 @@ import type { UnifiedExtraction } from "~/lib/ingest/save";
 import { useLocale } from "~/hooks/use-translate";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils/cn";
+import type { LocalizedText } from "~/types/localized";
+import type { IconComponent } from "~/types/ui";
 import {
   Check,
   Loader2,
@@ -18,7 +20,7 @@ import {
 
 const STATUS_META: Record<
   BulkItem["status"],
-  { label: { en: string; zh: string }; tone: string; icon: React.ComponentType<{ className?: string }> }
+  { label: LocalizedText; tone: string; icon: IconComponent }
 > = {
   queued: {
     label: { en: "Queued", zh: "排队" },

@@ -1,4 +1,5 @@
 import type { MealType } from "~/types/nutrition";
+import type { LocalizedText } from "~/types/localized";
 import type { Citation } from "./sources";
 
 // JPCC PERT decision rules (Jreissati Family Pancreatic Centre at
@@ -53,7 +54,7 @@ export interface PertEvaluationInput {
 export interface PertEvaluation {
   required: boolean;
   recommendation: PertDoseRecommendation;
-  reason: { en: string; zh: string };
+  reason: LocalizedText;
   citations: Citation[];
 }
 

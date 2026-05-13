@@ -39,10 +39,11 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
+import type { IconComponent } from "~/types/ui";
 
 const TONE_BY_SEVERITY: Record<
   SignalSeverity,
-  { wrap: string; chip: string; Icon: React.ComponentType<{ className?: string }> }
+  { wrap: string; chip: string; Icon: IconComponent }
 > = {
   caution: {
     wrap: "bg-[var(--sand)]/40 border-l-[3px] border-l-[oklch(45%_0.06_70)]",

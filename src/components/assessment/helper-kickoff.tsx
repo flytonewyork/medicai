@@ -6,6 +6,8 @@ import { useLocale } from "~/hooks/use-translate";
 import { Field, TextInput, Textarea } from "~/components/ui/field";
 import { cn } from "~/lib/utils/cn";
 import type { AssessmentHelperRole } from "~/types/clinical";
+import type { LocalizedText } from "~/types/localized";
+import type { IconComponent } from "~/types/ui";
 
 // Captured at the start of a guided assessment session. The patient
 // rarely runs this alone — for the bridge strategy we want to know who
@@ -20,9 +22,9 @@ import type { AssessmentHelperRole } from "~/types/clinical";
 // that case.
 const ROLE_OPTIONS: Array<{
   id: AssessmentHelperRole;
-  icon: React.ComponentType<{ className?: string }>;
-  label: { en: string; zh: string };
-  hint: { en: string; zh: string };
+  icon: IconComponent;
+  label: LocalizedText;
+  hint: LocalizedText;
 }> = [
   {
     id: "self",
@@ -70,7 +72,7 @@ export interface HelperKickoffValue {
 
 const EQUIPMENT_ITEMS: Array<{
   id: string;
-  label: { en: string; zh: string };
+  label: LocalizedText;
 }> = [
   { id: "scale", label: { en: "Bathroom scale", zh: "体重秤" } },
   { id: "tape", label: { en: "Soft tape measure", zh: "软尺" } },

@@ -33,6 +33,8 @@ import {
 } from "lucide-react";
 import { cn } from "~/lib/utils/cn";
 import { format, parseISO } from "date-fns";
+import type { IconComponent } from "~/types/ui";
+import type { LocalizedText } from "~/types/localized";
 
 type Filter = "all" | "open" | "resolved";
 
@@ -146,7 +148,7 @@ function FilterButton({
 
 const STATUS_TONE: Record<
   ChangeSignalRow["status"],
-  { wrap: string; Icon: React.ComponentType<{ className?: string }> }
+  { wrap: string; Icon: IconComponent }
 > = {
   open: { wrap: "bg-paper-2", Icon: Circle },
   acknowledged: { wrap: "bg-paper-2", Icon: CheckCircle2 },
@@ -157,10 +159,7 @@ const STATUS_TONE: Record<
   },
 };
 
-const SEV_ICON: Record<
-  SignalSeverity,
-  React.ComponentType<{ className?: string }>
-> = {
+const SEV_ICON: Record<SignalSeverity, IconComponent> = {
   caution: Bell,
   warning: AlertTriangle,
 };
@@ -291,7 +290,7 @@ function SignalHistoryRow({
 
 function StatusBadge({ status }: { status: ChangeSignalRow["status"] }) {
   const locale = useLocale();
-  const labels: Record<ChangeSignalRow["status"], { en: string; zh: string }> = {
+  const labels: Record<ChangeSignalRow["status"], LocalizedText> = {
     open: { en: "OPEN", zh: "未结" },
     acknowledged: { en: "ACK", zh: "已知" },
     dismissed: { en: "DISMISSED", zh: "关闭" },
@@ -315,10 +314,7 @@ function StatusBadge({ status }: { status: ChangeSignalRow["status"] }) {
   );
 }
 
-const EVENT_KIND_LABEL: Record<
-  SignalEventKind,
-  { en: string; zh: string }
-> = {
+const EVENT_KIND_LABEL: Record<SignalEventKind, LocalizedText> = {
   emitted: { en: "signal emitted", zh: "信号触发" },
   acknowledged: { en: "acknowledged", zh: "已知" },
   dismissed: { en: "dismissed", zh: "关闭" },

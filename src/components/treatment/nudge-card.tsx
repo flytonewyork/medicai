@@ -2,6 +2,8 @@
 
 import { useLocale } from "~/hooks/use-translate";
 import type { NudgeCategory, NudgeTemplate } from "~/types/treatment";
+import type { LocalizedText } from "~/types/localized";
+import type { IconComponent } from "~/types/ui";
 import {
   Apple,
   Bed,
@@ -17,10 +19,7 @@ import {
   X,
 } from "lucide-react";
 
-const CATEGORY_ICON: Record<
-  NudgeCategory,
-  React.ComponentType<{ className?: string }>
-> = {
+const CATEGORY_ICON: Record<NudgeCategory, IconComponent> = {
   diet: Apple,
   hygiene: SprayCan,
   exercise: Dumbbell,
@@ -32,7 +31,7 @@ const CATEGORY_ICON: Record<
   intimacy: Heart,
 };
 
-const CATEGORY_LABEL: Record<NudgeCategory, { en: string; zh: string }> = {
+const CATEGORY_LABEL: Record<NudgeCategory, LocalizedText> = {
   diet: { en: "Diet", zh: "饮食" },
   hygiene: { en: "Hygiene", zh: "卫生" },
   exercise: { en: "Exercise", zh: "运动" },
@@ -48,7 +47,7 @@ type SeverityTone = {
   ringStyle: React.CSSProperties;
   bgStyle: React.CSSProperties;
   pillStyle: React.CSSProperties;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: IconComponent;
 };
 
 const SEVERITY_TONE: Record<"warning" | "caution" | "info", SeverityTone> = {

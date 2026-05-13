@@ -18,15 +18,17 @@ import {
 } from "lucide-react";
 import { useIngestModal } from "~/components/ingest/ingest-modal";
 import { useAppPerspective } from "~/lib/caregiver/scope";
+import type { LocalizedText } from "~/types/localized";
+import type { IconComponent } from "~/types/ui";
 
 interface FabItem {
   href?: string;
   // When set, the item is rendered as a button that runs `action`
   // instead of navigating. Used for the smart-ingest opener.
   action?: "ingest";
-  label: { en: string; zh: string };
-  hint: { en: string; zh: string };
-  icon: React.ComponentType<{ className?: string }>;
+  label: LocalizedText;
+  hint: LocalizedText;
+  icon: IconComponent;
   tone?: "tide" | "sand";
 }
 
