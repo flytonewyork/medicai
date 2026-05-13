@@ -26,6 +26,7 @@ export default function AssessmentListPage() {
   );
 
   const hasComplete = (assessments ?? []).some((a) => a.status === "complete");
+  const hasAny = (assessments?.length ?? 0) > 0;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-8">
@@ -37,17 +38,22 @@ export default function AssessmentListPage() {
             : "Pick your tests, walk through them, and get three-pillar scores + an Anchor Index."
         }
         action={
-          <Link href="/assessment/new">
-            <Button size="lg">
-              {hasComplete
-                ? locale === "zh"
-                  ? "开始新一轮"
-                  : "Start a new one"
-                : locale === "zh"
-                  ? "建立基线"
-                  : "Establish baseline"}
-            </Button>
-          </Link>
+          // Suppress when the EmptyState below already carries the CTA —
+          // otherwise the user sees two identical "Establish baseline"
+          // buttons on the same first paint.
+          hasAny ? (
+            <Link href="/assessment/new">
+              <Button size="lg">
+                {hasComplete
+                  ? locale === "zh"
+                    ? "开始新一轮"
+                    : "Start a new one"
+                  : locale === "zh"
+                    ? "建立基线"
+                    : "Establish baseline"}
+              </Button>
+            </Link>
+          ) : null
         }
       />
 
