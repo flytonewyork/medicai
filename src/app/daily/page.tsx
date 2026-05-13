@@ -15,6 +15,7 @@ export default function DailyPage() {
   const t = useT();
   const locale = useLocale();
   const entries = useLiveQuery(() => latestDailyEntries(60));
+  const hasEntries = (entries?.length ?? 0) > 0;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-8">
@@ -26,9 +27,14 @@ export default function DailyPage() {
             : "Daily check-in — under two minutes."
         }
         action={
-          <Link href="/daily/new">
-            <Button>{t("dashboard.quick_entry")}</Button>
-          </Link>
+          // Only surface the header CTA when there's a list to act on.
+          // The EmptyState below has its own primary CTA — two identical
+          // buttons on the same first paint is dead clutter.
+          hasEntries ? (
+            <Link href="/daily/new">
+              <Button>{t("dashboard.quick_entry")}</Button>
+            </Link>
+          ) : null
         }
       />
 
@@ -68,12 +74,26 @@ export default function DailyPage() {
                   />
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-500">
-                  <span>
-                    {locale === "zh" ? "精力" : "energy"} {e.energy}
-                  </span>
-                  <span>
-                    {locale === "zh" ? "睡眠" : "sleep"} {e.sleep_quality}
-                  </span>
+                  {typeof e.energy === "number" && (
+                    <span>
+                      {locale === "zh" ? "精力" : "energy"} {e.energy}
+                    </span>
+                  )}
+                  {typeof e.sleep_quality === "number" && (
+                    <span>
+                      {locale === "zh" ? "睡眠" : "sleep"} {e.sleep_quality}
+                    </span>
+                  )}
+                  {typeof e.pain_current === "number" && e.pain_current > 0 && (
+                    <span>
+                      {locale === "zh" ? "疼痛" : "pain"} {e.pain_current}
+                    </span>
+                  )}
+                  {typeof e.nausea === "number" && e.nausea > 0 && (
+                    <span>
+                      {locale === "zh" ? "恶心" : "nausea"} {e.nausea}
+                    </span>
+                  )}
                   {typeof e.weight_kg === "number" && <span>{e.weight_kg} kg</span>}
                   {typeof e.protein_grams === "number" && (
                     <span>{e.protein_grams} g protein</span>

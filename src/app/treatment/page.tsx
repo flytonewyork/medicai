@@ -39,6 +39,7 @@ const STATUS_STYLES: Record<CycleStatus, { label: { en: string; zh: string }; cl
 export default function TreatmentListPage() {
   const locale = useLocale();
   const cycles = useLiveQuery(() => latestTreatmentCycles());
+  const hasCycles = (cycles?.length ?? 0) > 0;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-8">
@@ -50,9 +51,14 @@ export default function TreatmentListPage() {
             : "Protocol, cycles, and today's contextual nudges."
         }
         action={
-          <Link href="/treatment/new">
-            <Button>{locale === "zh" ? "新建周期" : "Start cycle"}</Button>
-          </Link>
+          // Suppress when the EmptyState below carries the only CTA — two
+          // primary "Start" buttons on the same first paint is duplicate
+          // chrome.
+          hasCycles ? (
+            <Link href="/treatment/new">
+              <Button>{locale === "zh" ? "新建周期" : "Start cycle"}</Button>
+            </Link>
+          ) : null
         }
       />
 

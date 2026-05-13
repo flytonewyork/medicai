@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { format, parseISO } from "date-fns";
 import {
@@ -38,6 +38,11 @@ import type { AgentRunRow } from "~/types/agent";
 // the top records, transcribes, and persists in one motion.
 
 const WINDOW_DAYS_DEFAULT = 14;
+// Hard ceiling so the "Show 14 more" tap loop can't grow the window
+// indefinitely on an active diary. ~1 year is well past anything the
+// patient would scroll through inline; older entries are still in
+// /history.
+const WINDOW_DAYS_MAX = 365;
 
 export default function DiaryPage() {
   const locale = useLocale();
@@ -55,6 +60,14 @@ export default function DiaryPage() {
   const [days, setDays] = useState<DiaryDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Set after an expansion that returned no new content-bearing days,
+  // so the "Show more" button can hide itself. Without this signal,
+  // the patient kept tapping a button that visibly did nothing.
+  const [reachedEnd, setReachedEnd] = useState(false);
+  // Tracked via a ref so the load effect doesn't need `days` in its
+  // deps (which would trigger an infinite re-fetch loop). Updated
+  // alongside setDays after every successful build.
+  const lastContentDaysRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,8 +90,22 @@ export default function DiaryPage() {
       .then((rows) => {
         if (cancelled) return;
         clearTimeout(timeout);
+        const prevContentDays = lastContentDaysRef.current;
+        const nextContentDays = rows.filter((d) => d.has_content).length;
+        lastContentDaysRef.current = nextContentDays;
         setDays(rows);
         setLoading(false);
+        // If expanding the window didn't surface any new days with
+        // content, mark the timeline exhausted so we stop offering
+        // "Show 14 more". The first load (windowDays === default)
+        // never sets this — we want the patient to have at least one
+        // expansion to chase.
+        if (
+          windowDays > WINDOW_DAYS_DEFAULT &&
+          nextContentDays === prevContentDays
+        ) {
+          setReachedEnd(true);
+        }
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -131,14 +158,25 @@ export default function DiaryPage() {
             ? `最近 ${windowDays} 天`
             : `Last ${windowDays} days`}
         </div>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => setWindowDays((n) => n + 14)}
-        >
-          <CalendarDays className="h-3.5 w-3.5" />
-          {locale === "zh" ? "再加 14 天" : "Show 14 more"}
-        </Button>
+        {reachedEnd || windowDays >= WINDOW_DAYS_MAX ? (
+          <Link
+            href="/history"
+            className="text-[11px] text-ink-500 hover:text-ink-900"
+          >
+            {locale === "zh" ? "更早的记录在「历史」 →" : "Older entries in History →"}
+          </Link>
+        ) : (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() =>
+              setWindowDays((n) => Math.min(n + 14, WINDOW_DAYS_MAX))
+            }
+          >
+            <CalendarDays className="h-3.5 w-3.5" />
+            {locale === "zh" ? "再加 14 天" : "Show 14 more"}
+          </Button>
+        )}
       </div>
 
       {loadError ? (
