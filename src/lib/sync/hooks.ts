@@ -1,5 +1,6 @@
 import { db } from "~/lib/db/dexie";
 import { enqueueSync } from "./queue";
+import { logSyncWarn } from "./log";
 import { SYNCED_TABLES, type SyncedTable } from "./tables";
 
 // Per-table scrubbers run before a row is enqueued for cloud sync.
@@ -43,8 +44,7 @@ export function attachSyncHooks(): void {
   for (const name of SYNCED_TABLES) {
     const table = (db as unknown as Record<string, DexieTableLike>)[name];
     if (!table || typeof table.hook !== "function") {
-      // eslint-disable-next-line no-console
-      console.warn(`[sync] table ${name} missing from Dexie schema`);
+      logSyncWarn("sync", `table ${name} missing from Dexie schema`);
       continue;
     }
 

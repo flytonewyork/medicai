@@ -6,6 +6,7 @@ import {
   getCachedHouseholdId,
   refreshHouseholdId,
 } from "./household-context";
+import { logSyncWarn } from "./log";
 
 const LAST_PULLED_KEY = "anchor.lastPulledAt";
 
@@ -44,8 +45,7 @@ export async function pullFromCloud(): Promise<{ pulled: number } | null> {
     .limit(5000);
 
   if (error) {
-    // eslint-disable-next-line no-console
-    console.warn("[sync] pull failed:", error);
+    logSyncWarn("sync", "pull failed", error);
     return null;
   }
 
@@ -69,9 +69,9 @@ export async function pullFromCloud(): Promise<{ pulled: number } | null> {
           await table.put({ ...row.data, id: row.local_id });
         }
       } catch (err) {
-        // eslint-disable-next-line no-console
-        console.warn(
-          `[sync] apply failed for ${row.table_name}#${row.local_id}`,
+        logSyncWarn(
+          "sync",
+          `apply failed for ${row.table_name}#${row.local_id}`,
           err,
         );
       }
