@@ -4,6 +4,7 @@ import { SYNCED_TABLES, type SyncedTable } from "./tables";
 import { scrubForSync } from "./hooks";
 import { enqueueSync, kickQueue } from "./queue";
 import { refreshHouseholdId, getCachedHouseholdId } from "./household-context";
+import { logSyncWarn } from "./log";
 
 // Bootstrap heal — fixes the "patient onboarded offline before Supabase
 // auth existed" trap that left Hu Lin with `settings.onboarded_at` set
@@ -55,8 +56,7 @@ export async function bootstrapHouseholdAndProfile(): Promise<string | null> {
         locale: settings?.locale,
       });
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.warn("[bootstrap] ensureProfileForCurrentUser failed:", err);
+      logSyncWarn("bootstrap", "ensureProfileForCurrentUser failed", err);
     }
 
     // Step 2 — household. Only auto-create for patients, and only when
@@ -74,11 +74,7 @@ export async function bootstrapHouseholdAndProfile(): Promise<string | null> {
           await ensureHouseholdForCurrentUser({ patientName });
         }
       } catch (err) {
-        // eslint-disable-next-line no-console
-        console.warn(
-          "[bootstrap] ensureHouseholdForCurrentUser failed:",
-          err,
-        );
+        logSyncWarn("bootstrap", "ensureHouseholdForCurrentUser failed", err);
       }
     }
 
@@ -87,8 +83,7 @@ export async function bootstrapHouseholdAndProfile(): Promise<string | null> {
     const householdId = await refreshHouseholdId();
     return householdId;
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.warn("[bootstrap] unexpected failure:", err);
+    logSyncWarn("bootstrap", "unexpected failure", err);
     return null;
   }
 }
@@ -130,8 +125,7 @@ export async function flushLocalRowsOnce(): Promise<{
     try {
       rows = await table.toArray();
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.warn(`[bootstrap] flush: read failed for ${tableName}:`, err);
+      logSyncWarn("bootstrap", `flush: read failed for ${tableName}`, err);
       continue;
     }
     for (const row of rows) {

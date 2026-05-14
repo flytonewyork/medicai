@@ -2,6 +2,7 @@ import { db } from "~/lib/db/dexie";
 import { getSupabaseBrowser } from "~/lib/supabase/client";
 import { nowISO } from "~/lib/utils/date";
 import { getCachedHouseholdId, refreshHouseholdId } from "./household-context";
+import { logSyncWarn } from "./log";
 import type { SyncedTable } from "./tables";
 import type { SyncQueueRow } from "~/types/sync-queue";
 
@@ -97,8 +98,7 @@ export function enqueueSync(op: SyncOp): void {
       }
       void processQueue();
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.warn("[sync] failed to persist queue op:", err);
+      logSyncWarn("sync", "failed to persist queue op", err);
     }
   })();
 }
@@ -167,8 +167,7 @@ async function processQueue(): Promise<void> {
       } catch (err) {
         // Write failed (offline, RLS denied, network). Stop draining and
         // leave the op at the head so the next tick retries it.
-        // eslint-disable-next-line no-console
-        console.warn("[sync] push failed, will retry:", err);
+        logSyncWarn("sync", "push failed, will retry", err);
         break;
       }
     }
