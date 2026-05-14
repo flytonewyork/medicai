@@ -32,6 +32,7 @@ const CATEGORY_LABELS: Record<MedicationCategory, { en: string; zh: string }> = 
 const CATEGORY_ORDER: MedicationCategory[] = [
   "chemo",
   "targeted",
+  "immunotherapy",
   "antiemetic",
   "steroid",
   "pert",
@@ -80,7 +81,11 @@ export default function MedicationsPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-8 p-4 md:p-8">
       <PageHeader
-        title="Medications & Interventions"
+        title={
+          locale === "zh"
+            ? "药物与干预"
+            : "Medications & interventions"
+        }
         subtitle={
           locale === "zh"
             ? "所有当前和潜在的药物及行为干预。轻点任何一个以查看详情、副作用、监测及相互作用。"

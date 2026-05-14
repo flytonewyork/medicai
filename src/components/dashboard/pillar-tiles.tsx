@@ -515,19 +515,24 @@ export function PillarTiles() {
 
   if (tiles.length === 0) return null;
 
-  // With grid-cols-2, a lone tile (or an odd-numbered last tile) sits
-  // in the left column with an empty hole on the right. When there's
-  // only one tile, render it full-width so the dashboard doesn't show
-  // a half-row of dead space.
-  if (tiles.length === 1) {
-    return <div>{tiles[0]!.node}</div>;
-  }
+  // grid-cols-2 leaves a visible hole on any odd count (1, 3, 5…). Span
+  // the trailing tile across both columns so the dashboard never shows
+  // a half-row of dead space. The first N-1 tiles render in the normal
+  // 2-col rhythm; the last one fills the width.
+  const lastIsOrphan = tiles.length % 2 === 1;
+  const lead = lastIsOrphan ? tiles.slice(0, -1) : tiles;
+  const tail = lastIsOrphan ? tiles[tiles.length - 1]! : null;
 
   return (
     <div className="grid grid-cols-2 gap-3">
-      {tiles.map((t) => (
+      {lead.map((t) => (
         <div key={t.key}>{t.node}</div>
       ))}
+      {tail && (
+        <div key={tail.key} className="col-span-2">
+          {tail.node}
+        </div>
+      )}
     </div>
   );
 }
