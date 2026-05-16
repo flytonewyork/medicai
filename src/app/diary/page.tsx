@@ -33,9 +33,8 @@ import type { AgentRunRow } from "~/types/agent";
 //   · labs received that day
 //   · agent reports run from those inputs
 //
-// The page is also the primary capture surface for voice memos that
-// aren't otherwise tied to /log or meal-ingest — a big mic button at
-// the top records, transcribes, and persists in one motion.
+// New entries are composed via /log (the canonical compose surface)
+// or the FAB; this page is read-only.
 
 const WINDOW_DAYS_DEFAULT = 14;
 
@@ -164,8 +163,8 @@ export default function DiaryPage() {
           }
           description={
             locale === "zh"
-              ? "轻点麦克风录第一段日记，或去「日志」「日常」补充。"
-              : "Tap the mic above to record your first memo, or open /log or /daily."
+              ? "用上方「新建一条记录」按钮或右下角的 + 来开始。"
+              : "Use the New entry button above, or the + button to start."
           }
         />
       ) : (
